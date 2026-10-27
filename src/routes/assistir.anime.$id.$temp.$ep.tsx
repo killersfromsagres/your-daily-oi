@@ -63,10 +63,6 @@ function WatchAnimePage() {
     ...(foundEp?.streams || []),
     ...(anime?.streams || []),
   ];
-    : (anime?.streams || [
-        { url: "https://exemplo.invalid/episodio.mp4", audio: "leg" as const, format: "mp4" as const },
-        { url: "https://exemplo.invalid/episodio-dub.mp4", audio: "dub" as const, format: "mp4" as const }
-      ]);
 
   const savedProgress = getProgressById(`${anime?.id || id}-t${temp}-e${ep}`);
 
