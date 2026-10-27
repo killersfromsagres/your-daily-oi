@@ -55,17 +55,22 @@ function WatchMoviePage() {
     );
   }
 
-  // Combina as fontes do resolve-vod (com relay) e as fontes nativas
+  // Combina as fontes nativas e do resolve-vod com deduplicação por URL
+  const seenUrls = new Set<string>();
   const streams: StreamSource[] = [
-    ...extraStreams,
     ...(movie?.streams || []),
-  ];
+    ...extraStreams,
+  ].filter((s) => {
+    if (!s?.url || seenUrls.has(s.url)) return false;
+    seenUrls.add(s.url);
+    return true;
+  });
 
   if (!movie || streams.length === 0) {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <Film size={48} style={{ color: "#e8b44a" }} />
-        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Stream indisponível</h1>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Filme indisponível</h1>
         <p style={{ color: "rgba(255,255,255,0.6)" }}>Não encontramos fontes ativas para este filme no catálogo.</p>
         <Link to="/" className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
           <ArrowLeft size={16} /> Voltar ao Início

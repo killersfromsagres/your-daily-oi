@@ -55,6 +55,7 @@ export interface CatalogItem {
   tmdbId?: number | null;
   tmdb?: TmdbData | null;
   seasons?: SeasonItem[];
+  alias?: boolean;
 }
 
 export interface HighlightItem {

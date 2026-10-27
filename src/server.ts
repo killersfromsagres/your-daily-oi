@@ -84,7 +84,7 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       return jsonResponse({ items: results });
     }
 
-    const allItems = Array.from(items.values());
+    const allItems = Array.from(items.values()).filter((i) => !i.alias);
 
     // Seleciona exclusivamente os filmes mais assistidos e populares do catálogo para o carrossel do banner
     const selectedMostWatched: CatalogItem[] = [];

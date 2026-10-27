@@ -533,18 +533,6 @@ export async function getStreamsForItem(type: "f" | "s" | "a", title: string): P
   const found = streamsMap.get(norm) || streamsMap.get(cleanNorm);
   if (found && found.length > 0) return found;
 
-  // Fallback para filmes: busca por correspondência de prefixo ou substring na mesma letra
-  if (type === "f" && cleanNorm) {
-    for (const [key, list] of streamsMap) {
-      if (
-        (key === cleanNorm || key.startsWith(cleanNorm + " ") || cleanNorm.startsWith(key + " ")) &&
-        list.length > 0
-      ) {
-        return list;
-      }
-    }
-  }
-
   return [];
 }
 
@@ -614,7 +602,7 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
   // Monta catálogo indexado
   const items = new Map<string, CatalogItem>();
   for (const [key, base] of fichas) {
-    items.set(key, { ...base, streams: [] });
+    items.set(key, { ...base, streams: [], ...(key !== base.id ? { alias: true } : {}) });
   }
 
   catalogCache = items;
@@ -630,6 +618,7 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
 export function getGenres(items: Map<string, CatalogItem>): string[] {
   const counts = new Map<string, number>();
   for (const item of items.values()) {
+    if (item.alias) continue;
     for (const g of item.genres) {
       counts.set(g, (counts.get(g) ?? 0) + 1);
     }
@@ -641,6 +630,6 @@ export function getGenres(items: Map<string, CatalogItem>): string[] {
 
 export function searchItems(items: Map<string, CatalogItem>, query: string): CatalogItem[] {
   const q = normalizeTitle(query);
-  if (!q) return Array.from(items.values());
-  return Array.from(items.values()).filter((item) => normalizeTitle(item.title).includes(q));
+  if (!q) return Array.from(items.values()).filter((item) => !item.alias);
+  return Array.from(items.values()).filter((item) => !item.alias && normalizeTitle(item.title).includes(q));
 }
