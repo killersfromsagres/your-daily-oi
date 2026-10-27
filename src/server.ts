@@ -350,12 +350,44 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
 }
 
 /**
- * Route Handler /api/proxy-stream (Fallback para quando o navegador receber 403 / Access Denied)
+ * Route Handler /api/proxy-stream (Proxy retransmissor transparente com Range, Referer e User-Agent)
  */
 async function handleProxyStreamApi(request: Request, url: URL): Promise<Response> {
-  const targetUrl = url.searchParams.get("url");
-  if (!targetUrl || !targetUrl.startsWith("http")) {
+  let targetUrl = url.searchParams.get("url");
+  if (!targetUrl) {
+    return new Response("URL ausente", { status: 400 });
+  }
+
+  // Previne encadeamento de proxy sobre proxy
+  while (targetUrl.includes("/api/proxy-stream?url=")) {
+    try {
+      const parsed = new URL(targetUrl, url.origin);
+      const inner = parsed.searchParams.get("url");
+      if (inner && inner !== targetUrl) {
+        targetUrl = inner;
+      } else {
+        break;
+      }
+    } catch {
+      break;
+    }
+  }
+
+  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
     return new Response("URL inválida", { status: 400 });
+  }
+
+  // Preflight CORS
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
   }
 
   try {
@@ -364,6 +396,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       Referer: "https://saimo-tv.pages.dev/",
       Accept: "*/*",
+      "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     };
 
     const clientRange = request.headers.get("range");
@@ -377,14 +410,16 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
     }
 
     const res = await fetch(targetUrl, {
+      method: request.method === "HEAD" ? "HEAD" : "GET",
       headers: upstreamHeaders,
       redirect: "follow",
     });
 
     const responseHeaders = new Headers();
     responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
     responseHeaders.set("Access-Control-Allow-Headers", "*");
-    responseHeaders.set("Cache-Control", "no-cache, no-store");
+    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
 
     const contentType = res.headers.get("content-type");
     if (contentType) responseHeaders.set("Content-Type", contentType);
@@ -398,7 +433,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
     const acceptRanges = res.headers.get("accept-ranges") || "bytes";
     responseHeaders.set("Accept-Ranges", acceptRanges);
 
-    return new Response(res.body, {
+    return new Response(request.method === "HEAD" ? null : res.body, {
       status: res.status,
       headers: responseHeaders,
     });

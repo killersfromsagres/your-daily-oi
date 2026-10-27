@@ -18,6 +18,19 @@ interface OwnPlayerProps {
   preferredAudio?: "dub" | "leg";
 }
 
+const PRECISA_PROXY = (url: string) =>
+  url.startsWith("https://saimo-tv.pages.dev/") ||
+  url.startsWith("http://saimo-tv.pages.dev/") ||
+  url.includes("saimo-tv.pages.dev/api/stream");
+
+const paraPlayer = (url: string, forceProxy: boolean) => {
+  if (url.includes("/api/proxy-stream")) return url;
+  if (PRECISA_PROXY(url) || forceProxy) {
+    return `/api/proxy-stream?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export function OwnPlayer({
   streams,
   poster,
@@ -46,34 +59,33 @@ export function OwnPlayer({
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
+
+  // Roteamento inteligente de fontes:
+  // Fontes do relay Saimo (saimo-tv.pages.dev/api/stream?...): sempre tocam via /api/proxy-stream (com Referer e User-Agent)
+  // Demais fontes (Internet Archive, streams diretos): tentam direto no <video>; só usam proxy se falharem (useProxyFallback)
   const currentStream: StreamSource | null = useMemo(() => {
     if (!rawStream) return null;
-    if (useProxyFallback && !rawStream.url.includes("/api/proxy-stream")) {
-      return {
-        ...rawStream,
-        url: `/api/proxy-stream?url=${encodeURIComponent(rawStream.url)}`,
-      };
-    }
-    return rawStream;
+    return {
+      ...rawStream,
+      url: paraPlayer(rawStream.url, useProxyFallback),
+    };
   }, [rawStream, useProxyFallback]);
 
-  // Chaveamento automático de fontes Play-First:
-  // 1. Tenta direto no browser
-  // 2. Se falhar (ex: 403 / anti-bot), tenta via /api/proxy-stream
-  // 3. Se continuar falhando, desce para a próxima fonte com toast
+  // Chaveamento automático sem depender de status HTTP:
+  // 1. Se a fonte tentou direto e falhou, retenta silenciosamente a mesma fonte via proxy mantendo a posição
+  // 2. Se já estava via proxy (ou falhou novamente no proxy), registra falha no cache negativo e desce para a próxima fonte com toast
+  // 3. Esgotadas todas as fontes, exibe mensagem clara e botão de retry
   useEffect(() => {
     if (engine.state === "error" && rawStream) {
-      if (!useProxyFallback && !rawStream.url.includes("/api/proxy-stream")) {
-        // Tenta fallback pontual via proxy
-        setAutoSwitchMsg("Otimizando conexão do servidor…");
-        const timer = setTimeout(() => {
-          setUseProxyFallback(true);
-          setAutoSwitchMsg(null);
-        }, 600);
-        return () => clearTimeout(timer);
+      const isAlreadyProxy = currentStream?.url.includes("/api/proxy-stream");
+
+      if (!isAlreadyProxy && !useProxyFallback) {
+        // Retenta silenciosamente via proxy
+        setUseProxyFallback(true);
+        return;
       }
 
-      // Se proxy já foi tentado ou falhou, registra falha real e avança
+      // Já estava via proxy ou falhou novamente: registra falha real e avança
       recordFailedSource(rawStream.url);
       setUseProxyFallback(false);
 
@@ -82,11 +94,11 @@ export function OwnPlayer({
         const timer = setTimeout(() => {
           setSourceIndex((prev) => prev + 1);
           setAutoSwitchMsg(null);
-        }, 1000);
+        }, 800);
         return () => clearTimeout(timer);
       }
     }
-  }, [engine.state, rawStream, useProxyFallback, sourceIndex, orderedStreams.length]);
+  }, [engine.state, rawStream, currentStream, useProxyFallback, sourceIndex, orderedStreams.length]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
@@ -154,17 +166,22 @@ export function OwnPlayer({
     return () => document.removeEventListener("keydown", handler);
   }, [engine]);
 
-  const sources = streams.map((s, i) => ({
+  const sources = orderedStreams.map((s, i) => ({
     url: s.url,
     audio: s.audio,
-    label: `Fonte ${i + 1}`,
+    label: s.name || `Fonte ${i + 1} (${s.audio.toUpperCase()})`,
   }));
 
   const handleSourceChange = (i: number) => {
     const prevTime = videoRef.current?.currentTime ?? 0;
     setSourceIndex(i);
-    // O useEffect no engine vai reinicializar; preservamos o tempo via initialTime
-    setTimeout(() => { if (videoRef.current) videoRef.current.currentTime = prevTime; }, 300);
+    setUseProxyFallback(false);
+    setAutoSwitchMsg(null);
+    setTimeout(() => {
+      if (videoRef.current && prevTime > 0) {
+        videoRef.current.currentTime = prevTime;
+      }
+    }, 300);
   };
 
   return (
@@ -325,6 +342,7 @@ export function OwnPlayer({
                 clearFailedSources();
                 setSourceIndex(0);
                 setUseProxyFallback(false);
+                setAutoSwitchMsg(null);
               }}
             >
               <RefreshCw size={16} /> Tentar de novo

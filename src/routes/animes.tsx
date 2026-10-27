@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
+import { isAnimeItem } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { Sparkles, Tv } from "lucide-react";
 
@@ -34,7 +35,7 @@ function AnimesPage() {
       })
       .then((data) => {
         if (!active) return;
-        const animes = (data.items || []).filter((i) => i.type === "a");
+        const animes = (data.items || []).filter((i) => i.type === "a" || isAnimeItem(i));
         setItems(animes);
       })
       .catch((err) => console.error("Erro ao carregar animes:", err))

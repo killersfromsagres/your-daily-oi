@@ -136,6 +136,33 @@ function getCatalogUrls(fileName: string): string[] {
   return urls;
 }
 
+const EMBEDDED_ANIMES_FICHAS = `a\tAttack on Titan\t1429\t/hTP1DtLGFamjfu8WqjnuQdP1n42.jpg\tAção,Animação,Fantasia,Shounen
+a\tDemon Slayer\t85937\t/wrCVHknDaBW2usxOi7vgW9Q971o.jpg\tAnimação,Ação,Fantasia,Shounen
+a\tOne Piece\t37854\t/e3NBmXv1m3pDk2z6R24g35YpS2c.jpg\tAção,Animação,Aventura,Shounen
+a\tJujutsu Kaisen\t95479\t/hD8pZgqB8F5t3y0z9r1.jpg\tAnimação,Ação,Fantasia,Shounen
+a\tSolo Leveling\t209867\t/geCRueV3ElhRTr0Q2x9URZLoxQP.jpg\tAção,Animação,Fantasia
+a\tDragon Ball Z\t12971\t/7p40V9oXw4L1uTqSgB8a5.jpg\tAnimação,Ação,Ficção científica`;
+
+export function isAnimeItem(item: CatalogItem | { type: string; title: string; genres: string[] }): boolean {
+  if (item.type === "a") return true;
+  if (item.genres && item.genres.some((g) => /anime|shounen|manga/i.test(g))) return true;
+  const t = (item.title || "").toLowerCase();
+  const animeKeywords = [
+    "naruto", "dragon ball", "one piece", "bleach", "titan", "jujutsu", "demon slayer",
+    "solo leveling", "death note", "hunter x hunter", "fullmetal", "chainsaw man",
+    "hero academia", "boruto", "cavaleiros do zodiaco", "saint seiya", "pokemon",
+    "digimon", "spy x family", "tokyo ghoul", "sword art online", "black clover",
+    "fairy tail", "haikyuu", "evangelion", "akira", "kimetsu", "shingeki",
+    "nanatsu no taizai", "overlord", "danmachi", "dr stone", "vinland", "frieren",
+    "dandadan", "kaiju no 8", "blue lock", "mashle", "hells paradise"
+  ];
+  if (animeKeywords.some((k) => t.includes(k))) return true;
+  if (item.genres && item.genres.includes("Animação") && item.type === "s") {
+    return true;
+  }
+  return false;
+}
+
 async function fetchAnimeText(fileName: string): Promise<string> {
   if (ANIMES_PAGES) {
     try {
@@ -153,6 +180,7 @@ async function fetchAnimeText(fileName: string): Promise<string> {
   } catch {
     // fallback
   }
+  if (fileName === "fichas.txt") return EMBEDDED_ANIMES_FICHAS;
   return "";
 }
 
@@ -369,7 +397,14 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
       streamsCache.set(cacheKey, parsed);
       return parsed;
     } else {
-      const { streams, seasons } = parseSeriesData(text);
+      let combinedSeriesText = text;
+      try {
+        const textPart0 = await fetchText(getCatalogUrls(`series-${letter}-0.txt`));
+        if (textPart0) combinedSeriesText = `${textPart0}\n${text}`;
+      } catch {
+        // continua com text principal
+      }
+      const { streams, seasons } = parseSeriesData(combinedSeriesText);
       streamsCache.set(cacheKey, streams);
       seriesSeasonsCache.set(letter, seasons);
       return streams;

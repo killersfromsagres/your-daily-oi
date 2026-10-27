@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Play, Plus, Check, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
-import { cleanDisplayTitle } from "@/lib/catalog";
+import { cleanDisplayTitle, isAnimeItem } from "@/lib/catalog";
 
 interface MediaCardProps {
   item: CatalogItem;
@@ -22,10 +22,10 @@ export function MediaCard({
   const hasDub = item.streams.some((s) => s.audio === "dub");
   const hasLeg = item.streams.some((s) => s.audio === "leg");
   const detailPath =
-    item.type === "f"
-      ? `/filme/${item.id}`
-      : item.type === "a"
-        ? `/anime/${item.id}`
+    item.type === "a" || (item.type === "s" && isAnimeItem(item))
+      ? `/anime/${item.id}`
+      : item.type === "f"
+        ? `/filme/${item.id}`
         : `/serie/${item.id}`;
 
   return (
