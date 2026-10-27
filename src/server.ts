@@ -198,11 +198,17 @@ async function handleItemApi(url: URL): Promise<Response> {
   if (!id) return jsonResponse({ error: "ID ausente" }, 400);
 
   const tipoParam = url.searchParams.get("tipo");
-  const typeKey = tipoParam ? ((tipoParam === "movie" || tipoParam === "f") ? "f" : (tipoParam === "anime" || tipoParam === "a") ? "a" : "s") : null;
+  const typeKey = tipoParam
+    ? (tipoParam === "movie" || tipoParam === "f" || tipoParam === "filme")
+      ? "f"
+      : (tipoParam === "anime" || tipoParam === "a")
+      ? "a"
+      : "s"
+    : null;
 
   const now = Date.now();
   const cacheKey = typeKey ? `${typeKey}-${id}` : id;
-  const cached = itemDetailsCache.get(cacheKey) || itemDetailsCache.get(id);
+  const cached = itemDetailsCache.get(cacheKey) || (!typeKey ? itemDetailsCache.get(id) : null);
   if (cached && cached.expires > now) {
     return jsonResponse(cached.data);
   }
@@ -211,9 +217,9 @@ async function handleItemApi(url: URL): Promise<Response> {
   const norm = normalizeTitle(id);
   const item =
     (typeKey ? items.get(`${typeKey}-${norm}`) : null) ||
+    (typeKey ? Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey) : null) ||
     items.get(id) ||
     items.get(norm) ||
-    Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && (!typeKey || i.type === typeKey)) ||
     Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
 
   if (!item) return jsonResponse({ error: "Item não encontrado" }, 404);
@@ -272,7 +278,7 @@ async function handleItemApi(url: URL): Promise<Response> {
     }
   }
 
-  itemDetailsCache.set(id, { data: finalItem, expires: now + 3600000 });
+  itemDetailsCache.set(cacheKey, { data: finalItem, expires: now + 3600000 });
   return jsonResponse(finalItem);
 }
 
@@ -284,15 +290,19 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   if (!id) return jsonResponse({ error: "ID ausente" }, 400);
 
   const tipoParam = url.searchParams.get("tipo");
-  const typeKey = (tipoParam === "movie" || tipoParam === "f") ? "f" : (tipoParam === "anime" || tipoParam === "a") ? "a" : "s";
+  const typeKey = (tipoParam === "movie" || tipoParam === "f" || tipoParam === "filme")
+    ? "f"
+    : (tipoParam === "anime" || tipoParam === "a")
+    ? "a"
+    : "s";
 
   const { items } = await loadCatalog();
   const norm = normalizeTitle(id);
   const item =
     items.get(`${typeKey}-${norm}`) ||
+    Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey) ||
     items.get(id) ||
     items.get(norm) ||
-    Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey) ||
     Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
 
   if (!item) return jsonResponse({ error: "Item não encontrado no catálogo" }, 404);
