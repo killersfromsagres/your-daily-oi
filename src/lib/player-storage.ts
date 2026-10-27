@@ -64,5 +64,11 @@ export function sortStreamsByHealth<T extends { url: string }>(streams: T[]): T[
     }
   }
 
+  // Se todas as fontes estiverem no cache de falhas, limpa o cache e dá nova chance imediata
+  if (healthy.length === 0 && degraded.length > 0) {
+    clearFailedSources();
+    return degraded;
+  }
+
   return [...healthy, ...degraded];
 }

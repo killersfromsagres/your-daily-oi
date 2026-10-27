@@ -56,6 +56,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
       { httpEquiv: "Pragma", content: "no-cache" },
       { httpEquiv: "Expires", content: "0" },
+      { httpEquiv: "Content-Security-Policy", content: "upgrade-insecure-requests" },
       { title: "Zang Flix — Filmes e Séries em Alta Definição" },
       { name: "description", content: "Zang Flix reúne filmes e séries em uma experiência cinematográfica completa e fluida." },
       { property: "og:title", content: "Zang Flix — Seu próximo play começa aqui" },

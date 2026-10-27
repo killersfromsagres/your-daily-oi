@@ -303,7 +303,20 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
 
   const orderedSources: any[] = [];
 
-  // 1. Injeta os streams oficiais do relay Saimo TV confirmados ao vivo (prioridade máxima)
+  // 1. Para filmes: fontes nativas diretas do catálogo têm PRIORIDADE MÁXIMA
+  // Elas reproduzem imediatamente via proxy com HTTP 206 sem depender de relay externo
+  if (item.type === "f") {
+    try {
+      const directStreams = await getStreamsForItem("f", item.title);
+      if (directStreams && directStreams.length > 0) {
+        orderedSources.push(...directStreams);
+      }
+    } catch {
+      // continua com as fontes de relay
+    }
+  }
+
+  // 2. Injeta os streams oficiais do relay Saimo TV confirmados ao vivo
   if (item.tmdbId) {
     if (tipo === "movie") {
       orderedSources.push({
@@ -312,7 +325,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
         format: "mp4",
         quality: "FHD",
         name: "Servidor Principal (Dub)",
-        priority: 0,
+        priority: orderedSources.length,
       });
       orderedSources.push({
         url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=leg`,
@@ -320,7 +333,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
         format: "mp4",
         quality: "FHD",
         name: "Servidor Principal (Leg)",
-        priority: 1,
+        priority: orderedSources.length + 1,
       });
     } else {
       orderedSources.push({
@@ -342,21 +355,18 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     }
   }
 
-  // 2. Anexa as fontes nativas do catálogo do item
-  try {
-    if (item.type === "f") {
-      const directStreams = await getStreamsForItem("f", item.title);
-      orderedSources.push(...directStreams);
-    } else {
+  // 3. Para séries e animes: anexa fontes nativas do episódio pedido
+  if (item.type !== "f") {
+    try {
       const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
       const foundSeason = seasons.find((s) => s.seasonNumber === temp);
       const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
       if (foundEp?.streams) {
         orderedSources.push(...foundEp.streams);
       }
+    } catch {
+      // continua com as fontes de relay
     }
-  } catch {
-    // continua com as fontes de relay
   }
 
   return jsonResponse({
@@ -447,7 +457,20 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         clearTimeout(redirectTimer);
         const loc = redirectRes.headers.get("location");
         if (loc && loc.startsWith("http")) {
+          // Se o upstream redirecionou para bot challenge de datacenter (froststream / cloutteam)
+          // Retorna 502 imediatamente para o player tentar o caminho direto do navegador
+          if (loc.includes("froststream") || loc.includes("cloutteam")) {
+            return new Response("Upstream requer resolução direta no navegador", {
+              status: 502,
+              headers: { "Access-Control-Allow-Origin": "*" },
+            });
+          }
           targetUrl = loc;
+        } else if (!redirectRes.ok && redirectRes.status !== 302) {
+          return new Response("Relay upstream indisponível", {
+            status: 502,
+            headers: { "Access-Control-Allow-Origin": "*" },
+          });
         }
       } catch {
         clearTimeout(redirectTimer);
@@ -502,6 +525,24 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         clearTimeout(retryTimer);
         return new Response("Timeout na retentativa sem Range", {
           status: 504,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
+    // Se o upstream retornar erro ou página não-vídeo (como Cloudflare Challenge ou erro JSON),
+    // retorne 502 rápido para o player avançar imediatamente para a próxima fonte
+    if (!res.ok) {
+      const resContentType = res.headers.get("content-type") || "";
+      if (
+        res.status === 403 ||
+        res.status === 404 ||
+        resContentType.includes("text/html") ||
+        resContentType.includes("application/json")
+      ) {
+        console.warn(`[ProxyStream] Upstream retornou status ${res.status} (${resContentType}) para ${targetUrl}`);
+        return new Response(`Erro upstream ${res.status}`, {
+          status: 502,
           headers: { "Access-Control-Allow-Origin": "*" },
         });
       }

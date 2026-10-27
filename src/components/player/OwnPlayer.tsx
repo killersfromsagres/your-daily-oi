@@ -22,14 +22,6 @@ interface OwnPlayerProps {
 // 4b: Ordem de tentativa por tipo de relay
 const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
-  // Mixed content: qualquer http:// em página https:// deve ir via proxy
-  if (url.startsWith("http://")) {
-    return true;
-  }
-  // Relay de filmes do Saimo: proxy primeiro (hotlink Referer protection do CDN)
-  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=movie")) {
-    return true;
-  }
   // CDNs conhecidos que exigem proxy por CORS ou Referer
   if (
     url.includes("hermesnewone.com") ||
@@ -38,8 +30,15 @@ const getPreferredAttemptIsProxy = (url: string): boolean => {
   ) {
     return true;
   }
-  // Relay tipo=series (séries/animes): direto primeiro (o relay recusa servidor; a tentativa deve sair do navegador real), proxy como retentativa
-  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=series")) {
+  // Mixed content: qualquer http:// em página https:// deve ir via proxy
+  if (url.startsWith("http://")) {
+    return true;
+  }
+  // Relay do Saimo (filmes, séries, animes):
+  // Em datacenters (Vercel/Lovable), o servidor é bloqueado pelo Cloudflare do Saimo (desafio Turnstile).
+  // A tentativa direta sai do navegador real do usuário (no Brasil), que recebe o 302 limpo.
+  // Proxy fica como retentativa.
+  if (url.includes("saimo-tv.pages.dev/api/stream")) {
     return false;
   }
   // Demais fontes (Internet Archive, MP4s diretos): direto primeiro, proxy como retentativa

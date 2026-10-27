@@ -303,7 +303,16 @@ function parseFilmesFile(text: string): Map<string, StreamSource[]> {
       else if (part.startsWith("leg=")) streams.push(...parseStreams(part, "leg"));
     }
     if (streams.length > 0) {
-      map.set(normalizeTitle(title), streams);
+      const normRaw = normalizeTitle(title);
+      const normClean = normalizeTitle(cleanDisplayTitle(title));
+      const keys = new Set([normRaw, normClean]);
+      for (const k of keys) {
+        if (!k) continue;
+        const existing = map.get(k) || [];
+        const existingUrls = new Set(existing.map((s) => s.url));
+        const newStreams = streams.filter((s) => !existingUrls.has(s.url));
+        map.set(k, [...existing, ...newStreams]);
+      }
     }
   }
   return map;
@@ -502,9 +511,25 @@ export async function getSeasonsForSeries(title: string, type: "s" | "a" = "s"):
  */
 export async function getStreamsForItem(type: "f" | "s" | "a", title: string): Promise<StreamSource[]> {
   const norm = normalizeTitle(title);
+  const cleanNorm = normalizeTitle(cleanDisplayTitle(title));
   const letter = getLetterKey(title);
   const streamsMap = await getStreamsForLetter(type, letter);
-  return streamsMap.get(norm) ?? [];
+  const found = streamsMap.get(norm) || streamsMap.get(cleanNorm);
+  if (found && found.length > 0) return found;
+
+  // Fallback para filmes: busca por correspondência de prefixo ou substring na mesma letra
+  if (type === "f" && cleanNorm) {
+    for (const [key, list] of streamsMap) {
+      if (
+        (key === cleanNorm || key.startsWith(cleanNorm + " ") || cleanNorm.startsWith(key + " ")) &&
+        list.length > 0
+      ) {
+        return list;
+      }
+    }
+  }
+
+  return [];
 }
 
 /**
