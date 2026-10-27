@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
-import { loadCatalog } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/generos/$slug")({
@@ -28,12 +27,16 @@ function GenrePage() {
     let active = true;
     setLoading(true);
 
-    loadCatalog()
-      .then(({ items: mapItems }) => {
-        if (!active) return;
-        setItems(Array.from(mapItems.values()));
+    fetch("/api/catalogo")
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro");
+        return res.json() as Promise<{ items: CatalogItem[] }>;
       })
-      .catch(() => {})
+      .then((data) => {
+        if (!active) return;
+        setItems(data.items || []);
+      })
+      .catch((err) => console.error("Erro ao carregar catálogo:", err))
       .finally(() => {
         if (active) setLoading(false);
       });

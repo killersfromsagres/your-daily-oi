@@ -3,6 +3,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JogoSlugRouteImport } from './routes/jogo.$slug'
+import { Route as GenerosSlugRouteImport } from './routes/generos.$slug'
+import { Route as LancamentosRouteImport } from './routes/lancamentos'
+import { Route as BuscaRouteImport } from './routes/busca'
 import { Route as FilmeIdRouteImport } from './routes/filme.$id'
 import { Route as SerieIdRouteImport } from './routes/serie.$id'
 import { Route as AssistirFilmeIdRouteImport } from './routes/assistir.filme.$id'
@@ -17,6 +20,24 @@ const IndexRoute = IndexRouteImport.update({
 const JogoSlugRoute = JogoSlugRouteImport.update({
   id: '/jogo/$slug',
   path: '/jogo/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const GenerosSlugRoute = GenerosSlugRouteImport.update({
+  id: '/generos/$slug',
+  path: '/generos/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const LancamentosRoute = LancamentosRouteImport.update({
+  id: '/lancamentos',
+  path: '/lancamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const BuscaRoute = BuscaRouteImport.update({
+  id: '/busca',
+  path: '/busca',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -47,6 +68,9 @@ const AssistirSerieIdTempEpRoute = AssistirSerieIdTempEpRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jogo/$slug': typeof JogoSlugRoute
+  '/generos/$slug': typeof GenerosSlugRoute
+  '/lancamentos': typeof LancamentosRoute
+  '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
@@ -56,6 +80,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jogo/$slug': typeof JogoSlugRoute
+  '/generos/$slug': typeof GenerosSlugRoute
+  '/lancamentos': typeof LancamentosRoute
+  '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
@@ -66,6 +93,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/jogo/$slug': typeof JogoSlugRoute
+  '/generos/$slug': typeof GenerosSlugRoute
+  '/lancamentos': typeof LancamentosRoute
+  '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
@@ -77,6 +107,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/jogo/$slug'
+    | '/generos/$slug'
+    | '/lancamentos'
+    | '/busca'
     | '/filme/$id'
     | '/serie/$id'
     | '/assistir/filme/$id'
@@ -85,6 +118,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/jogo/$slug'
+    | '/generos/$slug'
+    | '/lancamentos'
+    | '/busca'
     | '/filme/$id'
     | '/serie/$id'
     | '/assistir/filme/$id'
@@ -93,6 +129,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/jogo/$slug'
+    | '/generos/$slug'
+    | '/lancamentos'
+    | '/busca'
     | '/filme/$id'
     | '/serie/$id'
     | '/assistir/filme/$id'
@@ -103,6 +142,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JogoSlugRoute: typeof JogoSlugRoute
+  GenerosSlugRoute: typeof GenerosSlugRoute
+  LancamentosRoute: typeof LancamentosRoute
+  BuscaRoute: typeof BuscaRoute
   FilmeIdRoute: typeof FilmeIdRoute
   SerieIdRoute: typeof SerieIdRoute
   AssistirFilmeIdRoute: typeof AssistirFilmeIdRoute
@@ -123,6 +165,27 @@ declare module '@tanstack/react-router' {
       path: '/jogo/$slug'
       fullPath: '/jogo/$slug'
       preLoaderRoute: typeof JogoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/generos/$slug': {
+      id: '/generos/$slug'
+      path: '/generos/$slug'
+      fullPath: '/generos/$slug'
+      preLoaderRoute: typeof GenerosSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lancamentos': {
+      id: '/lancamentos'
+      path: '/lancamentos'
+      fullPath: '/lancamentos'
+      preLoaderRoute: typeof LancamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/busca': {
+      id: '/busca'
+      path: '/busca'
+      fullPath: '/busca'
+      preLoaderRoute: typeof BuscaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/filme/$id': {
@@ -159,6 +222,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JogoSlugRoute: JogoSlugRoute,
+  GenerosSlugRoute: GenerosSlugRoute,
+  LancamentosRoute: LancamentosRoute,
+  BuscaRoute: BuscaRoute,
   FilmeIdRoute: FilmeIdRoute,
   SerieIdRoute: SerieIdRoute,
   AssistirFilmeIdRoute: AssistirFilmeIdRoute,

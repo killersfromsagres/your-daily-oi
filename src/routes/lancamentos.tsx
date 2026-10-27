@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
-import { loadCatalog } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/lancamentos")({
@@ -24,17 +23,21 @@ function LaunchesPage() {
     let active = true;
     setLoading(true);
 
-    loadCatalog()
-      .then(({ items: mapItems }) => {
+    fetch("/api/catalogo")
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro");
+        return res.json() as Promise<{ items: CatalogItem[] }>;
+      })
+      .then((data) => {
         if (!active) return;
-        const list = Array.from(mapItems.values());
+        const list = data.items || [];
         // Ordena pelos mais recentes (ano TMDB decrescente)
         const sorted = [...list].sort(
           (a, b) => (b.tmdb?.releaseYear ?? 0) - (a.tmdb?.releaseYear ?? 0)
         );
         setItems(sorted.slice(0, 60));
       })
-      .catch(() => {})
+      .catch((err) => console.error("Erro ao carregar lançamentos:", err))
       .finally(() => {
         if (active) setLoading(false);
       });

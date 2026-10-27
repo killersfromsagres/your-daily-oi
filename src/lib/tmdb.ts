@@ -1,15 +1,31 @@
 import type { CastMember, TmdbData } from "./types";
 
 const BASE = "https://api.themoviedb.org/3";
-const TOKEN = process.env.TMDB_READ_TOKEN ?? "";
+const DEFAULT_TOKEN =
+  "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkNzg1NjM4YWUyMjVlZjU2YmMyZTY0MWZiMWQ0ZmEzMCIsIm5iZiI6MTc4ODA1NjI4Mi4wOTQsInN1YiI6IjZhOTM5MmRhMjY3N2UzZDAzMDVhZTg1OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.7BB7PS-QrWu7zpaY9Eu47eXYLwlOkq1QVVGs7uxre_A";
+const DEFAULT_KEY = "d785638ae225ef56bc2e641fb1d4fa30";
+
+const TOKEN = process.env.TMDB_READ_TOKEN || DEFAULT_TOKEN;
+const API_KEY = process.env.TMDB_API_KEY || DEFAULT_KEY;
 
 async function tmdbFetch(path: string): Promise<unknown> {
-  const res = await fetch(`${BASE}${path}&language=pt-BR`, {
-    headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
-    next: { revalidate: 86400 }, // 24h
-  } as RequestInit);
-  if (!res.ok) throw new Error(`TMDB ${res.status}`);
-  return res.json();
+  const separator = path.includes("?") ? "&" : "?";
+  try {
+    const res = await fetch(`${BASE}${path}${separator}language=pt-BR`, {
+      headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+      next: { revalidate: 86400 },
+    } as RequestInit);
+    if (res.ok) return await res.json();
+  } catch {
+    // Tenta fallback com api_key na query string
+  }
+
+  // Fallback via api_key
+  const resFallback = await fetch(`${BASE}${path}${separator}api_key=${API_KEY}&language=pt-BR`, {
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!resFallback.ok) throw new Error(`TMDB ${resFallback.status}`);
+  return await resFallback.json();
 }
 
 export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<TmdbData | null> {
