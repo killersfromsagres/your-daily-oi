@@ -1,11 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { Tv, Play } from "lucide-react";
 import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem, HighlightRow } from "@/lib/types";
-import type { LiveChannel } from "@/lib/live-types";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
@@ -32,7 +30,6 @@ function HomePage() {
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [highlights, setHighlights] = useState<HighlightRow[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
-  const [liveChannels, setLiveChannels] = useState<LiveChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -70,16 +67,6 @@ function HomePage() {
         if (active) setLoading(false);
       });
 
-    // Carrega canais ao vivo em paralelo para a fileira "Ao Vivo Agora"
-    fetch("/api/canais")
-      .then((r) => r.json() as Promise<{ canais: LiveChannel[] }>)
-      .then((d) => {
-        if (active && d.canais) {
-          setLiveChannels(d.canais.slice(0, 10));
-        }
-      })
-      .catch(() => {});
-
     return () => {
       active = false;
     };
@@ -90,20 +77,26 @@ function HomePage() {
     setSavedIds(new Set(getSavedList()));
   }, []);
 
-  // Prepara itens de destaque para o carrossel HD
-  // Prioriza itens dos destaques que possuem backdrop TMDB ou pôster em alta definição
+  // Prepara itens de destaque para o carrossel em Alta Definição (HD / 4K)
+  // Prioriza títulos que possuem backdrop original widescreen oficial do TMDB
   const highlightTitles = new Set(
     highlights.flatMap((h) => h.items.map((it) => it.title.toLowerCase()))
   );
 
-  const heroCandidates = items.filter(
-    (item) =>
-      highlightTitles.has(item.title.toLowerCase()) ||
-      Boolean(item.tmdb?.backdropUrl)
+  const withBackdrop = items.filter((item) => Boolean(item.tmdb?.backdropUrl));
+  const fromHighlightsWithBackdrop = withBackdrop.filter((item) =>
+    highlightTitles.has(item.title.toLowerCase())
   );
 
-  const heroItems = (heroCandidates.length > 0 ? heroCandidates : items)
-    .slice(0, 7)
+  const heroPool =
+    fromHighlightsWithBackdrop.length >= 4
+      ? fromHighlightsWithBackdrop
+      : withBackdrop.length > 0
+      ? withBackdrop
+      : items;
+
+  const heroItems = heroPool
+    .slice(0, 8)
     .map((item) => ({
       id: item.id,
       type: item.type,
@@ -176,50 +169,6 @@ function HomePage() {
       )}
 
       <div className="ydo-catalog">
-        {/* Fileira "Ao Vivo Agora" com canais em destaque */}
-        {liveChannels.length > 0 && (
-          <section className="mb-10 px-4 md:px-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#e8b44a] animate-ping" />
-                <h2 className="text-xl md:text-2xl font-black text-white">Ao Vivo Agora</h2>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#e8b44a]/15 text-[#e8b44a] font-bold border border-[#e8b44a]/30">
-                  408 Canais
-                </span>
-              </div>
-              <Link to="/ao-vivo" className="text-xs font-bold text-[#e8b44a] hover:underline flex items-center gap-1">
-                Ver todos os canais →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
-              {liveChannels.map((ch) => (
-                <Link
-                  key={ch.id}
-                  to="/ao-vivo"
-                  className="group p-3.5 rounded-xl bg-[#111320] border border-white/5 hover:border-[#e8b44a]/50 hover:bg-[#151728] transition-all flex items-center gap-3 shadow-md"
-                >
-                  <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center p-1 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
-                    {ch.logo ? (
-                      <img src={ch.logo} alt={ch.nome} className="w-full h-full object-contain" />
-                    ) : (
-                      <Tv size={20} className="text-[#e8b44a]" />
-                    )}
-                  </div>
-                  <div className="overflow-hidden">
-                    <span className="block text-sm font-bold text-white group-hover:text-[#e8b44a] truncate transition-colors">
-                      {ch.nome}
-                    </span>
-                    <span className="block text-[11px] text-white/50 truncate">
-                      {ch.categoria}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
           : rows.map((row) => (

@@ -3,7 +3,6 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem } from "./lib/catalog";
-import { loadChannels, loadRadios, getEpgData } from "./lib/channels";
 import { getTmdbData } from "./lib/tmdb";
 import type { CatalogItem } from "./lib/types";
 
@@ -37,7 +36,7 @@ function jsonResponse(payload: unknown, status = 200, cacheControl = "public, ma
 const itemDetailsCache = new Map<string, { data: CatalogItem; expires: number }>();
 
 /**
- * Route Handler /api/catalogo ultrarrápido
+ * Route Handler /api/catalogo enriquecido com backdrops em alta resolução para os destaques
  */
 async function handleCatalogoApi(url: URL): Promise<Response> {
   try {
@@ -49,8 +48,53 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       return jsonResponse({ items: results });
     }
 
+    // Coleta os títulos dos destaques para enriquecer com backdrops 4K/Full HD originais
+    const heroTitlesSet = new Set<string>();
+    for (const hl of highlights.slice(0, 2)) {
+      for (const item of hl.items.slice(0, 8)) {
+        heroTitlesSet.add(item.title.toLowerCase());
+      }
+    }
+
+    const allItems = Array.from(items.values());
+
+    // Hidrata em paralelo os itens do carrossel do banner principal com dados do TMDB
+    const enrichedHeroItems = await Promise.allSettled(
+      allItems
+        .filter((it) => heroTitlesSet.has(it.title.toLowerCase()))
+        .slice(0, 8)
+        .map(async (item) => {
+          const cached = itemDetailsCache.get(item.id);
+          if (cached && cached.data.tmdb) {
+            return cached.data;
+          }
+          if (item.tmdbId) {
+            try {
+              const tmdb = await getTmdbData(item.tmdbId, item.type);
+              if (tmdb) {
+                const enriched = { ...item, tmdb };
+                itemDetailsCache.set(item.id, { data: enriched, expires: Date.now() + 86400000 });
+                return enriched;
+              }
+            } catch {
+              // continua
+            }
+          }
+          return item;
+        })
+    );
+
+    const enrichedMap = new Map<string, CatalogItem>();
+    for (const res of enrichedHeroItems) {
+      if (res.status === "fulfilled" && res.value) {
+        enrichedMap.set(res.value.id, res.value);
+      }
+    }
+
+    const finalItems = allItems.map((item) => enrichedMap.get(item.id) || item);
+
     return jsonResponse({
-      items: Array.from(items.values()),
+      items: finalItems,
       highlights,
       genres: getGenres(items),
     });
@@ -106,104 +150,6 @@ async function handleItemApi(url: URL): Promise<Response> {
   return jsonResponse(finalItem);
 }
 
-/**
- * Route Handler /api/canais: Lista os canais reais agrupados por categoria
- */
-async function handleCanaisApi(): Promise<Response> {
-  try {
-    const data = await loadChannels();
-    return jsonResponse(data, 200, "public, max-age=43200, stale-while-revalidate=86400");
-  } catch (error) {
-    console.error("Erro na rota /api/canais:", error);
-    return jsonResponse({ error: "Falha ao carregar canais", detalhes: String(error) }, 502);
-  }
-}
-
-/**
- * Route Handler /api/radios: Lista de estações de rádio
- */
-async function handleRadiosApi(): Promise<Response> {
-  try {
-    const radios = await loadRadios();
-    return jsonResponse({ radios }, 200, "public, max-age=43200, stale-while-revalidate=86400");
-  } catch (error) {
-    console.error("Erro na rota /api/radios:", error);
-    return jsonResponse({ error: "Falha ao carregar rádios", detalhes: String(error) }, 502);
-  }
-}
-
-/**
- * Route Handler /api/epg: Guia de programação dos canais
- */
-async function handleEpgApi(url: URL): Promise<Response> {
-  try {
-    const canalId = url.searchParams.get("canalId") || undefined;
-    const epg = await getEpgData(canalId);
-    return jsonResponse({ epg }, 200, "public, max-age=1800, stale-while-revalidate=3600");
-  } catch (error) {
-    console.error("Erro na rota /api/epg:", error);
-    return jsonResponse({ error: "Falha ao carregar EPG", detalhes: String(error) }, 502);
-  }
-}
-
-/**
- * Route Handler /api/stream-proxy: Proxy com headers Referer e User-Agent, e suporte a Range 206
- */
-async function handleStreamProxyApi(request: Request, url: URL): Promise<Response> {
-  const targetUrl = url.searchParams.get("url");
-  if (!targetUrl) {
-    return jsonResponse({ error: "URL de stream ausente" }, 400);
-  }
-
-  const referer = url.searchParams.get("referer");
-  const agente = url.searchParams.get("agente");
-
-  const forwardHeaders: Record<string, string> = {
-    "User-Agent": agente || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-    Accept: "*/*",
-  };
-
-  if (referer) {
-    forwardHeaders["Referer"] = referer;
-  }
-
-  const rangeHeader = request.headers.get("range");
-  if (rangeHeader) {
-    forwardHeaders["Range"] = rangeHeader;
-  }
-
-  try {
-    const upstreamRes = await fetch(targetUrl, {
-      headers: forwardHeaders,
-      redirect: "follow",
-    });
-
-    const responseHeaders = new Headers();
-    responseHeaders.set("access-control-allow-origin", "*");
-    responseHeaders.set("access-control-allow-methods", "GET, HEAD, OPTIONS");
-    responseHeaders.set("access-control-allow-headers", "Range, Content-Type, Accept");
-
-    const copyHeaders = ["content-type", "content-length", "content-range", "accept-ranges"];
-    for (const h of copyHeaders) {
-      const val = upstreamRes.headers.get(h);
-      if (val) responseHeaders.set(h, val);
-    }
-
-    if (!responseHeaders.has("accept-ranges")) {
-      responseHeaders.set("accept-ranges", "bytes");
-    }
-
-    return new Response(upstreamRes.body, {
-      status: upstreamRes.status,
-      statusText: upstreamRes.statusText,
-      headers: responseHeaders,
-    });
-  } catch (error) {
-    console.error("Erro no stream proxy:", error);
-    return jsonResponse({ error: "Falha ao conectar no stream remoto", detalhes: String(error) }, 502);
-  }
-}
-
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -240,18 +186,6 @@ export default {
       }
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
-      }
-      if (url.pathname === "/api/canais") {
-        return await handleCanaisApi();
-      }
-      if (url.pathname === "/api/radios") {
-        return await handleRadiosApi();
-      }
-      if (url.pathname === "/api/epg") {
-        return await handleEpgApi(url);
-      }
-      if (url.pathname === "/api/stream-proxy") {
-        return await handleStreamProxyApi(request, url);
       }
 
       const handler = await getServerEntry();

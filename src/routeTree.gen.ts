@@ -3,8 +3,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JogoSlugRouteImport } from './routes/jogo.$slug'
-import { Route as AoVivoRouteImport } from './routes/ao-vivo'
-import { Route as RadiosRouteImport } from './routes/radios'
 import { Route as FilmeIdRouteImport } from './routes/filme.$id'
 import { Route as SerieIdRouteImport } from './routes/serie.$id'
 import { Route as AssistirFilmeIdRouteImport } from './routes/assistir.filme.$id'
@@ -19,18 +17,6 @@ const IndexRoute = IndexRouteImport.update({
 const JogoSlugRoute = JogoSlugRouteImport.update({
   id: '/jogo/$slug',
   path: '/jogo/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-
-const AoVivoRoute = AoVivoRouteImport.update({
-  id: '/ao-vivo',
-  path: '/ao-vivo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-
-const RadiosRoute = RadiosRouteImport.update({
-  id: '/radios',
-  path: '/radios',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -61,8 +47,6 @@ const AssistirSerieIdTempEpRoute = AssistirSerieIdTempEpRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jogo/$slug': typeof JogoSlugRoute
-  '/ao-vivo': typeof AoVivoRoute
-  '/radios': typeof RadiosRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
@@ -72,8 +56,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jogo/$slug': typeof JogoSlugRoute
-  '/ao-vivo': typeof AoVivoRoute
-  '/radios': typeof RadiosRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
@@ -84,8 +66,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/jogo/$slug': typeof JogoSlugRoute
-  '/ao-vivo': typeof AoVivoRoute
-  '/radios': typeof RadiosRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
@@ -97,8 +77,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/jogo/$slug'
-    | '/ao-vivo'
-    | '/radios'
     | '/filme/$id'
     | '/serie/$id'
     | '/assistir/filme/$id'
@@ -107,8 +85,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/jogo/$slug'
-    | '/ao-vivo'
-    | '/radios'
     | '/filme/$id'
     | '/serie/$id'
     | '/assistir/filme/$id'
@@ -117,8 +93,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/jogo/$slug'
-    | '/ao-vivo'
-    | '/radios'
     | '/filme/$id'
     | '/serie/$id'
     | '/assistir/filme/$id'
@@ -129,8 +103,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JogoSlugRoute: typeof JogoSlugRoute
-  AoVivoRoute: typeof AoVivoRoute
-  RadiosRoute: typeof RadiosRoute
   FilmeIdRoute: typeof FilmeIdRoute
   SerieIdRoute: typeof SerieIdRoute
   AssistirFilmeIdRoute: typeof AssistirFilmeIdRoute
@@ -151,20 +123,6 @@ declare module '@tanstack/react-router' {
       path: '/jogo/$slug'
       fullPath: '/jogo/$slug'
       preLoaderRoute: typeof JogoSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ao-vivo': {
-      id: '/ao-vivo'
-      path: '/ao-vivo'
-      fullPath: '/ao-vivo'
-      preLoaderRoute: typeof AoVivoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/radios': {
-      id: '/radios'
-      path: '/radios'
-      fullPath: '/radios'
-      preLoaderRoute: typeof RadiosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/filme/$id': {
@@ -201,8 +159,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JogoSlugRoute: JogoSlugRoute,
-  AoVivoRoute: AoVivoRoute,
-  RadiosRoute: RadiosRoute,
   FilmeIdRoute: FilmeIdRoute,
   SerieIdRoute: SerieIdRoute,
   AssistirFilmeIdRoute: AssistirFilmeIdRoute,

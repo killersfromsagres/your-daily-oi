@@ -79,13 +79,6 @@ export function Header({ onSearch }: HeaderProps) {
         <Link to="/" className="ydo-nav-link" activeOptions={{ exact: true }}>
           Início
         </Link>
-        <Link to="/ao-vivo" className="ydo-nav-link" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#e8b44a" }} />
-          TV Ao Vivo
-        </Link>
-        <Link to="/radios" className="ydo-nav-link">
-          Rádios
-        </Link>
         <Link to="/generos/filmes" className="ydo-nav-link">
           Filmes
         </Link>
