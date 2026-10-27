@@ -388,12 +388,18 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
 
   if (type === "a") {
     try {
-      let text = await fetchAnimeText(`animes-${letter}-0.txt`);
-      if (!text) {
-        text = await fetchAnimeText(`animes-${letter}-1.txt`);
-      }
-      if (text) {
-        const { streams, seasons } = parseSeriesData(text);
+      // Baixa em paralelo todas as partes (0..12) de animes para esta letra
+      const partIndices = Array.from({ length: 13 }, (_, i) => i);
+      const results = await Promise.allSettled(
+        partIndices.map((part) => fetchAnimeText(`animes-${letter}-${part}.txt`))
+      );
+      const combinedText = results
+        .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled" && !!r.value)
+        .map((r) => r.value)
+        .join("\n");
+
+      if (combinedText.trim()) {
+        const { streams, seasons } = parseSeriesData(combinedText);
         streamsCache.set(cacheKey, streams);
         seriesSeasonsCache.set(`a-${letter}`, seasons);
         return streams;
@@ -406,31 +412,44 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
     return empty;
   }
 
-  const fileName = type === "f" ? `filmes-${letter}.txt` : `series-${letter}-1.txt`;
-  try {
-    const text = await fetchText(getCatalogUrls(fileName));
-    if (type === "f") {
+  if (type === "f") {
+    try {
+      const text = await fetchText(getCatalogUrls(`filmes-${letter}.txt`));
       const parsed = parseFilmesFile(text);
       streamsCache.set(cacheKey, parsed);
       return parsed;
-    } else {
-      let combinedSeriesText = text;
-      try {
-        const textPart0 = await fetchText(getCatalogUrls(`series-${letter}-0.txt`));
-        if (textPart0) combinedSeriesText = `${textPart0}\n${text}`;
-      } catch {
-        // continua com text principal
-      }
+    } catch {
+      const empty = new Map<string, StreamSource[]>();
+      streamsCache.set(cacheKey, empty);
+      return empty;
+    }
+  }
+
+  // Para séries (type === "s"):
+  // Baixa em paralelo todas as partes (0..12) de séries para esta letra
+  try {
+    const partIndices = Array.from({ length: 13 }, (_, i) => i);
+    const results = await Promise.allSettled(
+      partIndices.map((part) => fetchText(getCatalogUrls(`series-${letter}-${part}.txt`)))
+    );
+    const combinedSeriesText = results
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled" && !!r.value)
+      .map((r) => r.value)
+      .join("\n");
+
+    if (combinedSeriesText.trim()) {
       const { streams, seasons } = parseSeriesData(combinedSeriesText);
       streamsCache.set(cacheKey, streams);
       seriesSeasonsCache.set(letter, seasons);
       return streams;
     }
   } catch {
-    const empty = new Map<string, StreamSource[]>();
-    streamsCache.set(cacheKey, empty);
-    return empty;
+    // continua
   }
+
+  const empty = new Map<string, StreamSource[]>();
+  streamsCache.set(cacheKey, empty);
+  return empty;
 }
 
 /**

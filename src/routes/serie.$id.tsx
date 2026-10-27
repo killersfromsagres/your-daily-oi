@@ -121,21 +121,8 @@ function SeriesDetailPage() {
   const poster = serie.posterUrl?.replace("/w342", "/w500") || "";
   const titleDisplay = cleanDisplayTitle(serie.title);
 
-  // Lista de temporadas
-  const seasons = serie.seasons && serie.seasons.length > 0
-    ? serie.seasons
-    : [
-        {
-          seasonNumber: 1,
-          episodes: Array.from({ length: 10 }, (_, i) => ({
-            seasonNumber: 1,
-            episodeNumber: i + 1,
-            title: `Episódio ${i + 1}`,
-            streams: serie.streams || [],
-          })),
-        },
-      ];
-
+  // Lista de temporadas reais do catálogo (sem temporadas fantasmas inventadas)
+  const seasons = serie.seasons || [];
   const currentSeasonData = seasons.find((s) => s.seasonNumber === selectedSeason) || seasons[0];
   const episodesList = currentSeasonData?.episodes || [];
 
@@ -518,75 +505,97 @@ function SeriesDetailPage() {
               </h3>
             </div>
 
-            {/* Botões das Temporadas Disponíveis */}
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
-              {seasons.map((s) => {
-                const isActive = selectedSeason === s.seasonNumber;
-                return (
-                  <button
-                    key={s.seasonNumber}
-                    onClick={() => setSelectedSeason(s.seasonNumber)}
-                    style={{
-                      padding: "9px 18px",
-                      borderRadius: "12px",
-                      fontSize: "0.88rem",
-                      fontWeight: "700",
-                      border: isActive ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.12)",
-                      backgroundColor: isActive ? "#e8b44a" : "rgba(255, 255, 255, 0.06)",
-                      color: isActive ? "#0a0b14" : "#ffffff",
-                      cursor: "pointer",
-                      transition: "all 0.18s ease",
-                      boxShadow: isActive ? "0 4px 14px rgba(232, 180, 74, 0.3)" : "none",
-                    }}
-                  >
-                    Temporada {s.seasonNumber}
-                  </button>
-                );
-              })}
-            </div>
+            {seasons.length === 0 ? (
+              <div
+                style={{
+                  padding: "2.5rem 1rem",
+                  textAlign: "center",
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  borderRadius: "14px",
+                  border: "1px dashed rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                <Tv size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
+                <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "4px" }}>
+                  Episódios ainda não sincronizados para esta série
+                </h4>
+                <p style={{ color: "rgba(255, 255, 255, 0.55)", fontSize: "0.85rem", maxWidth: "420px", margin: "0 auto" }}>
+                  Os servidores deste título estão sendo indexados no acervo. Volte em breve!
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Botões das Temporadas Disponíveis */}
+                <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
+                  {seasons.map((s) => {
+                    const isActive = selectedSeason === s.seasonNumber;
+                    return (
+                      <button
+                        key={s.seasonNumber}
+                        onClick={() => setSelectedSeason(s.seasonNumber)}
+                        style={{
+                          padding: "9px 18px",
+                          borderRadius: "12px",
+                          fontSize: "0.88rem",
+                          fontWeight: "700",
+                          border: isActive ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.12)",
+                          backgroundColor: isActive ? "#e8b44a" : "rgba(255, 255, 255, 0.06)",
+                          color: isActive ? "#0a0b14" : "#ffffff",
+                          cursor: "pointer",
+                          transition: "all 0.18s ease",
+                          boxShadow: isActive ? "0 4px 14px rgba(232, 180, 74, 0.3)" : "none",
+                        }}
+                      >
+                        Temporada {s.seasonNumber}
+                      </button>
+                    );
+                  })}
+                </div>
 
-            {/* Grid dos Episódios da Temporada Selecionada */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                gap: "10px",
-              }}
-            >
-              {episodesList.map((ep) => (
-                <Link
-                  key={ep.episodeNumber}
-                  to={`/assistir/serie/${serie.id}/${selectedSeason}/${ep.episodeNumber}`}
+                {/* Grid dos Episódios da Temporada Selecionada */}
+                <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "12px 14px",
-                    borderRadius: "12px",
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.09)",
-                    color: "#ffffff",
-                    textDecoration: "none",
-                    fontSize: "0.85rem",
-                    fontWeight: "600",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.15)";
-                    e.currentTarget.style.borderColor = "#e8b44a";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
-                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.09)";
-                    e.currentTarget.style.transform = "translateY(0)";
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                    gap: "10px",
                   }}
                 >
-                  <Clapperboard size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
-                  <span>Episódio {ep.episodeNumber}</span>
-                </Link>
-              ))}
-            </div>
+                  {episodesList.map((ep) => (
+                    <Link
+                      key={ep.episodeNumber}
+                      to={`/assistir/serie/${serie.id}/${selectedSeason}/${ep.episodeNumber}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        border: "1px solid rgba(255, 255, 255, 0.09)",
+                        color: "#ffffff",
+                        textDecoration: "none",
+                        fontSize: "0.85rem",
+                        fontWeight: "600",
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.15)";
+                        e.currentTarget.style.borderColor = "#e8b44a";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.09)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                      }}
+                    >
+                      <Clapperboard size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
+                      <span>Episódio {ep.episodeNumber}</span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Elenco Principal */}
