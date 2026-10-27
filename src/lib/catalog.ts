@@ -137,12 +137,22 @@ function getCatalogUrls(fileName: string): string[] {
   return urls;
 }
 
-const EMBEDDED_ANIMES_FICHAS = `a\tAttack on Titan\t1429\t/hTP1DtLGFamjfu8WqjnuQdP1n42.jpg\tAção,Animação,Fantasia,Shounen
-a\tDemon Slayer\t85937\t/wrCVHknDaBW2usxOi7vgW9Q971o.jpg\tAnimação,Ação,Fantasia,Shounen
-a\tOne Piece\t37854\t/e3NBmXv1m3pDk2z6R24g35YpS2c.jpg\tAção,Animação,Aventura,Shounen
-a\tJujutsu Kaisen\t95479\t/hD8pZgqB8F5t3y0z9r1.jpg\tAnimação,Ação,Fantasia,Shounen
-a\tSolo Leveling\t209867\t/geCRueV3ElhRTr0Q2x9URZLoxQP.jpg\tAção,Animação,Fantasia
-a\tDragon Ball Z\t12971\t/7p40V9oXw4L1uTqSgB8a5.jpg\tAnimação,Ação,Ficção científica`;
+const EMBEDDED_ANIMES_FICHAS = `a\tAttack on Titan\t1429\t/8aMqmB5xSblsZc7bLMEhE28yHa2.jpg\tAnimação,Ação,Fantasia,Shounen
+a\tDemon Slayer: Kimetsu no Yaiba\t85937\t/7Uj6vqmznWQ3w3hpQ1eIY9mMyMw.jpg\tAnimação,Ação,Fantasia,Shounen
+a\tOne Piece\t111110\t/aesLt9fsKSA6KCgGxA60VVxjtLk.jpg\tAnimação,Ação,Aventura,Shounen
+a\tJujutsu Kaisen\t95479\t/8R1mMSC1gX1cg5ed7ns49JOEqw3.jpg\tAnimação,Ação,Fantasia,Shounen
+a\tSolo Leveling\t127532\t/eCD7WS9h4lCT8N4Xavc9u8R1IGk.jpg\tAnimação,Ação,Fantasia,Aventura
+a\tDragon Ball Z\t12971\t/kbkuYkaFsDwL6cyMgnBf77LczEo.jpg\tAnimação,Ação,Ficção científica,Shounen
+a\tNaruto Shippuden\t31910\t/nRJmByfK9XdtOY73VArcN8KpKVs.jpg\tAnimação,Ação,Aventura,Shounen
+a\tDeath Note\t13916\t/iigTJJskR1PcjjXqxdyJwVB3BoU.jpg\tAnimação,Mistério,Drama,Sobrenatural
+a\tHunter x Hunter\t46298\t/9WxfAQquTun9ATkV6iAeFHMkqxv.jpg\tAnimação,Ação,Aventura,Shounen
+a\tBleach\t30984\t/dx28DE7EgLy0FatOvnaUg0k9j92.jpg\tAnimação,Ação,Sobrenatural,Shounen
+a\tChainsaw Man\t114410\t/mIz0eKhzHuSPeRSePCyoCt9bKVp.jpg\tAnimação,Ação,Sobrenatural,Shounen
+a\tFullmetal Alchemist: Brotherhood\t31911\t/vIkH7fUQf8Olo8Apq56FQLGDXOo.jpg\tAnimação,Ação,Aventura,Fantasia
+a\tSpy x Family\t120089\t/vaIREdPGZOnW9Jrs86mheVVlIQQ.jpg\tAnimação,Comédia,Ação
+a\tMy Hero Academia\t280110\t/3INu3n1sUa9K3O5OTPrqvJOetbd.jpg\tAnimação,Ação,Ficção científica,Shounen
+a\tTokyo Ghoul\t61374\t/5XBk7T4NsGeN9RG39y2nU6gRWQl.jpg\tAnimação,Ação,Terror,Sobrenatural
+a\tFrieren\t209867\t/qykTIEJQF8cunKD0CKOqab15wns.jpg\tAnimação,Aventura,Drama,Fantasia`;
 
 export function isAnimeItem(item: CatalogItem | { type: string; title: string; genres: string[] }): boolean {
   if (item.type === "a") return true;
@@ -197,13 +207,19 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     const tmdbId = tmdbRaw && !Number.isNaN(Number(tmdbRaw)) ? Number(tmdbRaw) : null;
     const genres = genresRaw ? genresRaw.split(",").map((g) => g.trim()).filter(Boolean) : [];
     const key = normalizeTitle(title);
+    const cleanPoster = posterPath?.trim() ?? "";
+    const posterUrl = cleanPoster
+      ? cleanPoster.startsWith("http")
+        ? cleanPoster
+        : `https://image.tmdb.org/t/p/w500${cleanPoster.startsWith("/") ? "" : "/"}${cleanPoster}`
+      : "";
     map.set(key, {
       id: key,
       type: tipo as "f" | "s" | "a",
       title: title.trim(),
       tmdbId,
-      posterPath: posterPath?.trim() ?? "",
-      posterUrl: posterPath ? `https://image.tmdb.org/t/p/w342${posterPath.trim()}` : "",
+      posterPath: cleanPoster,
+      posterUrl,
       genres,
       tmdb: null,
     });

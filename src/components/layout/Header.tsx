@@ -47,13 +47,15 @@ const CATEGORIAS_FILMES: CategoryItem[] = [
 ];
 
 const CATEGORIAS_SERIES: CategoryItem[] = [
-  { name: "Drama", slug: "drama", Icon: Theater },
-  { name: "Suspense", slug: "suspense", Icon: Search },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: Rocket },
-  { name: "Ação & Aventura", slug: "acao", Icon: Flame },
+  { name: "Ação", slug: "acao", Icon: Flame },
+  { name: "Terror", slug: "terror", Icon: Ghost },
   { name: "Comédia", slug: "comedia", Icon: Smile },
-  { name: "Crime & Mistério", slug: "crime", Icon: ShieldAlert },
+  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: Rocket },
+  { name: "Suspense", slug: "suspense", Icon: Search },
+  { name: "Romance", slug: "romance", Icon: Heart },
   { name: "Animação", slug: "animacao", Icon: Sparkles },
+  { name: "Aventura", slug: "aventura", Icon: Compass },
+  { name: "Fantasia", slug: "fantasia", Icon: Wand2 },
   { name: "Documentário", slug: "documentario", Icon: Video },
 ];
 
@@ -191,6 +193,11 @@ export function Header({ onSearch }: HeaderProps) {
     >
       {/* Logo Zang Flix */}
       <Link to="/" className="ydo-logo" aria-label="Zang Flix — início">
+        <img
+          src="/logo.png"
+          alt="Zang Flix Logo"
+          className="ydo-logo-img"
+        />
         <span className="ydo-logo-text">
           ZANG <strong>FLIX</strong>
         </span>
@@ -237,10 +244,11 @@ export function Header({ onSearch }: HeaderProps) {
                       key={cat.slug}
                       to="/generos/$slug"
                       params={{ slug: cat.slug }}
+                      search={{ tipo: "f" }}
                       className="ydo-category-item"
                       onClick={() => setMoviesHover(false)}
                     >
-                      <Icon size={14} className="ydo-category-icon" />
+                      <Icon size={16} strokeWidth={2} className="ydo-category-icon" />
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -285,10 +293,11 @@ export function Header({ onSearch }: HeaderProps) {
                       key={cat.slug}
                       to="/generos/$slug"
                       params={{ slug: cat.slug }}
+                      search={{ tipo: "s" }}
                       className="ydo-category-item"
                       onClick={() => setSeriesHover(false)}
                     >
-                      <Icon size={14} className="ydo-category-icon" />
+                      <Icon size={16} strokeWidth={2} className="ydo-category-icon" />
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -333,10 +342,11 @@ export function Header({ onSearch }: HeaderProps) {
                       key={cat.slug}
                       to="/generos/$slug"
                       params={{ slug: cat.slug }}
+                      search={{ tipo: "a" }}
                       className="ydo-category-item"
                       onClick={() => setAnimesHover(false)}
                     >
-                      <Icon size={14} className="ydo-category-icon" />
+                      <Icon size={16} strokeWidth={2} className="ydo-category-icon" />
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="35%" stop-color="#fbbf24" />
+      <stop offset="70%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="darkBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181a26" />
+      <stop offset="100%" stop-color="#090a10" />
+    </linearGradient>
+  </defs>
+  <!-- Background pill/squircle -->
+  <rect width="128" height="128" rx="28" fill="url(#darkBg)" />
+  <rect width="126" height="126" x="1" y="1" rx="27" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
+
+  <!-- Film strip block (left) -->
+  <path d="M 32 26 C 24 26 22 28 22 36 L 22 92 C 22 100 24 102 32 102 L 50 102 C 54 102 54 98 54 94 L 54 34 C 54 30 54 26 50 26 Z" fill="#1e2029" />
+  
+  <!-- Film perforations (white rounded rectangles) -->
+  <rect x="27" y="33" width="7" height="9" rx="2.5" fill="#ffffff" />
+  <rect x="27" y="48" width="7" height="9" rx="2.5" fill="#ffffff" />
+  <rect x="27" y="63" width="7" height="9" rx="2.5" fill="#ffffff" />
+  <rect x="27" y="78" width="7" height="9" rx="2.5" fill="#ffffff" />
+
+  <!-- Dark play base -->
+  <path d="M 52 30 L 98 59 C 104 62.5 104 65.5 98 69 L 52 98 Z" fill="#14161f" />
+
+  <!-- Golden 3D Fold Chevron '>' -->
+  <path d="M 44 26 L 86 64 L 44 102 L 58 102 L 102 65 C 104 63.5 104 64.5 102 63 L 58 26 Z" fill="url(#goldGrad)" />
+  <!-- Ribbon fold shadow -->
+  <path d="M 44 94 L 58 102 L 44 102 Z" fill="#92400e" opacity="0.8" />
+  <path d="M 44 26 L 58 26 L 44 34 Z" fill="#b45309" opacity="0.6" />
+</svg>

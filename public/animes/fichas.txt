@@ -1,2 +1,16 @@
-a	Attack on Titan	1429	/hTP1DtLGFamjfu8WqjnuQdP1n42.jpg	Ação,Animação,Fantasia,Shounen
-a	Demon Slayer	85937	/wrCVHknDaBW2usxOi7vgW9Q971o.jpg	Animação,Ação,Fantasia,Shounen
+a	Attack on Titan	1429	/8aMqmB5xSblsZc7bLMEhE28yHa2.jpg	Animação,Ação,Fantasia,Shounen
+a	Demon Slayer: Kimetsu no Yaiba	85937	/7Uj6vqmznWQ3w3hpQ1eIY9mMyMw.jpg	Animação,Ação,Fantasia,Shounen
+a	One Piece	111110	/aesLt9fsKSA6KCgGxA60VVxjtLk.jpg	Animação,Ação,Aventura,Shounen
+a	Jujutsu Kaisen	95479	/8R1mMSC1gX1cg5ed7ns49JOEqw3.jpg	Animação,Ação,Fantasia,Shounen
+a	Solo Leveling	127532	/eCD7WS9h4lCT8N4Xavc9u8R1IGk.jpg	Animação,Ação,Fantasia,Aventura
+a	Dragon Ball Z	12971	/kbkuYkaFsDwL6cyMgnBf77LczEo.jpg	Animação,Ação,Ficção científica,Shounen
+a	Naruto Shippuden	31910	/nRJmByfK9XdtOY73VArcN8KpKVs.jpg	Animação,Ação,Aventura,Shounen
+a	Death Note	13916	/iigTJJskR1PcjjXqxdyJwVB3BoU.jpg	Animação,Mistério,Drama,Sobrenatural
+a	Hunter x Hunter	46298	/9WxfAQquTun9ATkV6iAeFHMkqxv.jpg	Animação,Ação,Aventura,Shounen
+a	Bleach	30984	/dx28DE7EgLy0FatOvnaUg0k9j92.jpg	Animação,Ação,Sobrenatural,Shounen
+a	Chainsaw Man	114410	/mIz0eKhzHuSPeRSePCyoCt9bKVp.jpg	Animação,Ação,Sobrenatural,Shounen
+a	Fullmetal Alchemist: Brotherhood	31911	/vIkH7fUQf8Olo8Apq56FQLGDXOo.jpg	Animação,Ação,Aventura,Fantasia
+a	Spy x Family	120089	/vaIREdPGZOnW9Jrs86mheVVlIQQ.jpg	Animação,Comédia,Ação
+a	My Hero Academia	280110	/3INu3n1sUa9K3O5OTPrqvJOetbd.jpg	Animação,Ação,Ficção científica,Shounen
+a	Tokyo Ghoul	61374	/5XBk7T4NsGeN9RG39y2nU6gRWQl.jpg	Animação,Ação,Terror,Sobrenatural
+a	Frieren	209867	/qykTIEJQF8cunKD0CKOqab15wns.jpg	Animação,Aventura,Drama,Fantasia
