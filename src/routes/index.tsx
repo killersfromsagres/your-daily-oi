@@ -4,7 +4,6 @@ import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem, HighlightRow } from "@/lib/types";
-import { loadCatalog, getGenres } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
@@ -44,13 +43,21 @@ function HomePage() {
     setLoading(true);
     setError("");
 
-    loadCatalog()
-      .then(({ items: mapItems, highlights: hls }) => {
+    // Carrega dados da rota de API do servidor (/api/catalogo)
+    fetch("/api/catalogo")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{
+          items: CatalogItem[];
+          highlights: HighlightRow[];
+          genres: string[];
+        }>;
+      })
+      .then((data) => {
         if (!active) return;
-        const itemList = Array.from(mapItems.values());
-        setItems(itemList);
-        setHighlights(hls);
-        setGenres(getGenres(mapItems));
+        setItems(data.items);
+        setHighlights(data.highlights);
+        setGenres(data.genres);
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -70,16 +77,26 @@ function HomePage() {
     setSavedIds(new Set(getSavedList()));
   }, []);
 
-  // Prepara itens de destaque para o herói
-  const heroItems = items
-    .filter((item) => item.posterUrl || item.tmdb?.backdropUrl)
-    .slice(0, 8)
+  // Prepara itens de destaque para o carrossel HD
+  // Prioriza itens dos destaques que possuem backdrop TMDB ou pôster em alta definição
+  const highlightTitles = new Set(
+    highlights.flatMap((h) => h.items.map((it) => it.title.toLowerCase()))
+  );
+
+  const heroCandidates = items.filter(
+    (item) =>
+      highlightTitles.has(item.title.toLowerCase()) ||
+      Boolean(item.tmdb?.backdropUrl)
+  );
+
+  const heroItems = (heroCandidates.length > 0 ? heroCandidates : items)
+    .slice(0, 7)
     .map((item) => ({
       id: item.id,
       type: item.type,
       title: item.title,
       overview: item.tmdb?.overview,
-      backdropUrl: item.tmdb?.backdropUrl,
+      backdropUrl: item.tmdb?.backdropUrl || null,
       posterUrl: item.posterUrl,
       genres: item.genres,
       releaseYear: item.tmdb?.releaseYear,
@@ -96,8 +113,8 @@ function HomePage() {
     ranked?: boolean;
   }> = [];
 
-  // Fileiras definidas em destaques.txt
-  for (const hl of highlights.slice(0, 5)) {
+  // Fileiras dos destaques.txt (Em alta, Séries em alta, etc)
+  for (const hl of highlights) {
     const rowItems = hl.items
       .map((h) => items.find((item) => item.title.toLowerCase() === h.title.toLowerCase()))
       .filter((x): x is CatalogItem => !!x);
@@ -106,7 +123,7 @@ function HomePage() {
     }
   }
 
-  // Melhores avaliados / Mais populares
+  // Melhores avaliados
   const topRated = [...items]
     .filter((i) => i.tmdb?.voteAverage)
     .sort((a, b) => (b.tmdb?.voteAverage ?? 0) - (a.tmdb?.voteAverage ?? 0))
@@ -115,7 +132,7 @@ function HomePage() {
   if (topRated.length > 0) {
     rows.unshift({
       title: "Mais Bem Avaliados",
-      eyebrow: "Top 10 Brasil",
+      eyebrow: "Top 10 TMDB",
       items: topRated,
       ranked: true,
     });

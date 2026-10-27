@@ -3,6 +3,8 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems } from "./lib/catalog";
+import { getTmdbData } from "./lib/tmdb";
+import type { CatalogItem } from "./lib/types";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -19,7 +21,7 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-function jsonResponse(payload: unknown, status = 200, cacheControl = "public, max-age=3600, stale-while-revalidate=86400"): Response {
+function jsonResponse(payload: unknown, status = 200, cacheControl = "public, max-age=1800, stale-while-revalidate=86400"): Response {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
@@ -31,7 +33,7 @@ function jsonResponse(payload: unknown, status = 200, cacheControl = "public, ma
 }
 
 /**
- * Route Handler /api/catalogo com cache de 6 a 24 horas
+ * Route Handler /api/catalogo com enriquecimento TMDB para os destaques
  */
 async function handleCatalogoApi(url: URL): Promise<Response> {
   try {
@@ -43,8 +45,40 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       return jsonResponse({ items: results });
     }
 
+    // Identificar os títulos dos destaques para enriquecer o banner HD
+    const heroTitleSet = new Set<string>();
+    for (const hl of highlights.slice(0, 2)) {
+      for (const it of hl.items.slice(0, 5)) {
+        heroTitleSet.add(it.title.toLowerCase());
+      }
+    }
+
+    const allItems = Array.from(items.values());
+
+    // Hidratar os primeiros 6 itens do destaque com TMDB em paralelo
+    const heroItemsEnriched = await Promise.all(
+      allItems
+        .filter((i) => heroTitleSet.has(i.title.toLowerCase()))
+        .slice(0, 6)
+        .map(async (item) => {
+          if (item.tmdbId && !item.tmdb) {
+            try {
+              const tmdb = await getTmdbData(item.tmdbId, item.type);
+              return { ...item, tmdb };
+            } catch {
+              return item;
+            }
+          }
+          return item;
+        })
+    );
+
+    // Mesclar os enriquecidos de volta na lista
+    const enrichedMap = new Map(heroItemsEnriched.map((i) => [i.id, i]));
+    const finalItems = allItems.map((item) => enrichedMap.get(item.id) || item);
+
     return jsonResponse({
-      items: Array.from(items.values()),
+      items: finalItems,
       highlights,
       genres: getGenres(items),
     });
@@ -55,6 +89,29 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       502
     );
   }
+}
+
+/**
+ * Route Handler /api/item?id=X para obter detalhes e metadados TMDB
+ */
+async function handleItemApi(url: URL): Promise<Response> {
+  const id = url.searchParams.get("id");
+  if (!id) return jsonResponse({ error: "ID ausente" }, 400);
+
+  const { items } = await loadCatalog();
+  const item = items.get(id) || Array.from(items.values()).find((i) => i.id === id);
+  if (!item) return jsonResponse({ error: "Item não encontrado" }, 404);
+
+  if (item.tmdbId && !item.tmdb) {
+    try {
+      const tmdb = await getTmdbData(item.tmdbId, item.type);
+      return jsonResponse({ ...item, tmdb } as CatalogItem);
+    } catch {
+      return jsonResponse(item);
+    }
+  }
+
+  return jsonResponse(item);
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body
@@ -88,9 +145,11 @@ export default {
     try {
       const url = new URL(request.url);
 
-      // Route Handler dedicado para o catálogo
       if (url.pathname === "/api/catalogo") {
         return await handleCatalogoApi(url);
+      }
+      if (url.pathname === "/api/item") {
+        return await handleItemApi(url);
       }
 
       const handler = await getServerEntry();

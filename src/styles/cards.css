@@ -1,9 +1,10 @@
-/* ── Cards cinematográficos 2:3 ──────────────────────────── */
+/* ── Cards Cinematográficos 2:3 ──────────────────────────── */
 .ydo-card {
   position: relative;
   flex-shrink: 0;
-  width: 160px;
+  width: 175px;
   cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ydo-card-poster-link {
@@ -15,20 +16,22 @@
   position: relative;
   width: 100%;
   aspect-ratio: 2 / 3;
-  border-radius: var(--r-card);
+  border-radius: 12px;
   overflow: hidden;
-  background: var(--bg-surface);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: transform 0.35s var(--ease-out-expo), box-shadow 0.35s var(--ease-out-expo);
+  background: var(--bg-surface, #111320);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s ease;
 }
 
 .ydo-card:hover .ydo-card-poster,
 .ydo-card:focus-within .ydo-card-poster {
-  transform: scale(1.05);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.6),
-    0 4px 16px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7),
+    0 0 20px rgba(232, 180, 74, 0.2);
+  border-color: rgba(232, 180, 74, 0.4);
 }
 
 .ydo-card-img {
@@ -36,6 +39,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  background-color: #111320;
 }
 
 .ydo-card-fallback {
@@ -44,17 +48,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-raised);
+  background: linear-gradient(135deg, #181a2e 0%, #111320 100%);
   font-family: "Bricolage Grotesque", sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.25);
 }
 
 .ydo-card-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(10, 11, 20, 0.5) 0%, transparent 50%);
+  background: linear-gradient(
+    to top,
+    rgba(10, 11, 20, 0.8) 0%,
+    rgba(10, 11, 20, 0.2) 40%,
+    transparent 70%
+  );
   pointer-events: none;
 }
 
@@ -66,11 +75,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  background: rgba(10, 11, 20, 0.55);
+  gap: 0.65rem;
+  background: rgba(10, 11, 20, 0.65);
   opacity: 0;
-  transition: opacity 0.25s var(--ease-out-expo);
-  backdrop-filter: blur(2px);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(4px);
 }
 
 .ydo-card:hover .ydo-card-hover,
@@ -79,43 +88,52 @@
 }
 
 @media (hover: none) {
-  .ydo-card-hover { display: none; }
+  .ydo-card-hover {
+    display: none;
+  }
 }
 
 .ydo-card-play-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent, #e8b44a);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--bg-deep);
+  color: var(--bg-deep, #0a0b14);
   text-decoration: none;
-  transition: transform 0.2s var(--ease-spring), background 0.2s;
+  box-shadow: 0 4px 16px rgba(232, 180, 74, 0.4);
+  transition: transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1), background 0.2s;
 }
 
-.ydo-card-play-btn:hover { transform: scale(1.12); }
+.ydo-card-play-btn:hover {
+  transform: scale(1.12);
+  background: #f5c563;
+}
 
 .ydo-card-action-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text-primary);
-  transition: background 0.2s;
+  color: #fff;
+  transition: background 0.2s, transform 0.2s;
 }
 
-.ydo-card-action-btn:hover { background: rgba(255, 255, 255, 0.22); }
+.ydo-card-action-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.1);
+}
 
-/* Selos */
+/* Selos Dub / Leg */
 .ydo-card-badges {
   position: absolute;
   top: 8px;
@@ -125,47 +143,50 @@
 }
 
 .ydo-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 2px 5px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
   border-radius: 4px;
-  background: var(--accent);
-  color: var(--bg-deep);
+  background: var(--accent, #e8b44a);
+  color: var(--bg-deep, #0a0b14);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .ydo-badge-leg {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--text-primary);
+  background: rgba(20, 22, 38, 0.85);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Rank */
+/* Rank numerado */
 .ydo-card-rank {
   position: absolute;
-  bottom: -4px;
-  left: -8px;
+  bottom: -6px;
+  left: -12px;
   font-family: "Bricolage Grotesque", sans-serif;
-  font-size: 4rem;
-  font-weight: 800;
+  font-size: 4.5rem;
+  font-weight: 900;
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 2px rgba(241, 241, 241, 0.25);
-  z-index: 1;
+  -webkit-text-stroke: 2px rgba(232, 180, 74, 0.5);
+  z-index: 2;
   pointer-events: none;
   user-select: none;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.8));
 }
 
-/* Info abaixo do poster */
+/* Info abaixo do pôster */
 .ydo-card-info {
-  margin-top: 0.5rem;
+  margin-top: 0.65rem;
   padding: 0 2px;
 }
 
 .ydo-card-title {
   display: block;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f1f1);
   text-decoration: none;
   white-space: nowrap;
   overflow: hidden;
@@ -173,14 +194,16 @@
   transition: color 0.2s;
 }
 
-.ydo-card-title:hover { color: var(--accent); }
+.ydo-card-title:hover {
+  color: var(--accent, #e8b44a);
+}
 
 .ydo-card-meta {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 0.76rem;
+  color: var(--text-muted, rgba(241, 241, 241, 0.45));
   margin-top: 2px;
 }
 
@@ -188,40 +211,46 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  color: var(--accent);
+  color: var(--accent, #e8b44a);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Carrossel row ────────────────────────────────────────── */
-.ydo-row-section { margin-bottom: 2.5rem; }
+/* ── Carrossel Row ───────────────────────────────────────── */
+.ydo-row-section {
+  margin-bottom: 3rem;
+}
 
 .ydo-row-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 0 1rem;
-  margin-bottom: 1rem;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
+  margin-bottom: 1.15rem;
 }
 
 .ydo-row-eyebrow {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent, #e8b44a);
   display: block;
   margin-bottom: 2px;
 }
 
 .ydo-row-title {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   margin: 0;
+  color: #fff;
 }
 
 .ydo-row-track {
   display: flex;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem 1rem;
+  gap: 1rem;
+  padding: 0.75rem clamp(1.25rem, 4vw, 3rem) 1.5rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -229,7 +258,9 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.ydo-row-track::-webkit-scrollbar { display: none; }
+.ydo-row-track::-webkit-scrollbar {
+  display: none;
+}
 
 .ydo-row-track > * {
   scroll-snap-align: start;
@@ -237,14 +268,14 @@
 
 /* Skeleton */
 .ydo-skeleton-card {
-  width: 160px;
+  width: 175px;
   flex-shrink: 0;
 }
 
 .ydo-skeleton-poster {
   width: 100%;
   aspect-ratio: 2 / 3;
-  border-radius: var(--r-card);
+  border-radius: 12px;
 }
 
 .ydo-skeleton-text {

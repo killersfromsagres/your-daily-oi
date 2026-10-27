@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Tv } from "lucide-react";
+import { ArrowLeft, Tv, Info, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
 import type { CatalogItem } from "@/lib/types";
-import { loadCatalog } from "@/lib/catalog";
 import { saveProgress, getProgressById } from "@/lib/storage";
 
 export const Route = createFileRoute("/assistir/serie/$id/$temp/$ep")({
@@ -21,11 +20,24 @@ function WatchSeriesPage() {
     let active = true;
     setLoading(true);
 
-    loadCatalog()
-      .then(({ items }) => {
+    fetch(`/api/item?id=${encodeURIComponent(id)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro ao buscar série");
+        return res.json() as Promise<CatalogItem>;
+      })
+      .then((found) => {
         if (!active) return;
-        const found = items.get(id) || Array.from(items.values()).find((i) => i.id === id);
-        setSerie(found || null);
+        setSerie(found);
+      })
+      .catch(() => {
+        fetch("/api/catalogo")
+          .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
+          .then((d) => {
+            if (!active) return;
+            const f = d.items.find((i) => i.id === id);
+            setSerie(f || null);
+          })
+          .catch(() => {});
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -38,13 +50,13 @@ function WatchSeriesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black flex items-center justify-center text-white">
-        <div className="skeleton w-full max-w-4xl aspect-video rounded-xl" />
+      <main className="min-h-screen bg-[#0a0b14] flex flex-col items-center justify-center text-white px-4">
+        <div className="w-full max-w-5xl aspect-video rounded-2xl skeleton" />
+        <span className="mt-4 text-white/50 text-sm">Carregando player...</span>
       </main>
     );
   }
 
-  // Se a série tem streams diretos ou nos episódios
   const streams = serie?.streams || [];
 
   if (!serie || streams.length === 0) {
@@ -79,27 +91,63 @@ function WatchSeriesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black flex flex-col justify-center items-center px-4 md:px-12 py-16 relative">
-      <div className="w-full max-w-6xl mb-4 flex items-center justify-between">
-        <Link
-          to={`/serie/${serie.id}`}
-          className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
-        >
-          <ArrowLeft size={18} /> Voltar aos episódios
-        </Link>
-        <span className="text-xs text-white/40">
-          T{temp} : E{ep} · {streams.length} fontes disponíveis
-        </span>
-      </div>
+    <main className="min-h-screen bg-[#0a0b14] text-white flex flex-col justify-center items-center px-4 md:px-10 py-24 relative overflow-hidden">
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-15 filter blur-3xl pointer-events-none scale-110"
+        style={{
+          backgroundImage: serie.tmdb?.backdropUrl
+            ? `url(${serie.tmdb.backdropUrl})`
+            : serie.posterUrl
+            ? `url(${serie.posterUrl})`
+            : "none",
+        }}
+      />
 
-      <div className="w-full max-w-6xl shadow-2xl rounded-2xl overflow-hidden border border-white/10">
-        <OwnPlayer
-          streams={streams}
-          poster={serie.tmdb?.backdropUrl || serie.posterUrl}
-          title={`${serie.title} - T${temp}:E${ep}`}
-          initialTime={savedProgress?.currentTime || 0}
-          onTimeUpdate={handleTimeUpdate}
-        />
+      <div className="w-full max-w-5xl z-10 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <Link
+            to={`/serie/${serie.id}`}
+            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-[#e8b44a] transition-colors"
+          >
+            <ArrowLeft size={18} /> Voltar aos episódios
+          </Link>
+          <span className="text-xs px-2.5 py-1 rounded-md bg-white/10 text-white/70 border border-white/10">
+            T{temp} : E{ep} · {streams.length} servidores
+          </span>
+        </div>
+
+        <div className="w-full relative shadow-2xl rounded-2xl overflow-hidden bg-black border border-white/10">
+          <OwnPlayer
+            streams={streams}
+            poster={serie.tmdb?.backdropUrl || serie.posterUrl}
+            title={`${serie.title} - T${temp}:E${ep}`}
+            initialTime={savedProgress?.currentTime || 0}
+            onTimeUpdate={handleTimeUpdate}
+          />
+        </div>
+
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-2">
+          <div>
+            <h1 className="text-2xl font-black text-white">
+              {serie.title} <span className="text-[#e8b44a] font-bold">T{temp}:E{ep}</span>
+            </h1>
+            <div className="flex items-center gap-3 text-sm text-white/50 mt-1">
+              {serie.tmdb?.releaseYear && <span>{serie.tmdb.releaseYear}</span>}
+              {serie.tmdb?.voteAverage ? (
+                <span className="text-[#e8b44a] flex items-center gap-1 font-semibold">
+                  <Star size={13} fill="currentColor" /> {serie.tmdb.voteAverage.toFixed(1)}
+                </span>
+              ) : null}
+              <span>{serie.genres?.join(", ")}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link to={`/serie/${serie.id}`} className="ydo-btn-secondary text-sm">
+              <Info size={16} /> Temporadas & Elenco
+            </Link>
+          </div>
+        </div>
       </div>
     </main>
   );
