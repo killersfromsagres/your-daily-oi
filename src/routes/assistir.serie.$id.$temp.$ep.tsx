@@ -57,7 +57,13 @@ function WatchSeriesPage() {
     );
   }
 
-  const streams: StreamSource[] = serie?.streams || [];
+  const targetSeason = Number(temp);
+  const targetEpisode = Number(ep);
+  const foundSeason = serie?.seasons?.find((s) => s.seasonNumber === targetSeason);
+  const foundEp = foundSeason?.episodes?.find((e) => e.episodeNumber === targetEpisode);
+  const streams: StreamSource[] = (foundEp?.streams && foundEp.streams.length > 0)
+    ? foundEp.streams
+    : (serie?.streams || []);
 
   if (!serie || streams.length === 0) {
     return (

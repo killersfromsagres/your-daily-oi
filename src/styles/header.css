@@ -1,23 +1,25 @@
-/* ── Header flutuante em cápsula de vidro ────────────────── */
+/* ============================================================
+   ZANG FLIX — Header Flutuante & Submenu de Categorias
+   ============================================================ */
+
 .ydo-header {
   position: fixed;
   top: 12px;
   left: 50%;
   transform: translateX(-50%) translateY(0);
   z-index: 900;
-  width: min(calc(100vw - 32px), 1200px);
+  width: min(calc(100vw - 32px), 1140px);
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 0 1.25rem;
   height: 52px;
-  border-radius: var(--r-nav);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border-radius: var(--r-nav, 26px);
+  background: rgba(14, 16, 28, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    0 2px 8px rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 30px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   will-change: transform, opacity;
@@ -27,56 +29,142 @@
 .ydo-logo {
   text-decoration: none;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .ydo-logo-text {
   font-family: "Bricolage Grotesque", sans-serif;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 1.05rem;
   letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .ydo-logo-text strong {
-  color: var(--accent);
-}
-
-.ydo-logo-text em {
-  font-style: normal;
-  color: var(--text-secondary);
+  color: var(--accent, #e8b44a);
 }
 
 /* ── Nav ─────────────────────────────────────────────────── */
 .ydo-nav {
   display: flex;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.35rem;
   flex: 1;
 }
 
 .ydo-nav-link {
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(241, 241, 241, 0.65);
+  color: rgba(241, 241, 241, 0.7);
   text-decoration: none;
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--r-pill);
-  transition: color 0.2s, background 0.2s;
-  min-height: 44px;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--r-pill, 999px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 36px;
   display: flex;
   align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
-.ydo-nav-link:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.ydo-nav-link[data-status="active"] {
-  color: var(--text-primary);
+.ydo-nav-link:hover,
+.ydo-nav-link.is-active {
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ── Ferramentas ─────────────────────────────────────────── */
+.ydo-nav-link[data-status="active"] {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+}
+
+/* ── Dropdown de Categorias ─────────────────────────────── */
+.ydo-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.ydo-chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.ydo-chevron.rotate {
+  transform: rotate(180deg);
+}
+
+.ydo-categories-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  width: 380px;
+  background: rgba(13, 15, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  z-index: 1000;
+}
+
+.ydo-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ydo-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.ydo-category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: rgba(241, 241, 241, 0.85);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+}
+
+.ydo-category-item:hover {
+  background: rgba(232, 180, 74, 0.12);
+  border-color: rgba(232, 180, 74, 0.3);
+  color: #ffffff;
+  transform: translateX(2px);
+}
+
+.ydo-category-emoji {
+  font-size: 1rem;
+}
+
+.ydo-category-name {
+  white-space: nowrap;
+}
+
+/* ── Ferramentas & Busca Profissional ────────────────────── */
 .ydo-header-tools {
   display: flex;
   align-items: center;
@@ -84,58 +172,114 @@
   margin-left: auto;
 }
 
-.ydo-icon-btn {
-  width: 44px;
-  height: 44px;
-  display: flex;
+.ydo-search-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(241, 241, 241, 0.6);
+  font-size: 0.825rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ydo-search-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(232, 180, 74, 0.4);
+  color: #ffffff;
+}
+
+.ydo-search-kbd {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1;
 }
 
-.ydo-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-}
-
-.ydo-search-field {
+.ydo-search-form {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--r-pill);
-  padding: 0 0.75rem;
-  height: 36px;
-  color: var(--text-secondary);
+  gap: 8px;
+  background: rgba(16, 18, 30, 0.95);
+  border: 1px solid rgba(232, 180, 74, 0.4);
+  border-radius: var(--r-pill, 999px);
+  padding: 0 12px;
+  height: 38px;
+  box-shadow: 0 0 16px rgba(232, 180, 74, 0.15);
 }
 
-.ydo-search-field input {
+.ydo-search-icon {
+  color: var(--accent, #e8b44a);
+  flex-shrink: 0;
+}
+
+.ydo-search-input {
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary);
+  color: #ffffff;
   font-size: 0.875rem;
-  width: 200px;
+  width: 210px;
 }
 
-.ydo-search-field button {
+.ydo-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ydo-search-clear,
+.ydo-search-close {
   background: transparent;
   border: none;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.5);
   display: flex;
   align-items: center;
-  padding: 0;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+
+.ydo-search-clear:hover,
+.ydo-search-close:hover {
+  color: #ffffff;
+}
+
+/* ── Animação Suave ──────────────────────────────────────── */
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .ydo-nav { display: none; }
-  .ydo-search-field input { width: 140px; }
+@media (max-width: 768px) {
+  .ydo-nav {
+    display: none;
+  }
+  .ydo-search-input {
+    width: 140px;
+  }
 }

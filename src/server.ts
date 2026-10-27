@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { loadCatalog, getGenres, searchItems, getStreamsForItem, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
+import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
 import { getTmdbData } from "./lib/tmdb";
 import type { CatalogItem } from "./lib/types";
 
@@ -209,6 +209,18 @@ async function handleItemApi(url: URL): Promise<Response> {
     try {
       const streams = await getStreamsForItem(finalItem.type, finalItem.title);
       finalItem = { ...finalItem, streams };
+    } catch {
+      // Ignora e continua
+    }
+  }
+
+  // Se for série, busca as temporadas e episódios completos
+  if (finalItem.type === "s" && (!finalItem.seasons || finalItem.seasons.length === 0)) {
+    try {
+      const seasons = await getSeasonsForSeries(finalItem.title);
+      if (seasons.length > 0) {
+        finalItem = { ...finalItem, seasons };
+      }
     } catch {
       // Ignora e continua
     }

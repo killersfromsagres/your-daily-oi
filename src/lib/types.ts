@@ -1,40 +1,69 @@
-/* ── Catalog Types ─────────────────────────────────────────── */
+/* ── Catalog & Media Types ────────────────────────────────────── */
+
+export type AudioTrack = "dub" | "leg";
+export type StreamFormat = "hls" | "ts" | "dash" | "mp4";
 
 export interface StreamSource {
-  /** "dub" = dublado, "leg" = legendado */
-  audio: "dub" | "leg";
-  /** URL ou identificador do stream */
   url: string;
-  /** Qualidade opcional (e.g. "1080p", "720p") */
+  format?: StreamFormat;
+  audio: AudioTrack;
+  priority?: number;
   quality?: string;
 }
 
-export interface TmdbMeta {
-  /** Ano de lançamento */
-  releaseYear?: number;
-  /** Nota média (0–10) */
-  voteAverage?: number;
-  /** Gêneros em texto */
-  genres?: string[];
-  /** Sinopse */
-  overview?: string;
-  /** Caminho do backdrop no TMDB */
-  backdropPath?: string;
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profilePath: string | null;
+}
+
+export interface TmdbData {
+  overview: string;
+  voteAverage: number;
+  backdropPath: string | null;
+  backdropUrl: string | null;
+  trailerId: string | null;
+  cast: CastMember[];
+  releaseYear: number | null;
+  runtime?: number | null; // Duração em minutos
+  seasonsCount?: number | null; // Total de temporadas
+}
+
+export interface EpisodeItem {
+  seasonNumber: number;
+  episodeNumber: number;
+  title?: string;
+  streams: StreamSource[];
+}
+
+export interface SeasonItem {
+  seasonNumber: number;
+  episodes: EpisodeItem[];
 }
 
 export interface CatalogItem {
-  /** UUID único do item */
   id: string;
-  /** Título de exibição */
   title: string;
-  /** "f" = filme, "s" = série */
   type: "f" | "s";
-  /** URL do poster (2:3) */
+  posterPath?: string;
   posterUrl?: string;
-  /** Fontes de stream disponíveis */
+  genres: string[];
   streams: StreamSource[];
-  /** Metadados do TMDB (opcional) */
-  tmdb?: TmdbMeta;
-  /** Tags/categorias livres */
-  tags?: string[];
+  tmdbId?: number | null;
+  tmdb?: TmdbData | null;
+  seasons?: SeasonItem[];
+}
+
+export interface HighlightItem {
+  type: "f" | "s";
+  title: string;
+  letter: string;
+  year: string;
+  posterPath: string;
+}
+
+export interface HighlightRow {
+  rowName: string;
+  items: HighlightItem[];
 }

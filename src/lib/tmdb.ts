@@ -56,6 +56,8 @@ export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<Tmdb
 
     const backdropPath = d["backdrop_path"] ? String(d["backdrop_path"]) : null;
     const releaseDate = String(d["release_date"] ?? d["first_air_date"] ?? "");
+    const runtime = typeof d["runtime"] === "number" ? d["runtime"] : null;
+    const seasonsCount = typeof d["number_of_seasons"] === "number" ? d["number_of_seasons"] : null;
 
     return {
       overview: String(d["overview"] ?? ""),
@@ -65,6 +67,8 @@ export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<Tmdb
       trailerId: trailer ? String(trailer["key"]) : null,
       cast,
       releaseYear: releaseDate ? Number(releaseDate.slice(0, 4)) : null,
+      runtime,
+      seasonsCount,
     };
   } catch {
     return null;

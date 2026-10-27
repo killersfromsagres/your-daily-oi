@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
+import { normalizeTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/generos/$slug")({
@@ -16,8 +17,10 @@ function GenrePage() {
   const [loading, setLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-  const isFilmes = slug === "filmes";
-  const isSeries = slug === "series";
+  const decoded = decodeURIComponent(slug);
+  const normSlug = normalizeTitle(decoded);
+  const isFilmes = normSlug === "filmes";
+  const isSeries = normSlug === "series";
 
   useEffect(() => {
     setSavedIds(new Set(getSavedList()));
@@ -50,11 +53,14 @@ function GenrePage() {
     if (isFilmes) return items.filter((i) => i.type === "f");
     if (isSeries) return items.filter((i) => i.type === "s");
     return items.filter((i) =>
-      i.genres.some((g) => g.toLowerCase() === decodeURIComponent(slug).toLowerCase())
+      i.genres.some((g) => {
+        const normGenre = normalizeTitle(g);
+        return normGenre === normSlug || normGenre.includes(normSlug) || normSlug.includes(normGenre);
+      })
     );
-  }, [items, slug, isFilmes, isSeries]);
+  }, [items, normSlug, isFilmes, isSeries]);
 
-  const pageTitle = isFilmes ? "Filmes" : isSeries ? "Séries" : decodeURIComponent(slug);
+  const pageTitle = isFilmes ? "Filmes" : isSeries ? "Séries" : decoded.charAt(0).toUpperCase() + decoded.slice(1);
 
   const toggleSaved = (id: string) => {
     toggleSavedStorage(id);

@@ -5,6 +5,8 @@ import type {
   HighlightRow,
   StreamFormat,
   StreamSource,
+  SeasonItem,
+  EpisodeItem,
 } from "./types";
 
 // As URLs de catálogo:
@@ -213,11 +215,20 @@ function parseFilmesFile(text: string): Map<string, StreamSource[]> {
   return map;
 }
 
-// Parse de series-{letra}-{n}.txt:
+// Cache de streams e temporadas por arquivo já baixado
+const streamsCache = new Map<string, Map<string, StreamSource[]>>();
+const seriesSeasonsCache = new Map<string, Map<string, SeasonItem[]>>();
+let isBackgroundSyncing = false;
+
+// Parse completo de series-{letra}-{n}.txt:
 // @TítuloDaSérie
 // temp\tep\tdub/leg\tURLs...
-function parseSeriesEpisodesFile(text: string): Map<string, StreamSource[]> {
-  const map = new Map<string, StreamSource[]>();
+function parseSeriesData(text: string): {
+  streams: Map<string, StreamSource[]>;
+  seasons: Map<string, SeasonItem[]>;
+} {
+  const streamsMap = new Map<string, StreamSource[]>();
+  const seasonsMap = new Map<string, Map<number, Map<number, EpisodeItem>>>();
   let currentSeries = "";
 
   for (const line of text.split("\n")) {
@@ -234,23 +245,59 @@ function parseSeriesEpisodesFile(text: string): Map<string, StreamSource[]> {
 
     const parts = trimmed.split("\t");
     if (parts.length < 4) continue;
-    const [, , audioRaw, urlsRaw] = parts;
+    const [tempRaw, epRaw, audioRaw, urlsRaw] = parts;
+    const seasonNumber = parseInt(tempRaw, 10) || 1;
+    const episodeNumber = parseInt(epRaw, 10) || 1;
     const audio: AudioTrack = audioRaw?.toLowerCase() === "leg" ? "leg" : "dub";
     const streams = parseStreams(urlsRaw ?? "", audio);
 
     if (streams.length > 0) {
-      const existing = map.get(currentSeries) ?? [];
-      existing.push(...streams);
-      map.set(currentSeries, existing);
+      // 1. Guarda em streams gerais
+      const existingStreams = streamsMap.get(currentSeries) ?? [];
+      existingStreams.push(...streams);
+      streamsMap.set(currentSeries, existingStreams);
+
+      // 2. Guarda em temporadas estruturadas
+      if (!seasonsMap.has(currentSeries)) {
+        seasonsMap.set(currentSeries, new Map<number, Map<number, EpisodeItem>>());
+      }
+      const seriesSeasons = seasonsMap.get(currentSeries)!;
+      if (!seriesSeasons.has(seasonNumber)) {
+        seriesSeasons.set(seasonNumber, new Map<number, EpisodeItem>());
+      }
+      const seasonEpisodes = seriesSeasons.get(seasonNumber)!;
+      if (!seasonEpisodes.has(episodeNumber)) {
+        seasonEpisodes.set(episodeNumber, {
+          seasonNumber,
+          episodeNumber,
+          title: `Episódio ${episodeNumber}`,
+          streams: [...streams],
+        });
+      } else {
+        seasonEpisodes.get(episodeNumber)!.streams.push(...streams);
+      }
     }
   }
 
-  return map;
-}
+  // Converte a estrutura aninhada para SeasonItem[]
+  const finalSeasonsMap = new Map<string, SeasonItem[]>();
+  for (const [seriesKey, seriesSeasons] of seasonsMap) {
+    const seasonsList: SeasonItem[] = [];
+    const sortedSeasonNumbers = Array.from(seriesSeasons.keys()).sort((a, b) => a - b);
+    for (const sNum of sortedSeasonNumbers) {
+      const epsMap = seriesSeasons.get(sNum)!;
+      const sortedEpNumbers = Array.from(epsMap.keys()).sort((a, b) => a - b);
+      const episodes = sortedEpNumbers.map((epNum) => epsMap.get(epNum)!);
+      seasonsList.push({
+        seasonNumber: sNum,
+        episodes,
+      });
+    }
+    finalSeasonsMap.set(seriesKey, seasonsList);
+  }
 
-// Cache de streams por arquivo já baixado para carregamento ultra rápido
-const streamsCache = new Map<string, Map<string, StreamSource[]>>();
-let isBackgroundSyncing = false;
+  return { streams: streamsMap, seasons: finalSeasonsMap };
+}
 
 /**
  * Obtém a letra do arquivo a partir da inicial do título
@@ -265,7 +312,7 @@ function getLetterKey(title: string): string {
 }
 
 /**
- * Carrega streams de uma letra específica de filme ou série
+ * Carrega streams e temporadas de uma letra específica de filme ou série
  */
 export async function getStreamsForLetter(type: "f" | "s", letter: string): Promise<Map<string, StreamSource[]>> {
   const cacheKey = `${type}-${letter}`;
@@ -276,14 +323,37 @@ export async function getStreamsForLetter(type: "f" | "s", letter: string): Prom
   const fileName = type === "f" ? `filmes-${letter}.txt` : `series-${letter}-1.txt`;
   try {
     const text = await fetchText(getCatalogUrls(fileName));
-    const parsed = type === "f" ? parseFilmesFile(text) : parseSeriesEpisodesFile(text);
-    streamsCache.set(cacheKey, parsed);
-    return parsed;
+    if (type === "f") {
+      const parsed = parseFilmesFile(text);
+      streamsCache.set(cacheKey, parsed);
+      return parsed;
+    } else {
+      const { streams, seasons } = parseSeriesData(text);
+      streamsCache.set(cacheKey, streams);
+      seriesSeasonsCache.set(letter, seasons);
+      return streams;
+    }
   } catch {
     const empty = new Map<string, StreamSource[]>();
     streamsCache.set(cacheKey, empty);
     return empty;
   }
+}
+
+/**
+ * Busca temporadas e episódios de uma série de forma completa
+ */
+export async function getSeasonsForSeries(title: string): Promise<SeasonItem[]> {
+  const norm = normalizeTitle(title);
+  const letter = getLetterKey(title);
+  if (!seriesSeasonsCache.has(letter)) {
+    await getStreamsForLetter("s", letter);
+  }
+  const seriesMap = seriesSeasonsCache.get(letter);
+  if (seriesMap?.has(norm)) {
+    return seriesMap.get(norm)!;
+  }
+  return [];
 }
 
 /**

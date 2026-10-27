@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Play, Heart, Star, X, Film, Check, Users } from "lucide-react";
+import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
@@ -10,6 +10,15 @@ export const Route = createFileRoute("/filme/$id")({
   component: MovieDetailPage,
   head: () => ({ meta: [{ title: "Detalhes do Filme — Zang Flix" }] }),
 });
+
+function formatRuntime(minutes?: number | null): string {
+  if (!minutes || minutes <= 0) return "1h 55min";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
 
 function MovieDetailPage() {
   const { id } = Route.useParams();
@@ -64,43 +73,96 @@ function MovieDetailPage() {
 
   if (loading) {
     return (
-      <main style={{ minHeight: "100vh", backgroundColor: "#060608", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: "min(92vw, 1080px)", height: "680px", borderRadius: "24px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }} className="skeleton" />
-      </main>
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        backgroundColor: "rgba(6, 7, 13, 0.94)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(16px)"
+      }}>
+        <div style={{
+          width: "min(92vw, 1080px)",
+          height: "640px",
+          borderRadius: "24px",
+          background: "rgba(255, 255, 255, 0.03)",
+          border: "1px solid rgba(255, 255, 255, 0.08)"
+        }} className="skeleton" />
+      </div>
     );
   }
 
   if (!movie) {
     return (
-      <main style={{ minHeight: "100vh", backgroundColor: "#060608", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "24px" }}>
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        backgroundColor: "rgba(6, 7, 13, 0.94)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "16px",
+        color: "#fff",
+        textAlign: "center",
+        padding: "24px",
+        backdropFilter: "blur(16px)"
+      }}>
         <Film size={48} style={{ color: "#e8b44a" }} />
         <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Filme não localizado</h1>
         <p style={{ color: "rgba(255,255,255,0.6)" }}>Este título não está disponível no catálogo atual.</p>
-        <button onClick={closeDialog} style={{ padding: "10px 24px", borderRadius: "999px", background: "#e8b44a", color: "#000", fontWeight: "700", border: "none", cursor: "pointer" }}>
+        <button onClick={closeDialog} className="ydo-btn-primary">
           Voltar ao Catálogo
         </button>
-      </main>
+      </div>
     );
   }
 
   const cast = movie.tmdb?.cast || [];
+  // Banner de altíssima definição (original do TMDB ou poster original widescreen)
   const backdrop = movie.tmdb?.backdropUrl || movie.posterUrl?.replace("/w342", "/original") || "";
   const poster = movie.posterUrl?.replace("/w342", "/w500") || "";
+  const titleDisplay = cleanDisplayTitle(movie.title);
+  const runtimeDisplay = formatRuntime(movie.tmdb?.runtime);
 
   return (
-    <main style={{ minHeight: "100vh", backgroundColor: "rgba(3, 3, 5, 0.92)", display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 16px", position: "relative" }}>
-      {/* Container Card Modal de Altíssima Fidelidade (Referência Saimo TV) */}
-      <div style={{
-        position: "relative",
-        width: "min(94vw, 1080px)",
-        maxHeight: "92vh",
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        backgroundColor: "rgba(4, 5, 10, 0.88)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         overflowY: "auto",
-        backgroundColor: "#0d0e15",
-        borderRadius: "28px",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        boxShadow: "0 30px 90px rgba(0, 0, 0, 0.8)",
-        color: "#fff",
-      }}>
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        padding: "clamp(16px, 4vw, 40px) 16px",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeDialog();
+      }}
+    >
+      {/* Container Principal do Filme */}
+      <div
+        style={{
+          position: "relative",
+          width: "min(96vw, 1080px)",
+          backgroundColor: "#0d0e17",
+          borderRadius: "28px",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          boxShadow: "0 30px 100px rgba(0, 0, 0, 0.85)",
+          color: "#fff",
+          overflow: "hidden",
+          margin: "auto",
+        }}
+      >
         {/* Botão Fechar no Canto Superior Direito */}
         <button
           onClick={closeDialog}
@@ -109,123 +171,252 @@ function MovieDetailPage() {
             position: "absolute",
             top: "20px",
             right: "20px",
-            zIndex: 30,
-            width: "40px",
-            height: "40px",
+            zIndex: 40,
+            width: "42px",
+            height: "42px",
             borderRadius: "50%",
-            backgroundColor: "rgba(10, 11, 20, 0.75)",
+            backgroundColor: "rgba(10, 11, 20, 0.8)",
             border: "1px solid rgba(255, 255, 255, 0.2)",
-            color: "#fff",
+            color: "#ffffff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
-            backdropFilter: "blur(10px)",
-            transition: "all 0.2s ease"
+            backdropFilter: "blur(12px)",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.9)";
+            e.currentTarget.style.color = "#000";
+            e.currentTarget.style.transform = "scale(1.08)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(10, 11, 20, 0.8)";
+            e.currentTarget.style.color = "#ffffff";
+            e.currentTarget.style.transform = "scale(1)";
           }}
         >
           <X size={20} />
         </button>
 
-        {/* Banner Hero Superior com Backdrop e Informações */}
-        <div style={{
-          position: "relative",
-          minHeight: "440px",
-          display: "flex",
-          alignItems: "flex-end",
-          padding: "clamp(24px, 4vw, 48px)",
-          overflow: "hidden"
-        }}>
-          {/* Imagem de Fundo Panorâmica */}
+        {/* Banner de Altíssima Definição com Desfoque Profundo Cinematográfico */}
+        <div
+          style={{
+            position: "relative",
+            minHeight: "460px",
+            display: "flex",
+            alignItems: "flex-end",
+            padding: "clamp(24px, 4vw, 48px)",
+            overflow: "hidden",
+          }}
+        >
+          {/* Fundo de Alta Resolução com Efeito Desfocado Suave */}
           {backdrop && (
-            <div style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${backdrop})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 25%",
-              filter: "brightness(0.55)",
-              zIndex: 1
-            }} />
+            <div
+              style={{
+                position: "absolute",
+                inset: "-20px",
+                backgroundImage: `url(${backdrop})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center 30%",
+                filter: "blur(14px) brightness(0.55)",
+                transform: "scale(1.08)",
+                zIndex: 1,
+              }}
+            />
           )}
 
-          {/* Gradientes Suaves de Integração */}
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to right, rgba(13, 14, 21, 0.95) 0%, rgba(13, 14, 21, 0.7) 40%, rgba(13, 14, 21, 0.2) 75%, transparent 100%)",
-            zIndex: 2
-          }} />
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(to top, #0d0e15 0%, rgba(13, 14, 21, 0.8) 25%, transparent 70%)",
-            zIndex: 2
-          }} />
+          {/* Gradientes Suaves de Integração com o Container */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to right, rgba(13, 14, 23, 0.98) 0%, rgba(13, 14, 23, 0.75) 45%, rgba(13, 14, 23, 0.35) 80%, transparent 100%)",
+              zIndex: 2,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to top, #0d0e17 0%, rgba(13, 14, 23, 0.85) 30%, transparent 75%)",
+              zIndex: 2,
+            }}
+          />
 
-          {/* Conteúdo Superior: Pôster + Texto */}
-          <div style={{ position: "relative", zIndex: 10, display: "flex", gap: "28px", alignItems: "flex-end", width: "100%", flexWrap: "wrap" }}>
-            {/* Pôster com cantos arredondados padronizado */}
-            <div style={{
-              width: "180px",
-              height: "260px",
-              flexShrink: 0,
-              borderRadius: "16px",
-              overflow: "hidden",
-              border: "1px solid rgba(255, 255, 255, 0.16)",
-              boxShadow: "0 16px 40px rgba(0, 0, 0, 0.6)",
-              backgroundColor: "#161824"
-            }}>
+          {/* Conteúdo em Primeiro Plano: Pôster + Metadados + Botões */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 10,
+              display: "flex",
+              gap: "28px",
+              alignItems: "flex-end",
+              width: "100%",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Pôster Proporcional de Luxo */}
+            <div
+              style={{
+                width: "185px",
+                height: "270px",
+                flexShrink: 0,
+                borderRadius: "18px",
+                overflow: "hidden",
+                border: "2px solid rgba(255, 255, 255, 0.18)",
+                boxShadow: "0 20px 45px rgba(0, 0, 0, 0.7)",
+                backgroundColor: "#161826",
+              }}
+            >
               {poster ? (
-                <img src={poster} alt={movie.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img
+                  src={poster}
+                  alt={titleDisplay}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
               ) : (
-                <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontWeight: "bold" }}>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "rgba(255,255,255,0.3)",
+                    fontWeight: "bold",
+                  }}
+                >
                   SEM PÔSTER
                 </div>
               )}
             </div>
 
-            {/* Informações Textuais e Botões */}
-            <div style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: "800", letterSpacing: "0.14em", color: "#4fe3d0", textTransform: "uppercase" }}>
-                FILME
-              </span>
+            {/* Informações Principais */}
+            <div style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: "800",
+                    letterSpacing: "0.12em",
+                    color: "#e8b44a",
+                    backgroundColor: "rgba(232, 180, 74, 0.15)",
+                    border: "1px solid rgba(232, 180, 74, 0.4)",
+                    padding: "3px 10px",
+                    borderRadius: "6px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  FILME
+                </span>
 
-              <h1 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: "900", letterSpacing: "-0.03em", lineHeight: "1.1", margin: 0, color: "#fff" }}>
-                {cleanDisplayTitle(movie.title)}
-              </h1>
+                {/* Badge de Qualidade Exibida */}
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: "800",
+                    letterSpacing: "0.06em",
+                    color: "#ffffff",
+                    backgroundColor: "rgba(255, 255, 255, 0.12)",
+                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    padding: "3px 9px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  4K ULTRA HD
+                </span>
 
-              {movie.tmdb?.overview && (
-                <p style={{ fontSize: "0.95rem", fontStyle: "italic", color: "rgba(255, 255, 255, 0.7)", margin: "2px 0 6px 0", maxWidth: "600px" }}>
-                  {movie.tmdb.overview.slice(0, 110)}...
-                </p>
-              )}
+                {/* Badge de Duração */}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "0.8rem",
+                    fontWeight: "600",
+                    color: "rgba(255, 255, 255, 0.85)",
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    padding: "3px 8px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  <Clock size={12} style={{ color: "#e8b44a" }} />
+                  {runtimeDisplay}
+                </span>
 
-              {/* Badges de Metadados: Nota, Ano, Duração, Classificação */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", fontSize: "0.85rem", fontWeight: "600" }}>
+                {/* Nota do Filme */}
                 {movie.tmdb?.voteAverage ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", backgroundColor: "#f59e0b", color: "#000", padding: "2px 8px", borderRadius: "6px", fontWeight: "800" }}>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      backgroundColor: "#f59e0b",
+                      color: "#000",
+                      padding: "3px 8px",
+                      borderRadius: "6px",
+                      fontWeight: "800",
+                      fontSize: "0.8rem",
+                    }}
+                  >
                     ★ {movie.tmdb.voteAverage.toFixed(1)}
                   </span>
                 ) : null}
+
+                {/* Ano de Lançamento */}
                 {movie.tmdb?.releaseYear && (
-                  <span style={{ backgroundColor: "rgba(255, 255, 255, 0.1)", padding: "2px 8px", borderRadius: "6px" }}>
+                  <span
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      color: "rgba(255, 255, 255, 0.8)",
+                      padding: "3px 8px",
+                      borderRadius: "6px",
+                      fontSize: "0.8rem",
+                      fontWeight: "600",
+                    }}
+                  >
                     {movie.tmdb.releaseYear}
                   </span>
                 )}
-                <span style={{ backgroundColor: "rgba(255, 255, 255, 0.1)", padding: "2px 8px", borderRadius: "6px" }}>
-                  HD / 4K
-                </span>
-                <span style={{ backgroundColor: "#10b981", color: "#000", padding: "2px 7px", borderRadius: "6px", fontWeight: "800" }}>
-                  14
-                </span>
-                <span style={{ color: "rgba(255, 255, 255, 0.6)", marginLeft: "4px" }}>
-                  {movie.genres?.join(" • ")}
-                </span>
               </div>
 
-              {/* Botões de Ação Principais */}
-              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "14px", flexWrap: "wrap" }}>
+              {/* Título Limpo */}
+              <h1
+                style={{
+                  fontSize: "clamp(1.8rem, 3.8vw, 2.8rem)",
+                  fontWeight: "900",
+                  letterSpacing: "-0.03em",
+                  lineHeight: "1.15",
+                  margin: 0,
+                  color: "#fff",
+                }}
+              >
+                {titleDisplay}
+              </h1>
+
+              {/* Chips Profissionais de Gêneros */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", margin: "2px 0 6px 0" }}>
+                {movie.genres?.map((genre) => (
+                  <span
+                    key={genre}
+                    style={{
+                      padding: "3px 12px",
+                      borderRadius: "999px",
+                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.14)",
+                      fontSize: "0.78rem",
+                      fontWeight: "500",
+                      color: "rgba(255, 255, 255, 0.85)",
+                    }}
+                  >
+                    {genre}
+                  </span>
+                ))}
+              </div>
+
+              {/* Botões de Ação Personalizados e Modernos */}
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
                 <Link
                   to={`/assistir/filme/${movie.id}`}
                   style={{
@@ -240,11 +431,19 @@ function MovieDetailPage() {
                     fontSize: "0.95rem",
                     textDecoration: "none",
                     boxShadow: "0 8px 24px rgba(255, 255, 255, 0.25)",
-                    transition: "all 0.2s ease"
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#e8b44a";
+                    e.currentTarget.style.transform = "scale(1.03)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                    e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
                   <Play size={18} fill="currentColor" />
-                  Assistir
+                  Assistir Filme
                 </Link>
 
                 <button
@@ -253,47 +452,82 @@ function MovieDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "8px",
-                    backgroundColor: "rgba(255, 255, 255, 0.12)",
-                    color: "#ffffff",
+                    backgroundColor: saved ? "rgba(232, 180, 74, 0.2)" : "rgba(255, 255, 255, 0.1)",
+                    color: saved ? "#e8b44a" : "#ffffff",
                     padding: "12px 24px",
                     borderRadius: "14px",
                     fontWeight: "700",
                     fontSize: "0.95rem",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
+                    border: saved ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.18)",
                     cursor: "pointer",
-                    transition: "all 0.2s ease"
+                    transition: "all 0.2s ease",
                   }}
                 >
                   {saved ? <Check size={18} /> : <Heart size={18} />}
-                  {saved ? "Na Minha Lista" : "Favoritar"}
+                  {saved ? "Na Minha Lista" : "Minha Lista"}
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Sinopse Completa e Dados de Produção */}
-        <div style={{ padding: "0 clamp(24px, 4vw, 48px) 32px", display: "flex", flexDirection: "column", gap: "24px" }}>
-          <p style={{ fontSize: "1rem", lineHeight: "1.7", color: "rgba(255, 255, 255, 0.85)", maxWidth: "880px", margin: 0 }}>
-            {movie.tmdb?.overview || "Sinopse em atualização oficial via acervo Saimo TV."}
-          </p>
+        {/* Sinopse Completa e Elenco */}
+        <div style={{ padding: "0 clamp(24px, 4vw, 48px) 36px", display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div>
+            <h3
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: "700",
+                color: "#e8b44a",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Sinopse
+            </h3>
+            <p
+              style={{
+                fontSize: "1rem",
+                lineHeight: "1.7",
+                color: "rgba(255, 255, 255, 0.85)",
+                maxWidth: "880px",
+                margin: 0,
+              }}
+            >
+              {movie.tmdb?.overview?.trim() ||
+                `Acompanhe a história emocionante de ${titleDisplay}. Uma produção em alta resolução disponível no Zang Flix.`}
+            </p>
+          </div>
 
-          {/* Seção Elenco em Grid Horizontal com Fotos Redondas */}
+          {/* Elenco com Fotos Circulares e Nomes */}
           {cast.length > 0 && (
             <div style={{ marginTop: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#fff", fontWeight: "800", fontSize: "1.2rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "16px",
+                  color: "#fff",
+                  fontWeight: "800",
+                  fontSize: "1.1rem",
+                }}
+              >
                 <Users size={20} style={{ color: "#e8b44a" }} />
-                <span>Elenco</span>
+                <span>Elenco Principal</span>
               </div>
 
-              <div style={{
-                display: "flex",
-                gap: "20px",
-                overflowX: "auto",
-                paddingBottom: "12px",
-                scrollbarWidth: "none"
-              }}>
-                {cast.map((actor) => (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  overflowX: "auto",
+                  paddingBottom: "12px",
+                  scrollbarWidth: "none",
+                }}
+              >
+                {cast.slice(0, 12).map((actor) => (
                   <div
                     key={actor.id}
                     style={{
@@ -303,18 +537,20 @@ function MovieDetailPage() {
                       textAlign: "center",
                       width: "90px",
                       flexShrink: 0,
-                      gap: "8px"
+                      gap: "8px",
                     }}
                   >
-                    <div style={{
-                      width: "68px",
-                      height: "68px",
-                      borderRadius: "50%",
-                      overflow: "hidden",
-                      border: "2px solid rgba(255, 255, 255, 0.12)",
-                      backgroundColor: "#161824",
-                      boxShadow: "0 6px 16px rgba(0, 0, 0, 0.4)"
-                    }}>
+                    <div
+                      style={{
+                        width: "68px",
+                        height: "68px",
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        border: "2px solid rgba(255, 255, 255, 0.14)",
+                        backgroundColor: "#161824",
+                        boxShadow: "0 6px 16px rgba(0, 0, 0, 0.4)",
+                      }}
+                    >
                       {actor.profilePath ? (
                         <img
                           src={`https://image.tmdb.org/t/p/w185${actor.profilePath}`}
@@ -323,16 +559,45 @@ function MovieDetailPage() {
                           loading="lazy"
                         />
                       ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "1.1rem", color: "rgba(255,255,255,0.4)" }}>
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "700",
+                            fontSize: "1.1rem",
+                            color: "rgba(255,255,255,0.4)",
+                          }}
+                        >
                           {actor.name.charAt(0)}
                         </div>
                       )}
                     </div>
                     <div>
-                      <span style={{ fontSize: "0.78rem", fontWeight: "700", color: "#fff", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.2" }}>
+                      <span
+                        style={{
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          color: "#fff",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          lineHeight: "1.2",
+                        }}
+                      >
                         {actor.name}
                       </span>
-                      <span style={{ fontSize: "0.7rem", color: "rgba(255, 255, 255, 0.5)", display: "block", marginTop: "2px" }}>
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "rgba(255, 255, 255, 0.5)",
+                          display: "block",
+                          marginTop: "2px",
+                        }}
+                      >
                         {actor.character}
                       </span>
                     </div>
@@ -343,6 +608,6 @@ function MovieDetailPage() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
