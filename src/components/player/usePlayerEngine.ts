@@ -165,8 +165,16 @@ export function usePlayerEngine(
         }
 
         if (!cancelled) {
-          try { await video.play(); } catch {
-            if (!cancelled) setState("ready");
+          try {
+            await video.play();
+          } catch {
+            // Autoplay bloqueado pelo navegador com som: inicia mutado para que o vídeo rode imediatamente
+            try {
+              video.muted = true;
+              await video.play();
+            } catch {
+              if (!cancelled) setState("ready");
+            }
           }
         }
       } catch (err) {
@@ -204,8 +212,17 @@ export function usePlayerEngine(
     try {
       await video.play();
       setState("playing");
+      setError(null);
     } catch {
-      setError("Reprodução bloqueada pelo navegador. Clique para reproduzir.");
+      // Se o navegador bloqueou com áudio (política de autoplay), tenta tocar mutado
+      try {
+        video.muted = true;
+        await video.play();
+        setState("playing");
+        setError(null);
+      } catch (err2) {
+        setError("Toque na tela para iniciar o vídeo");
+      }
     }
   }, []);
 

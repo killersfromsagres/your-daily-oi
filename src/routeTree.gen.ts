@@ -5,6 +5,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as JogoSlugRouteImport } from './routes/jogo.$slug'
 import { Route as GenerosSlugRouteImport } from './routes/generos.$slug'
 import { Route as LancamentosRouteImport } from './routes/lancamentos'
+import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as BuscaRouteImport } from './routes/busca'
 import { Route as FilmeIdRouteImport } from './routes/filme.$id'
 import { Route as SerieIdRouteImport } from './routes/serie.$id'
@@ -32,6 +33,12 @@ const GenerosSlugRoute = GenerosSlugRouteImport.update({
 const LancamentosRoute = LancamentosRouteImport.update({
   id: '/lancamentos',
   path: '/lancamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const MinhaListaRoute = MinhaListaRouteImport.update({
+  id: '/minha-lista',
+  path: '/minha-lista',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/jogo/$slug': typeof JogoSlugRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/lancamentos': typeof LancamentosRoute
+  '/minha-lista': typeof MinhaListaRoute
   '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
   '/jogo/$slug': typeof JogoSlugRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/lancamentos': typeof LancamentosRoute
+  '/minha-lista': typeof MinhaListaRoute
   '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
@@ -95,6 +104,7 @@ export interface FileRoutesById {
   '/jogo/$slug': typeof JogoSlugRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/lancamentos': typeof LancamentosRoute
+  '/minha-lista': typeof MinhaListaRoute
   '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
   '/serie/$id': typeof SerieIdRoute
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/jogo/$slug'
     | '/generos/$slug'
     | '/lancamentos'
+    | '/minha-lista'
     | '/busca'
     | '/filme/$id'
     | '/serie/$id'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/jogo/$slug'
     | '/generos/$slug'
     | '/lancamentos'
+    | '/minha-lista'
     | '/busca'
     | '/filme/$id'
     | '/serie/$id'
@@ -131,6 +143,7 @@ export interface FileRouteTypes {
     | '/jogo/$slug'
     | '/generos/$slug'
     | '/lancamentos'
+    | '/minha-lista'
     | '/busca'
     | '/filme/$id'
     | '/serie/$id'
@@ -144,6 +157,7 @@ export interface RootRouteChildren {
   JogoSlugRoute: typeof JogoSlugRoute
   GenerosSlugRoute: typeof GenerosSlugRoute
   LancamentosRoute: typeof LancamentosRoute
+  MinhaListaRoute: typeof MinhaListaRoute
   BuscaRoute: typeof BuscaRoute
   FilmeIdRoute: typeof FilmeIdRoute
   SerieIdRoute: typeof SerieIdRoute
@@ -179,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/lancamentos'
       fullPath: '/lancamentos'
       preLoaderRoute: typeof LancamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/minha-lista': {
+      id: '/minha-lista'
+      path: '/minha-lista'
+      fullPath: '/minha-lista'
+      preLoaderRoute: typeof MinhaListaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/busca': {
@@ -224,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   JogoSlugRoute: JogoSlugRoute,
   GenerosSlugRoute: GenerosSlugRoute,
   LancamentosRoute: LancamentosRoute,
+  MinhaListaRoute: MinhaListaRoute,
   BuscaRoute: BuscaRoute,
   FilmeIdRoute: FilmeIdRoute,
   SerieIdRoute: SerieIdRoute,

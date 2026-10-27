@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2 } from "lucide-react";
 import { usePlayerEngine } from "./usePlayerEngine";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
@@ -40,7 +40,33 @@ export function OwnPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
 
-  const currentStream = streams[sourceIndex] ?? null;
+  const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
+
+  // Chaveamento automático de fontes caso a atual falhe
+  useEffect(() => {
+    if (engine.state === "error") {
+      if (sourceIndex < streams.length - 1) {
+        setAutoSwitchMsg(`Fonte ${sourceIndex + 1} falhou. Alternando automaticamente para Fonte ${sourceIndex + 2}…`);
+        const timer = setTimeout(() => {
+          setSourceIndex((prev) => prev + 1);
+          setAutoSwitchMsg(null);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [engine.state, sourceIndex, streams.length]);
+
+  const handleVideoClick = () => {
+    if (engine.muted) {
+      engine.setMuted(false);
+    }
+    if (engine.state === "playing") {
+      engine.pause();
+    } else {
+      void engine.play();
+    }
+    showControls();
+  };
 
   const handleEnded = useCallback(() => {
     onEnded?.();
@@ -125,7 +151,105 @@ export function OwnPlayer({
         playsInline
         preload="metadata"
         aria-label={title ?? "Vídeo"}
+        onClick={handleVideoClick}
       />
+
+      {/* Clique na tela inteira do vídeo para Play/Pause */}
+      <div
+        className="ydo-player-click-capture"
+        onClick={handleVideoClick}
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 5,
+        }}
+      />
+
+      {/* Botão Central de Play Grande quando Pausado ou Pronto */}
+      {(engine.state === "paused" || engine.state === "ready") && (
+        <button
+          onClick={handleVideoClick}
+          aria-label="Reproduzir"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 15,
+            width: "80px",
+            height: "80px",
+            borderRadius: "50%",
+            backgroundColor: "rgba(232, 180, 74, 0.9)",
+            color: "#0a0b14",
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 0 35px rgba(232, 180, 74, 0.6)",
+            transition: "transform 0.2s, background-color 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translate(-50%, -50%) scale(1.1)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translate(-50%, -50%) scale(1)")}
+        >
+          <Play size={36} fill="currentColor" style={{ marginLeft: "4px" }} />
+        </button>
+      )}
+
+      {/* Aviso de Troca Automática de Fonte */}
+      {autoSwitchMsg && (
+        <div
+          style={{
+            position: "absolute",
+            top: "80px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 30,
+            backgroundColor: "rgba(10, 11, 20, 0.9)",
+            border: "1px solid rgba(232, 180, 74, 0.5)",
+            color: "#ffffff",
+            padding: "8px 18px",
+            borderRadius: "999px",
+            fontSize: "0.85rem",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
+          }}
+        >
+          <RefreshCw size={14} className="animate-spin" style={{ color: "#e8b44a" }} />
+          <span>{autoSwitchMsg}</span>
+        </div>
+      )}
+
+      {/* Alerta de Áudio Mutado pelo Navegador */}
+      {engine.muted && engine.state === "playing" && (
+        <button
+          onClick={() => engine.setMuted(false)}
+          style={{
+            position: "absolute",
+            bottom: "90px",
+            left: "24px",
+            zIndex: 25,
+            backgroundColor: "rgba(232, 180, 74, 0.95)",
+            color: "#0a0b14",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: "999px",
+            fontSize: "0.825rem",
+            fontWeight: "800",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.5)",
+          }}
+        >
+          <Volume2 size={16} />
+          <span>Clique para ativar áudio</span>
+        </button>
+      )}
 
       {/* Barra de Topo do Player (Estilo Netflix / Saimo TV) */}
       <div className={`ydo-player-topbar${controlsVisible ? " visible" : ""}`}>

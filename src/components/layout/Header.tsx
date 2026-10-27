@@ -1,36 +1,74 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Search, X, ChevronDown, Sparkles, Film, Tv, Flame, Compass } from "lucide-react";
+import { Search, X, ChevronDown, Heart, Clock, Film, Tv } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { getSavedList } from "@/lib/storage";
 
 interface HeaderProps {
   onSearch?: (q: string) => void;
 }
 
-const CATEGORIAS = [
+const CATEGORIAS_FILMES = [
   { name: "Ação", slug: "acao", icon: "💥" },
   { name: "Terror", slug: "terror", icon: "👻" },
   { name: "Comédia", slug: "comedia", icon: "😂" },
   { name: "Ficção Científica", slug: "ficcao-cientifica", icon: "🚀" },
   { name: "Suspense", slug: "suspense", icon: "🔍" },
-  { name: "Drama", slug: "drama", icon: "🎭" },
   { name: "Romance", slug: "romance", icon: "❤️" },
   { name: "Animação", slug: "animacao", icon: "✨" },
   { name: "Aventura", slug: "aventura", icon: "🗺️" },
   { name: "Fantasia", slug: "fantasia", icon: "🧙" },
   { name: "Documentário", slug: "documentario", icon: "📹" },
-  { name: "Crime", slug: "crime", icon: "🕵️" },
+];
+
+const CATEGORIAS_SERIES = [
+  { name: "Drama", slug: "drama", icon: "🎭" },
+  { name: "Suspense", slug: "suspense", icon: "🔍" },
+  { name: "Ficção Científica", slug: "ficcao-cientifica", icon: "🚀" },
+  { name: "Ação & Aventura", slug: "acao", icon: "💥" },
+  { name: "Comédia", slug: "comedia", icon: "😂" },
+  { name: "Crime & Mistério", slug: "crime", icon: "🕵️" },
+  { name: "Animação", slug: "animacao", icon: "✨" },
+  { name: "Documentário", slug: "documentario", icon: "📹" },
 ];
 
 export function Header({ onSearch }: HeaderProps) {
   const [visible, setVisible] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [moviesHover, setMoviesHover] = useState(false);
+  const [seriesHover, setSeriesHover] = useState(false);
   const [query, setQuery] = useState("");
+  const [currentTime, setCurrentTime] = useState("");
+  const [savedCount, setSavedCount] = useState(0);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const moviesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const seriesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+
+  // Relógio personalizado em tempo real
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      );
+    };
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Monitora contagem de itens na Minha Lista
+  useEffect(() => {
+    const checkSaved = () => {
+      setSavedCount(getSavedList().length);
+    };
+    checkSaved();
+    const interval = setInterval(checkSaved, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-hide em idle (mouse parado por 4s)
   useEffect(() => {
@@ -38,8 +76,7 @@ export function Header({ onSearch }: HeaderProps) {
       setVisible(true);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        // Não esconde se a busca ou dropdown de categorias estiver aberto
-        if (!searchOpen && !categoriesOpen) {
+        if (!searchOpen && !moviesHover && !seriesHover) {
           setVisible(false);
         }
       }, 4000);
@@ -54,20 +91,9 @@ export function Header({ onSearch }: HeaderProps) {
       document.removeEventListener("keydown", show);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [searchOpen, categoriesOpen]);
+  }, [searchOpen, moviesHover, seriesHover]);
 
-  // Fecha dropdown de categorias ao clicar fora
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setCategoriesOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Atalho "/" para focar busca
+  // Atalho "/" para focar busca e Escape para fechar
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -82,7 +108,8 @@ export function Header({ onSearch }: HeaderProps) {
       }
       if (e.key === "Escape") {
         setSearchOpen(false);
-        setCategoriesOpen(false);
+        setMoviesHover(false);
+        setSeriesHover(false);
       }
     };
     document.addEventListener("keydown", handler);
@@ -111,59 +138,53 @@ export function Header({ onSearch }: HeaderProps) {
         transition: `opacity 0.3s var(--ease-out-expo), transform 0.3s var(--ease-out-expo)`,
       }}
     >
-      {/* Logo Exclusivo Zang Flix */}
+      {/* Logo Zang Flix */}
       <Link to="/" className="ydo-logo" aria-label="Zang Flix — início">
         <span className="ydo-logo-text">
           ZANG <strong>FLIX</strong>
         </span>
       </Link>
 
-      {/* Navegação Principal */}
+      {/* Navegação Compacta e Elegante */}
       <nav className="ydo-nav" aria-label="Navegação principal">
         <Link to="/" className="ydo-nav-link" activeOptions={{ exact: true }}>
           Início
         </Link>
-        <Link to="/generos/filmes" className="ydo-nav-link">
-          Filmes
-        </Link>
-        <Link to="/generos/series" className="ydo-nav-link">
-          Séries
-        </Link>
-        <Link to="/lancamentos" className="ydo-nav-link">
-          Lançamentos
-        </Link>
 
-        {/* Submenu Dropdown de Categorias */}
+        {/* Item Filmes com Dropdown de Categorias ao passar o mouse */}
         <div
-          ref={dropdownRef}
           className="ydo-dropdown-container"
-          onMouseEnter={() => setCategoriesOpen(true)}
-          onMouseLeave={() => setCategoriesOpen(false)}
+          onMouseEnter={() => {
+            if (moviesTimerRef.current) clearTimeout(moviesTimerRef.current);
+            setMoviesHover(true);
+            setSeriesHover(false);
+          }}
+          onMouseLeave={() => {
+            moviesTimerRef.current = setTimeout(() => setMoviesHover(false), 150);
+          }}
         >
-          <button
-            type="button"
-            className={`ydo-nav-link ydo-dropdown-trigger ${categoriesOpen ? "is-active" : ""}`}
-            onClick={() => setCategoriesOpen(!categoriesOpen)}
-            aria-expanded={categoriesOpen}
+          <Link
+            to="/generos/filmes"
+            className={`ydo-nav-link ${moviesHover ? "is-active" : ""}`}
           >
-            <span>Categorias</span>
-            <ChevronDown size={14} className={`ydo-chevron ${categoriesOpen ? "rotate" : ""}`} />
-          </button>
+            <span>Filmes</span>
+            <ChevronDown size={13} className={`ydo-chevron ${moviesHover ? "rotate" : ""}`} />
+          </Link>
 
-          {categoriesOpen && (
+          {moviesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <Compass size={14} style={{ color: "#e8b44a" }} />
-                <span>Explorar por Gênero</span>
+                <Film size={14} style={{ color: "#e8b44a" }} />
+                <span>Gêneros de Filmes</span>
               </div>
               <div className="ydo-categories-grid">
-                {CATEGORIAS.map((cat) => (
+                {CATEGORIAS_FILMES.map((cat) => (
                   <Link
                     key={cat.slug}
                     to="/generos/$slug"
                     params={{ slug: cat.slug }}
                     className="ydo-category-item"
-                    onClick={() => setCategoriesOpen(false)}
+                    onClick={() => setMoviesHover(false)}
                   >
                     <span className="ydo-category-emoji">{cat.icon}</span>
                     <span className="ydo-category-name">{cat.name}</span>
@@ -173,20 +194,86 @@ export function Header({ onSearch }: HeaderProps) {
             </div>
           )}
         </div>
+
+        {/* Item Séries com Dropdown de Categorias ao passar o mouse */}
+        <div
+          className="ydo-dropdown-container"
+          onMouseEnter={() => {
+            if (seriesTimerRef.current) clearTimeout(seriesTimerRef.current);
+            setSeriesHover(true);
+            setMoviesHover(false);
+          }}
+          onMouseLeave={() => {
+            seriesTimerRef.current = setTimeout(() => setSeriesHover(false), 150);
+          }}
+        >
+          <Link
+            to="/generos/series"
+            className={`ydo-nav-link ${seriesHover ? "is-active" : ""}`}
+          >
+            <span>Séries</span>
+            <ChevronDown size={13} className={`ydo-chevron ${seriesHover ? "rotate" : ""}`} />
+          </Link>
+
+          {seriesHover && (
+            <div className="ydo-categories-dropdown animate-fade-in">
+              <div className="ydo-dropdown-header">
+                <Tv size={14} style={{ color: "#e8b44a" }} />
+                <span>Gêneros de Séries</span>
+              </div>
+              <div className="ydo-categories-grid">
+                {CATEGORIAS_SERIES.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    to="/generos/$slug"
+                    params={{ slug: cat.slug }}
+                    className="ydo-category-item"
+                    onClick={() => setSeriesHover(false)}
+                  >
+                    <span className="ydo-category-emoji">{cat.icon}</span>
+                    <span className="ydo-category-name">{cat.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <Link to="/lancamentos" className="ydo-nav-link">
+          Lançamentos
+        </Link>
+
+        {/* Minha Lista no Menu com Badge */}
+        <Link to="/minha-lista" className="ydo-nav-link ydo-nav-mylist">
+          <Heart size={14} fill={savedCount > 0 ? "#e8b44a" : "none"} style={{ color: "#e8b44a" }} />
+          <span>Minha Lista</span>
+          {savedCount > 0 && (
+            <span className="ydo-mylist-badge">{savedCount}</span>
+          )}
+        </Link>
       </nav>
 
-      {/* Campo de Busca Personalizado e Profissional */}
+      {/* Lado Direito: Relógio Personalizado + Busca Profissional */}
       <div className="ydo-header-tools">
+        {/* Relógio Digital Personalizado */}
+        {currentTime && (
+          <div className="ydo-clock-pill" title="Horário Atual">
+            <span className="ydo-clock-dot" />
+            <span className="ydo-clock-time">{currentTime}</span>
+          </div>
+        )}
+
+        {/* Sistema de Busca Personalizada */}
         {searchOpen ? (
           <form onSubmit={handleSearchSubmit} className="ydo-search-form animate-fade-in">
-            <Search size={16} className="ydo-search-icon" aria-hidden />
+            <Search size={15} className="ydo-search-icon" aria-hidden />
             <input
               ref={searchRef}
               type="search"
               value={query}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar filmes, séries..."
-              aria-label="Busca profissional"
+              placeholder="Buscar no Zang Flix…"
+              aria-label="Busca personalizada"
               autoComplete="off"
               className="ydo-search-input"
             />
@@ -214,7 +301,7 @@ export function Header({ onSearch }: HeaderProps) {
               className="ydo-search-close"
               aria-label="Fechar busca"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           </form>
         ) : (
@@ -224,11 +311,11 @@ export function Header({ onSearch }: HeaderProps) {
               setSearchOpen(true);
               setTimeout(() => searchRef.current?.focus(), 60);
             }}
-            aria-label='Buscar títulos (pressione "/")'
-            title='Buscar (Atalho: "/")'
+            aria-label='Buscar filmes ou séries (atalho: "/")'
+            title='Buscar (Atalho "/")'
           >
-            <Search size={15} />
-            <span className="ydo-search-pill-label">Buscar...</span>
+            <Search size={14} />
+            <span className="ydo-search-pill-label">Buscar</span>
             <kbd className="ydo-search-kbd">/</kbd>
           </button>
         )}
