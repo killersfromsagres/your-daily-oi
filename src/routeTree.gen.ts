@@ -5,6 +5,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as JogoSlugRouteImport } from './routes/jogo.$slug'
 import { Route as GenerosSlugRouteImport } from './routes/generos.$slug'
 import { Route as LancamentosRouteImport } from './routes/lancamentos'
+import { Route as AnimesRouteImport } from './routes/animes'
+import { Route as AnimeIdRouteImport } from './routes/anime.$id'
+import { Route as AssistirAnimeIdTempEpRouteImport } from './routes/assistir.anime.$id.$temp.$ep'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as BuscaRouteImport } from './routes/busca'
 import { Route as FilmeIdRouteImport } from './routes/filme.$id'
@@ -33,6 +36,24 @@ const GenerosSlugRoute = GenerosSlugRouteImport.update({
 const LancamentosRoute = LancamentosRouteImport.update({
   id: '/lancamentos',
   path: '/lancamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const AnimesRoute = AnimesRouteImport.update({
+  id: '/animes',
+  path: '/animes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const AnimeIdRoute = AnimeIdRouteImport.update({
+  id: '/anime/$id',
+  path: '/anime/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const AssistirAnimeIdTempEpRoute = AssistirAnimeIdTempEpRouteImport.update({
+  id: '/assistir/anime/$id/$temp/$ep',
+  path: '/assistir/anime/$id/$temp/$ep',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -77,6 +98,9 @@ export interface FileRoutesByFullPath {
   '/jogo/$slug': typeof JogoSlugRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/lancamentos': typeof LancamentosRoute
+  '/animes': typeof AnimesRoute
+  '/anime/$id': typeof AnimeIdRoute
+  '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/minha-lista': typeof MinhaListaRoute
   '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
@@ -90,6 +114,9 @@ export interface FileRoutesByTo {
   '/jogo/$slug': typeof JogoSlugRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/lancamentos': typeof LancamentosRoute
+  '/animes': typeof AnimesRoute
+  '/anime/$id': typeof AnimeIdRoute
+  '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/minha-lista': typeof MinhaListaRoute
   '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
@@ -104,6 +131,9 @@ export interface FileRoutesById {
   '/jogo/$slug': typeof JogoSlugRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/lancamentos': typeof LancamentosRoute
+  '/animes': typeof AnimesRoute
+  '/anime/$id': typeof AnimeIdRoute
+  '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/minha-lista': typeof MinhaListaRoute
   '/busca': typeof BuscaRoute
   '/filme/$id': typeof FilmeIdRoute
@@ -119,6 +149,9 @@ export interface FileRouteTypes {
     | '/jogo/$slug'
     | '/generos/$slug'
     | '/lancamentos'
+    | '/animes'
+    | '/anime/$id'
+    | '/assistir/anime/$id/$temp/$ep'
     | '/minha-lista'
     | '/busca'
     | '/filme/$id'
@@ -131,6 +164,9 @@ export interface FileRouteTypes {
     | '/jogo/$slug'
     | '/generos/$slug'
     | '/lancamentos'
+    | '/animes'
+    | '/anime/$id'
+    | '/assistir/anime/$id/$temp/$ep'
     | '/minha-lista'
     | '/busca'
     | '/filme/$id'
@@ -143,6 +179,9 @@ export interface FileRouteTypes {
     | '/jogo/$slug'
     | '/generos/$slug'
     | '/lancamentos'
+    | '/animes'
+    | '/anime/$id'
+    | '/assistir/anime/$id/$temp/$ep'
     | '/minha-lista'
     | '/busca'
     | '/filme/$id'
@@ -157,6 +196,9 @@ export interface RootRouteChildren {
   JogoSlugRoute: typeof JogoSlugRoute
   GenerosSlugRoute: typeof GenerosSlugRoute
   LancamentosRoute: typeof LancamentosRoute
+  AnimesRoute: typeof AnimesRoute
+  AnimeIdRoute: typeof AnimeIdRoute
+  AssistirAnimeIdTempEpRoute: typeof AssistirAnimeIdTempEpRoute
   MinhaListaRoute: typeof MinhaListaRoute
   BuscaRoute: typeof BuscaRoute
   FilmeIdRoute: typeof FilmeIdRoute
@@ -193,6 +235,27 @@ declare module '@tanstack/react-router' {
       path: '/lancamentos'
       fullPath: '/lancamentos'
       preLoaderRoute: typeof LancamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/animes': {
+      id: '/animes'
+      path: '/animes'
+      fullPath: '/animes'
+      preLoaderRoute: typeof AnimesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anime/$id': {
+      id: '/anime/$id'
+      path: '/anime/$id'
+      fullPath: '/anime/$id'
+      preLoaderRoute: typeof AnimeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistir/anime/$id/$temp/$ep': {
+      id: '/assistir/anime/$id/$temp/$ep'
+      path: '/assistir/anime/$id/$temp/$ep'
+      fullPath: '/assistir/anime/$id/$temp/$ep'
+      preLoaderRoute: typeof AssistirAnimeIdTempEpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/minha-lista': {
@@ -245,6 +308,9 @@ const rootRouteChildren: RootRouteChildren = {
   JogoSlugRoute: JogoSlugRoute,
   GenerosSlugRoute: GenerosSlugRoute,
   LancamentosRoute: LancamentosRoute,
+  AnimesRoute: AnimesRoute,
+  AnimeIdRoute: AnimeIdRoute,
+  AssistirAnimeIdTempEpRoute: AssistirAnimeIdTempEpRoute,
   MinhaListaRoute: MinhaListaRoute,
   BuscaRoute: BuscaRoute,
   FilmeIdRoute: FilmeIdRoute,

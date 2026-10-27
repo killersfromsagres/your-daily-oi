@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import type {
   AudioTrack,
   CatalogItem,
@@ -10,11 +12,10 @@ import type {
 } from "./types";
 
 // As URLs de catálogo:
-// saimo-filmes.pages.dev já é a raiz de vod (sem prefixo /vod)
-// github raw continua com o subdiretório /vod
 const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://saimo-filmes.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
 const SAIMO_RAW = (process.env.SAIMO_VOD_RAW ?? "https://raw.githubusercontent.com/gabrielsaimo/SaimoPlayer/main/vod").replace(/\/$/, "");
 const SNAPSHOT_URL = (process.env.NEXT_PUBLIC_SNAPSHOT_URL ?? "").replace(/\/$/, "");
+const ANIMES_PAGES = (process.env.ANIMES_VOD_PAGES ?? "").replace(/\/$/, "");
 
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -135,6 +136,26 @@ function getCatalogUrls(fileName: string): string[] {
   return urls;
 }
 
+async function fetchAnimeText(fileName: string): Promise<string> {
+  if (ANIMES_PAGES) {
+    try {
+      const res = await fetchWithRetry(`${ANIMES_PAGES}/${fileName}`);
+      if (res.ok) return await res.text();
+    } catch {
+      // fallback local
+    }
+  }
+  try {
+    const p = path.resolve(process.cwd(), "public", "animes", fileName);
+    if (fs.existsSync(p)) {
+      return fs.readFileSync(p, "utf-8");
+    }
+  } catch {
+    // fallback
+  }
+  return "";
+}
+
 // Parse de fichas.txt: tipo\tTítulo\tTMDB_ID\tposter_path\tGênero1,Gênero2,...
 function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "seasons">> {
   const map = new Map<string, Omit<CatalogItem, "streams" | "seasons">>();
@@ -143,13 +164,13 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     const parts = line.trim().split("\t");
     if (parts.length < 4) continue;
     const [tipo, title, tmdbRaw, posterPath, genresRaw] = parts;
-    if (!title || (tipo !== "f" && tipo !== "s")) continue;
+    if (!title || (tipo !== "f" && tipo !== "s" && tipo !== "a")) continue;
     const tmdbId = tmdbRaw && !Number.isNaN(Number(tmdbRaw)) ? Number(tmdbRaw) : null;
     const genres = genresRaw ? genresRaw.split(",").map((g) => g.trim()).filter(Boolean) : [];
     const key = normalizeTitle(title);
     map.set(key, {
       id: key,
-      type: tipo as "f" | "s",
+      type: tipo as "f" | "s" | "a",
       title: title.trim(),
       tmdbId,
       posterPath: posterPath?.trim() ?? "",
@@ -312,12 +333,32 @@ function getLetterKey(title: string): string {
 }
 
 /**
- * Carrega streams e temporadas de uma letra específica de filme ou série
+ * Carrega streams e temporadas de uma letra específica de filme, série ou anime
  */
-export async function getStreamsForLetter(type: "f" | "s", letter: string): Promise<Map<string, StreamSource[]>> {
+export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string): Promise<Map<string, StreamSource[]>> {
   const cacheKey = `${type}-${letter}`;
   if (streamsCache.has(cacheKey)) {
     return streamsCache.get(cacheKey)!;
+  }
+
+  if (type === "a") {
+    try {
+      let text = await fetchAnimeText(`animes-${letter}-0.txt`);
+      if (!text) {
+        text = await fetchAnimeText(`animes-${letter}-1.txt`);
+      }
+      if (text) {
+        const { streams, seasons } = parseSeriesData(text);
+        streamsCache.set(cacheKey, streams);
+        seriesSeasonsCache.set(`a-${letter}`, seasons);
+        return streams;
+      }
+    } catch {
+      // continua
+    }
+    const empty = new Map<string, StreamSource[]>();
+    streamsCache.set(cacheKey, empty);
+    return empty;
   }
 
   const fileName = type === "f" ? `filmes-${letter}.txt` : `series-${letter}-1.txt`;
@@ -341,15 +382,16 @@ export async function getStreamsForLetter(type: "f" | "s", letter: string): Prom
 }
 
 /**
- * Busca temporadas e episódios de uma série de forma completa
+ * Busca temporadas e episódios de uma série ou anime de forma completa
  */
-export async function getSeasonsForSeries(title: string): Promise<SeasonItem[]> {
+export async function getSeasonsForSeries(title: string, type: "s" | "a" = "s"): Promise<SeasonItem[]> {
   const norm = normalizeTitle(title);
   const letter = getLetterKey(title);
-  if (!seriesSeasonsCache.has(letter)) {
-    await getStreamsForLetter("s", letter);
+  const cacheMapKey = type === "a" ? `a-${letter}` : letter;
+  if (!seriesSeasonsCache.has(cacheMapKey)) {
+    await getStreamsForLetter(type, letter);
   }
-  const seriesMap = seriesSeasonsCache.get(letter);
+  const seriesMap = seriesSeasonsCache.get(cacheMapKey);
   if (seriesMap?.has(norm)) {
     return seriesMap.get(norm)!;
   }
@@ -359,7 +401,7 @@ export async function getSeasonsForSeries(title: string): Promise<SeasonItem[]> 
 /**
  * Busca streams de um título específico de forma cirúrgica e instantânea
  */
-export async function getStreamsForItem(type: "f" | "s", title: string): Promise<StreamSource[]> {
+export async function getStreamsForItem(type: "f" | "s" | "a", title: string): Promise<StreamSource[]> {
   const norm = normalizeTitle(title);
   const letter = getLetterKey(title);
   const streamsMap = await getStreamsForLetter(type, letter);
@@ -396,14 +438,38 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
     return { items: catalogCache, highlights: highlightCache };
   }
 
-  // Carrega fichas.txt e destaques.txt em paralelo (resposta imediata em < 300ms)
-  const [fichasText, destaquesText] = await Promise.all([
+  // Carrega fichas.txt, destaques.txt e animes em paralelo
+  const [fichasText, destaquesText, animesFichasText] = await Promise.all([
     fetchText(getCatalogUrls("fichas.txt")),
     fetchText(getCatalogUrls("destaques.txt")),
+    fetchAnimeText("fichas.txt").catch(() => ""),
   ]);
 
   const fichas = parseFichas(fichasText);
   const highlights = parseDestaques(destaquesText);
+
+  // Funde as fichas de animes caso existam
+  if (animesFichasText) {
+    const animesFichas = parseFichas(animesFichasText);
+    for (const [key, base] of animesFichas) {
+      fichas.set(key, base);
+    }
+
+    // Se houver animes, adiciona a fileira "Animes em alta" aos destaques da Home
+    const animeItems = Array.from(animesFichas.values());
+    if (animeItems.length > 0) {
+      highlights.unshift({
+        rowName: "Animes em alta",
+        items: animeItems.map((a) => ({
+          type: "a" as const,
+          title: a.title,
+          letter: getLetterKey(a.title),
+          year: "2024",
+          posterPath: a.posterPath || "",
+        })),
+      });
+    }
+  }
 
   // Monta catálogo indexado
   const items = new Map<string, CatalogItem>();

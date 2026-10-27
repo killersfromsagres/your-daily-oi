@@ -1,6 +1,25 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { Search, X, ChevronDown, Heart, Clock, Film, Tv } from "lucide-react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
+import {
+  Search,
+  X,
+  ChevronDown,
+  Heart,
+  Film,
+  Tv,
+  Sparkles,
+  Flame,
+  Ghost,
+  Smile,
+  Rocket,
+  Compass,
+  Wand2,
+  Video,
+  Theater,
+  ShieldAlert,
+  Swords,
+  Zap,
+} from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
 
@@ -8,28 +27,43 @@ interface HeaderProps {
   onSearch?: (q: string) => void;
 }
 
-const CATEGORIAS_FILMES = [
-  { name: "Ação", slug: "acao", icon: "💥" },
-  { name: "Terror", slug: "terror", icon: "👻" },
-  { name: "Comédia", slug: "comedia", icon: "😂" },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", icon: "🚀" },
-  { name: "Suspense", slug: "suspense", icon: "🔍" },
-  { name: "Romance", slug: "romance", icon: "❤️" },
-  { name: "Animação", slug: "animacao", icon: "✨" },
-  { name: "Aventura", slug: "aventura", icon: "🗺️" },
-  { name: "Fantasia", slug: "fantasia", icon: "🧙" },
-  { name: "Documentário", slug: "documentario", icon: "📹" },
+interface CategoryItem {
+  name: string;
+  slug: string;
+  Icon: ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
+}
+
+const CATEGORIAS_FILMES: CategoryItem[] = [
+  { name: "Ação", slug: "acao", Icon: Flame },
+  { name: "Terror", slug: "terror", Icon: Ghost },
+  { name: "Comédia", slug: "comedia", Icon: Smile },
+  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: Rocket },
+  { name: "Suspense", slug: "suspense", Icon: Search },
+  { name: "Romance", slug: "romance", Icon: Heart },
+  { name: "Animação", slug: "animacao", Icon: Sparkles },
+  { name: "Aventura", slug: "aventura", Icon: Compass },
+  { name: "Fantasia", slug: "fantasia", Icon: Wand2 },
+  { name: "Documentário", slug: "documentario", Icon: Video },
 ];
 
-const CATEGORIAS_SERIES = [
-  { name: "Drama", slug: "drama", icon: "🎭" },
-  { name: "Suspense", slug: "suspense", icon: "🔍" },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", icon: "🚀" },
-  { name: "Ação & Aventura", slug: "acao", icon: "💥" },
-  { name: "Comédia", slug: "comedia", icon: "😂" },
-  { name: "Crime & Mistério", slug: "crime", icon: "🕵️" },
-  { name: "Animação", slug: "animacao", icon: "✨" },
-  { name: "Documentário", slug: "documentario", icon: "📹" },
+const CATEGORIAS_SERIES: CategoryItem[] = [
+  { name: "Drama", slug: "drama", Icon: Theater },
+  { name: "Suspense", slug: "suspense", Icon: Search },
+  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: Rocket },
+  { name: "Ação & Aventura", slug: "acao", Icon: Flame },
+  { name: "Comédia", slug: "comedia", Icon: Smile },
+  { name: "Crime & Mistério", slug: "crime", Icon: ShieldAlert },
+  { name: "Animação", slug: "animacao", Icon: Sparkles },
+  { name: "Documentário", slug: "documentario", Icon: Video },
+];
+
+const CATEGORIAS_ANIMES: CategoryItem[] = [
+  { name: "Shounen", slug: "shounen", Icon: Swords },
+  { name: "Ação", slug: "acao", Icon: Flame },
+  { name: "Fantasia", slug: "fantasia", Icon: Wand2 },
+  { name: "Animação", slug: "animacao", Icon: Sparkles },
+  { name: "Aventura", slug: "aventura", Icon: Compass },
+  { name: "Poderes & Ficção", slug: "ficcao-cientifica", Icon: Zap },
 ];
 
 export function Header({ onSearch }: HeaderProps) {
@@ -37,6 +71,7 @@ export function Header({ onSearch }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [moviesHover, setMoviesHover] = useState(false);
   const [seriesHover, setSeriesHover] = useState(false);
+  const [animesHover, setAnimesHover] = useState(false);
   const [query, setQuery] = useState("");
   const [currentTime, setCurrentTime] = useState("");
   const [savedCount, setSavedCount] = useState(0);
@@ -45,9 +80,11 @@ export function Header({ onSearch }: HeaderProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const moviesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seriesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Relógio personalizado em tempo real
+  // Relógio digital personalizado
   useEffect(() => {
     const updateClock = () => {
       const now = new Date();
@@ -76,7 +113,7 @@ export function Header({ onSearch }: HeaderProps) {
       setVisible(true);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        if (!searchOpen && !moviesHover && !seriesHover) {
+        if (!searchOpen && !moviesHover && !seriesHover && !animesHover) {
           setVisible(false);
         }
       }, 4000);
@@ -91,7 +128,7 @@ export function Header({ onSearch }: HeaderProps) {
       document.removeEventListener("keydown", show);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [searchOpen, moviesHover, seriesHover]);
+  }, [searchOpen, moviesHover, seriesHover, animesHover]);
 
   // Atalho "/" para focar busca e Escape para fechar
   useEffect(() => {
@@ -104,17 +141,31 @@ export function Header({ onSearch }: HeaderProps) {
       ) {
         e.preventDefault();
         setSearchOpen(true);
-        setTimeout(() => searchRef.current?.focus(), 60);
+        setTimeout(() => searchRef.current?.focus(), 80);
       }
       if (e.key === "Escape") {
         setSearchOpen(false);
         setMoviesHover(false);
         setSeriesHover(false);
+        setAnimesHover(false);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // Fecha busca ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        if (searchOpen && !query) {
+          setSearchOpen(false);
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchOpen, query]);
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -134,7 +185,7 @@ export function Header({ onSearch }: HeaderProps) {
       className="ydo-header"
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(-120%)",
+        transform: visible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-120%)",
         transition: `opacity 0.3s var(--ease-out-expo), transform 0.3s var(--ease-out-expo)`,
       }}
     >
@@ -145,22 +196,23 @@ export function Header({ onSearch }: HeaderProps) {
         </span>
       </Link>
 
-      {/* Navegação Compacta e Elegante */}
+      {/* Navegação Compacta e Proporcional */}
       <nav className="ydo-nav" aria-label="Navegação principal">
         <Link to="/" className="ydo-nav-link" activeOptions={{ exact: true }}>
           Início
         </Link>
 
-        {/* Item Filmes com Dropdown de Categorias ao passar o mouse */}
+        {/* Hover Filmes com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
           onMouseEnter={() => {
             if (moviesTimerRef.current) clearTimeout(moviesTimerRef.current);
             setMoviesHover(true);
             setSeriesHover(false);
+            setAnimesHover(false);
           }}
           onMouseLeave={() => {
-            moviesTimerRef.current = setTimeout(() => setMoviesHover(false), 150);
+            moviesTimerRef.current = setTimeout(() => setMoviesHover(false), 160);
           }}
         >
           <Link
@@ -178,33 +230,37 @@ export function Header({ onSearch }: HeaderProps) {
                 <span>Gêneros de Filmes</span>
               </div>
               <div className="ydo-categories-grid">
-                {CATEGORIAS_FILMES.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    to="/generos/$slug"
-                    params={{ slug: cat.slug }}
-                    className="ydo-category-item"
-                    onClick={() => setMoviesHover(false)}
-                  >
-                    <span className="ydo-category-emoji">{cat.icon}</span>
-                    <span className="ydo-category-name">{cat.name}</span>
-                  </Link>
-                ))}
+                {CATEGORIAS_FILMES.map((cat) => {
+                  const Icon = cat.Icon;
+                  return (
+                    <Link
+                      key={cat.slug}
+                      to="/generos/$slug"
+                      params={{ slug: cat.slug }}
+                      className="ydo-category-item"
+                      onClick={() => setMoviesHover(false)}
+                    >
+                      <Icon size={14} className="ydo-category-icon" />
+                      <span className="ydo-category-name">{cat.name}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
-        {/* Item Séries com Dropdown de Categorias ao passar o mouse */}
+        {/* Hover Séries com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
           onMouseEnter={() => {
             if (seriesTimerRef.current) clearTimeout(seriesTimerRef.current);
             setSeriesHover(true);
             setMoviesHover(false);
+            setAnimesHover(false);
           }}
           onMouseLeave={() => {
-            seriesTimerRef.current = setTimeout(() => setSeriesHover(false), 150);
+            seriesTimerRef.current = setTimeout(() => setSeriesHover(false), 160);
           }}
         >
           <Link
@@ -222,18 +278,69 @@ export function Header({ onSearch }: HeaderProps) {
                 <span>Gêneros de Séries</span>
               </div>
               <div className="ydo-categories-grid">
-                {CATEGORIAS_SERIES.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    to="/generos/$slug"
-                    params={{ slug: cat.slug }}
-                    className="ydo-category-item"
-                    onClick={() => setSeriesHover(false)}
-                  >
-                    <span className="ydo-category-emoji">{cat.icon}</span>
-                    <span className="ydo-category-name">{cat.name}</span>
-                  </Link>
-                ))}
+                {CATEGORIAS_SERIES.map((cat) => {
+                  const Icon = cat.Icon;
+                  return (
+                    <Link
+                      key={cat.slug}
+                      to="/generos/$slug"
+                      params={{ slug: cat.slug }}
+                      className="ydo-category-item"
+                      onClick={() => setSeriesHover(false)}
+                    >
+                      <Icon size={14} className="ydo-category-icon" />
+                      <span className="ydo-category-name">{cat.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Hover Animes com Ícones Minimalistas */}
+        <div
+          className="ydo-dropdown-container"
+          onMouseEnter={() => {
+            if (animesTimerRef.current) clearTimeout(animesTimerRef.current);
+            setAnimesHover(true);
+            setMoviesHover(false);
+            setSeriesHover(false);
+          }}
+          onMouseLeave={() => {
+            animesTimerRef.current = setTimeout(() => setAnimesHover(false), 160);
+          }}
+        >
+          <Link
+            to="/animes"
+            className={`ydo-nav-link ${animesHover ? "is-active" : ""}`}
+          >
+            <span>Animes</span>
+            <ChevronDown size={13} className={`ydo-chevron ${animesHover ? "rotate" : ""}`} />
+          </Link>
+
+          {animesHover && (
+            <div className="ydo-categories-dropdown animate-fade-in">
+              <div className="ydo-dropdown-header">
+                <Sparkles size={14} style={{ color: "#e8b44a" }} />
+                <span>Gêneros de Animes</span>
+              </div>
+              <div className="ydo-categories-grid">
+                {CATEGORIAS_ANIMES.map((cat) => {
+                  const Icon = cat.Icon;
+                  return (
+                    <Link
+                      key={cat.slug}
+                      to="/generos/$slug"
+                      params={{ slug: cat.slug }}
+                      className="ydo-category-item"
+                      onClick={() => setAnimesHover(false)}
+                    >
+                      <Icon size={14} className="ydo-category-icon" />
+                      <span className="ydo-category-name">{cat.name}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -243,7 +350,7 @@ export function Header({ onSearch }: HeaderProps) {
           Lançamentos
         </Link>
 
-        {/* Minha Lista no Menu com Badge */}
+        {/* Minha Lista */}
         <Link to="/minha-lista" className="ydo-nav-link ydo-nav-mylist">
           <Heart size={14} fill={savedCount > 0 ? "#e8b44a" : "none"} style={{ color: "#e8b44a" }} />
           <span>Minha Lista</span>
@@ -253,27 +360,27 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
       </nav>
 
-      {/* Lado Direito: Relógio Personalizado + Busca Profissional */}
-      <div className="ydo-header-tools">
+      {/* Lado Direito: Relógio + Ícone de Pesquisa Profissional */}
+      <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Relógio Digital Personalizado */}
-        {currentTime && (
+        {currentTime && !searchOpen && (
           <div className="ydo-clock-pill" title="Horário Atual">
             <span className="ydo-clock-dot" />
             <span className="ydo-clock-time">{currentTime}</span>
           </div>
         )}
 
-        {/* Sistema de Busca Personalizada */}
+        {/* Sistema de Busca Minimalista e Profissional */}
         {searchOpen ? (
-          <form onSubmit={handleSearchSubmit} className="ydo-search-form animate-fade-in">
+          <form onSubmit={handleSearchSubmit} className="ydo-search-expand animate-scale-in">
             <Search size={15} className="ydo-search-icon" aria-hidden />
             <input
               ref={searchRef}
               type="search"
               value={query}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar no Zang Flix…"
-              aria-label="Busca personalizada"
+              placeholder="Buscar filmes, séries, animes…"
+              aria-label="Buscar títulos"
               autoComplete="off"
               className="ydo-search-input"
             />
@@ -306,17 +413,15 @@ export function Header({ onSearch }: HeaderProps) {
           </form>
         ) : (
           <button
-            className="ydo-search-pill-btn"
+            className="ydo-search-trigger-btn"
             onClick={() => {
               setSearchOpen(true);
-              setTimeout(() => searchRef.current?.focus(), 60);
+              setTimeout(() => searchRef.current?.focus(), 80);
             }}
             aria-label='Buscar filmes ou séries (atalho: "/")'
-            title='Buscar (Atalho "/")'
+            title='Buscar (Atalho: "/")'
           >
-            <Search size={14} />
-            <span className="ydo-search-pill-label">Buscar</span>
-            <kbd className="ydo-search-kbd">/</kbd>
+            <Search size={16} />
           </button>
         )}
       </div>

@@ -4,6 +4,8 @@
   flex-shrink: 0;
   width: 175px;
   cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: 175px 262px;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

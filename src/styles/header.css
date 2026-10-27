@@ -1,25 +1,26 @@
 /* ============================================================
-   ZANG FLIX — Header Flutuante, Minha Lista & Relógio Digital
+   ZANG FLIX — Header Flutuante Compacto, Ícone de Busca & Submenus
    ============================================================ */
 
 .ydo-header {
   position: fixed;
-  top: 10px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%) translateY(0);
   z-index: 900;
-  width: min(calc(100vw - 28px), 1180px);
+  width: auto;
+  max-width: min(calc(100vw - 24px), 1080px);
   display: flex;
   align-items: center;
   gap: 1.25rem;
   padding: 0 1rem;
-  height: 50px;
+  height: 48px;
   border-radius: var(--r-nav, 26px);
-  background: rgba(13, 15, 26, 0.85);
+  background: rgba(13, 15, 26, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 30px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 36px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   will-change: transform, opacity;
@@ -31,7 +32,7 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  margin-right: 0.25rem;
+  margin-right: 0.2rem;
 }
 
 .ydo-logo-text {
@@ -50,22 +51,21 @@
 .ydo-nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  flex: 1;
+  gap: 0.2rem;
 }
 
 .ydo-nav-link {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: rgba(241, 241, 241, 0.72);
   text-decoration: none;
-  padding: 0.35rem 0.7rem;
+  padding: 0.35rem 0.65rem;
   border-radius: var(--r-pill, 999px);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  min-height: 34px;
+  min-height: 32px;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -83,7 +83,7 @@
   background: rgba(255, 255, 255, 0.12);
 }
 
-/* ── Dropdowns de Filmes e Séries ao Passar o Mouse ───────── */
+/* ── Dropdowns de Categorias no Hover ─────────────────────── */
 .ydo-dropdown-container {
   position: relative;
   display: inline-block;
@@ -100,7 +100,7 @@
 
 .ydo-categories-dropdown {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   left: 0;
   width: 320px;
   background: rgba(14, 16, 28, 0.96);
@@ -138,8 +138,8 @@
 .ydo-category-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 7px 10px;
   border-radius: 8px;
   text-decoration: none;
   color: rgba(241, 241, 241, 0.85);
@@ -151,14 +151,16 @@
 }
 
 .ydo-category-item:hover {
-  background: rgba(232, 180, 74, 0.15);
+  background: rgba(232, 180, 74, 0.14);
   border-color: rgba(232, 180, 74, 0.35);
   color: #ffffff;
   transform: translateX(2px);
 }
 
-.ydo-category-emoji {
-  font-size: 0.95rem;
+.ydo-category-icon {
+  color: var(--accent, #e8b44a);
+  flex-shrink: 0;
+  opacity: 0.9;
 }
 
 .ydo-category-name {
@@ -176,13 +178,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
   border-radius: 999px;
   background-color: var(--accent, #e8b44a);
   color: #0a0b14;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -192,13 +194,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
-  height: 32px;
+  padding: 0 9px;
+  height: 30px;
   border-radius: var(--r-pill, 999px);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   font-family: monospace, sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
   letter-spacing: 0.04em;
@@ -206,11 +208,11 @@
 }
 
 .ydo-clock-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background-color: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  box-shadow: 0 0 6px #10b981;
   animation: pulseDot 2s infinite ease-in-out;
 }
 
@@ -219,62 +221,48 @@
   50% { opacity: 0.4; transform: scale(0.85); }
 }
 
-/* ── Ferramentas & Busca Profissional ────────────────────── */
+/* ── Ferramentas & Ícone de Busca Minimalista ─────────────── */
 .ydo-header-tools {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
   margin-left: auto;
   flex-shrink: 0;
 }
 
-.ydo-search-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+/* Botão circular de busca profissional */
+.ydo-search-trigger-btn {
+  width: 32px;
   height: 32px;
-  padding: 0 10px;
-  border-radius: var(--r-pill, 999px);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(241, 241, 241, 0.6);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.ydo-search-pill-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(232, 180, 74, 0.4);
-  color: #ffffff;
-}
-
-.ydo-search-kbd {
-  display: inline-flex;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  font-family: inherit;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ydo-search-form {
+.ydo-search-trigger-btn:hover {
+  background: rgba(232, 180, 74, 0.18);
+  border-color: rgba(232, 180, 74, 0.45);
+  color: #ffffff;
+  transform: scale(1.06);
+}
+
+/* Campo expansível ao clicar na busca */
+.ydo-search-expand {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 18, 30, 0.96);
-  border: 1px solid rgba(232, 180, 74, 0.45);
+  background: rgba(16, 18, 30, 0.98);
+  border: 1px solid rgba(232, 180, 74, 0.5);
   border-radius: var(--r-pill, 999px);
   padding: 0 10px;
-  height: 34px;
-  box-shadow: 0 0 14px rgba(232, 180, 74, 0.2);
+  height: 32px;
+  box-shadow: 0 0 18px rgba(232, 180, 74, 0.25);
 }
 
 .ydo-search-icon {
@@ -288,7 +276,7 @@
   outline: none;
   color: #ffffff;
   font-size: 0.825rem;
-  width: 170px;
+  width: 190px;
 }
 
 .ydo-search-input::placeholder {
@@ -314,7 +302,22 @@
   color: #ffffff;
 }
 
-/* ── Animação Suave ──────────────────────────────────────── */
+/* ── Animações Suaves ────────────────────────────────────── */
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -336,11 +339,11 @@
     display: none;
   }
   .ydo-search-input {
-    width: 120px;
+    width: 140px;
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 720px) {
   .ydo-nav {
     display: none;
   }

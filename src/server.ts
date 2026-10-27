@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
 import { getTmdbData } from "./lib/tmdb";
+import { getAniListMetadata } from "./lib/anilist";
 import type { CatalogItem } from "./lib/types";
 
 type ServerEntry = {
@@ -216,10 +217,10 @@ async function handleItemApi(url: URL): Promise<Response> {
     }
   }
 
-  // Se for série, busca as temporadas e episódios completos
-  if (finalItem.type === "s" && (!finalItem.seasons || finalItem.seasons.length === 0)) {
+  // Se for série ou anime, busca as temporadas e episódios completos
+  if ((finalItem.type === "s" || finalItem.type === "a") && (!finalItem.seasons || finalItem.seasons.length === 0)) {
     try {
-      const seasons = await getSeasonsForSeries(finalItem.title);
+      const seasons = await getSeasonsForSeries(finalItem.title, finalItem.type === "a" ? "a" : "s");
       if (seasons.length > 0) {
         finalItem = { ...finalItem, seasons };
       }
@@ -230,12 +231,32 @@ async function handleItemApi(url: URL): Promise<Response> {
 
   if (item.tmdbId) {
     try {
-      const tmdb = await getTmdbData(item.tmdbId, item.type);
+      const tmdbType = item.type === "a" ? "s" : item.type;
+      const tmdb = await getTmdbData(item.tmdbId, tmdbType);
       if (tmdb) {
         finalItem = { ...finalItem, tmdb };
       }
     } catch {
       // continua com os metadados existentes
+    }
+  }
+
+  // Enriquecimento com AniList para animes (estúdio e formato)
+  if (finalItem.type === "a") {
+    try {
+      const anilist = await getAniListMetadata(finalItem.title);
+      if (anilist && finalItem.tmdb) {
+        finalItem = {
+          ...finalItem,
+          tmdb: {
+            ...finalItem.tmdb,
+            studio: anilist.studio,
+            format: anilist.format,
+          },
+        };
+      }
+    } catch {
+      // continua sem AniList
     }
   }
 

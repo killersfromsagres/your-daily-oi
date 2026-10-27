@@ -28,6 +28,8 @@ export interface TmdbData {
   releaseYear: number | null;
   runtime?: number | null; // Duração em minutos
   seasonsCount?: number | null; // Total de temporadas
+  studio?: string | null;
+  format?: string | null;
 }
 
 export interface EpisodeItem {
@@ -45,7 +47,7 @@ export interface SeasonItem {
 export interface CatalogItem {
   id: string;
   title: string;
-  type: "f" | "s";
+  type: "f" | "s" | "a";
   posterPath?: string;
   posterUrl?: string;
   genres: string[];
@@ -56,7 +58,7 @@ export interface CatalogItem {
 }
 
 export interface HighlightItem {
-  type: "f" | "s";
+  type: "f" | "s" | "a";
   title: string;
   letter: string;
   year: string;

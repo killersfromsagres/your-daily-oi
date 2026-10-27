@@ -21,7 +21,12 @@ export function MediaCard({
   const [imgFailed, setImgFailed] = useState(false);
   const hasDub = item.streams.some((s) => s.audio === "dub");
   const hasLeg = item.streams.some((s) => s.audio === "leg");
-  const detailPath = item.type === "f" ? `/filme/${item.id}` : `/serie/${item.id}`;
+  const detailPath =
+    item.type === "f"
+      ? `/filme/${item.id}`
+      : item.type === "a"
+        ? `/anime/${item.id}`
+        : `/serie/${item.id}`;
 
   return (
     <article className="ydo-card" data-rank={rank}>
@@ -38,6 +43,7 @@ export function MediaCard({
               src={item.posterUrl}
               alt=""
               loading="lazy"
+              decoding="async"
               onError={() => setImgFailed(true)}
               className="ydo-card-img"
               draggable={false}
