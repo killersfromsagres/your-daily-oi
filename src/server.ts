@@ -21,12 +21,14 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-function jsonResponse(payload: unknown, status = 200, cacheControl = "public, max-age=3600, stale-while-revalidate=86400"): Response {
+function jsonResponse(payload: unknown, status = 200, cacheControl = "no-cache, no-store, must-revalidate"): Response {
   return new Response(JSON.stringify(payload), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": cacheControl,
+      "pragma": "no-cache",
+      "expires": "0",
       "access-control-allow-origin": "*",
     },
   });

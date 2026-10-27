@@ -30,7 +30,7 @@ function GenrePage() {
     let active = true;
     setLoading(true);
 
-    fetch("/api/catalogo")
+    fetch("/api/catalogo", { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error("Erro");
         return res.json() as Promise<{ items: CatalogItem[] }>;

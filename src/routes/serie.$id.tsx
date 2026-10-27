@@ -23,7 +23,7 @@ function SeriesDetailPage() {
     let active = true;
     setLoading(true);
 
-    fetch(`/api/item?id=${encodeURIComponent(id)}`)
+    fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error("Erro");
         return res.json() as Promise<CatalogItem>;
@@ -37,7 +37,7 @@ function SeriesDetailPage() {
         }
       })
       .catch(() => {
-        fetch("/api/catalogo")
+        fetch("/api/catalogo", { cache: "no-store" })
           .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
           .then((d) => {
             if (!active) return;

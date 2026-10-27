@@ -45,8 +45,8 @@ function HomePage() {
     setLoading(true);
     setError("");
 
-    // Carrega dados da rota de API do servidor (/api/catalogo)
-    fetch("/api/catalogo")
+    // Carrega dados da rota de API do servidor (/api/catalogo) sem cache estático
+    fetch("/api/catalogo", { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{
