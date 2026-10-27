@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem } from "./lib/catalog";
+import { loadChannels, loadRadios, getEpgData } from "./lib/channels";
 import { getTmdbData } from "./lib/tmdb";
 import type { CatalogItem } from "./lib/types";
 
@@ -105,6 +106,104 @@ async function handleItemApi(url: URL): Promise<Response> {
   return jsonResponse(finalItem);
 }
 
+/**
+ * Route Handler /api/canais: Lista os canais reais agrupados por categoria
+ */
+async function handleCanaisApi(): Promise<Response> {
+  try {
+    const data = await loadChannels();
+    return jsonResponse(data, 200, "public, max-age=43200, stale-while-revalidate=86400");
+  } catch (error) {
+    console.error("Erro na rota /api/canais:", error);
+    return jsonResponse({ error: "Falha ao carregar canais", detalhes: String(error) }, 502);
+  }
+}
+
+/**
+ * Route Handler /api/radios: Lista de estações de rádio
+ */
+async function handleRadiosApi(): Promise<Response> {
+  try {
+    const radios = await loadRadios();
+    return jsonResponse({ radios }, 200, "public, max-age=43200, stale-while-revalidate=86400");
+  } catch (error) {
+    console.error("Erro na rota /api/radios:", error);
+    return jsonResponse({ error: "Falha ao carregar rádios", detalhes: String(error) }, 502);
+  }
+}
+
+/**
+ * Route Handler /api/epg: Guia de programação dos canais
+ */
+async function handleEpgApi(url: URL): Promise<Response> {
+  try {
+    const canalId = url.searchParams.get("canalId") || undefined;
+    const epg = await getEpgData(canalId);
+    return jsonResponse({ epg }, 200, "public, max-age=1800, stale-while-revalidate=3600");
+  } catch (error) {
+    console.error("Erro na rota /api/epg:", error);
+    return jsonResponse({ error: "Falha ao carregar EPG", detalhes: String(error) }, 502);
+  }
+}
+
+/**
+ * Route Handler /api/stream-proxy: Proxy com headers Referer e User-Agent, e suporte a Range 206
+ */
+async function handleStreamProxyApi(request: Request, url: URL): Promise<Response> {
+  const targetUrl = url.searchParams.get("url");
+  if (!targetUrl) {
+    return jsonResponse({ error: "URL de stream ausente" }, 400);
+  }
+
+  const referer = url.searchParams.get("referer");
+  const agente = url.searchParams.get("agente");
+
+  const forwardHeaders: Record<string, string> = {
+    "User-Agent": agente || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+    Accept: "*/*",
+  };
+
+  if (referer) {
+    forwardHeaders["Referer"] = referer;
+  }
+
+  const rangeHeader = request.headers.get("range");
+  if (rangeHeader) {
+    forwardHeaders["Range"] = rangeHeader;
+  }
+
+  try {
+    const upstreamRes = await fetch(targetUrl, {
+      headers: forwardHeaders,
+      redirect: "follow",
+    });
+
+    const responseHeaders = new Headers();
+    responseHeaders.set("access-control-allow-origin", "*");
+    responseHeaders.set("access-control-allow-methods", "GET, HEAD, OPTIONS");
+    responseHeaders.set("access-control-allow-headers", "Range, Content-Type, Accept");
+
+    const copyHeaders = ["content-type", "content-length", "content-range", "accept-ranges"];
+    for (const h of copyHeaders) {
+      const val = upstreamRes.headers.get(h);
+      if (val) responseHeaders.set(h, val);
+    }
+
+    if (!responseHeaders.has("accept-ranges")) {
+      responseHeaders.set("accept-ranges", "bytes");
+    }
+
+    return new Response(upstreamRes.body, {
+      status: upstreamRes.status,
+      statusText: upstreamRes.statusText,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error("Erro no stream proxy:", error);
+    return jsonResponse({ error: "Falha ao conectar no stream remoto", detalhes: String(error) }, 502);
+  }
+}
+
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -141,6 +240,18 @@ export default {
       }
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
+      }
+      if (url.pathname === "/api/canais") {
+        return await handleCanaisApi();
+      }
+      if (url.pathname === "/api/radios") {
+        return await handleRadiosApi();
+      }
+      if (url.pathname === "/api/epg") {
+        return await handleEpgApi(url);
+      }
+      if (url.pathname === "/api/stream-proxy") {
+        return await handleStreamProxyApi(request, url);
       }
 
       const handler = await getServerEntry();

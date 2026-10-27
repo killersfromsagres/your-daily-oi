@@ -277,46 +277,7 @@ function MovieDetailPage() {
             {movie.tmdb?.overview || "Sinopse em atualização oficial via acervo Saimo TV."}
           </p>
 
-          {/* Caixa de Fontes e Versões Disponíveis */}
-          <div style={{
-            backgroundColor: "rgba(255, 255, 255, 0.03)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            borderRadius: "18px",
-            padding: "20px 24px"
-          }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "rgba(255, 255, 255, 0.6)", display: "block", marginBottom: "12px" }}>
-              Fontes e versões disponíveis ({movie.streams.length}):
-            </span>
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              {movie.streams.map((stream, idx) => (
-                <Link
-                  key={idx}
-                  to={`/assistir/filme/${movie.id}`}
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.06)",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    borderRadius: "10px",
-                    padding: "8px 16px",
-                    fontSize: "0.82rem",
-                    color: "#fff",
-                    textDecoration: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "2px",
-                    transition: "all 0.15s ease"
-                  }}
-                >
-                  <span style={{ fontWeight: "700" }}>Fonte {idx + 1}</span>
-                  <span style={{ fontSize: "0.7rem", color: stream.audio === "dub" ? "#4fe3d0" : "#a78bfa" }}>
-                    {stream.audio === "dub" ? "Dublado" : "Legendado"}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Seção Elenco em Grid Horizontal com Fotos Redondas Estilo Saimo */}
+          {/* Seção Elenco em Grid Horizontal com Fotos Redondas */}
           {cast.length > 0 && (
             <div style={{ marginTop: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", color: "#fff", fontWeight: "800", fontSize: "1.2rem" }}>
