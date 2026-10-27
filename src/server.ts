@@ -314,9 +314,22 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     } catch {
       // continua com as fontes de relay
     }
+  } else {
+    // 1b. Para séries e animes: a fonte exata do episódio (arquivo direto) vem SEMPRE antes do relay
+    // (o relay de séries já foi observado servindo o episódio 1 da temporada 1 no navegador)
+    try {
+      const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
+      const foundSeason = seasons.find((s) => s.seasonNumber === temp);
+      const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
+      if (foundEp?.streams && foundEp.streams.length > 0) {
+        orderedSources.push(...foundEp.streams);
+      }
+    } catch {
+      // continua com as fontes de relay
+    }
   }
 
-  // 2. Injeta os streams oficiais do relay Saimo TV confirmados ao vivo
+  // 2. Injeta os streams oficiais do relay Saimo TV como contingência / fallback
   if (item.tmdbId) {
     if (tipo === "movie") {
       orderedSources.push({
@@ -342,7 +355,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
         format: "mp4",
         quality: "FHD",
         name: "Servidor Principal (Dub)",
-        priority: 0,
+        priority: orderedSources.length,
       });
       orderedSources.push({
         url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=leg`,
@@ -350,22 +363,8 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
         format: "mp4",
         quality: "FHD",
         name: "Servidor Principal (Leg)",
-        priority: 1,
+        priority: orderedSources.length + 1,
       });
-    }
-  }
-
-  // 3. Para séries e animes: anexa fontes nativas do episódio pedido
-  if (item.type !== "f") {
-    try {
-      const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
-      const foundSeason = seasons.find((s) => s.seasonNumber === temp);
-      const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
-      if (foundEp?.streams) {
-        orderedSources.push(...foundEp.streams);
-      }
-    } catch {
-      // continua com as fontes de relay
     }
   }
 

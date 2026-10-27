@@ -59,10 +59,18 @@ function WatchAnimePage() {
   const targetEpisode = Number(ep);
   const foundSeason = anime?.seasons?.find((s) => s.seasonNumber === targetSeason);
   const foundEp = foundSeason?.episodes?.find((e) => e.episodeNumber === targetEpisode);
+  // A fonte exata do episódio (arquivo direto do catálogo) vem SEMPRE antes do relay
+  // do Saimo: o relay de séries já foi observado servindo o episódio 1 da temporada 1
+  // no navegador, então o arquivo correto do episódio precisa ser tentado primeiro.
+  const seenUrls = new Set<string>();
   const streams: StreamSource[] = [
-    ...extraStreams,
     ...(foundEp?.streams || []),
-  ];
+    ...extraStreams,
+  ].filter((s) => {
+    if (!s?.url || seenUrls.has(s.url)) return false;
+    seenUrls.add(s.url);
+    return true;
+  });
 
   if (!anime || streams.length === 0) {
     return (

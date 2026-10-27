@@ -155,7 +155,11 @@ a\tSpy x Family\t120089\t/vaIREdPGZOnW9Jrs86mheVVlIQQ.jpg\tAnimação,Comédia,A
 a\tMy Hero Academia\t280110\t/3INu3n1sUa9K3O5OTPrqvJOetbd.jpg\tAnimação,Ação,Ficção científica,Shounen
 a\tTokyo Ghoul\t61374\t/5XBk7T4NsGeN9RG39y2nU6gRWQl.jpg\tAnimação,Ação,Terror,Sobrenatural
 a\tFrieren\t209867\t/qykTIEJQF8cunKD0CKOqab15wns.jpg\tAnimação,Aventura,Drama,Fantasia
-a\tNamakura Gatana\t45817\t/5XBk7T4NsGeN9RG39y2nU6gRWQl.jpg\tAnimação,Comédia,História,Domínio Público`;
+a\tNamakura Gatana\t208624\t/8oE3piDBG6ZYyUnKurantSmpE4o.jpg\tAnimação,Comédia,História,Domínio Público
+a\tMomotaro e as Águias do Mar\t118689\t/4eXmjmYBHInHjHaijObMz2Qfwl8.jpg\tAnimação,Fantasia
+a\tA Aranha e a Tulipa\t324443\t/lsodRXxiLqjQwxegBeSEaHLAXGi.jpg\tAnimação,Aventura
+a\tUgokie Kori no Tatehiki\t319146\thttps://archive.org/services/img/ugokie-kori-no-tatehiki-1933\tAnimação,Fantasia,Comédia
+a\tBenkei tai Ushiwaka\t345817\thttps://archive.org/services/img/benkei-tai-ushiwaka-1939\tAção,Animação,Comédia`;
 
 // Episódios de animes embutidos diretamente no bundle para funcionamento em produção serverless (zero fs)
 const EMBEDDED_ANIMES_EPISODES: Record<string, string> = {
@@ -165,13 +169,25 @@ const EMBEDDED_ANIMES_EPISODES: Record<string, string> = {
 1\t3\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=3&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=3&versao=leg
 2\t1\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=1&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=1&versao=leg
 2\t2\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=2&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=2&versao=leg
+
+@A Aranha e a Tulipa\t1943
+1\t1\tleg\thttps://archive.org/download/kumo-to-churippu-1943/Kumo%20to%20ch%C3%BBrippu%20(1943).mp4
+`,
+  "animes-B-0.txt": `@Benkei tai Ushiwaka\t1939
+1\t1\tleg\thttps://archive.org/download/benkei-tai-ushiwaka-1939/Benkei%20tai%20Ushiwaka%20(1939).mp4
 `,
   "animes-D-0.txt": `@Demon Slayer: Kimetsu no Yaiba\t2019
 1\t1\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=1&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=1&versao=leg
 1\t2\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=2&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=2&versao=leg
 `,
+  "animes-M-0.txt": `@Momotaro e as Águias do Mar\t1943
+1\t1\tleg\thttps://archive.org/download/momotaro-no-umiwashi-1943/Momotaro%20no%20umiwashi%20(1943).mp4
+`,
   "animes-N-0.txt": `@Namakura Gatana\t1917
-1\t1\tdub\thttps://raw.githubusercontent.com/mediaelement/mediaelement-files/master/big_buck_bunny.mp4
+1\t1\tleg\thttps://archive.org/download/failedsamurai1917krazytoonsprint/failedsamurai1917krazytoonsprint.mp4
+`,
+  "animes-U-0.txt": `@Ugokie Kori no Tatehiki\t1933
+1\t1\tleg\thttps://archive.org/download/ugokie-kori-no-tatehiki-1933/Ugokie%20kori%20no%20tatehiki%20(1933).mp4
 `,
 };
 

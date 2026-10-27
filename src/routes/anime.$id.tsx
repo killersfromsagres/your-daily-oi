@@ -546,7 +546,7 @@ function AnimeDetailPage() {
               >
                 <Tv size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
                 <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "4px" }}>
-                  Episódios ainda não sincronizados — volte em breve
+                  Episódios em preparação — volte em breve
                 </h4>
                 <p style={{ color: "rgba(255, 255, 255, 0.55)", fontSize: "0.85rem", maxWidth: "420px", margin: "0 auto" }}>
                   Estamos indexando os episódios completos deste título no acervo. Volte em breve!
