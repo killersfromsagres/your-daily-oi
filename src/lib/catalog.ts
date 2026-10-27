@@ -67,6 +67,7 @@ function parseStreams(raw: string, audio: AudioTrack): StreamSource[] {
     .split(",")
     .map((url) => url.trim())
     .filter(isValidUrl)
+    .filter((url) => !url.includes("r2.dev")) // descarta bucket r2 que retorna 403 permanente
     .map((url, i) => ({
       url,
       format: detectFormat(url),

@@ -19,10 +19,19 @@ interface OwnPlayerProps {
   preferredAudio?: "dub" | "leg";
 }
 
-const PRECISA_PROXY = (url: string) =>
-  url.startsWith("https://saimo-tv.pages.dev/") ||
-  url.startsWith("http://saimo-tv.pages.dev/") ||
-  url.includes("saimo-tv.pages.dev/api/stream");
+const PRECISA_PROXY = (url: string) => {
+  if (!url) return false;
+  // Qualquer URL http:// precisa passar pelo proxy no site https:// para evitar bloqueio de Mixed Content
+  return (
+    url.startsWith("http://") ||
+    url.startsWith("https://saimo-tv.pages.dev/") ||
+    url.startsWith("http://saimo-tv.pages.dev/") ||
+    url.includes("saimo-tv.pages.dev/api/stream") ||
+    url.includes("hermesnewone.com") ||
+    url.includes("workers.dev") ||
+    url.includes("tech-cdn.top")
+  );
+};
 
 const paraPlayer = (url: string, forceProxy: boolean) => {
   if (url.includes("/api/proxy-stream")) return url;

@@ -396,6 +396,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       Referer: "https://saimo-tv.pages.dev/",
+      Origin: "https://saimo-tv.pages.dev",
       Accept: "*/*",
       "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     };
@@ -410,11 +411,42 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
       upstreamHeaders["Accept-Encoding"] = clientAcceptEncoding;
     }
 
-    const res = await fetch(targetUrl, {
+    // 1. Se for o relay do Saimo TV, primeiro resolve o redirect 302 sem Range para obter a URL final real do CDN
+    if (targetUrl.includes("saimo-tv.pages.dev/api/stream")) {
+      try {
+        const redirectRes = await fetch(targetUrl, {
+          method: "GET",
+          headers: {
+            "User-Agent": upstreamHeaders["User-Agent"],
+            Referer: "https://saimo-tv.pages.dev/",
+            Accept: "*/*",
+          },
+          redirect: "manual",
+        });
+        const loc = redirectRes.headers.get("location");
+        if (loc && loc.startsWith("http")) {
+          targetUrl = loc;
+        }
+      } catch {
+        // continua
+      }
+    }
+
+    let res = await fetch(targetUrl, {
       method: request.method === "HEAD" ? "HEAD" : "GET",
       headers: upstreamHeaders,
       redirect: "follow",
     });
+
+    // Se o upstream rejeitar Range com 416 (Accept-Ranges: none), retenta imediatamente sem Range
+    if (res.status === 416 && upstreamHeaders["Range"]) {
+      delete upstreamHeaders["Range"];
+      res = await fetch(targetUrl, {
+        method: request.method === "HEAD" ? "HEAD" : "GET",
+        headers: upstreamHeaders,
+        redirect: "follow",
+      });
+    }
 
     const responseHeaders = new Headers();
     responseHeaders.set("Access-Control-Allow-Origin", "*");
@@ -422,16 +454,18 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
     responseHeaders.set("Access-Control-Allow-Headers", "*");
     responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
 
-    const contentType = res.headers.get("content-type");
-    if (contentType) responseHeaders.set("Content-Type", contentType);
+    const contentType = res.headers.get("content-type") || "video/mp4";
+    responseHeaders.set("Content-Type", contentType);
 
     const contentLength = res.headers.get("content-length");
     if (contentLength) responseHeaders.set("Content-Length", contentLength);
 
     const contentRange = res.headers.get("content-range");
-    if (contentRange) responseHeaders.set("Content-Range", contentRange);
+    if (contentRange && res.status === 206) {
+      responseHeaders.set("Content-Range", contentRange);
+    }
 
-    const acceptRanges = res.headers.get("accept-ranges") || "bytes";
+    const acceptRanges = res.headers.get("accept-ranges") || (res.status === 206 ? "bytes" : "none");
     responseHeaders.set("Accept-Ranges", acceptRanges);
 
     return new Response(request.method === "HEAD" ? null : res.body, {
