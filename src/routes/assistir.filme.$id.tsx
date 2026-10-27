@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Film, RefreshCw, Star, Info } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/assistir/filme/$id")({
 
 function WatchMoviePage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [movie, setMovie] = useState<CatalogItem | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -121,6 +122,8 @@ function WatchMoviePage() {
             streams={movie.streams}
             poster={movie.tmdb?.backdropUrl || movie.posterUrl}
             title={movie.title}
+            subtitle="Filmes"
+            onBack={() => void navigate({ to: `/filme/${movie.id}` })}
             initialTime={savedProgress?.currentTime || 0}
             onTimeUpdate={handleTimeUpdate}
           />

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 import { usePlayerEngine } from "./usePlayerEngine";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
@@ -9,6 +9,8 @@ interface OwnPlayerProps {
   streams: StreamSource[];
   poster?: string;
   title?: string;
+  subtitle?: string;
+  onBack?: () => void;
   initialTime?: number;
   onTimeUpdate?: (t: number) => void;
   onEnded?: () => void;
@@ -19,6 +21,8 @@ export function OwnPlayer({
   streams,
   poster,
   title,
+  subtitle,
+  onBack,
   initialTime = 0,
   onTimeUpdate,
   onEnded,
@@ -122,6 +126,23 @@ export function OwnPlayer({
         preload="metadata"
         aria-label={title ?? "Vídeo"}
       />
+
+      {/* Barra de Topo do Player (Estilo Netflix / Saimo TV) */}
+      <div className={`ydo-player-topbar${controlsVisible ? " visible" : ""}`}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="ydo-player-back-btn"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={22} />
+          </button>
+        )}
+        <div className="ydo-player-top-info">
+          {title && <span className="ydo-player-top-title">{title}</span>}
+          {subtitle && <span className="ydo-player-top-sub">{subtitle}</span>}
+        </div>
+      </div>
 
       {/* Loading */}
       {engine.state === "loading" && (

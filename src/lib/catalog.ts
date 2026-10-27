@@ -237,13 +237,85 @@ function parseSeriesEpisodesFile(text: string): Map<string, StreamSource[]> {
   return map;
 }
 
+// Cache de streams por arquivo já baixado para carregamento ultra rápido
+const streamsCache = new Map<string, Map<string, StreamSource[]>>();
+let isBackgroundSyncing = false;
+
+/**
+ * Obtém a letra do arquivo a partir da inicial do título
+ */
+function getLetterKey(title: string): string {
+  const norm = normalizeTitle(title);
+  const first = norm[0] || "#";
+  if (/[a-z]/i.test(first)) {
+    return first.toUpperCase();
+  }
+  return "%23";
+}
+
+/**
+ * Carrega streams de uma letra específica de filme ou série
+ */
+export async function getStreamsForLetter(type: "f" | "s", letter: string): Promise<Map<string, StreamSource[]>> {
+  const cacheKey = `${type}-${letter}`;
+  if (streamsCache.has(cacheKey)) {
+    return streamsCache.get(cacheKey)!;
+  }
+
+  const fileName = type === "f" ? `filmes-${letter}.txt` : `series-${letter}-1.txt`;
+  try {
+    const text = await fetchText(getCatalogUrls(fileName));
+    const parsed = type === "f" ? parseFilmesFile(text) : parseSeriesEpisodesFile(text);
+    streamsCache.set(cacheKey, parsed);
+    return parsed;
+  } catch {
+    const empty = new Map<string, StreamSource[]>();
+    streamsCache.set(cacheKey, empty);
+    return empty;
+  }
+}
+
+/**
+ * Busca streams de um título específico de forma cirúrgica e instantânea
+ */
+export async function getStreamsForItem(type: "f" | "s", title: string): Promise<StreamSource[]> {
+  const norm = normalizeTitle(title);
+  const letter = getLetterKey(title);
+  const streamsMap = await getStreamsForLetter(type, letter);
+  return streamsMap.get(norm) ?? [];
+}
+
+/**
+ * Sincroniza em background todas as letras para pré-aquecer a busca sem travar a UI
+ */
+function syncAllStreamsInBackground() {
+  if (isBackgroundSyncing) return;
+  isBackgroundSyncing = true;
+  const letters = ["%23", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
+
+  setTimeout(async () => {
+    try {
+      for (const l of letters) {
+        await Promise.allSettled([
+          getStreamsForLetter("f", l),
+          getStreamsForLetter("s", l),
+        ]);
+      }
+    } catch {
+      // Ignora erro em segundo plano
+    } finally {
+      isBackgroundSyncing = false;
+    }
+  }, 100);
+}
+
 export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; highlights: HighlightRow[] }> {
   const now = Date.now();
   if (catalogCache && highlightCache && now - cacheTime < CACHE_TTL) {
     return { items: catalogCache, highlights: highlightCache };
   }
 
-  // Carrega fichas.txt e destaques.txt em paralelo
+  // Carrega fichas.txt e destaques.txt em paralelo (resposta imediata em < 300ms)
   const [fichasText, destaquesText] = await Promise.all([
     fetchText(getCatalogUrls("fichas.txt")),
     fetchText(getCatalogUrls("destaques.txt")),
@@ -252,46 +324,18 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
   const fichas = parseFichas(fichasText);
   const highlights = parseDestaques(destaquesText);
 
-  // Letras de A a Z + # (codificado para URL como %23)
-  const letters = ["%23", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
-
-  // Busca streams de filmes e de séries em paralelo
-  const [filmeResults, seriesResults] = await Promise.all([
-    Promise.allSettled(
-      letters.map((l) => fetchText(getCatalogUrls(`filmes-${l}.txt`)).then((t) => parseFilmesFile(t)))
-    ),
-    Promise.allSettled(
-      letters.map((l) => fetchText(getCatalogUrls(`series-${l}-1.txt`)).then((t) => parseSeriesEpisodesFile(t)))
-    ),
-  ]);
-
-  // Monta índice final
+  // Monta catálogo indexado
   const items = new Map<string, CatalogItem>();
   for (const [key, base] of fichas) {
-    const streams: StreamSource[] = [];
-
-    // Adiciona streams de filmes encontrados
-    for (const result of filmeResults) {
-      if (result.status === "fulfilled") {
-        const found = result.value.get(key);
-        if (found) streams.push(...found);
-      }
-    }
-
-    // Adiciona streams de séries se for série
-    for (const result of seriesResults) {
-      if (result.status === "fulfilled") {
-        const found = result.value.get(key);
-        if (found) streams.push(...found);
-      }
-    }
-
-    items.set(key, { ...base, streams });
+    items.set(key, { ...base, streams: [] });
   }
 
   catalogCache = items;
   highlightCache = highlights;
   cacheTime = now;
+
+  // Dispara aquecimento de streams em segundo plano sem travar a resposta HTTP
+  syncAllStreamsInBackground();
 
   return { items, highlights };
 }

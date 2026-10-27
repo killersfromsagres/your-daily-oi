@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Tv, Info, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/assistir/serie/$id/$temp/$ep")({
 
 function WatchSeriesPage() {
   const { id, temp, ep } = Route.useParams();
+  const navigate = useNavigate();
   const [serie, setSerie] = useState<CatalogItem | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -120,7 +121,9 @@ function WatchSeriesPage() {
           <OwnPlayer
             streams={streams}
             poster={serie.tmdb?.backdropUrl || serie.posterUrl}
-            title={`${serie.title} - T${temp}:E${ep}`}
+            title={serie.title}
+            subtitle={`Série • Temporada ${temp} - Episódio ${ep}`}
+            onBack={() => void navigate({ to: `/serie/${serie.id}` })}
             initialTime={savedProgress?.currentTime || 0}
             onTimeUpdate={handleTimeUpdate}
           />
