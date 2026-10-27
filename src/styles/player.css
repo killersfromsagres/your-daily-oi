@@ -458,3 +458,74 @@
   box-shadow: 0 0 12px rgba(229, 9, 20, 0.8) !important;
 }
 
+/* ── Adaptações Responsivas & Mobile Otimizadas (100dvh e Touch Seguro) ── */
+@media (max-width: 768px) {
+  .ydo-player-container {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+
+  .ydo-controls-wrapper {
+    padding: 2.5rem 0.85rem max(0.85rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .ydo-player-topbar {
+    padding: 0.85rem 0.85rem 1.75rem !important;
+  }
+
+  .ydo-player-top-title {
+    font-size: 1.05rem !important;
+  }
+
+  .ydo-player-title {
+    font-size: 0.9rem !important;
+    margin-bottom: 0.4rem !important;
+  }
+
+  .ydo-controls-row {
+    gap: 0.3rem !important;
+  }
+
+  .ydo-controls-left,
+  .ydo-controls-right {
+    gap: 0.2rem !important;
+  }
+
+  .ydo-ctrl-btn {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+  }
+
+  /* Em celulares, o slider de volume é ocultado para dar espaço a todos os botões (volume é ajustado pelos botões físicos do aparelho) */
+  .ydo-volume-slider {
+    display: none !important;
+  }
+
+  .ydo-time {
+    font-size: 0.72rem !important;
+    padding: 0 0.2rem !important;
+  }
+
+  .ydo-source-select {
+    height: 32px !important;
+    padding: 0.2rem 0.35rem !important;
+    font-size: 0.72rem !important;
+    max-width: 105px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ydo-ctrl-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .ydo-source-select {
+    max-width: 85px !important;
+    font-size: 0.68rem !important;
+  }
+}
+
+

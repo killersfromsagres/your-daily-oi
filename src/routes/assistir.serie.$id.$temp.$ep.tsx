@@ -101,7 +101,7 @@ function WatchSeriesPage() {
       position: "fixed",
       inset: 0,
       width: "100vw",
-      height: "100vh",
+      height: "100dvh",
       backgroundColor: "#000000",
       zIndex: 9999,
       overflow: "hidden",

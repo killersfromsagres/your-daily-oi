@@ -12,6 +12,8 @@ import {
   SkipForward,
   RotateCcw,
   RotateCw,
+  Cast,
+  Tv,
 } from "lucide-react";
 import type { PlayerState } from "./usePlayerEngine";
 
@@ -46,6 +48,7 @@ interface PlayerControlsProps {
   onPiP: () => void;
   onRate: (r: number) => void;
   onSourceChange: (i: number) => void;
+  onCast?: () => void;
   onNext?: () => void;
 }
 
@@ -69,6 +72,7 @@ export function PlayerControls({
   onPiP,
   onRate,
   onSourceChange,
+  onCast,
   onNext,
 }: PlayerControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
@@ -272,6 +276,18 @@ export function PlayerControls({
               </div>
             )}
           </div>
+
+          {/* Espelhar na TV / Transmitir */}
+          {onCast && (
+            <button
+              className="ydo-ctrl-btn"
+              onClick={onCast}
+              aria-label="Espelhar na TV"
+              title="Espelhar na TV (Chromecast / AirPlay)"
+            >
+              <Cast size={20} />
+            </button>
+          )}
 
           {/* Picture in Picture */}
           <button className="ydo-ctrl-btn" onClick={onPiP} aria-label="Picture in Picture" title="Miniplayer (PiP)">

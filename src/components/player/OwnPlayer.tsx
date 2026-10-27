@@ -158,11 +158,46 @@ export function OwnPlayer({
     if (engine.state !== "playing") setControlsVisible(true);
   }, [engine.state]);
 
-  // Fullscreen listener
+  // Fullscreen listener cross-browser (incluindo iOS Safari)
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    const handler = () => {
+      const doc = document as Document & {
+        webkitFullscreenElement?: Element;
+        mozFullScreenElement?: Element;
+        msFullscreenElement?: Element;
+      };
+      const v = videoRef.current as (HTMLVideoElement & { webkitDisplayingFullscreen?: boolean }) | null;
+      setIsFullscreen(
+        !!(
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          doc.mozFullScreenElement ||
+          doc.msFullscreenElement ||
+          v?.webkitDisplayingFullscreen
+        )
+      );
+    };
+
     document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
+    document.addEventListener("webkitfullscreenchange", handler);
+
+    const v = videoRef.current;
+    const onBegin = () => setIsFullscreen(true);
+    const onEnd = () => setIsFullscreen(false);
+
+    if (v) {
+      v.addEventListener("webkitbeginfullscreen", onBegin);
+      v.addEventListener("webkitendfullscreen", onEnd);
+    }
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handler);
+      document.removeEventListener("webkitfullscreenchange", handler);
+      if (v) {
+        v.removeEventListener("webkitbeginfullscreen", onBegin);
+        v.removeEventListener("webkitendfullscreen", onEnd);
+      }
+    };
   }, []);
 
   // Atalhos de teclado
@@ -198,6 +233,14 @@ export function OwnPlayer({
     }, 300);
   };
 
+  const handleOverlayClick = () => {
+    if (!controlsVisible) {
+      showControls();
+      return;
+    }
+    handleVideoClick();
+  };
+
   return (
     <div
       ref={containerRef}
@@ -212,15 +255,19 @@ export function OwnPlayer({
         className="ydo-player-video"
         poster={poster}
         playsInline
+        // @ts-expect-error atributos nativos de compatibilidade mobile & AirPlay
+        webkit-playsinline="true"
+        x-webkit-airplay="allow"
+        disableRemotePlayback={false}
         preload="metadata"
         aria-label={title ?? "Vídeo"}
-        onClick={handleVideoClick}
+        onClick={handleOverlayClick}
       />
 
-      {/* Clique na tela inteira do vídeo para Play/Pause */}
+      {/* Clique na tela inteira do vídeo para Play/Pause ou revelar controles no mobile */}
       <div
         className="ydo-player-click-capture"
-        onClick={handleVideoClick}
+        onClick={handleOverlayClick}
         style={{
           position: "absolute",
           inset: 0,
@@ -396,6 +443,7 @@ export function OwnPlayer({
           onPiP={() => void engine.requestPiP()}
           onRate={engine.setPlaybackRate}
           onSourceChange={handleSourceChange}
+          onCast={engine.castToTv}
         />
       </div>
     </div>

@@ -21,6 +21,7 @@ interface PlayerEngine {
   setPlaybackRate: (r: number) => void;
   requestFullscreen: () => void;
   requestPiP: () => void;
+  castToTv: () => void;
 }
 
 declare global {
@@ -251,19 +252,138 @@ export function usePlayerEngine(
   }, []);
 
   const requestFullscreen = useCallback(() => {
-    const v = videoRef.current;
+    const v = videoRef.current as (HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void;
+      webkitExitFullscreen?: () => void;
+      webkitDisplayingFullscreen?: boolean;
+    }) | null;
     if (!v) return;
-    const el = v.closest(".ydo-player-container") as HTMLElement | null;
-    if (el?.requestFullscreen) el.requestFullscreen();
-    else if (v.requestFullscreen) v.requestFullscreen();
+
+    const el = (v.closest(".ydo-player-container") || v) as HTMLElement & {
+      webkitRequestFullscreen?: () => void;
+      mozRequestFullScreen?: () => void;
+      msRequestFullscreen?: () => void;
+    };
+
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element;
+      mozFullScreenElement?: Element;
+      msFullscreenElement?: Element;
+      webkitExitFullscreen?: () => void;
+      mozCancelFullScreen?: () => void;
+      msExitFullscreen?: () => void;
+    };
+
+    const isFull = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement ||
+      v.webkitDisplayingFullscreen
+    );
+
+    if (isFull) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      } else if (v.webkitExitFullscreen) {
+        v.webkitExitFullscreen();
+      }
+      return;
+    }
+
+    // Tenta primeiro container (desktop & Android), com fallback direto para o vídeo (iOS Safari no iPhone)
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {
+        if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+      });
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    } else if (v.webkitEnterFullscreen) {
+      // iPhone / iPad no Safari
+      v.webkitEnterFullscreen();
+    } else if (v.requestFullscreen) {
+      v.requestFullscreen().catch(() => {});
+    }
   }, []);
 
   const requestPiP = useCallback(async () => {
     const v = videoRef.current;
     if (!v) return;
-    if (document.pictureInPictureElement) { await document.exitPictureInPicture(); }
-    else { await v.requestPictureInPicture(); }
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else if (v.requestPictureInPicture) {
+      await v.requestPictureInPicture();
+    }
   }, []);
 
-  return { state, error, currentTime, duration, buffered, volume, muted, playbackRate, play, pause, seek, setVolume, setMuted, setPlaybackRate, requestFullscreen, requestPiP };
+  const castToTv = useCallback(() => {
+    const v = videoRef.current as (HTMLVideoElement & {
+      webkitShowPlaybackTargetPicker?: () => void;
+      remote?: { prompt: () => Promise<void> };
+    }) | null;
+    if (!v) return;
+
+    // 1. Apple AirPlay (Safari no iPhone, iPad, Mac)
+    if (typeof v.webkitShowPlaybackTargetPicker === "function") {
+      try {
+        v.webkitShowPlaybackTargetPicker();
+        return;
+      } catch (err) {
+        console.warn("AirPlay:", err);
+      }
+    }
+
+    // 2. Google Cast / Remote Playback API (Android Chrome, Smart TVs, Chromecast)
+    if (v.remote && typeof v.remote.prompt === "function") {
+      v.remote.prompt().catch((err: unknown) => {
+        const error = err as { name?: string };
+        if (error?.name !== "AbortError") {
+          console.warn("Remote playback prompt:", err);
+        }
+      });
+      return;
+    }
+
+    // 3. Presentation API para telas e receptores sem fio
+    if ("presentation" in navigator) {
+      const pres = (navigator as unknown as { presentation?: { defaultRequest?: { start: () => Promise<void> } } }).presentation;
+      if (pres?.defaultRequest) {
+        try {
+          pres.defaultRequest.start().catch(() => {});
+          return;
+        } catch {}
+      }
+    }
+
+    // Feedback amigável para dispositivos sem suporte direto à API
+    alert(
+      "Espelhar na TV:\n\n• No Android / Chrome: Use o botão 'Transmitir' do seu navegador para enviar para a Smart TV ou Chromecast.\n• No iPhone / iPad: Abra a Central de Controle e ative o 'Espelhamento de Tela' ou AirPlay para a sua TV."
+    );
+  }, []);
+
+  return {
+    state,
+    error,
+    currentTime,
+    duration,
+    buffered,
+    volume,
+    muted,
+    playbackRate,
+    play,
+    pause,
+    seek,
+    setVolume,
+    setMuted,
+    setPlaybackRate,
+    requestFullscreen,
+    requestPiP,
+    castToTv,
+  };
 }
