@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { loadCatalog, getGenres, searchItems, getStreamsForItem } from "./lib/catalog";
+import { loadCatalog, getGenres, searchItems, getStreamsForItem, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
 import { getTmdbData } from "./lib/tmdb";
 import type { CatalogItem } from "./lib/types";
 
@@ -35,6 +35,23 @@ function jsonResponse(payload: unknown, status = 200, cacheControl = "public, ma
 // Cache em memória de itens hidratados para resposta instantânea (< 10ms)
 const itemDetailsCache = new Map<string, { data: CatalogItem; expires: number }>();
 
+// Lista curada de franquias e blockbusters mais assistidos no mundo
+const TOP_BLOCKBUSTERS = [
+  "duna",
+  "deadpool",
+  "homem aranha",
+  "vingadores",
+  "oppenheimer",
+  "interestelar",
+  "batman",
+  "avatar",
+  "top gun",
+  "harry potter",
+  "moana",
+  "ponto sem retorno",
+  "super mario"
+];
+
 /**
  * Route Handler /api/catalogo enriquecido com backdrops em alta resolução para os destaques
  */
@@ -48,55 +65,75 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       return jsonResponse({ items: results });
     }
 
-    // Coleta os títulos dos destaques para enriquecer com backdrops 4K/Full HD originais
-    const heroTitlesSet = new Set<string>();
-    for (const hl of highlights.slice(0, 2)) {
-      for (const item of hl.items.slice(0, 8)) {
-        heroTitlesSet.add(item.title.toLowerCase());
-      }
-    }
-
     const allItems = Array.from(items.values());
 
-    // Hidrata em paralelo os itens do carrossel do banner principal com dados do TMDB
-    const enrichedHeroItems = await Promise.allSettled(
-      allItems
-        .filter((it) => heroTitlesSet.has(it.title.toLowerCase()))
-        .slice(0, 8)
-        .map(async (item) => {
-          const cached = itemDetailsCache.get(item.id);
-          if (cached && cached.data.tmdb) {
-            return cached.data;
-          }
-          if (item.tmdbId) {
-            try {
-              const tmdb = await getTmdbData(item.tmdbId, item.type);
-              if (tmdb) {
-                const enriched = { ...item, tmdb };
-                itemDetailsCache.set(item.id, { data: enriched, expires: Date.now() + 86400000 });
-                return enriched;
-              }
-            } catch {
-              // continua
-            }
-          }
-          return item;
-        })
-    );
+    // Seleciona exclusivamente os filmes mais assistidos e populares do catálogo para o carrossel do banner
+    const selectedMostWatched: CatalogItem[] = [];
+    const usedIds = new Set<string>();
 
-    const enrichedMap = new Map<string, CatalogItem>();
-    for (const res of enrichedHeroItems) {
-      if (res.status === "fulfilled" && res.value) {
-        enrichedMap.set(res.value.id, res.value);
+    // 1. Procura pelos blockbusters mais assistidos conhecidos
+    for (const query of TOP_BLOCKBUSTERS) {
+      const found = allItems.find((it) => {
+        if (usedIds.has(it.id)) return false;
+        // Nunca incluir itens com # no banner de destaque
+        if (it.title.startsWith("#")) return false;
+        const norm = normalizeTitle(it.title);
+        return norm.includes(query);
+      });
+      if (found) {
+        selectedMostWatched.push(found);
+        usedIds.add(found.id);
+      }
+      if (selectedMostWatched.length >= 8) break;
+    }
+
+    // 2. Se faltar, completa com os primeiros itens de destaques.txt (excluindo qualquer item com #)
+    if (selectedMostWatched.length < 8 && highlights.length > 0) {
+      for (const hl of highlights) {
+        for (const item of hl.items) {
+          if (item.title.startsWith("#")) continue;
+          const found = allItems.find((it) => !usedIds.has(it.id) && normalizeTitle(it.title) === normalizeTitle(item.title));
+          if (found) {
+            selectedMostWatched.push(found);
+            usedIds.add(found.id);
+          }
+          if (selectedMostWatched.length >= 8) break;
+        }
+        if (selectedMostWatched.length >= 8) break;
       }
     }
 
-    const finalItems = allItems.map((item) => enrichedMap.get(item.id) || item);
+    // Hidrata em paralelo os itens do carrossel com metadados do TMDB (backdrop 4K / original)
+    const enrichedHeroItems = await Promise.all(
+      selectedMostWatched.map(async (item) => {
+        const cached = itemDetailsCache.get(item.id);
+        if (cached && cached.data.tmdb?.backdropUrl) {
+          return cached.data;
+        }
+        if (item.tmdbId) {
+          try {
+            const tmdb = await getTmdbData(item.tmdbId, item.type);
+            if (tmdb && tmdb.backdropUrl) {
+              const enriched = { ...item, tmdb };
+              itemDetailsCache.set(item.id, { data: enriched, expires: Date.now() + 86400000 });
+              return enriched;
+            }
+          } catch {
+            // continua
+          }
+        }
+        return item;
+      })
+    );
+
+    // Filtra para garantir que no banner SÓ passem títulos com backdrop widescreen de alta qualidade
+    const finalHero = enrichedHeroItems.filter((it) => Boolean(it.tmdb?.backdropUrl));
 
     return jsonResponse({
-      items: finalItems,
+      items: allItems,
       highlights,
       genres: getGenres(items),
+      featuredHero: finalHero.length > 0 ? finalHero : enrichedHeroItems,
     });
   } catch (error) {
     console.error("Erro na API /api/catalogo:", error);

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Info, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { cleanDisplayTitle } from "@/lib/catalog";
 
 export interface HeroItem {
   id: string;
@@ -53,11 +54,12 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
   const detailPath = hero.type === "f" ? `/filme/${hero.id}` : `/serie/${hero.id}`;
   const playPath = hero.type === "f" ? `/assistir/filme/${hero.id}` : `/assistir/serie/${hero.id}/1/1`;
 
-  // Imagem do backdrop em alta resolução (ou fallback para poster em alta)
+  // Imagem do backdrop em altíssima resolução original oficial (HD / 4K)
   const bgImage = (item: HeroItem) => {
-    if (item.backdropUrl) return item.backdropUrl;
+    if (item.backdropUrl) {
+      return item.backdropUrl.replace(/\/w\d+/, "/original");
+    }
     if (item.posterUrl) {
-      // Tenta trocar w342 para original para máxima nitidez
       return item.posterUrl.replace("/w342", "/original");
     }
     return "";
@@ -122,7 +124,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
           {hero.type === "s" && <span className="ydo-hero-badge ydo-hero-badge-type">SÉRIE</span>}
         </div>
 
-        <h1 className="ydo-hero-title">{hero.title}</h1>
+        <h1 className="ydo-hero-title">{cleanDisplayTitle(hero.title)}</h1>
 
         <div className="ydo-hero-meta">
           {hero.releaseYear && <span className="ydo-hero-year">{hero.releaseYear}</span>}

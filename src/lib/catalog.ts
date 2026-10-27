@@ -33,6 +33,17 @@ export function normalizeTitle(title: string): string {
     .trim();
 }
 
+/**
+ * Remove formatações indesejadas como # no início e ano repetido no final (ex: '#Alive (2020)' -> 'Alive')
+ */
+export function cleanDisplayTitle(title: string): string {
+  if (!title) return "";
+  return title
+    .replace(/^#+/, "")
+    .replace(/\s*\(\d{4}\)$/, "")
+    .trim();
+}
+
 function detectFormat(url: string): StreamFormat {
   if (/\.m3u8(\?|$)/i.test(url) || /\.txt(\?|$)/i.test(url)) return "hls";
   if (/\.ts(\?|$)/i.test(url)) return "ts";

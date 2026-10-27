@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Play, Star, Tv, Check, Plus, X, Users, Layers, Clapperboard } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
+import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/serie/$id")({
@@ -254,7 +255,7 @@ function SeriesDetailPage() {
                 letterSpacing: "-0.02em",
                 textShadow: "0 2px 10px rgba(0,0,0,0.5)",
               }}>
-                {serie.title}
+                {cleanDisplayTitle(serie.title)}
               </h1>
 
               {/* Botões de Ação estilo Pill */}

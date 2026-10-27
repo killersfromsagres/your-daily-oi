@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Play, Heart, Star, X, Film, Check, Users } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
+import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/filme/$id")({
@@ -191,7 +192,7 @@ function MovieDetailPage() {
               </span>
 
               <h1 style={{ fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: "900", letterSpacing: "-0.03em", lineHeight: "1.1", margin: 0, color: "#fff" }}>
-                {movie.title}
+                {cleanDisplayTitle(movie.title)}
               </h1>
 
               {movie.tmdb?.overview && (

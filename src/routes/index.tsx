@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem, HighlightRow } from "@/lib/types";
+import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
@@ -30,6 +31,7 @@ function HomePage() {
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [highlights, setHighlights] = useState<HighlightRow[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
+  const [featuredHero, setFeaturedHero] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -51,6 +53,7 @@ function HomePage() {
           items: CatalogItem[];
           highlights: HighlightRow[];
           genres: string[];
+          featuredHero?: CatalogItem[];
         }>;
       })
       .then((data) => {
@@ -58,6 +61,9 @@ function HomePage() {
         setItems(data.items);
         setHighlights(data.highlights);
         setGenres(data.genres);
+        if (data.featuredHero && data.featuredHero.length > 0) {
+          setFeaturedHero(data.featuredHero);
+        }
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -77,30 +83,15 @@ function HomePage() {
     setSavedIds(new Set(getSavedList()));
   }, []);
 
-  // Prepara itens de destaque para o carrossel em Alta Definição (HD / 4K)
-  // Prioriza títulos que possuem backdrop original widescreen oficial do TMDB
-  const highlightTitles = new Set(
-    highlights.flatMap((h) => h.items.map((it) => it.title.toLowerCase()))
-  );
+  // Prepara exclusivamente os filmes mais assistidos para o carrossel HD / 4K
+  const heroSource = featuredHero.length > 0 ? featuredHero : items.filter((it) => Boolean(it.tmdb?.backdropUrl) && !it.title.startsWith("#"));
 
-  const withBackdrop = items.filter((item) => Boolean(item.tmdb?.backdropUrl));
-  const fromHighlightsWithBackdrop = withBackdrop.filter((item) =>
-    highlightTitles.has(item.title.toLowerCase())
-  );
-
-  const heroPool =
-    fromHighlightsWithBackdrop.length >= 4
-      ? fromHighlightsWithBackdrop
-      : withBackdrop.length > 0
-      ? withBackdrop
-      : items;
-
-  const heroItems = heroPool
+  const heroItems = heroSource
     .slice(0, 8)
     .map((item) => ({
       id: item.id,
       type: item.type,
-      title: item.title,
+      title: cleanDisplayTitle(item.title),
       overview: item.tmdb?.overview,
       backdropUrl: item.tmdb?.backdropUrl || null,
       posterUrl: item.posterUrl,

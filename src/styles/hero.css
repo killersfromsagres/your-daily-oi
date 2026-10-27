@@ -1,7 +1,7 @@
-/* ── Hero Carrossel 85-92vh ──────────────────────────────── */
+/* ── Hero Carrossel Panorâmico Widescreen HD / 4K ─────────── */
 .ydo-hero {
   position: relative;
-  height: clamp(520px, 86vh, 850px);
+  height: clamp(480px, 76vh, 760px);
   width: 100%;
   display: flex;
   align-items: flex-end;
@@ -13,24 +13,24 @@
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transform: scale(1.03);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: none;
   pointer-events: none;
 }
 
 .ydo-hero-slide.is-active {
   opacity: 1;
-  transform: scale(1);
+  transform: none;
 }
 
 .ydo-hero-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 22%;
+  object-position: center 25%;
   display: block;
   image-rendering: auto;
-  filter: contrast(1.04) saturate(1.08);
+  filter: contrast(1.03) saturate(1.06);
 }
 
 /* Véus de legibilidade cinematográficos */
