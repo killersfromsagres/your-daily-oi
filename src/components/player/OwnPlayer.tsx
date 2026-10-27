@@ -5,6 +5,7 @@ import { usePlayerEngine } from "./usePlayerEngine";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import { recordFailedSource, sortStreamsByHealth, clearFailedSources } from "@/lib/player-storage";
+import { APP_VERSION } from "@/lib/version";
 
 interface OwnPlayerProps {
   streams: StreamSource[];
@@ -57,6 +58,10 @@ export function OwnPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.info(`[Zang Flix Player] build ${APP_VERSION.version} (${APP_VERSION.commit})`);
+  }, []);
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
 

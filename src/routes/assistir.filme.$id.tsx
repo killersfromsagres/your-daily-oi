@@ -101,7 +101,7 @@ function WatchMoviePage() {
     }}>
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
       <OwnPlayer
-        streams={movie.streams}
+        streams={streams}
         poster={movie.tmdb?.backdropUrl || movie.posterUrl}
         title={movie.title}
         subtitle="Filmes"

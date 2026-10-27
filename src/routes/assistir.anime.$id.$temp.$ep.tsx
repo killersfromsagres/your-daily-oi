@@ -64,6 +64,21 @@ function WatchAnimePage() {
     ...(anime?.streams || []),
   ];
 
+  if (!anime || streams.length === 0) {
+    return (
+      <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
+        <Tv size={48} style={{ color: "#e8b44a" }} />
+        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Episódio indisponível</h1>
+        <p style={{ color: "rgba(255,255,255,0.6)" }}>
+          Não encontramos fontes ativas para o Temporada {temp}, Episódio {ep}.
+        </p>
+        <Link to={`/anime/${id}`} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+          <ArrowLeft size={16} /> Voltar ao Anime
+        </Link>
+      </main>
+    );
+  }
+
   const savedProgress = getProgressById(`${anime?.id || id}-t${temp}-e${ep}`);
 
   const handleTimeUpdate = (currentTime: number) => {

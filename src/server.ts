@@ -5,6 +5,7 @@ import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
 import { getTmdbData } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
+import { APP_VERSION } from "./lib/version";
 import type { CatalogItem } from "./lib/types";
 
 type ServerEntry = {
@@ -476,6 +477,9 @@ export default {
 
       if (url.pathname === "/api/catalogo") {
         return await handleCatalogoApi(url);
+      }
+      if (url.pathname === "/api/version") {
+        return jsonResponse(APP_VERSION);
       }
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
