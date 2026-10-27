@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Tv, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
+import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
 
@@ -108,16 +109,21 @@ function WatchAnimePage() {
       margin: 0,
       padding: 0,
     }}>
-      <OwnPlayer
-        streams={streams}
-        poster={anime?.tmdb?.backdropUrl || anime?.posterUrl}
+      <PlayerErrorBoundary
         title={anime?.title || "Anime"}
-        subtitle={`Temporada ${temp} - Episódio ${ep}`}
-        preferredAudio="leg"
         onBack={() => void navigate({ to: `/anime/${id}` })}
-        initialTime={savedProgress?.currentTime || 0}
-        onTimeUpdate={handleTimeUpdate}
-      />
+      >
+        <OwnPlayer
+          streams={streams}
+          poster={anime?.tmdb?.backdropUrl || anime?.posterUrl}
+          title={anime?.title || "Anime"}
+          subtitle={`Temporada ${temp} - Episódio ${ep}`}
+          preferredAudio="leg"
+          onBack={() => void navigate({ to: `/anime/${id}` })}
+          initialTime={savedProgress?.currentTime || 0}
+          onTimeUpdate={handleTimeUpdate}
+        />
+      </PlayerErrorBoundary>
     </main>
   );
 }

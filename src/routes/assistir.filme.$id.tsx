@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Film, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
-import type { CatalogItem } from "@/lib/types";
+import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
+import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
 
 export const Route = createFileRoute("/assistir/filme/$id")({
@@ -100,15 +101,20 @@ function WatchMoviePage() {
       padding: 0,
     }}>
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
-      <OwnPlayer
-        streams={streams}
-        poster={movie.tmdb?.backdropUrl || movie.posterUrl}
+      <PlayerErrorBoundary
         title={movie.title}
-        subtitle="Filmes"
         onBack={() => void navigate({ to: `/filme/${movie.id}` })}
-        initialTime={savedProgress?.currentTime || 0}
-        onTimeUpdate={handleTimeUpdate}
-      />
+      >
+        <OwnPlayer
+          streams={streams}
+          poster={movie.tmdb?.backdropUrl || movie.posterUrl}
+          title={movie.title}
+          subtitle="Filmes"
+          onBack={() => void navigate({ to: `/filme/${movie.id}` })}
+          initialTime={savedProgress?.currentTime || 0}
+          onTimeUpdate={handleTimeUpdate}
+        />
+      </PlayerErrorBoundary>
     </main>
   );
 }

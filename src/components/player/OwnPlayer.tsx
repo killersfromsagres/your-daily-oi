@@ -85,6 +85,12 @@ export function OwnPlayer({
     };
   }, [rawStream, useProxyFallback]);
 
+  const handleEnded = useCallback(() => {
+    onEnded?.();
+  }, [onEnded]);
+
+  const engine = usePlayerEngine(videoRef, currentStream, handleEnded);
+
   // Chaveamento automático sem depender de status HTTP:
   // 1. Se a fonte tentou direto e falhou, retenta silenciosamente a mesma fonte via proxy mantendo a posição
   // 2. Se já estava via proxy (ou falhou novamente no proxy), registra falha no cache negativo e desce para a próxima fonte com toast
@@ -125,12 +131,6 @@ export function OwnPlayer({
     }
     showControls();
   };
-
-  const handleEnded = useCallback(() => {
-    onEnded?.();
-  }, [onEnded]);
-
-  const engine = usePlayerEngine(videoRef, currentStream, handleEnded);
 
   // Seek para posição inicial
   useEffect(() => {

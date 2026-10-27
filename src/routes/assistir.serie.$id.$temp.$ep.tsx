@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Tv, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
+import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
 
@@ -108,15 +109,20 @@ function WatchSeriesPage() {
       padding: 0,
     }}>
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
-      <OwnPlayer
-        streams={streams}
-        poster={serie.tmdb?.backdropUrl || serie.posterUrl}
+      <PlayerErrorBoundary
         title={serie.title}
-        subtitle={`Série • Temporada ${temp} - Episódio ${ep}`}
         onBack={() => void navigate({ to: `/serie/${serie.id}` })}
-        initialTime={savedProgress?.currentTime || 0}
-        onTimeUpdate={handleTimeUpdate}
-      />
+      >
+        <OwnPlayer
+          streams={streams}
+          poster={serie.tmdb?.backdropUrl || serie.posterUrl}
+          title={serie.title}
+          subtitle={`Série • Temporada ${temp} - Episódio ${ep}`}
+          onBack={() => void navigate({ to: `/serie/${serie.id}` })}
+          initialTime={savedProgress?.currentTime || 0}
+          onTimeUpdate={handleTimeUpdate}
+        />
+      </PlayerErrorBoundary>
     </main>
   );
 }
