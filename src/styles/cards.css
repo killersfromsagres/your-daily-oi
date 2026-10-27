@@ -1,0 +1,262 @@
+/* ── Cards cinematográficos 2:3 ──────────────────────────── */
+.ydo-card {
+  position: relative;
+  flex-shrink: 0;
+  width: 160px;
+  cursor: pointer;
+}
+
+.ydo-card-poster-link {
+  display: block;
+  text-decoration: none;
+}
+
+.ydo-card-poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.35s var(--ease-out-expo), box-shadow 0.35s var(--ease-out-expo);
+}
+
+.ydo-card:hover .ydo-card-poster,
+.ydo-card:focus-within .ydo-card-poster {
+  transform: scale(1.05);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.ydo-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ydo-card-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-raised);
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.ydo-card-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 11, 20, 0.5) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Hover overlay */
+.ydo-card-hover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(10, 11, 20, 0.55);
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-out-expo);
+  backdrop-filter: blur(2px);
+}
+
+.ydo-card:hover .ydo-card-hover,
+.ydo-card:focus-within .ydo-card-hover {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .ydo-card-hover { display: none; }
+}
+
+.ydo-card-play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--bg-deep);
+  text-decoration: none;
+  transition: transform 0.2s var(--ease-spring), background 0.2s;
+}
+
+.ydo-card-play-btn:hover { transform: scale(1.12); }
+
+.ydo-card-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background 0.2s;
+}
+
+.ydo-card-action-btn:hover { background: rgba(255, 255, 255, 0.22); }
+
+/* Selos */
+.ydo-card-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+}
+
+.ydo-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--bg-deep);
+}
+
+.ydo-badge-leg {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+/* Rank */
+.ydo-card-rank {
+  position: absolute;
+  bottom: -4px;
+  left: -8px;
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(241, 241, 241, 0.25);
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Info abaixo do poster */
+.ydo-card-info {
+  margin-top: 0.5rem;
+  padding: 0 2px;
+}
+
+.ydo-card-title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.ydo-card-title:hover { color: var(--accent); }
+
+.ydo-card-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.ydo-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Carrossel row ────────────────────────────────────────── */
+.ydo-row-section { margin-bottom: 2.5rem; }
+
+.ydo-row-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.ydo-row-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.ydo-row-title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.ydo-row-track {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ydo-row-track::-webkit-scrollbar { display: none; }
+
+.ydo-row-track > * {
+  scroll-snap-align: start;
+}
+
+/* Skeleton */
+.ydo-skeleton-card {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.ydo-skeleton-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--r-card);
+}
+
+.ydo-skeleton-text {
+  height: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+  width: 80%;
+}
+
+.ydo-skeleton-text-sm {
+  height: 10px;
+  border-radius: 5px;
+  margin-top: 4px;
+  width: 50%;
+}

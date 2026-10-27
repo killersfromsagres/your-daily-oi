@@ -1,0 +1,292 @@
+/* ── Player Container ────────────────────────────────────── */
+.ydo-player-container {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.ydo-player-container:fullscreen {
+  border-radius: 0;
+  aspect-ratio: auto;
+  height: 100vh;
+}
+
+.ydo-player-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Overlays ────────────────────────────────────────────── */
+.ydo-player-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: rgba(10, 11, 20, 0.75);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  backdrop-filter: blur(4px);
+  z-index: 10;
+}
+
+.ydo-player-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ydo-player-error-overlay { background: rgba(10, 11, 20, 0.88); }
+
+.ydo-player-error-overlay p {
+  max-width: 340px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.ydo-player-error-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ydo-player-error-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--r-pill);
+  border: none;
+  background: var(--accent);
+  color: var(--bg-deep);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  min-height: 44px;
+}
+
+.ydo-player-error-btn:hover { opacity: 0.88; }
+
+.ydo-player-error-btn-ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Controls wrapper ────────────────────────────────────── */
+.ydo-controls-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem 1rem 1rem;
+  background: linear-gradient(to top, rgba(10, 11, 20, 0.95) 0%, transparent 100%);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.25s var(--ease-out-expo),
+    transform 0.25s var(--ease-out-expo);
+  z-index: 20;
+}
+
+.ydo-controls-wrapper.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ydo-player-title {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Progress bar ────────────────────────────────────────── */
+.ydo-progress {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: height 0.2s;
+}
+
+.ydo-progress:hover,
+.ydo-progress:focus-visible {
+  height: 6px;
+  outline: none;
+}
+
+.ydo-progress-buffered {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.ydo-progress-played {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.ydo-progress-thumb {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform 0.15s var(--ease-spring);
+}
+
+.ydo-progress:hover .ydo-progress-thumb,
+.ydo-progress:focus-visible .ydo-progress-thumb {
+  transform: translateY(-50%) scale(1);
+}
+
+/* ── Controls row ────────────────────────────────────────── */
+.ydo-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ydo-controls-left,
+.ydo-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ydo-ctrl-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.ydo-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent);
+}
+
+/* Volume */
+.ydo-volume-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ydo-volume-slider {
+  -webkit-appearance: none;
+  width: 70px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  outline: none;
+  cursor: pointer;
+}
+
+.ydo-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+/* Tempo */
+.ydo-time {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  padding: 0 0.25rem;
+}
+
+/* Source select */
+.ydo-source-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  height: 36px;
+  outline: none;
+}
+
+.ydo-source-select option { background: var(--bg-raised); }
+
+/* Settings */
+.ydo-settings-wrap { position: relative; }
+
+.ydo-settings-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-raised);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 1rem;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 30;
+}
+
+.ydo-settings-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.ydo-settings-group span { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.ydo-rate-btns { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.ydo-rate-btn {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ydo-rate-btn:hover, .ydo-rate-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
