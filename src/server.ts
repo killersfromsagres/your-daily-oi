@@ -410,6 +410,8 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
 
     // 1. Se for o relay do Saimo TV, primeiro resolve o redirect 302 sem Range para obter a URL final real do CDN
     if (targetUrl.includes("saimo-tv.pages.dev/api/stream")) {
+      const redirectCtrl = new AbortController();
+      const redirectTimer = setTimeout(() => redirectCtrl.abort(), 12000);
       try {
         const redirectRes = await fetch(targetUrl, {
           method: "GET",
@@ -419,33 +421,63 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
             Accept: "*/*",
           },
           redirect: "manual",
-          signal: AbortSignal.timeout(12000),
+          signal: redirectCtrl.signal,
         });
+        clearTimeout(redirectTimer);
         const loc = redirectRes.headers.get("location");
         if (loc && loc.startsWith("http")) {
           targetUrl = loc;
         }
       } catch {
+        clearTimeout(redirectTimer);
         // continua
       }
     }
 
-    let res = await fetch(targetUrl, {
-      method: request.method === "HEAD" ? "HEAD" : "GET",
-      headers: upstreamHeaders,
-      redirect: "follow",
-      signal: AbortSignal.timeout(12000),
-    });
+    // AbortController de 12s para receber os headers da resposta upstream
+    // Não aborta o corpo depois de receber os headers para não interromper a reprodução do vídeo
+    const fetchCtrl = new AbortController();
+    const fetchTimer = setTimeout(() => fetchCtrl.abort(), 12000);
 
-    // Se o upstream rejeitar Range com 416 (Accept-Ranges: none), retenta imediatamente sem Range
-    if (res.status === 416 && upstreamHeaders["Range"]) {
-      delete upstreamHeaders["Range"];
+    let res: Response;
+    try {
       res = await fetch(targetUrl, {
         method: request.method === "HEAD" ? "HEAD" : "GET",
         headers: upstreamHeaders,
         redirect: "follow",
-        signal: AbortSignal.timeout(12000),
+        signal: fetchCtrl.signal,
       });
+      // Headers recebidos com sucesso: cancela o timeout para permitir streaming contínuo do corpo
+      clearTimeout(fetchTimer);
+    } catch (fetchErr) {
+      clearTimeout(fetchTimer);
+      console.warn(`[ProxyStream] Timeout ou falha upstream para ${targetUrl}:`, fetchErr);
+      return new Response("Timeout ao conectar ao servidor upstream de vídeo", {
+        status: 504,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    // Se o upstream rejeitar Range com 416 (Accept-Ranges: none), retenta imediatamente sem Range
+    if (res.status === 416 && upstreamHeaders["Range"]) {
+      delete upstreamHeaders["Range"];
+      const retryCtrl = new AbortController();
+      const retryTimer = setTimeout(() => retryCtrl.abort(), 12000);
+      try {
+        res = await fetch(targetUrl, {
+          method: request.method === "HEAD" ? "HEAD" : "GET",
+          headers: upstreamHeaders,
+          redirect: "follow",
+          signal: retryCtrl.signal,
+        });
+        clearTimeout(retryTimer);
+      } catch (retryErr) {
+        clearTimeout(retryTimer);
+        return new Response("Timeout na retentativa sem Range", {
+          status: 504,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
     }
 
     const responseHeaders = new Headers();

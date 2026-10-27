@@ -1,5 +1,3 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
 import type {
   AudioTrack,
   CatalogItem,
@@ -152,7 +150,26 @@ a\tFullmetal Alchemist: Brotherhood\t31911\t/vIkH7fUQf8Olo8Apq56FQLGDXOo.jpg\tAn
 a\tSpy x Family\t120089\t/vaIREdPGZOnW9Jrs86mheVVlIQQ.jpg\tAnimação,Comédia,Ação
 a\tMy Hero Academia\t280110\t/3INu3n1sUa9K3O5OTPrqvJOetbd.jpg\tAnimação,Ação,Ficção científica,Shounen
 a\tTokyo Ghoul\t61374\t/5XBk7T4NsGeN9RG39y2nU6gRWQl.jpg\tAnimação,Ação,Terror,Sobrenatural
-a\tFrieren\t209867\t/qykTIEJQF8cunKD0CKOqab15wns.jpg\tAnimação,Aventura,Drama,Fantasia`;
+a\tFrieren\t209867\t/qykTIEJQF8cunKD0CKOqab15wns.jpg\tAnimação,Aventura,Drama,Fantasia
+a\tNamakura Gatana\t45817\t/5XBk7T4NsGeN9RG39y2nU6gRWQl.jpg\tAnimação,Comédia,História,Domínio Público`;
+
+// Episódios de animes embutidos diretamente no bundle para funcionamento em produção serverless (zero fs)
+const EMBEDDED_ANIMES_EPISODES: Record<string, string> = {
+  "animes-A-0.txt": `@Attack on Titan\t2013
+1\t1\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=1&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=1&versao=leg
+1\t2\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=2&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=2&versao=leg
+1\t3\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=3&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=1&ep=3&versao=leg
+2\t1\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=1&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=1&versao=leg
+2\t2\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=2&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=1429&temp=2&ep=2&versao=leg
+`,
+  "animes-D-0.txt": `@Demon Slayer: Kimetsu no Yaiba\t2019
+1\t1\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=1&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=1&versao=leg
+1\t2\tdub\thttps://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=2&versao=dub,https://saimo-tv.pages.dev/api/stream?tipo=series&id=85937&temp=1&ep=2&versao=leg
+`,
+  "animes-N-0.txt": `@Namakura Gatana\t1917
+1\t1\tdub\thttps://raw.githubusercontent.com/mediaelement/mediaelement-files/master/big_buck_bunny.mp4
+`,
+};
 
 export function isAnimeItem(item: CatalogItem | { type: string; title: string; genres: string[] }): boolean {
   if (item.type === "a") return true;
@@ -175,23 +192,18 @@ export function isAnimeItem(item: CatalogItem | { type: string; title: string; g
 }
 
 async function fetchAnimeText(fileName: string): Promise<string> {
+  if (fileName === "fichas.txt") return EMBEDDED_ANIMES_FICHAS;
+  if (EMBEDDED_ANIMES_EPISODES[fileName]) {
+    return EMBEDDED_ANIMES_EPISODES[fileName];
+  }
   if (ANIMES_PAGES) {
     try {
       const res = await fetchWithRetry(`${ANIMES_PAGES}/${fileName}`);
       if (res.ok) return await res.text();
     } catch {
-      // fallback local
+      // fallback
     }
   }
-  try {
-    const p = path.resolve(process.cwd(), "public", "animes", fileName);
-    if (fs.existsSync(p)) {
-      return fs.readFileSync(p, "utf-8");
-    }
-  } catch {
-    // fallback
-  }
-  if (fileName === "fichas.txt") return EMBEDDED_ANIMES_FICHAS;
   return "";
 }
 

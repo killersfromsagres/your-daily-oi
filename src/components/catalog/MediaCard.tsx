@@ -21,6 +21,12 @@ export function MediaCard({
   const [imgFailed, setImgFailed] = useState(false);
   const hasDub = item.streams.some((s) => s.audio === "dub");
   const hasLeg = item.streams.some((s) => s.audio === "leg");
+  const hasStreams = item.streams && item.streams.length > 0;
+  const hasSeasons =
+    item.seasons &&
+    item.seasons.length > 0 &&
+    item.seasons.some((s) => s.episodes.some((e) => e.streams && e.streams.length > 0));
+  const isComingSoon = !hasStreams && !hasSeasons && (item.type === "a" || item.type === "s");
   const detailPath =
     item.type === "a" || (item.type === "s" && isAnimeItem(item))
       ? `/anime/${item.id}`
@@ -82,6 +88,18 @@ export function MediaCard({
 
           {/* Selos */}
           <div className="ydo-card-badges">
+            {isComingSoon && (
+              <span
+                className="ydo-badge"
+                style={{
+                  backgroundColor: "rgba(232, 180, 74, 0.2)",
+                  color: "#e8b44a",
+                  borderColor: "rgba(232, 180, 74, 0.4)",
+                }}
+              >
+                Em breve
+              </span>
+            )}
             {hasDub && <span className="ydo-badge">DUB</span>}
             {hasLeg && <span className="ydo-badge ydo-badge-leg">LEG</span>}
           </div>

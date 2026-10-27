@@ -19,18 +19,15 @@ interface OwnPlayerProps {
   preferredAudio?: "dub" | "leg";
 }
 
-const PRECISA_PROXY = (url: string) => {
+// 4b: Ordem de tentativa por tipo de relay
+const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
-  // Se for relay de séries/animes do Saimo, tenta direto primeiro (relay bloqueia IPs de datacenter no backend com 403)
-  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=series")) {
-    return false;
-  }
-  // Relay de filmes do Saimo requer proxy no backend (Referer hotlink protection do CDN)
-  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=movie")) {
-    return true;
-  }
   // Mixed content: qualquer http:// em página https:// deve ir via proxy
   if (url.startsWith("http://")) {
+    return true;
+  }
+  // Relay de filmes do Saimo: proxy primeiro (hotlink Referer protection do CDN)
+  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=movie")) {
     return true;
   }
   // CDNs conhecidos que exigem proxy por CORS ou Referer
@@ -41,15 +38,23 @@ const PRECISA_PROXY = (url: string) => {
   ) {
     return true;
   }
+  // Relay tipo=series (séries/animes): direto primeiro (o relay recusa servidor; a tentativa deve sair do navegador real), proxy como retentativa
+  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=series")) {
+    return false;
+  }
+  // Demais fontes (Internet Archive, MP4s diretos): direto primeiro, proxy como retentativa
   return false;
 };
 
-const paraPlayer = (url: string, forceProxy: boolean) => {
-  if (url.includes("/api/proxy-stream")) return url;
-  if (PRECISA_PROXY(url) || forceProxy) {
-    return `/api/proxy-stream?url=${encodeURIComponent(url)}`;
+const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1): string => {
+  if (!rawUrl) return "";
+  if (rawUrl.includes("/api/proxy-stream")) return rawUrl;
+  const preferredIsProxy = getPreferredAttemptIsProxy(rawUrl);
+  const useProxy = stage === 0 ? preferredIsProxy : !preferredIsProxy;
+  if (useProxy) {
+    return `/api/proxy-stream?url=${encodeURIComponent(rawUrl)}`;
   }
-  return url;
+  return rawUrl;
 };
 
 export function OwnPlayer({
@@ -73,11 +78,13 @@ export function OwnPlayer({
     const preferredIdx = orderedStreams.findIndex((s) => s.audio === preferredAudio);
     return preferredIdx >= 0 ? preferredIdx : 0;
   });
-  const [useProxyFallback, setUseProxyFallback] = useState(false);
+  const [attemptStage, setAttemptStage] = useState<0 | 1>(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
+
+  const lastTimeRef = useRef(initialTime);
 
   useEffect(() => {
     console.info(`[Zang Flix Player] build ${APP_VERSION.version} (${APP_VERSION.commit})`);
@@ -85,40 +92,53 @@ export function OwnPlayer({
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
 
-  // Roteamento inteligente de fontes:
-  // Fontes do relay Saimo (saimo-tv.pages.dev/api/stream?...): sempre tocam via /api/proxy-stream (com Referer e User-Agent)
-  // Demais fontes (Internet Archive, streams diretos): tentam direto no <video>; só usam proxy se falharem (useProxyFallback)
+  // Cada fonte tenta o caminho preferido (stage 0) e depois o outro (stage 1), mantendo currentTime
   const currentStream: StreamSource | null = useMemo(() => {
     if (!rawStream) return null;
     return {
       ...rawStream,
-      url: paraPlayer(rawStream.url, useProxyFallback),
+      url: getStreamUrlForStage(rawStream.url, attemptStage),
     };
-  }, [rawStream, useProxyFallback]);
+  }, [rawStream, attemptStage]);
 
   const handleEnded = useCallback(() => {
     onEnded?.();
   }, [onEnded]);
 
+  // TDZ SAFE: Declarado antes de qualquer useEffect/handler que o cite
   const engine = usePlayerEngine(videoRef, currentStream, handleEnded);
 
-  // Chaveamento automático sem depender de status HTTP:
-  // 1. Se a fonte tentou direto e falhou, retenta silenciosamente a mesma fonte via proxy mantendo a posição
-  // 2. Se já estava via proxy (ou falhou novamente no proxy), registra falha no cache negativo e desce para a próxima fonte com toast
-  // 3. Esgotadas todas as fontes, exibe mensagem clara e botão de retry
+  // Mantém currentTime atualizado para transferir caso haja chaveamento de rota ou fonte
+  useEffect(() => {
+    if (engine.currentTime > 0) {
+      lastTimeRef.current = engine.currentTime;
+    }
+  }, [engine.currentTime]);
+
+  // Restaura currentTime quando o vídeo ficar pronto ou começar a tocar
+  useEffect(() => {
+    if ((engine.state === "ready" || engine.state === "playing") && lastTimeRef.current > 0) {
+      if (Math.abs(engine.currentTime - lastTimeRef.current) > 2) {
+        engine.seek(lastTimeRef.current);
+      }
+    }
+  }, [engine.state, currentStream]);
+
+  // Chaveamento inteligente:
+  // 1. Tenta o caminho preferencial da fonte (direto ou proxy dependendo do tipo)
+  // 2. Se falhar, retenta a mesma fonte no caminho inverso preservando currentTime
+  // 3. Se ambos falharem, registra falha e avança para a próxima fonte
   useEffect(() => {
     if (engine.state === "error" && rawStream) {
-      const isAlreadyProxy = currentStream?.url.includes("/api/proxy-stream");
-
-      if (!isAlreadyProxy && !useProxyFallback) {
-        // Retenta silenciosamente via proxy
-        setUseProxyFallback(true);
+      if (attemptStage === 0) {
+        console.warn(`[OwnPlayer] Falha no caminho inicial para ${rawStream.url}. Retentando caminho alternativo...`);
+        setAttemptStage(1);
         return;
       }
 
-      // Já estava via proxy ou falhou novamente: registra falha real e avança
+      // Ambos os caminhos falharam para esta fonte: registra falha e avança
       recordFailedSource(rawStream.url);
-      setUseProxyFallback(false);
+      setAttemptStage(0);
 
       if (sourceIndex < orderedStreams.length - 1) {
         setAutoSwitchMsg("Trocando de servidor…");
@@ -129,21 +149,20 @@ export function OwnPlayer({
         return () => clearTimeout(timer);
       }
     }
-  }, [engine.state, rawStream, currentStream, useProxyFallback, sourceIndex, orderedStreams.length]);
+  }, [engine.state, rawStream, attemptStage, sourceIndex, orderedStreams.length]);
 
-  // Timeout de 12s para evitar travamento em "Preparando reprodução..."
+  // Timeout de 12s para evitar qualquer travamento em "Preparando reprodução..."
   useEffect(() => {
     if (engine.state !== "loading" && engine.state !== "idle") return;
     if (!rawStream) return;
 
     const timeout = setTimeout(() => {
       console.warn(`[Zang Flix Player] Timeout de 12s atingido para a fonte ${rawStream.url}`);
-      const isAlreadyProxy = currentStream?.url.includes("/api/proxy-stream");
-      if (!isAlreadyProxy && !useProxyFallback) {
-        setUseProxyFallback(true);
+      if (attemptStage === 0) {
+        setAttemptStage(1);
       } else {
         recordFailedSource(rawStream.url);
-        setUseProxyFallback(false);
+        setAttemptStage(0);
         if (sourceIndex < orderedStreams.length - 1) {
           setAutoSwitchMsg("Fonte lenta, alternando servidor…");
           setSourceIndex((prev) => prev + 1);
@@ -153,7 +172,7 @@ export function OwnPlayer({
     }, 12000);
 
     return () => clearTimeout(timeout);
-  }, [engine.state, rawStream, currentStream, useProxyFallback, sourceIndex, orderedStreams.length]);
+  }, [engine.state, rawStream, attemptStage, sourceIndex, orderedStreams.length]);
 
   const handleVideoClick = () => {
     if (engine.muted) {

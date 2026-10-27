@@ -102,6 +102,19 @@ export function usePlayerEngine(
 
     let cancelled = false;
 
+    let metadataLoaded = false;
+    const metadataTimeout = setTimeout(() => {
+      if (!metadataLoaded && !cancelled) {
+        console.warn(`[PlayerEngine] 12s timeout atingido sem loadedmetadata para: ${stream.url}`);
+        setState("error");
+        setError("Tempo limite excedido ao preparar reprodução (12s)");
+      }
+    }, 12000);
+
+    const onLoadedMetadata = () => {
+      metadataLoaded = true;
+      clearTimeout(metadataTimeout);
+    };
     const onTimeUpdate = () => {
       setCurrentTime(video.currentTime);
       if (video.buffered.length > 0) {
@@ -109,18 +122,30 @@ export function usePlayerEngine(
       }
     };
     const onDurationChange = () => setDuration(video.duration || 0);
-    const onPlaying = () => { if (!cancelled) setState("playing"); setError(null); };
+    const onPlaying = () => {
+      metadataLoaded = true;
+      clearTimeout(metadataTimeout);
+      if (!cancelled) setState("playing");
+      setError(null);
+    };
     const onPause = () => { if (!cancelled && !video.ended) setState("paused"); };
     const onEnded_ = () => { if (!cancelled) { setState("paused"); onEnded?.(); } };
-    const onCanPlay = () => { if (!cancelled && state !== "playing") setState("ready"); };
+    const onCanPlay = () => {
+      metadataLoaded = true;
+      clearTimeout(metadataTimeout);
+      if (!cancelled && state !== "playing") setState("ready");
+    };
     const onVolumeChange = () => { setVolumeState(video.volume); setMutedState(video.muted); };
     const onRateChange = () => setPlaybackRateState(video.playbackRate);
     const onError = () => {
+      metadataLoaded = true;
+      clearTimeout(metadataTimeout);
       if (cancelled) return;
       setState("error");
       setError("Não foi possível carregar o vídeo. Verifique sua conexão ou tente outra fonte.");
     };
 
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("durationchange", onDurationChange);
     video.addEventListener("playing", onPlaying);
@@ -190,6 +215,8 @@ export function usePlayerEngine(
 
     return () => {
       cancelled = true;
+      clearTimeout(metadataTimeout);
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("durationchange", onDurationChange);
       video.removeEventListener("playing", onPlaying);

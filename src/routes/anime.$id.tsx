@@ -414,34 +414,55 @@ function AnimeDetailPage() {
 
               {/* Botões de Ação */}
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
-                <Link
-                  to={`/assistir/anime/${anime.id}/${selectedSeason}/1`}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    backgroundColor: "#ffffff",
-                    color: "#0a0b14",
-                    padding: "12px 28px",
-                    borderRadius: "14px",
-                    fontWeight: "800",
-                    fontSize: "0.95rem",
-                    textDecoration: "none",
-                    boxShadow: "0 8px 24px rgba(255, 255, 255, 0.25)",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#e8b44a";
-                    e.currentTarget.style.transform = "scale(1.03)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#ffffff";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
-                >
-                  <Play size={18} fill="currentColor" />
-                  Assistir T{selectedSeason}:E1 (Leg)
-                </Link>
+                {seasons.length > 0 ? (
+                  <Link
+                    to={`/assistir/anime/${anime.id}/${selectedSeason}/1`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      backgroundColor: "#ffffff",
+                      color: "#0a0b14",
+                      padding: "12px 28px",
+                      borderRadius: "14px",
+                      fontWeight: "800",
+                      fontSize: "0.95rem",
+                      textDecoration: "none",
+                      boxShadow: "0 8px 24px rgba(255, 255, 255, 0.25)",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#e8b44a";
+                      e.currentTarget.style.transform = "scale(1.03)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                      e.currentTarget.style.transform = "scale(1)";
+                    }}
+                  >
+                    <Play size={18} fill="currentColor" />
+                    Assistir T{selectedSeason}:E1 (Leg)
+                  </Link>
+                ) : (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      color: "rgba(255, 255, 255, 0.5)",
+                      padding: "12px 24px",
+                      borderRadius: "14px",
+                      fontWeight: "700",
+                      fontSize: "0.95rem",
+                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    <Play size={18} />
+                    Episódios em preparação
+                  </span>
+                )}
 
                 <button
                   onClick={toggleSave}
@@ -525,7 +546,7 @@ function AnimeDetailPage() {
               >
                 <Tv size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
                 <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "4px" }}>
-                  Episódios ainda não sincronizados para este anime
+                  Episódios ainda não sincronizados — volte em breve
                 </h4>
                 <p style={{ color: "rgba(255, 255, 255, 0.55)", fontSize: "0.85rem", maxWidth: "420px", margin: "0 auto" }}>
                   Estamos indexando os episódios completos deste título no acervo. Volte em breve!
