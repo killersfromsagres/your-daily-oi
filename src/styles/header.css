@@ -378,7 +378,31 @@
 }
 
 @media (max-width: 720px) {
+  .ydo-header {
+    padding: 0 1.25rem 0 1.1rem;
+    height: 46px;
+    gap: 0.75rem;
+  }
+
   .ydo-nav {
     display: none;
+  }
+
+  .ydo-header-tools {
+    margin-right: 6px;
+    gap: 0.35rem;
+  }
+
+  .ydo-search-trigger-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .ydo-search-expand {
+    max-width: calc(100vw - 140px);
+  }
+
+  .ydo-search-input {
+    width: 110px;
   }
 }

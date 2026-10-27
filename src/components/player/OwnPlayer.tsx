@@ -21,16 +21,27 @@ interface OwnPlayerProps {
 
 const PRECISA_PROXY = (url: string) => {
   if (!url) return false;
-  // Qualquer URL http:// precisa passar pelo proxy no site https:// para evitar bloqueio de Mixed Content
-  return (
-    url.startsWith("http://") ||
-    url.startsWith("https://saimo-tv.pages.dev/") ||
-    url.startsWith("http://saimo-tv.pages.dev/") ||
-    url.includes("saimo-tv.pages.dev/api/stream") ||
+  // Se for relay de séries/animes do Saimo, tenta direto primeiro (relay bloqueia IPs de datacenter no backend com 403)
+  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=series")) {
+    return false;
+  }
+  // Relay de filmes do Saimo requer proxy no backend (Referer hotlink protection do CDN)
+  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=movie")) {
+    return true;
+  }
+  // Mixed content: qualquer http:// em página https:// deve ir via proxy
+  if (url.startsWith("http://")) {
+    return true;
+  }
+  // CDNs conhecidos que exigem proxy por CORS ou Referer
+  if (
     url.includes("hermesnewone.com") ||
     url.includes("workers.dev") ||
     url.includes("tech-cdn.top")
-  );
+  ) {
+    return true;
+  }
+  return false;
 };
 
 const paraPlayer = (url: string, forceProxy: boolean) => {
@@ -118,6 +129,30 @@ export function OwnPlayer({
         return () => clearTimeout(timer);
       }
     }
+  }, [engine.state, rawStream, currentStream, useProxyFallback, sourceIndex, orderedStreams.length]);
+
+  // Timeout de 12s para evitar travamento em "Preparando reprodução..."
+  useEffect(() => {
+    if (engine.state !== "loading" && engine.state !== "idle") return;
+    if (!rawStream) return;
+
+    const timeout = setTimeout(() => {
+      console.warn(`[Zang Flix Player] Timeout de 12s atingido para a fonte ${rawStream.url}`);
+      const isAlreadyProxy = currentStream?.url.includes("/api/proxy-stream");
+      if (!isAlreadyProxy && !useProxyFallback) {
+        setUseProxyFallback(true);
+      } else {
+        recordFailedSource(rawStream.url);
+        setUseProxyFallback(false);
+        if (sourceIndex < orderedStreams.length - 1) {
+          setAutoSwitchMsg("Fonte lenta, alternando servidor…");
+          setSourceIndex((prev) => prev + 1);
+          setTimeout(() => setAutoSwitchMsg(null), 1000);
+        }
+      }
+    }, 12000);
+
+    return () => clearTimeout(timeout);
   }, [engine.state, rawStream, currentStream, useProxyFallback, sourceIndex, orderedStreams.length]);
 
   const handleVideoClick = () => {

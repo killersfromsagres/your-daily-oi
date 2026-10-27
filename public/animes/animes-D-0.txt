@@ -1,5 +1,1 @@
-@Demon Slayer	2019
-1	1	leg	https://exemplo.invalid/ds-s01e01-leg.mp4
-1	1	dub	https://exemplo.invalid/ds-s01e01-dub.mp4
-1	2	leg	https://exemplo.invalid/ds-s01e02-leg.mp4
-1	2	dub	https://exemplo.invalid/ds-s01e02-dub.mp4
+# Catalogo de Animes - Letra D

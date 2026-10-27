@@ -484,47 +484,110 @@
   }
 
   .ydo-controls-row {
-    gap: 0.3rem !important;
+    gap: 0.4rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
   }
 
-  .ydo-controls-left,
+  .ydo-controls-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 1 !important;
+  }
+
   .ydo-controls-right {
-    gap: 0.2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .ydo-ctrl-btn {
+    width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+  }
+
+  .ydo-time {
+    font-size: 0.75rem !important;
+    padding: 0 0.25rem !important;
+  }
+}
+
+/* ── Mobile Modo Retrato (Portrait): Foco no Play, Avanço 10s e BOTÃO EXPANDIR / FULLSCREEN ── */
+@media (max-width: 768px) and (orientation: portrait), (max-width: 540px) {
+  .ydo-volume-group,
+  .ydo-2k-badge,
+  .ydo-pip-btn,
+  .ydo-settings-wrap,
+  .ydo-source-wrap {
+    display: none !important;
+  }
+
+  /* Botão de Tela Cheia em destaque garantido no canto direito */
+  .ydo-ctrl-btn-fullscreen {
+    display: flex !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+    background: rgba(232, 180, 74, 0.22) !important;
+    border: 1.5px solid rgba(232, 180, 74, 0.6) !important;
+    color: #e8b44a !important;
+    box-shadow: 0 0 16px rgba(232, 180, 74, 0.3) !important;
+    cursor: pointer !important;
+    transition: transform 0.18s, background 0.18s !important;
+  }
+
+  .ydo-ctrl-btn-fullscreen:active {
+    transform: scale(0.92) !important;
+    background: #e8b44a !important;
+    color: #000 !important;
+  }
+}
+
+/* ── Mobile Modo Horizontal (Landscape): Todos os botões alinhados com perfeição ── */
+@media (orientation: landscape) and (max-height: 600px) {
+  .ydo-player-container {
+    height: 100vh !important;
+    width: 100vw !important;
+  }
+
+  .ydo-controls-wrapper {
+    padding: 1.75rem 1.25rem max(0.5rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .ydo-volume-group,
+  .ydo-2k-badge,
+  .ydo-pip-btn,
+  .ydo-settings-wrap,
+  .ydo-source-wrap {
+    display: flex !important;
+  }
+
+  .ydo-volume-slider {
+    display: none !important; /* Em celular landscape, usa botão mudo + teclas físicas */
+  }
+
+  .ydo-controls-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
   }
 
   .ydo-ctrl-btn {
     width: 36px !important;
     height: 36px !important;
-    padding: 0 !important;
-  }
-
-  /* Em celulares, o slider de volume é ocultado para dar espaço a todos os botões (volume é ajustado pelos botões físicos do aparelho) */
-  .ydo-volume-slider {
-    display: none !important;
-  }
-
-  .ydo-time {
-    font-size: 0.72rem !important;
-    padding: 0 0.2rem !important;
   }
 
   .ydo-source-select {
     height: 32px !important;
-    padding: 0.2rem 0.35rem !important;
-    font-size: 0.72rem !important;
-    max-width: 105px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .ydo-ctrl-btn {
-    width: 32px !important;
-    height: 32px !important;
-  }
-
-  .ydo-source-select {
-    max-width: 85px !important;
-    font-size: 0.68rem !important;
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.75rem !important;
+    max-width: 110px !important;
   }
 }
 

@@ -62,7 +62,6 @@ function WatchAnimePage() {
   const streams: StreamSource[] = [
     ...extraStreams,
     ...(foundEp?.streams || []),
-    ...(anime?.streams || []),
   ];
 
   if (!anime || streams.length === 0) {

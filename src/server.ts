@@ -332,9 +332,6 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
       if (foundEp?.streams) {
         orderedSources.push(...foundEp.streams);
-      } else {
-        const directStreams = await getStreamsForItem(item.type, item.title);
-        orderedSources.push(...directStreams);
       }
     }
   } catch {
@@ -422,6 +419,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
             Accept: "*/*",
           },
           redirect: "manual",
+          signal: AbortSignal.timeout(12000),
         });
         const loc = redirectRes.headers.get("location");
         if (loc && loc.startsWith("http")) {
@@ -436,6 +434,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
       method: request.method === "HEAD" ? "HEAD" : "GET",
       headers: upstreamHeaders,
       redirect: "follow",
+      signal: AbortSignal.timeout(12000),
     });
 
     // Se o upstream rejeitar Range com 416 (Accept-Ranges: none), retenta imediatamente sem Range
@@ -445,6 +444,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         method: request.method === "HEAD" ? "HEAD" : "GET",
         headers: upstreamHeaders,
         redirect: "follow",
+        signal: AbortSignal.timeout(12000),
       });
     }
 

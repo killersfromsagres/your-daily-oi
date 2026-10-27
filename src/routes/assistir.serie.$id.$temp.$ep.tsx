@@ -62,7 +62,6 @@ function WatchSeriesPage() {
   const streams: StreamSource[] = [
     ...extraStreams,
     ...(foundEp?.streams || []),
-    ...(serie?.streams || []),
   ];
 
   if (!serie || streams.length === 0) {

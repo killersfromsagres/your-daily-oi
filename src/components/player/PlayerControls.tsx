@@ -179,7 +179,7 @@ export function PlayerControls({
             <span className="ydo-time tabular">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
-            <span style={{
+            <span className="ydo-2k-badge" style={{
               fontSize: "0.65rem",
               fontWeight: "800",
               padding: "2px 6px",
@@ -197,7 +197,7 @@ export function PlayerControls({
         <div className="ydo-controls-right">
           {/* Seletor de Fontes / Servidores */}
           {sources.length > 1 && (
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div className="ydo-source-wrap" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <select
                 className="ydo-source-select"
                 value={currentSourceIndex}
@@ -280,7 +280,7 @@ export function PlayerControls({
           {/* Espelhar na TV / Transmitir */}
           {onCast && (
             <button
-              className="ydo-ctrl-btn"
+              className="ydo-ctrl-btn ydo-cast-btn"
               onClick={onCast}
               aria-label="Espelhar na TV"
               title="Espelhar na TV (Chromecast / AirPlay)"
@@ -290,13 +290,13 @@ export function PlayerControls({
           )}
 
           {/* Picture in Picture */}
-          <button className="ydo-ctrl-btn" onClick={onPiP} aria-label="Picture in Picture" title="Miniplayer (PiP)">
+          <button className="ydo-ctrl-btn ydo-pip-btn" onClick={onPiP} aria-label="Picture in Picture" title="Miniplayer (PiP)">
             <PictureInPicture size={20} />
           </button>
 
           {/* Fullscreen */}
           <button
-            className="ydo-ctrl-btn"
+            className="ydo-ctrl-btn ydo-ctrl-btn-fullscreen"
             onClick={onFullscreen}
             aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
             title="Tela Cheia"
