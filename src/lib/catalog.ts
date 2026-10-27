@@ -66,12 +66,16 @@ function parseStreams(raw: string, audio: AudioTrack): StreamSource[] {
     .map((url) => url.trim())
     .filter(isValidUrl)
     .filter((url) => !url.includes("r2.dev")) // descarta bucket r2 que retorna 403 permanente
-    .map((url, i) => ({
-      url,
-      format: detectFormat(url),
-      audio,
-      priority: i,
-    }));
+    .map((rawUrl, i) => {
+      // Atualiza cdn.hermesnewone para https (evita bloqueio de mixed-content e Cloudflare challenge)
+      const url = rawUrl.replace(/^http:\/\/cdn\.hermesnewone\.com/i, "https://cdn.hermesnewone.com");
+      return {
+        url,
+        format: detectFormat(url),
+        audio,
+        priority: i,
+      };
+    });
 }
 
 /**
@@ -218,15 +222,23 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     if (!title || (tipo !== "f" && tipo !== "s" && tipo !== "a")) continue;
     const tmdbId = tmdbRaw && !Number.isNaN(Number(tmdbRaw)) ? Number(tmdbRaw) : null;
     const genres = genresRaw ? genresRaw.split(",").map((g) => g.trim()).filter(Boolean) : [];
-    const key = normalizeTitle(title);
+    const normKey = normalizeTitle(title);
     const cleanPoster = posterPath?.trim() ?? "";
     const posterUrl = cleanPoster
       ? cleanPoster.startsWith("http")
         ? cleanPoster
         : `https://image.tmdb.org/t/p/w500${cleanPoster.startsWith("/") ? "" : "/"}${cleanPoster}`
       : "";
-    map.set(key, {
-      id: key,
+
+    // Se já houver um item cadastrado com o mesmo título mas tipo diferente (ex: Duna filme vs Duna série),
+    // cria um ID único para o novo e preserva ambos no catálogo
+    let id = normKey;
+    if (map.has(normKey) && map.get(normKey)!.type !== tipo) {
+      id = `${normKey}-${tipo === "f" ? "filme" : tipo === "s" ? "serie" : "anime"}`;
+    }
+
+    const itemObj = {
+      id,
       type: tipo as "f" | "s" | "a",
       title: title.trim(),
       tmdbId,
@@ -234,7 +246,11 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
       posterUrl,
       genres,
       tmdb: null,
-    });
+    };
+
+    map.set(id, itemObj);
+    // Registra chave com prefixo de tipo para resolução cirúrgica (ex: "f-duna" e "s-duna")
+    map.set(`${tipo}-${normKey}`, itemObj);
   }
   return map;
 }

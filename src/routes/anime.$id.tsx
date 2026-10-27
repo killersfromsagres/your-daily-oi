@@ -23,7 +23,7 @@ function AnimeDetailPage() {
     let active = true;
     setLoading(true);
 
-    fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" })
+    fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=anime`, { cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error("Erro");
         return res.json() as Promise<CatalogItem>;

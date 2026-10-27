@@ -197,14 +197,25 @@ async function handleItemApi(url: URL): Promise<Response> {
   const id = url.searchParams.get("id");
   if (!id) return jsonResponse({ error: "ID ausente" }, 400);
 
+  const tipoParam = url.searchParams.get("tipo");
+  const typeKey = tipoParam ? ((tipoParam === "movie" || tipoParam === "f") ? "f" : (tipoParam === "anime" || tipoParam === "a") ? "a" : "s") : null;
+
   const now = Date.now();
-  const cached = itemDetailsCache.get(id);
+  const cacheKey = typeKey ? `${typeKey}-${id}` : id;
+  const cached = itemDetailsCache.get(cacheKey) || itemDetailsCache.get(id);
   if (cached && cached.expires > now) {
     return jsonResponse(cached.data);
   }
 
   const { items } = await loadCatalog();
-  const item = items.get(id) || Array.from(items.values()).find((i) => i.id === id);
+  const norm = normalizeTitle(id);
+  const item =
+    (typeKey ? items.get(`${typeKey}-${norm}`) : null) ||
+    items.get(id) ||
+    items.get(norm) ||
+    Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && (!typeKey || i.type === typeKey)) ||
+    Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
+
   if (!item) return jsonResponse({ error: "Item não encontrado" }, 404);
 
   let finalItem = item;
@@ -272,11 +283,21 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   const id = url.searchParams.get("id");
   if (!id) return jsonResponse({ error: "ID ausente" }, 400);
 
+  const tipoParam = url.searchParams.get("tipo");
+  const typeKey = (tipoParam === "movie" || tipoParam === "f") ? "f" : (tipoParam === "anime" || tipoParam === "a") ? "a" : "s";
+
   const { items } = await loadCatalog();
-  const item = items.get(id) || Array.from(items.values()).find((i) => i.id === id);
+  const norm = normalizeTitle(id);
+  const item =
+    items.get(`${typeKey}-${norm}`) ||
+    items.get(id) ||
+    items.get(norm) ||
+    Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey) ||
+    Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
+
   if (!item) return jsonResponse({ error: "Item não encontrado no catálogo" }, 404);
 
-  const tipo = url.searchParams.get("tipo") || (item.type === "f" ? "movie" : "series");
+  const tipo = tipoParam || (item.type === "f" ? "movie" : "series");
   const temp = parseInt(url.searchParams.get("temp") || "1", 10);
   const ep = parseInt(url.searchParams.get("ep") || "1", 10);
 
@@ -432,6 +453,12 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         clearTimeout(redirectTimer);
         // continua
       }
+    }
+
+    // Se o CDN for hermesnewone em http://, converte para https://
+    // (Na Vercel/datacenters, requisições em http puro caem no Cloudflare Bot Challenge; em https passam limpas com 206)
+    if (targetUrl.includes("hermesnewone.com") && targetUrl.startsWith("http://")) {
+      targetUrl = targetUrl.replace("http://", "https://");
     }
 
     // AbortController de 12s para receber os headers da resposta upstream

@@ -25,7 +25,7 @@ function WatchAnimePage() {
     setLoading(true);
 
     Promise.allSettled([
-      fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=anime`, { cache: "no-store" }).then((r) => r.json()),
       fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=series&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
     ])
       .then(([itemRes, resolveRes]) => {
