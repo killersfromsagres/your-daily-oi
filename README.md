@@ -1,8 +1,6 @@
-# Your Daily Oi
+# Zang Flix
 
-Oi
-
-This project was built with [Lovable](https://lovable.dev).
+Plataforma de streaming completa estilo Netflix com catálogo em português (dublado e legendado), consumindo o acervo oficial Saimo TV e metadados TMDB.
 
 ## Build with Lovable
 

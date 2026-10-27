@@ -8,7 +8,7 @@ import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/generos/$slug")({
   component: GenrePage,
-  head: ({ params }) => ({ meta: [{ title: `${params.slug} — Your Daily Oi` }] }),
+  head: ({ params }) => ({ meta: [{ title: `${params.slug} — Zang Flix` }] }),
 });
 
 function GenrePage() {

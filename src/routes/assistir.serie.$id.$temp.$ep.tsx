@@ -9,7 +9,7 @@ import { saveProgress, getProgressById } from "@/lib/storage";
 
 export const Route = createFileRoute("/assistir/serie/$id/$temp/$ep")({
   component: WatchSeriesPage,
-  head: () => ({ meta: [{ title: "Assistir Série — Your Daily Oi" }] }),
+  head: () => ({ meta: [{ title: "Assistir Série — Zang Flix" }] }),
 });
 
 function WatchSeriesPage() {

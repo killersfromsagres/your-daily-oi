@@ -11,17 +11,17 @@ export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
     meta: [
-      { title: "Your Daily Oi — Filmes, Séries, Animes e Doramas" },
+      { title: "Zang Flix — Filmes, Séries, Animes e Doramas" },
       {
         name: "description",
         content:
-          "Plataforma completa de streaming em português consumindo o catálogo público Saimo TV, com player HLS nativo e metadados TMDB.",
+          "Zang Flix reúne filmes e séries em uma experiência cinematográfica completa e fluida, consumindo o catálogo oficial Saimo TV.",
       },
-      { property: "og:title", content: "Your Daily Oi — Cinema e Séries" },
+      { property: "og:title", content: "Zang Flix — Cinema e Séries" },
       {
         property: "og:description",
         content:
-          "Filmes, séries, animes e doramas com reprodução contínua, seleção de fontes e design cinematográfico.",
+          "Assista a filmes e séries com direção de arte premium, múltiplos servidores e reprodução contínua.",
       },
     ],
   }),

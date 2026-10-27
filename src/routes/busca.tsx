@@ -10,7 +10,7 @@ import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 export const Route = createFileRoute("/busca")({
   validateSearch: (search: Record<string, unknown>) => ({ q: String(search["q"] ?? "") }),
   component: SearchPage,
-  head: () => ({ meta: [{ title: "Busca — Your Daily Oi" }] }),
+  head: () => ({ meta: [{ title: "Busca — Zang Flix" }] }),
 });
 
 function SearchPage() {

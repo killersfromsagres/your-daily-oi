@@ -68,9 +68,9 @@ export function Header({ onSearch }: HeaderProps) {
       }}
     >
       {/* Logo */}
-      <Link to="/" className="ydo-logo" aria-label="Your Daily Oi — início">
+      <Link to="/" className="ydo-logo" aria-label="Zang Flix — início">
         <span className="ydo-logo-text">
-          YOUR <strong>DAILY</strong> <em>OI</em>
+          ZANG <strong>FLIX</strong>
         </span>
       </Link>
 

@@ -8,7 +8,7 @@ import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/filme/$id")({
   component: MovieDetailPage,
-  head: () => ({ meta: [{ title: "Detalhes do Filme — Your Daily Oi" }] }),
+  head: () => ({ meta: [{ title: "Detalhes do Filme — Zang Flix" }] }),
 });
 
 function MovieDetailPage() {
