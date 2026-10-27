@@ -21,19 +21,19 @@
   border-radius: 12px;
   overflow: hidden;
   background: var(--bg-surface, #111320);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 2px solid transparent;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.35s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
 }
 
 .ydo-card:hover .ydo-card-poster,
 .ydo-card:focus-within .ydo-card-poster {
-  transform: translateY(-4px) scale(1.04);
+  transform: translateY(-4px) scale(1.03);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7),
-    0 0 20px rgba(232, 180, 74, 0.2);
-  border-color: rgba(232, 180, 74, 0.4);
+    0 0 20px rgba(79, 227, 208, 0.45);
+  border-color: #4fe3d0;
 }
 
 .ydo-card-img {
@@ -62,31 +62,15 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(10, 11, 20, 0.8) 0%,
-    rgba(10, 11, 20, 0.2) 40%,
-    transparent 70%
+    rgba(10, 11, 20, 0.6) 0%,
+    transparent 50%
   );
   pointer-events: none;
 }
 
-/* Hover overlay */
+/* Sem desfoque no hover — apenas o contorno selecionado limpo */
 .ydo-card-hover {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  background: rgba(10, 11, 20, 0.65);
-  opacity: 0;
-  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(4px);
-}
-
-.ydo-card:hover .ydo-card-hover,
-.ydo-card:focus-within .ydo-card-hover {
-  opacity: 1;
+  display: none;
 }
 
 @media (hover: none) {

@@ -17,29 +17,26 @@ function WatchAnimePage() {
   const [anime, setAnime] = useState<CatalogItem | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
 
-    fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro");
-        return res.json() as Promise<CatalogItem>;
-      })
-      .then((found) => {
+    Promise.allSettled([
+      fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=series&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
+    ])
+      .then(([itemRes, resolveRes]) => {
         if (!active) return;
-        setAnime(found);
+        if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
+          setAnime(itemRes.value as CatalogItem);
+        }
+        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
+          setExtraStreams(resolveRes.value.sources as StreamSource[]);
+        }
       })
-      .catch(() => {
-        fetch("/api/catalogo", { cache: "no-store" })
-          .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
-          .then((d) => {
-            if (!active) return;
-            const f = d.items.find((i) => i.id === id);
-            setAnime(f || null);
-          })
-          .catch(() => {});
-      })
+      .catch(() => {})
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -47,7 +44,7 @@ function WatchAnimePage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, temp, ep]);
 
   if (loading) {
     return (
@@ -61,8 +58,11 @@ function WatchAnimePage() {
   const targetEpisode = Number(ep);
   const foundSeason = anime?.seasons?.find((s) => s.seasonNumber === targetSeason);
   const foundEp = foundSeason?.episodes?.find((e) => e.episodeNumber === targetEpisode);
-  const streams: StreamSource[] = (foundEp?.streams && foundEp.streams.length > 0)
-    ? foundEp.streams
+  const streams: StreamSource[] = [
+    ...extraStreams,
+    ...(foundEp?.streams || []),
+    ...(anime?.streams || []),
+  ];
     : (anime?.streams || [
         { url: "https://exemplo.invalid/episodio.mp4", audio: "leg" as const, format: "mp4" as const },
         { url: "https://exemplo.invalid/episodio-dub.mp4", audio: "dub" as const, format: "mp4" as const }

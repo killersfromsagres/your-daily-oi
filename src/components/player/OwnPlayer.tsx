@@ -1,9 +1,10 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2 } from "lucide-react";
 import { usePlayerEngine } from "./usePlayerEngine";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
+import { recordFailedSource, sortStreamsByHealth, clearFailedSources } from "@/lib/player-storage";
 
 interface OwnPlayerProps {
   streams: StreamSource[];
@@ -32,29 +33,60 @@ export function OwnPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const orderedStreams = useMemo(() => sortStreamsByHealth(streams), [streams]);
+
   const [sourceIndex, setSourceIndex] = useState(() => {
-    const preferredIdx = streams.findIndex((s) => s.audio === preferredAudio);
+    const preferredIdx = orderedStreams.findIndex((s) => s.audio === preferredAudio);
     return preferredIdx >= 0 ? preferredIdx : 0;
   });
+  const [useProxyFallback, setUseProxyFallback] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
-
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
 
-  // Chaveamento automático de fontes caso a atual falhe
+  const rawStream = orderedStreams[sourceIndex] ?? null;
+  const currentStream: StreamSource | null = useMemo(() => {
+    if (!rawStream) return null;
+    if (useProxyFallback && !rawStream.url.includes("/api/proxy-stream")) {
+      return {
+        ...rawStream,
+        url: `/api/proxy-stream?url=${encodeURIComponent(rawStream.url)}`,
+      };
+    }
+    return rawStream;
+  }, [rawStream, useProxyFallback]);
+
+  // Chaveamento automático de fontes Play-First:
+  // 1. Tenta direto no browser
+  // 2. Se falhar (ex: 403 / anti-bot), tenta via /api/proxy-stream
+  // 3. Se continuar falhando, desce para a próxima fonte com toast
   useEffect(() => {
-    if (engine.state === "error") {
-      if (sourceIndex < streams.length - 1) {
-        setAutoSwitchMsg(`Fonte ${sourceIndex + 1} falhou. Alternando automaticamente para Fonte ${sourceIndex + 2}…`);
+    if (engine.state === "error" && rawStream) {
+      if (!useProxyFallback && !rawStream.url.includes("/api/proxy-stream")) {
+        // Tenta fallback pontual via proxy
+        setAutoSwitchMsg("Otimizando conexão do servidor…");
+        const timer = setTimeout(() => {
+          setUseProxyFallback(true);
+          setAutoSwitchMsg(null);
+        }, 600);
+        return () => clearTimeout(timer);
+      }
+
+      // Se proxy já foi tentado ou falhou, registra falha real e avança
+      recordFailedSource(rawStream.url);
+      setUseProxyFallback(false);
+
+      if (sourceIndex < orderedStreams.length - 1) {
+        setAutoSwitchMsg("Trocando de servidor…");
         const timer = setTimeout(() => {
           setSourceIndex((prev) => prev + 1);
           setAutoSwitchMsg(null);
-        }, 1200);
+        }, 1000);
         return () => clearTimeout(timer);
       }
     }
-  }, [engine.state, sourceIndex, streams.length]);
+  }, [engine.state, rawStream, useProxyFallback, sourceIndex, orderedStreams.length]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
@@ -276,26 +308,35 @@ export function OwnPlayer({
         </div>
       )}
 
-      {/* Erro */}
+      {/* Erro após esgotar todas as fontes */}
       {engine.state === "error" && (
         <div className="ydo-player-overlay ydo-player-error-overlay">
-          <AlertCircle size={40} aria-hidden />
-          <p>{engine.error}</p>
+          <AlertCircle size={44} aria-hidden style={{ color: "#e8b44a" }} />
+          <h3 style={{ fontSize: "1.2rem", fontWeight: "800", margin: "12px 0 6px", color: "#fff" }}>
+            Os servidores deste título estão fora do ar agora
+          </h3>
+          <p style={{ color: "rgba(255, 255, 255, 0.7)", maxWidth: "460px", margin: "0 auto 18px", fontSize: "0.95rem" }}>
+            Tentamos todas as fontes disponíveis no momento. A disponibilidade pode retornar em breve.
+          </p>
           <div className="ydo-player-error-actions">
-            {sourceIndex < streams.length - 1 && (
+            <button
+              className="ydo-btn-primary"
+              onClick={() => {
+                clearFailedSources();
+                setSourceIndex(0);
+                setUseProxyFallback(false);
+              }}
+            >
+              <RefreshCw size={16} /> Tentar de novo
+            </button>
+            {onBack && (
               <button
-                className="ydo-player-error-btn"
-                onClick={() => handleSourceChange(sourceIndex + 1)}
+                className="ydo-btn-secondary"
+                onClick={onBack}
               >
-                <RefreshCw size={16} /> Tentar próxima fonte
+                Voltar
               </button>
             )}
-            <button
-              className="ydo-player-error-btn ydo-player-error-btn-ghost"
-              onClick={() => handleSourceChange(sourceIndex)}
-            >
-              Tentar novamente
-            </button>
           </div>
         </div>
       )}

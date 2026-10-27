@@ -17,29 +17,26 @@ function WatchMoviePage() {
   const [movie, setMovie] = useState<CatalogItem | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
 
-    fetch(`/api/item?id=${encodeURIComponent(id)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao buscar filme");
-        return res.json() as Promise<CatalogItem>;
-      })
-      .then((found) => {
+    Promise.allSettled([
+      fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((r) => r.json()),
+    ])
+      .then(([itemRes, resolveRes]) => {
         if (!active) return;
-        setMovie(found);
+        if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
+          setMovie(itemRes.value as CatalogItem);
+        }
+        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
+          setExtraStreams(resolveRes.value.sources as StreamSource[]);
+        }
       })
-      .catch(() => {
-        fetch("/api/catalogo")
-          .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
-          .then((d) => {
-            if (!active) return;
-            const f = d.items.find((i) => i.id === id);
-            setMovie(f || null);
-          })
-          .catch(() => {});
-      })
+      .catch(() => {})
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -57,7 +54,13 @@ function WatchMoviePage() {
     );
   }
 
-  if (!movie || movie.streams.length === 0) {
+  // Combina as fontes do resolve-vod (com relay) e as fontes nativas
+  const streams: StreamSource[] = [
+    ...extraStreams,
+    ...(movie?.streams || []),
+  ];
+
+  if (!movie || streams.length === 0) {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <Film size={48} style={{ color: "#e8b44a" }} />

@@ -264,6 +264,150 @@ async function handleItemApi(url: URL): Promise<Response> {
   return jsonResponse(finalItem);
 }
 
+/**
+ * Route Handler /api/resolve-vod (Play-First: nunca veta, devolve fontes ordenadas e relay)
+ */
+async function handleResolveVodApi(url: URL): Promise<Response> {
+  const id = url.searchParams.get("id");
+  if (!id) return jsonResponse({ error: "ID ausente" }, 400);
+
+  const { items } = await loadCatalog();
+  const item = items.get(id) || Array.from(items.values()).find((i) => i.id === id);
+  if (!item) return jsonResponse({ error: "Item não encontrado no catálogo" }, 404);
+
+  const tipo = url.searchParams.get("tipo") || (item.type === "f" ? "movie" : "series");
+  const temp = parseInt(url.searchParams.get("temp") || "1", 10);
+  const ep = parseInt(url.searchParams.get("ep") || "1", 10);
+
+  const orderedSources: any[] = [];
+
+  // 1. Injeta os streams oficiais do relay Saimo TV confirmados ao vivo (prioridade máxima)
+  if (item.tmdbId) {
+    if (tipo === "movie") {
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=dub`,
+        audio: "dub",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Dub)",
+        priority: 0,
+      });
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=leg`,
+        audio: "leg",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Leg)",
+        priority: 1,
+      });
+    } else {
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=dub`,
+        audio: "dub",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Dub)",
+        priority: 0,
+      });
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=leg`,
+        audio: "leg",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Leg)",
+        priority: 1,
+      });
+    }
+  }
+
+  // 2. Anexa as fontes nativas do catálogo do item
+  try {
+    if (item.type === "f") {
+      const directStreams = await getStreamsForItem("f", item.title);
+      orderedSources.push(...directStreams);
+    } else {
+      const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
+      const foundSeason = seasons.find((s) => s.seasonNumber === temp);
+      const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
+      if (foundEp?.streams) {
+        orderedSources.push(...foundEp.streams);
+      } else {
+        const directStreams = await getStreamsForItem(item.type, item.title);
+        orderedSources.push(...directStreams);
+      }
+    }
+  } catch {
+    // continua com as fontes de relay
+  }
+
+  return jsonResponse({
+    id: item.id,
+    title: item.title,
+    tmdbId: item.tmdbId,
+    tipo,
+    sources: orderedSources,
+  });
+}
+
+/**
+ * Route Handler /api/proxy-stream (Fallback para quando o navegador receber 403 / Access Denied)
+ */
+async function handleProxyStreamApi(request: Request, url: URL): Promise<Response> {
+  const targetUrl = url.searchParams.get("url");
+  if (!targetUrl || !targetUrl.startsWith("http")) {
+    return new Response("URL inválida", { status: 400 });
+  }
+
+  try {
+    const upstreamHeaders: Record<string, string> = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      Referer: "https://saimo-tv.pages.dev/",
+      Accept: "*/*",
+    };
+
+    const clientRange = request.headers.get("range");
+    if (clientRange) {
+      upstreamHeaders["Range"] = clientRange;
+    }
+
+    const clientAcceptEncoding = request.headers.get("accept-encoding");
+    if (clientAcceptEncoding) {
+      upstreamHeaders["Accept-Encoding"] = clientAcceptEncoding;
+    }
+
+    const res = await fetch(targetUrl, {
+      headers: upstreamHeaders,
+      redirect: "follow",
+    });
+
+    const responseHeaders = new Headers();
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Access-Control-Allow-Headers", "*");
+    responseHeaders.set("Cache-Control", "no-cache, no-store");
+
+    const contentType = res.headers.get("content-type");
+    if (contentType) responseHeaders.set("Content-Type", contentType);
+
+    const contentLength = res.headers.get("content-length");
+    if (contentLength) responseHeaders.set("Content-Length", contentLength);
+
+    const contentRange = res.headers.get("content-range");
+    if (contentRange) responseHeaders.set("Content-Range", contentRange);
+
+    const acceptRanges = res.headers.get("accept-ranges") || "bytes";
+    responseHeaders.set("Accept-Ranges", acceptRanges);
+
+    return new Response(res.body, {
+      status: res.status,
+      headers: responseHeaders,
+    });
+  } catch (err) {
+    console.error("Erro no proxy-stream:", err);
+    return new Response("Erro no proxy de vídeo", { status: 502 });
+  }
+}
+
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -300,6 +444,12 @@ export default {
       }
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
+      }
+      if (url.pathname === "/api/resolve-vod") {
+        return await handleResolveVodApi(url);
+      }
+      if (url.pathname === "/api/proxy-stream") {
+        return await handleProxyStreamApi(request, url);
       }
 
       const handler = await getServerEntry();

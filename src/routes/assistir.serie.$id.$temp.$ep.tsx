@@ -17,29 +17,26 @@ function WatchSeriesPage() {
   const [serie, setSerie] = useState<CatalogItem | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
 
-    fetch(`/api/item?id=${encodeURIComponent(id)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro");
-        return res.json() as Promise<CatalogItem>;
-      })
-      .then((found) => {
+    Promise.allSettled([
+      fetch(`/api/item?id=${encodeURIComponent(id)}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=series&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
+    ])
+      .then(([itemRes, resolveRes]) => {
         if (!active) return;
-        setSerie(found);
+        if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
+          setSerie(itemRes.value as CatalogItem);
+        }
+        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
+          setExtraStreams(resolveRes.value.sources as StreamSource[]);
+        }
       })
-      .catch(() => {
-        fetch("/api/catalogo")
-          .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
-          .then((d) => {
-            if (!active) return;
-            const f = d.items.find((i) => i.id === id);
-            setSerie(f || null);
-          })
-          .catch(() => {});
-      })
+      .catch(() => {})
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -47,7 +44,7 @@ function WatchSeriesPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, temp, ep]);
 
   if (loading) {
     return (
@@ -61,9 +58,11 @@ function WatchSeriesPage() {
   const targetEpisode = Number(ep);
   const foundSeason = serie?.seasons?.find((s) => s.seasonNumber === targetSeason);
   const foundEp = foundSeason?.episodes?.find((e) => e.episodeNumber === targetEpisode);
-  const streams: StreamSource[] = (foundEp?.streams && foundEp.streams.length > 0)
-    ? foundEp.streams
-    : (serie?.streams || []);
+  const streams: StreamSource[] = [
+    ...extraStreams,
+    ...(foundEp?.streams || []),
+    ...(serie?.streams || []),
+  ];
 
   if (!serie || streams.length === 0) {
     return (
