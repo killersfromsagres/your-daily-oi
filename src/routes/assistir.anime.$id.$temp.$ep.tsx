@@ -26,16 +26,22 @@ function WatchAnimePage() {
 
     Promise.allSettled([
       fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=anime`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=series&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=anime&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/anime-sushi/episodio?id=${encodeURIComponent(id)}&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
     ])
-      .then(([itemRes, resolveRes]) => {
+      .then(([itemRes, resolveRes, sushiRes]) => {
         if (!active) return;
         if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
           setAnime(itemRes.value as CatalogItem);
         }
+        const collectedSources: StreamSource[] = [];
         if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
-          setExtraStreams(resolveRes.value.sources as StreamSource[]);
+          collectedSources.push(...(resolveRes.value.sources as StreamSource[]));
         }
+        if (sushiRes.status === "fulfilled" && sushiRes.value?.sources) {
+          collectedSources.push(...(sushiRes.value.sources as StreamSource[]));
+        }
+        setExtraStreams(collectedSources);
       })
       .catch(() => {})
       .finally(() => {

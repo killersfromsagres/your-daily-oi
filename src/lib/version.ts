@@ -1,7 +1,7 @@
 export const APP_VERSION = {
-  version: "2026-10-27T20:44:00-03:00",
+  version: "2026-10-27T21:24:00-03:00",
   buildTime: new Date().toISOString(),
-  commit: "fd32876",
+  commit: "sushianimes-integration",
   app: "Zang Flix",
 };
 

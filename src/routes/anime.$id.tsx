@@ -37,13 +37,27 @@ function AnimeDetailPage() {
         }
       })
       .catch(() => {
-        fetch("/api/catalogo", { cache: "no-store" })
-          .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
-          .then((d) => {
+        fetch(`/api/anime-sushi?id=${encodeURIComponent(id)}`, { cache: "no-store" })
+          .then((r) => (r.ok ? (r.json() as Promise<CatalogItem>) : null))
+          .then((sushiData) => {
             if (!active) return;
-            const f = d.items.find((i) => i.id === id);
-            setAnime(f || null);
-            if (f) setSaved(getSavedList().includes(f.id));
+            if (sushiData) {
+              setAnime(sushiData);
+              setSaved(getSavedList().includes(sushiData.id));
+              if (sushiData.seasons && sushiData.seasons.length > 0) {
+                setSelectedSeason(sushiData.seasons[0].seasonNumber);
+              }
+              return;
+            }
+            fetch("/api/catalogo", { cache: "no-store" })
+              .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
+              .then((d) => {
+                if (!active) return;
+                const f = d.items.find((i) => i.id === id);
+                setAnime(f || null);
+                if (f) setSaved(getSavedList().includes(f.id));
+              })
+              .catch(() => {});
           })
           .catch(() => {});
       })

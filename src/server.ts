@@ -5,6 +5,7 @@ import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
 import { getTmdbData } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
+import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem } from "./lib/types";
 
@@ -222,7 +223,18 @@ async function handleItemApi(url: URL): Promise<Response> {
     items.get(norm) ||
     Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
 
-  if (!item) return jsonResponse({ error: "Item não encontrado" }, 404);
+  if (!item) {
+    if (typeKey === "a" || id.includes("-") || tipoParam === "anime") {
+      try {
+        const sushiAnime = await getSushiAnime(id);
+        if (sushiAnime) {
+          itemDetailsCache.set(cacheKey, { data: sushiAnime, expires: now + 3600000 });
+          return jsonResponse(sushiAnime);
+        }
+      } catch {}
+    }
+    return jsonResponse({ error: "Item não encontrado" }, 404);
+  }
 
   let finalItem = item;
   // Se ainda não carregou os streams deste item, busca instantaneamente pela letra correspondente
@@ -305,7 +317,22 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     items.get(norm) ||
     Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
 
-  if (!item) return jsonResponse({ error: "Item não encontrado no catálogo" }, 404);
+  if (!item) {
+    if (typeKey === "a" || id.includes("-") || tipoParam === "anime") {
+      try {
+        const sushiSources = await resolveSushiEpisodeStream(id, temp, ep);
+        if (sushiSources && sushiSources.length > 0) {
+          return jsonResponse({
+            id,
+            title: id,
+            tipo: "series",
+            sources: sushiSources,
+          });
+        }
+      } catch {}
+    }
+    return jsonResponse({ error: "Item não encontrado no catálogo" }, 404);
+  }
 
   const tipo = tipoParam || (item.type === "f" ? "movie" : "series");
   const temp = parseInt(url.searchParams.get("temp") || "1", 10);
@@ -437,6 +464,22 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
       Accept: "*/*",
       "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
     };
+
+    const customReferer = url.searchParams.get("referer");
+    if (customReferer) {
+      upstreamHeaders["Referer"] = customReferer;
+      try {
+        upstreamHeaders["Origin"] = new URL(customReferer).origin;
+      } catch {}
+    } else if (
+      targetUrl.includes("sushianimes.com.br") ||
+      targetUrl.includes("maximaimg.online") ||
+      targetUrl.includes("pixel-sus-4k-image.com") ||
+      targetUrl.includes("playsus.online")
+    ) {
+      upstreamHeaders["Referer"] = "https://sushianimes.com.br/";
+      upstreamHeaders["Origin"] = "https://sushianimes.com.br";
+    }
 
     const clientRange = request.headers.get("range");
     if (clientRange) {
@@ -587,6 +630,61 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
   }
 }
 
+/**
+ * Route Handler /api/animes-sushi (Busca e catálogo paginado de animes)
+ */
+async function handleAnimesSushiApi(url: URL): Promise<Response> {
+  const q = url.searchParams.get("q") || "";
+  const pagina = parseInt(url.searchParams.get("pagina") || url.searchParams.get("page") || "1", 10);
+  const categoria = url.searchParams.get("categoria") || url.searchParams.get("category") || "";
+
+  if (q.trim()) {
+    const items = await searchSushiAnimes(q.trim());
+    return jsonResponse({
+      items,
+      pagina: 1,
+      totalPaginas: 1,
+      totalItens: items.length,
+    });
+  }
+
+  const result = await getSushiCatalog(isNaN(pagina) || pagina < 1 ? 1 : pagina, categoria);
+  return jsonResponse(result);
+}
+
+/**
+ * Route Handler /api/anime-sushi (Ficha detalhada de um anime com temporadas e episódios)
+ */
+async function handleAnimeSushiApi(url: URL): Promise<Response> {
+  const id = url.searchParams.get("id");
+  if (!id) return jsonResponse({ error: "ID ausente" }, 400);
+
+  const anime = await getSushiAnime(id);
+  if (!anime) return jsonResponse({ error: "Anime não encontrado" }, 404);
+
+  return jsonResponse(anime);
+}
+
+/**
+ * Route Handler /api/anime-sushi/episodio (Resolução das fontes de vídeo de um episódio)
+ */
+async function handleAnimeSushiEpisodioApi(url: URL): Promise<Response> {
+  const id = url.searchParams.get("id");
+  if (!id) return jsonResponse({ error: "ID ausente" }, 400);
+
+  const temp = parseInt(url.searchParams.get("temp") || "1", 10);
+  const ep = parseInt(url.searchParams.get("ep") || "1", 10);
+  const epSlug = url.searchParams.get("epSlug") || undefined;
+
+  const sources = await resolveSushiEpisodeStream(id, isNaN(temp) ? 1 : temp, isNaN(ep) ? 1 : ep, epSlug);
+  return jsonResponse({
+    id,
+    temp,
+    ep,
+    sources,
+  });
+}
+
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
@@ -632,6 +730,15 @@ export default {
       }
       if (url.pathname === "/api/proxy-stream") {
         return await handleProxyStreamApi(request, url);
+      }
+      if (url.pathname === "/api/animes-sushi") {
+        return await handleAnimesSushiApi(url);
+      }
+      if (url.pathname === "/api/anime-sushi") {
+        return await handleAnimeSushiApi(url);
+      }
+      if (url.pathname === "/api/anime-sushi/episodio") {
+        return await handleAnimeSushiEpisodioApi(url);
       }
 
       const handler = await getServerEntry();

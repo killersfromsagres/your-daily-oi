@@ -36,6 +36,9 @@ export interface EpisodeItem {
   seasonNumber: number;
   episodeNumber: number;
   title?: string;
+  name?: string;
+  episodeSlug?: string;
+  thumbUrl?: string;
   streams: StreamSource[];
 }
 
