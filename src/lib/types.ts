@@ -5,6 +5,7 @@ export type StreamFormat = "hls" | "ts" | "dash" | "mp4";
 
 export interface StreamSource {
   url: string;
+  name?: string;
   format?: StreamFormat;
   audio: AudioTrack;
   priority?: number;

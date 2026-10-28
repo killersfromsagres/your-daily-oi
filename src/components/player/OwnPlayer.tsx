@@ -277,7 +277,6 @@ export function OwnPlayer({
   const handleSourceChange = (i: number) => {
     const prevTime = videoRef.current?.currentTime ?? 0;
     setSourceIndex(i);
-    setUseProxyFallback(false);
     setAutoSwitchMsg(null);
     setTimeout(() => {
       if (videoRef.current && prevTime > 0) {
@@ -455,7 +454,6 @@ export function OwnPlayer({
               onClick={() => {
                 clearFailedSources();
                 setSourceIndex(0);
-                setUseProxyFallback(false);
                 setAutoSwitchMsg(null);
               }}
             >
