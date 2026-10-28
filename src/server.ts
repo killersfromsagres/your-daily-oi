@@ -3,11 +3,11 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
-import { getTmdbData } from "./lib/tmdb";
+import { getTmdbData, getTmdbTvSeasons } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { APP_VERSION } from "./lib/version";
-import type { CatalogItem } from "./lib/types";
+import type { CatalogItem, SeasonItem } from "./lib/types";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -85,7 +85,16 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       return jsonResponse({ items: results });
     }
 
-    const allItems = Array.from(items.values()).filter((i) => !i.alias);
+    const rawAllItems = Array.from(items.values()).filter((i) => !i.alias);
+    const seenCatalogKeys = new Set<string>();
+    const allItems: CatalogItem[] = [];
+    for (const item of rawAllItems) {
+      const key = `${item.type}:${item.tmdbId ?? normalizeTitle(item.title)}`;
+      if (!seenCatalogKeys.has(key)) {
+        seenCatalogKeys.add(key);
+        allItems.push(item);
+      }
+    }
 
     // Seleciona exclusivamente os filmes mais assistidos e populares do catálogo para o carrossel do banner
     const selectedMostWatched: CatalogItem[] = [];
@@ -271,6 +280,46 @@ async function handleItemApi(url: URL): Promise<Response> {
     }
   }
 
+  // Se for anime e após getSeasonsForSeries o seasons continuar vazio, gera temporadas sintéticas via TMDB
+  if (finalItem.type === "a" && (!finalItem.seasons || finalItem.seasons.length === 0) && item.tmdbId) {
+    try {
+      const tmdbSeasons = await getTmdbTvSeasons(item.tmdbId);
+      if (tmdbSeasons && tmdbSeasons.length > 0) {
+        const syntheticSeasons: SeasonItem[] = tmdbSeasons
+          .filter((s) => s.season_number > 0 && s.episode_count > 0)
+          .map((s) => ({
+            seasonNumber: s.season_number,
+            episodes: Array.from({ length: s.episode_count }, (_, idx) => ({
+              seasonNumber: s.season_number,
+              episodeNumber: idx + 1,
+              title: `Episódio ${idx + 1}`,
+              streams: [],
+            })),
+          }));
+        if (syntheticSeasons.length > 0) {
+          finalItem = { ...finalItem, seasons: syntheticSeasons };
+        }
+      } else if (finalItem.tmdb?.seasonsCount && finalItem.tmdb.seasonsCount > 0) {
+        const count = finalItem.tmdb.seasonsCount;
+        const fallbackSeasons: SeasonItem[] = Array.from({ length: count }, (_, sIdx) => {
+          const sNum = sIdx + 1;
+          return {
+            seasonNumber: sNum,
+            episodes: Array.from({ length: 12 }, (_, eIdx) => ({
+              seasonNumber: sNum,
+              episodeNumber: eIdx + 1,
+              title: `Episódio ${eIdx + 1}`,
+              streams: [],
+            })),
+          };
+        });
+        finalItem = { ...finalItem, seasons: fallbackSeasons };
+      }
+    } catch {
+      // Ignora e continua
+    }
+  }
+
   // Enriquecimento com AniList para animes (estúdio e formato)
   if (finalItem.type === "a") {
     try {
@@ -308,6 +357,9 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     ? "a"
     : "s";
 
+  const temp = parseInt(url.searchParams.get("temp") || "1", 10);
+  const ep = parseInt(url.searchParams.get("ep") || "1", 10);
+
   const { items } = await loadCatalog();
   const norm = normalizeTitle(id);
   const item =
@@ -335,8 +387,6 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   }
 
   const tipo = tipoParam || (item.type === "f" ? "movie" : "series");
-  const temp = parseInt(url.searchParams.get("temp") || "1", 10);
-  const ep = parseInt(url.searchParams.get("ep") || "1", 10);
 
   const orderedSources: any[] = [];
 

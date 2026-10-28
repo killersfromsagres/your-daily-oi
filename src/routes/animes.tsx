@@ -182,12 +182,31 @@ function AnimesPage() {
     setCurrentPage(1);
   };
 
+  // Flag que indica se estamos usando o fallback dos animes locais (quando Sushi vier vazio)
+  const isUsingLocalFallback = sushiItems.length === 0;
+
   // Converte cards para exibição via MediaCard
   const displayItems = useMemo(() => {
-    return sushiItems.map(sushiCardToCatalogItem);
-  }, [sushiItems]);
+    if (sushiItems.length > 0) {
+      return sushiItems.map(sushiCardToCatalogItem);
+    }
+    // Quando Sushi vier vazio (ex: bloqueio Cloudflare/anti-adblock), usa animes locais
+    let list = localItems.filter((i) => i.type === "a" || isAnimeItem(i));
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      list = list.filter((i) => i.title.toLowerCase().includes(q));
+    }
+    if (selectedCategory) {
+      const cat = selectedCategory.toLowerCase();
+      list = list.filter((i) =>
+        i.genres.some((g) => g.toLowerCase().includes(cat)) ||
+        (cat === "dublado" && i.streams.some((s) => s.audio === "dub"))
+      );
+    }
+    return list;
+  }, [sushiItems, localItems, debouncedQuery, selectedCategory]);
 
-  const showPagination = !debouncedQuery && totalPages > 1;
+  const showPagination = sushiItems.length > 0 && !debouncedQuery && totalPages > 1;
 
   return (
     <main className="ydo-search-page" style={{ maxWidth: "1400px", margin: "0 auto", padding: "32px 24px" }}>
@@ -199,7 +218,9 @@ function AnimesPage() {
         </div>
         {!loading && (
           <span className="ydo-search-count">
-            {totalCount > 0 ? `${totalCount} títulos indexados` : `${displayItems.length} resultados`}
+            {sushiItems.length > 0 && totalCount > 0
+              ? `${totalCount} títulos indexados`
+              : `${displayItems.length} títulos`}
           </span>
         )}
       </div>
@@ -408,8 +429,8 @@ function AnimesPage() {
         </>
       )}
 
-      {/* Seção Preservada: Clássicos do Japão (catálogo local de domínio público) */}
-      {!debouncedQuery && localItems.length > 0 && currentPage === 1 && (
+      {/* Seção Preservada: Clássicos do Japão (exibida apenas quando o Sushi está ativo com itens na grade principal) */}
+      {!debouncedQuery && !isUsingLocalFallback && localItems.length > 0 && currentPage === 1 && (
         <section style={{ marginTop: "64px", paddingTop: "32px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
             <Film size={22} style={{ color: "#e8b44a" }} />

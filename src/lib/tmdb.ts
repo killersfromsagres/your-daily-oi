@@ -28,6 +28,21 @@ async function tmdbFetch(path: string): Promise<unknown> {
   return await resFallback.json();
 }
 
+export async function getTmdbTvSeasons(
+  tmdbId: number
+): Promise<Array<{ season_number: number; episode_count: number }> | null> {
+  try {
+    const details = (await tmdbFetch(`/tv/${tmdbId}?`)) as Record<string, unknown> | null;
+    if (!details || !Array.isArray(details["seasons"])) return null;
+    return (details["seasons"] as Record<string, unknown>[]).map((s) => ({
+      season_number: Number(s["season_number"] ?? 0),
+      episode_count: Number(s["episode_count"] ?? 0),
+    }));
+  } catch {
+    return null;
+  }
+}
+
 export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<TmdbData | null> {
   try {
     const mediaType = type === "f" ? "movie" : "tv";

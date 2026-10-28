@@ -630,6 +630,17 @@ export function getGenres(items: Map<string, CatalogItem>): string[] {
 
 export function searchItems(items: Map<string, CatalogItem>, query: string): CatalogItem[] {
   const q = normalizeTitle(query);
-  if (!q) return Array.from(items.values()).filter((item) => !item.alias);
-  return Array.from(items.values()).filter((item) => !item.alias && normalizeTitle(item.title).includes(q));
+  const raw = Array.from(items.values()).filter(
+    (item) => !item.alias && (!q || normalizeTitle(item.title).includes(q))
+  );
+  const seen = new Set<string>();
+  const deduped: CatalogItem[] = [];
+  for (const item of raw) {
+    const key = `${item.type}:${item.tmdbId ?? normalizeTitle(item.title)}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(item);
+    }
+  }
+  return deduped;
 }
