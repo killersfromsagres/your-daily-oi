@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Play,
   Pause,
@@ -14,6 +14,10 @@ import {
   RotateCw,
   Cast,
   Tv,
+  Server,
+  ChevronDown,
+  ChevronUp,
+  Check,
 } from "lucide-react";
 import type { PlayerState } from "./usePlayerEngine";
 
@@ -37,7 +41,7 @@ interface PlayerControlsProps {
   muted: boolean;
   playbackRate: number;
   isFullscreen: boolean;
-  sources: Array<{ url: string; audio: string; label: string }>;
+  sources: Array<{ name: string; audio: string; quality?: string; format?: string }>;
   currentSourceIndex: number;
   onPlay: () => void;
   onPause: () => void;
@@ -76,7 +80,27 @@ export function PlayerControls({
   onNext,
 }: PlayerControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const [showServers, setShowServers] = useState(false);
+  const serversRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showServers) return;
+    const handleDown = (e: MouseEvent | TouchEvent) => {
+      if (serversRef.current && !serversRef.current.contains(e.target as Node)) {
+        setShowServers(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowServers(false);
+    };
+    document.addEventListener("pointerdown", handleDown);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("pointerdown", handleDown);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showServers]);
 
   const isPlaying = state === "playing";
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
@@ -195,31 +219,168 @@ export function PlayerControls({
 
         {/* Direita: Fontes / Servidores, Velocidade, PiP, Fullscreen */}
         <div className="ydo-controls-right">
-          {/* Seletor de Fontes / Servidores */}
+          {/* Seletor de Fontes / Servidores (Estilo Moderno Flutuante) */}
           {sources.length > 1 && (
-            <div className="ydo-source-wrap" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <select
-                className="ydo-source-select"
-                value={currentSourceIndex}
-                onChange={(e) => onSourceChange(Number(e.target.value))}
+            <div className="ydo-source-wrap" ref={serversRef} style={{ position: "relative" }}>
+              <button
+                type="button"
+                className="ydo-source-trigger"
+                onClick={() => {
+                  setShowServers((v) => !v);
+                  if (showSettings) setShowSettings(false);
+                }}
+                aria-expanded={showServers}
+                aria-haspopup="listbox"
                 aria-label="Selecionar servidor"
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
                   backgroundColor: "rgba(20, 22, 34, 0.85)",
                   color: "#fff",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
-                  borderRadius: "8px",
-                  padding: "4px 8px",
+                  borderRadius: "20px",
+                  padding: "5px 12px",
                   fontSize: "0.8rem",
                   fontWeight: "600",
                   cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  maxWidth: "180px",
                 }}
               >
-                {sources.map((s, i) => (
-                  <option key={i} value={i} style={{ backgroundColor: "#111320", color: "#fff" }}>
-                    {s.label} ({s.audio.toUpperCase()})
-                  </option>
-                ))}
-              </select>
+                <Server size={15} style={{ color: "#e8b44a", flexShrink: 0 }} />
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: "110px",
+                  }}
+                >
+                  {sources[currentSourceIndex]?.name || "Servidor"}
+                </span>
+                {showServers ? <ChevronUp size={14} style={{ flexShrink: 0 }} /> : <ChevronDown size={14} style={{ flexShrink: 0 }} />}
+              </button>
+
+              {showServers && (
+                <div
+                  className="ydo-source-panel"
+                  role="listbox"
+                  aria-label="Servidores disponíveis"
+                  style={{
+                    position: "absolute",
+                    bottom: "52px",
+                    right: 0,
+                    backgroundColor: "#161826",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    borderRadius: "14px",
+                    padding: "10px",
+                    width: "min(320px, calc(100vw - 32px))",
+                    maxHeight: "280px",
+                    overflowY: "auto",
+                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
+                    zIndex: 50,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "rgba(255, 255, 255, 0.6)",
+                      padding: "4px 8px 6px",
+                      fontWeight: "700",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    SERVIDORES ({sources.length})
+                  </div>
+
+                  {sources.map((s, i) => {
+                    const isActive = i === currentSourceIndex;
+                    const audioBadge = (s.audio || "dub").toUpperCase();
+                    const isDub = audioBadge === "DUB";
+                    return (
+                      <button
+                        key={i}
+                        role="option"
+                        aria-selected={isActive}
+                        onClick={() => {
+                          onSourceChange(i);
+                          setShowServers(false);
+                        }}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px 10px",
+                          borderRadius: "8px",
+                          border: isActive ? "1px solid #e8b44a" : "1px solid transparent",
+                          backgroundColor: isActive ? "rgba(232, 180, 74, 0.15)" : "rgba(255, 255, 255, 0.03)",
+                          color: isActive ? "#e8b44a" : "#fff",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          transition: "background 0.15s ease",
+                          gap: "8px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flex: 1 }}>
+                          {isActive ? (
+                            <Check size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
+                          ) : (
+                            <Server size={16} style={{ opacity: 0.5, flexShrink: 0 }} />
+                          )}
+                          <span
+                            style={{
+                              fontSize: "0.85rem",
+                              fontWeight: isActive ? "700" : "500",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {s.name}
+                          </span>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "5px", flexShrink: 0 }}>
+                          <span
+                            style={{
+                              fontSize: "0.68rem",
+                              fontWeight: "800",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              backgroundColor: isDub ? "rgba(232, 180, 74, 0.25)" : "rgba(255, 255, 255, 0.12)",
+                              color: isDub ? "#e8b44a" : "#fff",
+                              border: isDub ? "1px solid rgba(232, 180, 74, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
+                            }}
+                          >
+                            {audioBadge}
+                          </span>
+                          {s.quality && (
+                            <span
+                              style={{
+                                fontSize: "0.68rem",
+                                fontWeight: "700",
+                                padding: "2px 5px",
+                                borderRadius: "4px",
+                                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                                color: "rgba(255, 255, 255, 0.8)",
+                              }}
+                            >
+                              {s.quality.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

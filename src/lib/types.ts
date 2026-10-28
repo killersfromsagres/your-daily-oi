@@ -74,3 +74,16 @@ export interface HighlightRow {
   rowName: string;
   items: HighlightItem[];
 }
+
+export interface WatchProgress {
+  id: string;
+  contentId?: string;
+  type: "f" | "s" | "a";
+  title: string;
+  posterUrl?: string;
+  season?: number;
+  episode?: number;
+  currentTime: number;
+  duration?: number;
+  updatedAt: number;
+}

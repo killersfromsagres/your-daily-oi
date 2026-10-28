@@ -34,6 +34,15 @@ export function getProgressById(id: string): WatchProgress | undefined {
   return getProgress().find((p) => p.id === id);
 }
 
+export function removeProgress(id: string): void {
+  const all = getProgress().filter((p) => p.id !== id);
+  safeWrite(PROGRESS_KEY, all);
+}
+
+export function clearAllProgress(): void {
+  safeWrite(PROGRESS_KEY, []);
+}
+
 export function getSavedList(): string[] {
   return safeRead<string[]>(LIST_KEY, []);
 }

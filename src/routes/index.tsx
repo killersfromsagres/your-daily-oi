@@ -3,9 +3,10 @@ import { useEffect, useState, useCallback } from "react";
 import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
-import type { CatalogItem, HighlightRow } from "@/lib/types";
+import { ContinueWatchingRow } from "@/components/catalog/ContinueWatchingRow";
+import type { CatalogItem, HighlightRow, WatchProgress } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
-import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
+import { getSavedList, toggleSaved as toggleSavedStorage, getProgress, removeProgress } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -35,10 +36,17 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [continueWatching, setContinueWatching] = useState<WatchProgress[]>([]);
 
   useEffect(() => {
     setSavedIds(new Set(getSavedList()));
+    setContinueWatching(getProgress());
   }, []);
+
+  const handleRemoveProgress = (id: string) => {
+    removeProgress(id);
+    setContinueWatching(getProgress());
+  };
 
   useEffect(() => {
     let active = true;
@@ -110,11 +118,19 @@ function HomePage() {
     ranked?: boolean;
   }> = [];
 
-  // Fileiras dos destaques.txt (Em alta, Séries em alta, etc)
+  // Fileiras dos destaques.txt (Em alta, Séries em alta, etc) com deduplicação rigorosa
   for (const hl of highlights) {
-    const rowItems = hl.items
-      .map((h) => items.find((item) => item.title.toLowerCase() === h.title.toLowerCase()))
-      .filter((x): x is CatalogItem => !!x);
+    const seenInRow = new Set<string>();
+    const rowItems: CatalogItem[] = [];
+    for (const h of hl.items) {
+      const found =
+        items.find((item) => (h.type ? item.type === h.type : true) && item.title.toLowerCase() === h.title.toLowerCase()) ||
+        items.find((item) => item.title.toLowerCase() === h.title.toLowerCase());
+      if (found && !seenInRow.has(found.id)) {
+        seenInRow.add(found.id);
+        rowItems.push(found);
+      }
+    }
     if (rowItems.length > 0) {
       rows.push({ title: hl.rowName, eyebrow: "Em Destaque", items: rowItems });
     }
@@ -160,6 +176,12 @@ function HomePage() {
       )}
 
       <div className="ydo-catalog">
+        {continueWatching.length > 0 && (
+          <ContinueWatchingRow
+            items={continueWatching}
+            onRemove={handleRemoveProgress}
+          />
+        )}
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
           : rows.map((row) => (

@@ -89,16 +89,18 @@ function WatchSeriesPage() {
 
   const savedProgress = getProgressById(`${serie.id}-t${temp}-e${ep}`);
 
-  const handleTimeUpdate = (currentTime: number) => {
+  const handleTimeUpdate = (currentTime: number, duration?: number) => {
+    if (currentTime < 2) return;
     saveProgress({
       id: `${serie.id}-t${temp}-e${ep}`,
+      contentId: serie.id,
       type: "s",
       title: `${serie.title} (T${temp}:E${ep})`,
       posterUrl: serie.posterUrl,
       season: Number(temp),
       episode: Number(ep),
       currentTime,
-      duration: 0,
+      duration: duration || 0,
       updatedAt: Date.now(),
     });
   };

@@ -81,14 +81,16 @@ function WatchMoviePage() {
 
   const savedProgress = getProgressById(movie.id);
 
-  const handleTimeUpdate = (currentTime: number) => {
+  const handleTimeUpdate = (currentTime: number, duration?: number) => {
+    if (currentTime < 2) return;
     saveProgress({
       id: movie.id,
+      contentId: movie.id,
       type: "f",
       title: movie.title,
       posterUrl: movie.posterUrl,
       currentTime,
-      duration: 0,
+      duration: duration || 0,
       updatedAt: Date.now(),
     });
   };

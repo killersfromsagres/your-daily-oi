@@ -95,17 +95,18 @@ function WatchAnimePage() {
 
   const savedProgress = getProgressById(`${anime?.id || id}-t${temp}-e${ep}`);
 
-  const handleTimeUpdate = (currentTime: number) => {
-    if (!anime) return;
+  const handleTimeUpdate = (currentTime: number, duration?: number) => {
+    if (!anime || currentTime < 2) return;
     saveProgress({
       id: `${anime.id}-t${temp}-e${ep}`,
+      contentId: anime.id,
       type: "a",
       title: `${anime.title} (T${temp}:E${ep})`,
       posterUrl: anime.posterUrl,
       season: Number(temp),
       episode: Number(ep),
       currentTime,
-      duration: 0,
+      duration: duration || 0,
       updatedAt: Date.now(),
     });
   };
@@ -131,7 +132,6 @@ function WatchAnimePage() {
           poster={anime?.tmdb?.backdropUrl || anime?.posterUrl}
           title={anime?.title || "Anime"}
           subtitle={`Temporada ${temp} - Episódio ${ep}`}
-          preferredAudio="leg"
           onBack={() => void navigate({ to: `/anime/${id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}

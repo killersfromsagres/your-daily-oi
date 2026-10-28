@@ -4,7 +4,7 @@ import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2 } from "lucide-react";
 import { usePlayerEngine } from "./usePlayerEngine";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
-import { recordFailedSource, sortStreamsByHealth, clearFailedSources } from "@/lib/player-storage";
+import { recordFailedSource, sortStreamsByHealth, clearFailedSources, getFailedUrls, getPreferredAudio, setPreferredAudio } from "@/lib/player-storage";
 import { APP_VERSION } from "@/lib/version";
 
 interface OwnPlayerProps {
@@ -14,7 +14,7 @@ interface OwnPlayerProps {
   subtitle?: string;
   onBack?: () => void;
   initialTime?: number;
-  onTimeUpdate?: (t: number) => void;
+  onTimeUpdate?: (t: number, duration?: number) => void;
   onEnded?: () => void;
   preferredAudio?: "dub" | "leg";
 }
@@ -56,6 +56,65 @@ const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1): string => {
   return rawUrl;
 };
 
+export function pickBestSourceIndex(
+  streams: StreamSource[],
+  preferredAudio: "dub" | "leg" = "dub"
+): number {
+  if (!streams || streams.length === 0) return 0;
+  const failedUrls = getFailedUrls();
+
+  const scoreStream = (s: StreamSource): number => {
+    let score = 0;
+
+    // +1000 se audio for o áudio preferido
+    if (s.audio === preferredAudio) {
+      score += 1000;
+    }
+
+    // +200 se formato for mp4 (reprodução garantida)
+    const fmt = s.format?.toLowerCase() || (s.url.includes(".mp4") ? "mp4" : s.url.includes(".m3u8") ? "hls" : "");
+    if (fmt === "mp4") {
+      score += 200;
+    }
+
+    // +100 x qualidade (4K=400, 2K=300, FHD/1080p=200, HD/720p=100)
+    const q = (s.quality || "").toUpperCase();
+    if (q.includes("4K")) {
+      score += 400;
+    } else if (q.includes("2K")) {
+      score += 300;
+    } else if (q.includes("FHD") || q.includes("1080")) {
+      score += 200;
+    } else if (q.includes("HD") || q.includes("720")) {
+      score += 100;
+    }
+
+    // -10 x priority (campo priority do servidor, 0 = principal, default 5)
+    const prio = typeof s.priority === "number" ? s.priority : 5;
+    score -= 10 * prio;
+
+    // -10000 se URL estiver no cache de fontes falhadas
+    if (failedUrls.has(s.url)) {
+      score -= 10000;
+    }
+
+    return score;
+  };
+
+  let bestIndex = 0;
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < streams.length; i++) {
+    const sc = scoreStream(streams[i]);
+    if (sc > bestScore) {
+      bestScore = sc;
+      bestIndex = i;
+    }
+  }
+
+  return bestIndex;
+}
+
 export function OwnPlayer({
   streams,
   poster,
@@ -74,8 +133,8 @@ export function OwnPlayer({
   const orderedStreams = useMemo(() => sortStreamsByHealth(streams), [streams]);
 
   const [sourceIndex, setSourceIndex] = useState(() => {
-    const preferredIdx = orderedStreams.findIndex((s) => s.audio === preferredAudio);
-    return preferredIdx >= 0 ? preferredIdx : 0;
+    const audio = typeof window !== "undefined" ? getPreferredAudio() : preferredAudio;
+    return pickBestSourceIndex(orderedStreams, audio);
   });
   const [attemptStage, setAttemptStage] = useState<0 | 1>(0);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -195,8 +254,8 @@ export function OwnPlayer({
 
   // Notifica posição para persistência
   useEffect(() => {
-    onTimeUpdate?.(engine.currentTime);
-  }, [engine.currentTime]);
+    onTimeUpdate?.(engine.currentTime, engine.duration);
+  }, [engine.currentTime, engine.duration, onTimeUpdate]);
 
   // Auto-hide controles
   const showControls = useCallback(() => {
@@ -268,15 +327,25 @@ export function OwnPlayer({
     return () => document.removeEventListener("keydown", handler);
   }, [engine]);
 
-  const sources = orderedStreams.map((s, i) => ({
-    url: s.url,
-    audio: s.audio,
-    label: s.name || `Fonte ${i + 1} (${s.audio.toUpperCase()})`,
-  }));
+  const sources = orderedStreams.map((s, i) => {
+    let cleanName = (s.name || `Servidor ${i + 1}`).replace(/\s*\((?:dub|leg)[a-z]*\)$/i, "").trim();
+    if (!cleanName) cleanName = `Servidor ${i + 1}`;
+    const fmt = s.format || (s.url.includes(".mp4") ? "mp4" : s.url.includes(".m3u8") ? "hls" : undefined);
+    return {
+      name: cleanName,
+      audio: s.audio,
+      quality: s.quality,
+      format: fmt,
+    };
+  });
 
   const handleSourceChange = (i: number) => {
     const prevTime = videoRef.current?.currentTime ?? 0;
     setSourceIndex(i);
+    setAttemptStage(0);
+    if (sources[i]?.audio === "dub" || sources[i]?.audio === "leg") {
+      setPreferredAudio(sources[i].audio as "dub" | "leg");
+    }
     setAutoSwitchMsg(null);
     setTimeout(() => {
       if (videoRef.current && prevTime > 0) {
@@ -453,7 +522,10 @@ export function OwnPlayer({
               className="ydo-btn-primary"
               onClick={() => {
                 clearFailedSources();
-                setSourceIndex(0);
+                const audio = getPreferredAudio();
+                const bestIdx = pickBestSourceIndex(orderedStreams, audio);
+                setSourceIndex(bestIdx);
+                setAttemptStage(0);
                 setAutoSwitchMsg(null);
               }}
             >

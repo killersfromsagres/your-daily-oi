@@ -579,16 +579,21 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
   // Funde as fichas de animes caso existam
   if (animesFichasText) {
     const animesFichas = parseFichas(animesFichasText);
+    const seenAnimeIds = new Set<string>();
+    const uniqueAnimes: Array<Omit<CatalogItem, "streams" | "seasons">> = [];
     for (const [key, base] of animesFichas) {
       fichas.set(key, base);
+      if (!seenAnimeIds.has(base.id)) {
+        seenAnimeIds.add(base.id);
+        uniqueAnimes.push(base);
+      }
     }
 
-    // Se houver animes, adiciona a fileira "Animes em alta" aos destaques da Home
-    const animeItems = Array.from(animesFichas.values());
-    if (animeItems.length > 0) {
+    // Se houver animes, adiciona a fileira "Animes em alta" aos destaques da Home (sem duplicatas)
+    if (uniqueAnimes.length > 0) {
       highlights.unshift({
         rowName: "Animes em alta",
-        items: animeItems.map((a) => ({
+        items: uniqueAnimes.map((a) => ({
           type: "a" as const,
           title: a.title,
           letter: getLetterKey(a.title),

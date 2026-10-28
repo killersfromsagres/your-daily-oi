@@ -48,6 +48,28 @@ export function clearFailedSources() {
   }
 }
 
+const AUDIO_PREF_KEY = "zangflix:preferred-audio";
+
+export function getPreferredAudio(): "dub" | "leg" {
+  if (typeof window === "undefined") return "dub";
+  try {
+    const val = localStorage.getItem(AUDIO_PREF_KEY);
+    if (val === "leg" || val === "dub") return val;
+    return "dub";
+  } catch {
+    return "dub";
+  }
+}
+
+export function setPreferredAudio(a: "dub" | "leg"): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(AUDIO_PREF_KEY, a);
+  } catch {
+    // ignora
+  }
+}
+
 /**
  * Ordena fontes colocando as que falharam recentemente para o fim da lista
  */
