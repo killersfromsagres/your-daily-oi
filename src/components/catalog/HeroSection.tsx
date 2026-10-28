@@ -16,6 +16,7 @@ export interface HeroItem {
   voteAverage?: number;
   hasDub?: boolean;
   hasLeg?: boolean;
+  quality?: string;
 }
 
 interface HeroSectionProps {
@@ -131,7 +132,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
           {hero.voteAverage ? (
             <span className="ydo-hero-score">★ {hero.voteAverage.toFixed(1)}</span>
           ) : null}
-          <span className="ydo-hero-quality">ULTRA HD</span>
+          <span className="ydo-hero-quality">{hero.quality || "FULL HD"}</span>
           {hero.genres?.slice(0, 3).map((g) => (
             <span key={g} className="ydo-hero-genre">
               {g}

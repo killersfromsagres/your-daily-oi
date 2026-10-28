@@ -57,6 +57,29 @@ function isValidUrl(url: string): boolean {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
+/**
+ * Detecta a qualidade/resolução real de um stream a partir da URL e/ou metadados
+ */
+export function detectQuality(url: string, title?: string): string {
+  const target = `${url} ${title || ""}`.toLowerCase();
+  if (target.includes("4k") || target.includes("2160") || target.includes("uhd")) {
+    return "4K";
+  }
+  if (target.includes("2k") || target.includes("1440") || target.includes("qhd")) {
+    return "2K";
+  }
+  if (target.includes("1080") || target.includes("fhd") || target.includes("fullhd") || target.includes("1080p")) {
+    return "1080p";
+  }
+  if (target.includes("720") || target.includes("720p") || target.includes("hd")) {
+    return "720p";
+  }
+  if (target.includes("480") || target.includes("480p") || target.includes("sd")) {
+    return "480p";
+  }
+  return "1080p";
+}
+
 function parseStreams(raw: string, audio: AudioTrack): StreamSource[] {
   if (!raw) return [];
   const prefix = audio === "dub" ? "dub=" : "leg=";
@@ -74,6 +97,7 @@ function parseStreams(raw: string, audio: AudioTrack): StreamSource[] {
         format: detectFormat(url),
         audio,
         priority: i,
+        quality: detectQuality(url),
       };
     });
 }

@@ -43,6 +43,7 @@ interface PlayerControlsProps {
   isFullscreen: boolean;
   sources: Array<{ name: string; audio: string; quality?: string; format?: string }>;
   currentSourceIndex: number;
+  detectedQuality?: string;
   onPlay: () => void;
   onPause: () => void;
   onSeek: (t: number) => void;
@@ -67,6 +68,7 @@ export function PlayerControls({
   isFullscreen,
   sources,
   currentSourceIndex,
+  detectedQuality,
   onPlay,
   onPause,
   onSeek,
@@ -198,22 +200,37 @@ export function PlayerControls({
             />
           </div>
 
-          {/* Tempo Decorrido / Duração + Badge 2K/HD */}
+          {/* Tempo Decorrido / Duração + Badge de Resolução Real */}
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "6px" }}>
             <span className="ydo-time tabular">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
-            <span className="ydo-2k-badge" style={{
-              fontSize: "0.65rem",
-              fontWeight: "800",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              backgroundColor: "rgba(255, 255, 255, 0.15)",
-              color: "#fff",
-              letterSpacing: "0.05em",
-            }}>
-              2K
-            </span>
+            {(() => {
+              const effectiveQuality = (
+                detectedQuality ||
+                sources[currentSourceIndex]?.quality ||
+                "1080p"
+              ).toUpperCase();
+              const is4k = effectiveQuality.includes("4K");
+              return (
+                <span
+                  className="ydo-2k-badge"
+                  title={`Qualidade real: ${effectiveQuality}`}
+                  style={{
+                    fontSize: "0.65rem",
+                    fontWeight: "800",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    backgroundColor: is4k ? "rgba(232, 180, 74, 0.25)" : "rgba(255, 255, 255, 0.15)",
+                    color: is4k ? "#e8b44a" : "#fff",
+                    border: is4k ? "1px solid rgba(232, 180, 74, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {effectiveQuality}
+                </span>
+              );
+            })()}
           </div>
         </div>
 

@@ -21,12 +21,8 @@ export function MediaCard({
   const [imgFailed, setImgFailed] = useState(false);
   const hasDub = item.streams.some((s) => s.audio === "dub");
   const hasLeg = item.streams.some((s) => s.audio === "leg");
-  const hasStreams = item.streams && item.streams.length > 0;
-  const hasSeasons =
-    item.seasons &&
-    item.seasons.length > 0 &&
-    item.seasons.some((s) => s.episodes.some((e) => e.streams && e.streams.length > 0));
-  const isComingSoon = !hasStreams && !hasSeasons && (item.type === "a" || item.type === "s");
+  // Apenas títulos com lançamento futuro confirmado pelo TMDB são marcados como "Em breve"
+  const isComingSoon = Boolean(item.tmdb?.releaseYear && item.tmdb.releaseYear > new Date().getFullYear());
   const detailPath =
     item.type === "a" || (item.type === "s" && isAnimeItem(item))
       ? `/anime/${item.id}`

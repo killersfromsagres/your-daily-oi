@@ -141,6 +141,20 @@ export function OwnPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
+  const [detectedQuality, setDetectedQuality] = useState<string | null>(null);
+
+  const updateVideoResolution = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const h = v.videoHeight;
+    const w = v.videoWidth;
+    if (h >= 2160 || w >= 3840) setDetectedQuality("4K");
+    else if (h >= 1440 || w >= 2560) setDetectedQuality("2K");
+    else if (h >= 1080 || w >= 1920) setDetectedQuality("1080p");
+    else if (h >= 720 || w >= 1280) setDetectedQuality("720p");
+    else if (h >= 480) setDetectedQuality("480p");
+    else if (h > 0) setDetectedQuality(`${h}p`);
+  }, []);
 
   const lastTimeRef = useRef(initialTime);
 
@@ -343,6 +357,7 @@ export function OwnPlayer({
     const prevTime = videoRef.current?.currentTime ?? 0;
     setSourceIndex(i);
     setAttemptStage(0);
+    setDetectedQuality(null);
     if (sources[i]?.audio === "dub" || sources[i]?.audio === "leg") {
       setPreferredAudio(sources[i].audio as "dub" | "leg");
     }
@@ -383,6 +398,8 @@ export function OwnPlayer({
         preload="metadata"
         aria-label={title ?? "Vídeo"}
         onClick={handleOverlayClick}
+        onLoadedMetadata={updateVideoResolution}
+        onCanPlay={updateVideoResolution}
       />
 
       {/* Clique na tela inteira do vídeo para Play/Pause ou revelar controles no mobile */}
@@ -557,6 +574,7 @@ export function OwnPlayer({
           isFullscreen={isFullscreen}
           sources={sources}
           currentSourceIndex={sourceIndex}
+          detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "1080p"}
           onPlay={() => void engine.play()}
           onPause={engine.pause}
           onSeek={engine.seek}

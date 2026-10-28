@@ -108,6 +108,11 @@ function HomePage() {
       voteAverage: item.tmdb?.voteAverage,
       hasDub: item.streams.some((s) => s.audio === "dub"),
       hasLeg: item.streams.some((s) => s.audio === "leg"),
+      quality: item.streams.some((s) => s.quality?.includes("4K"))
+        ? "4K ULTRA HD"
+        : item.streams.some((s) => s.quality?.includes("2K"))
+        ? "2K QUAD HD"
+        : "FULL HD",
     }));
 
   // Monta as fileiras da home
