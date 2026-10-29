@@ -464,6 +464,352 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   });
 }
 
+function isBlockedTargetUrl(target: string): boolean {
+  try {
+    const parsed = new URL(target);
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host.endsWith(".local") ||
+      host.endsWith(".lovable.app") ||
+      host === "127.0.0.1" ||
+      host.startsWith("127.") ||
+      host === "0.0.0.0" ||
+      host.startsWith("10.") ||
+      host.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
+      host === "::1" ||
+      host === "[::1]"
+    ) {
+      return true;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+interface HlsManifestCacheEntry {
+  body: string;
+  expires: number;
+}
+const hlsManifestCache = new Map<string, HlsManifestCacheEntry>();
+
+function rewriteTagUris(line: string, baseUrl: string): string {
+  return line.replace(/URI=(["']?)([^"',\s]+)\1/g, (match, quote, u) => {
+    if (u.includes("/api/hls-proxy")) return match;
+    try {
+      const abs = new URL(u, baseUrl).toString();
+      const q = quote || '"';
+      return `URI=${q}/api/hls-proxy?url=${encodeURIComponent(abs)}${q}`;
+    } catch {
+      return match;
+    }
+  });
+}
+
+function rewriteHlsManifest(manifestText: string, baseUrl: string): string {
+  const lines = manifestText.split("\n");
+  const rewritten = lines.map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return line;
+
+    if (trimmed.startsWith("#")) {
+      if (trimmed.includes("URI=")) {
+        return rewriteTagUris(line, baseUrl);
+      }
+      return line;
+    }
+
+    if (trimmed.includes("/api/hls-proxy")) return line;
+    try {
+      const abs = new URL(trimmed, baseUrl).toString();
+      return `/api/hls-proxy?url=${encodeURIComponent(abs)}`;
+    } catch {
+      return line;
+    }
+  });
+  return rewritten.join("\n");
+}
+
+/**
+ * Route Handler /api/hls-proxy (Proxy HLS com reescrita completa de manifestos e streaming transparente de segmentos)
+ */
+async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> {
+  let targetUrl = url.searchParams.get("url");
+  if (!targetUrl) {
+    return new Response("URL ausente", { status: 400 });
+  }
+
+  // Previne encadeamento de proxy sobre proxy
+  while (targetUrl.includes("/api/hls-proxy?url=") || targetUrl.includes("/api/proxy-stream?url=")) {
+    try {
+      const parsed = new URL(targetUrl, url.origin);
+      const inner = parsed.searchParams.get("url");
+      if (inner && inner !== targetUrl) {
+        targetUrl = inner;
+      } else {
+        break;
+      }
+    } catch {
+      break;
+    }
+  }
+
+  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+    return new Response("URL inválida", { status: 400 });
+  }
+
+  if (isBlockedTargetUrl(targetUrl)) {
+    return new Response("Acesso proibido a URLs internas", {
+      status: 403,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  }
+
+  // Preflight CORS
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
+
+  const clientRange = request.headers.get("range");
+
+  // Cache leve em memória de manifestos (60s) — apenas para requisições GET sem Range
+  if (!clientRange && request.method === "GET") {
+    const cached = hlsManifestCache.get(targetUrl);
+    if (cached && cached.expires > Date.now()) {
+      return new Response(cached.body, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.apple.mpegurl",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Cache-Control": "public, max-age=60",
+        },
+      });
+    }
+  }
+
+  try {
+    const upstreamHeaders: Record<string, string> = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      Referer: "https://saimo-tv.pages.dev/",
+      Origin: "https://saimo-tv.pages.dev",
+      Accept: "*/*",
+      "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    };
+
+    const customReferer = url.searchParams.get("referer");
+    if (customReferer) {
+      upstreamHeaders["Referer"] = customReferer;
+      try {
+        upstreamHeaders["Origin"] = new URL(customReferer).origin;
+      } catch {}
+    } else if (
+      targetUrl.includes("sushianimes.com.br") ||
+      targetUrl.includes("maximaimg.online") ||
+      targetUrl.includes("pixel-sus-4k-image.com") ||
+      targetUrl.includes("playsus.online")
+    ) {
+      upstreamHeaders["Referer"] = "https://sushianimes.com.br/";
+      upstreamHeaders["Origin"] = "https://sushianimes.com.br";
+    }
+
+    if (clientRange) {
+      upstreamHeaders["Range"] = clientRange;
+    }
+
+    const clientAcceptEncoding = request.headers.get("accept-encoding");
+    if (clientAcceptEncoding) {
+      upstreamHeaders["Accept-Encoding"] = clientAcceptEncoding;
+    }
+
+    // Se for relay do Saimo TV, primeiro resolve o redirect 302 sem Range para obter a URL final real do CDN
+    if (targetUrl.includes("saimo-tv.pages.dev/api/stream")) {
+      const redirectCtrl = new AbortController();
+      const redirectTimer = setTimeout(() => redirectCtrl.abort(), 12000);
+      try {
+        const redirectRes = await fetch(targetUrl, {
+          method: "GET",
+          headers: {
+            "User-Agent": upstreamHeaders["User-Agent"],
+            Referer: "https://saimo-tv.pages.dev/",
+            Accept: "*/*",
+          },
+          redirect: "manual",
+          signal: redirectCtrl.signal,
+        });
+        clearTimeout(redirectTimer);
+        const loc = redirectRes.headers.get("location");
+        if (loc && loc.startsWith("http")) {
+          if (loc.includes("froststream") || loc.includes("cloutteam")) {
+            return new Response("Upstream requer resolução direta no navegador", {
+              status: 502,
+              headers: { "Access-Control-Allow-Origin": "*" },
+            });
+          }
+          targetUrl = loc;
+        } else if (!redirectRes.ok && redirectRes.status !== 302) {
+          return new Response("Relay upstream indisponível", {
+            status: 502,
+            headers: { "Access-Control-Allow-Origin": "*" },
+          });
+        }
+      } catch {
+        clearTimeout(redirectTimer);
+      }
+    }
+
+    if (targetUrl.includes("hermesnewone.com") && targetUrl.startsWith("http://")) {
+      targetUrl = targetUrl.replace("http://", "https://");
+    }
+
+    const fetchCtrl = new AbortController();
+    const fetchTimer = setTimeout(() => fetchCtrl.abort(), 12000);
+
+    let res: Response;
+    try {
+      res = await fetch(targetUrl, {
+        method: request.method === "HEAD" ? "HEAD" : "GET",
+        headers: upstreamHeaders,
+        redirect: "follow",
+        signal: fetchCtrl.signal,
+      });
+      clearTimeout(fetchTimer);
+    } catch (fetchErr) {
+      clearTimeout(fetchTimer);
+      console.warn(`[HlsProxy] Timeout ou falha upstream para ${targetUrl}:`, fetchErr);
+      return new Response("Timeout ao conectar ao servidor upstream HLS", {
+        status: 504,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    // Se o upstream rejeitar Range com 416 (Accept-Ranges: none), retenta imediatamente sem Range
+    if (res.status === 416 && upstreamHeaders["Range"]) {
+      delete upstreamHeaders["Range"];
+      const retryCtrl = new AbortController();
+      const retryTimer = setTimeout(() => retryCtrl.abort(), 12000);
+      try {
+        res = await fetch(targetUrl, {
+          method: request.method === "HEAD" ? "HEAD" : "GET",
+          headers: upstreamHeaders,
+          redirect: "follow",
+          signal: retryCtrl.signal,
+        });
+        clearTimeout(retryTimer);
+      } catch (retryErr) {
+        clearTimeout(retryTimer);
+        return new Response("Timeout na retentativa sem Range", {
+          status: 504,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
+    if (!res.ok) {
+      console.warn(`[HlsProxy] Upstream retornou status ${res.status} para ${targetUrl}`);
+      return new Response(`Erro upstream ${res.status}`, {
+        status: 502,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    const rawContentType = res.headers.get("content-type") || "";
+    const lowerTarget = targetUrl.toLowerCase();
+    const isSegmentHint =
+      Boolean(clientRange) ||
+      lowerTarget.includes(".ts") ||
+      lowerTarget.includes(".m4s") ||
+      lowerTarget.includes(".aac") ||
+      rawContentType.includes("video/mp2t") ||
+      rawContentType.includes("video/mp4");
+
+    // Se NÃO for claramente um segmento binário, tenta ler como texto de manifesto
+    if (!isSegmentHint) {
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (
+        trimmed.startsWith("#EXTM3U") ||
+        trimmed.includes("#EXTINF") ||
+        trimmed.includes("#EXT-X-STREAM-INF")
+      ) {
+        const finalBase = res.url || targetUrl;
+        const rewritten = rewriteHlsManifest(text, finalBase);
+
+        if (hlsManifestCache.size > 200) {
+          const now = Date.now();
+          for (const [k, v] of hlsManifestCache) {
+            if (v.expires < now) hlsManifestCache.delete(k);
+          }
+          if (hlsManifestCache.size > 300) hlsManifestCache.clear();
+        }
+        hlsManifestCache.set(targetUrl, {
+          body: rewritten,
+          expires: Date.now() + 60000,
+        });
+
+        return new Response(rewritten, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/vnd.apple.mpegurl",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Cache-Control": "public, max-age=60",
+          },
+        });
+      }
+
+      const headers = new Headers();
+      headers.set("Access-Control-Allow-Origin", "*");
+      headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      headers.set("Access-Control-Allow-Headers", "*");
+      headers.set("Content-Type", rawContentType || "text/plain");
+      return new Response(text, { status: res.status, headers });
+    }
+
+    // Segmento binário (.ts, .m4s, etc.): streaming via pipe direto com Range
+    const responseHeaders = new Headers();
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    responseHeaders.set("Access-Control-Allow-Headers", "*");
+    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+
+    const contentType = rawContentType || "video/mp2t";
+    responseHeaders.set("Content-Type", contentType);
+
+    const contentLength = res.headers.get("content-length");
+    if (contentLength) responseHeaders.set("Content-Length", contentLength);
+
+    const contentRange = res.headers.get("content-range");
+    if (contentRange && res.status === 206) {
+      responseHeaders.set("Content-Range", contentRange);
+    }
+
+    const acceptRanges = res.headers.get("accept-ranges") || (res.status === 206 ? "bytes" : "bytes");
+    responseHeaders.set("Accept-Ranges", acceptRanges);
+
+    return new Response(request.method === "HEAD" ? null : res.body, {
+      status: res.status,
+      headers: responseHeaders,
+    });
+  } catch (err) {
+    console.error("Erro no hls-proxy:", err);
+    return new Response("Erro no proxy HLS", { status: 502 });
+  }
+}
+
 /**
  * Route Handler /api/proxy-stream (Proxy retransmissor transparente com Range, Referer e User-Agent)
  */
@@ -490,6 +836,13 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
 
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
     return new Response("URL inválida", { status: 400 });
+  }
+
+  if (isBlockedTargetUrl(targetUrl)) {
+    return new Response("Acesso proibido a URLs internas", {
+      status: 403,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
   }
 
   // Preflight CORS
@@ -780,6 +1133,9 @@ export default {
       }
       if (url.pathname === "/api/proxy-stream") {
         return await handleProxyStreamApi(request, url);
+      }
+      if (url.pathname === "/api/hls-proxy") {
+        return await handleHlsProxyApi(request, url);
       }
       if (url.pathname === "/api/animes-sushi") {
         return await handleAnimesSushiApi(url);

@@ -133,7 +133,10 @@ export function usePlayerEngine(
     const onCanPlay = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
-      if (!cancelled && state !== "playing") setState("ready");
+      // Não exibe estado "ready" se estiver no meio do carregamento inicial ou se o autoplay estiver em curso
+      if (!cancelled && video.paused && state !== "playing" && state !== "loading") {
+        setState("ready");
+      }
     };
     const onVolumeChange = () => { setVolumeState(video.volume); setMutedState(video.muted); };
     const onRateChange = () => setPlaybackRateState(video.playbackRate);
@@ -157,11 +160,15 @@ export function usePlayerEngine(
     video.addEventListener("error", onError);
 
     const setup = async () => {
-      const { url, format } = stream;
+      const { url } = stream;
+      const isHls =
+        stream.format === "hls" ||
+        url.includes(".m3u8") ||
+        url.includes("/api/hls-proxy");
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
       try {
-        if (format === "ts") {
+        if (stream.format === "ts") {
           const mpegts = await ensureMpegts();
           if (mpegts?.isSupported()) {
             const player = mpegts.createPlayer({ type: "mpegts", url, isLive: false, cors: true });
@@ -169,11 +176,14 @@ export function usePlayerEngine(
             player.load();
             destroyRef.current = () => { player.unload(); player.destroy(); };
           }
-        } else if (format === "hls" && !isIOS && video.canPlayType("application/vnd.apple.mpegurl") === "") {
+        } else if (isHls && !isIOS && video.canPlayType("application/vnd.apple.mpegurl") === "") {
           const Hls = await ensureHls();
           if (Hls?.isSupported()) {
             const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-            hls.loadSource(url);
+            const hlsUrl = url.includes("/api/hls-proxy")
+              ? url
+              : `/api/hls-proxy?url=${encodeURIComponent(url)}`;
+            hls.loadSource(hlsUrl);
             hls.attachMedia(video);
             hls.on(Hls.Events.ERROR, (_, data: Record<string, unknown>) => {
               if (data["fatal"]) {
@@ -182,11 +192,18 @@ export function usePlayerEngine(
             });
             destroyRef.current = () => hls.destroy();
           } else {
-            video.src = url;
+            const finalUrl = url.includes("/api/hls-proxy")
+              ? url
+              : `/api/hls-proxy?url=${encodeURIComponent(url)}`;
+            video.src = finalUrl;
           }
         } else {
           // HLS nativo (iOS/Safari) ou MP4
-          video.src = url;
+          let finalUrl = url;
+          if (isHls && !url.includes("/api/hls-proxy")) {
+            finalUrl = `/api/hls-proxy?url=${encodeURIComponent(url)}`;
+          }
+          video.src = finalUrl;
           video.load();
         }
 

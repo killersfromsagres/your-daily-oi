@@ -32,9 +32,22 @@ const getPreferredAttemptIsProxy = (url: string): boolean => {
   return true;
 };
 
-const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1): string => {
+const isHlsStream = (url: string, format?: string): boolean => {
+  if (format === "hls") return true;
+  if (!url) return false;
+  const clean = url.split("?")[0].toLowerCase();
+  return clean.endsWith(".m3u8") || url.includes(".m3u8");
+};
+
+const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1, format?: string): string => {
   if (!rawUrl) return "";
-  if (rawUrl.includes("/api/proxy-stream")) return rawUrl;
+  if (rawUrl.includes("/api/hls-proxy") || rawUrl.includes("/api/proxy-stream")) return rawUrl;
+
+  // HLS (.m3u8): SEMPRE usa o /api/hls-proxy em AMBOS os estágios com reescrita completa de segmentos
+  if (isHlsStream(rawUrl, format)) {
+    return `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
+  }
+
   const preferredIsProxy = getPreferredAttemptIsProxy(rawUrl);
   const useProxy = stage === 0 ? preferredIsProxy : !preferredIsProxy;
   if (useProxy) {
@@ -163,7 +176,7 @@ export function OwnPlayer({
     if (!rawStream) return null;
     return {
       ...rawStream,
-      url: getStreamUrlForStage(rawStream.url, attemptStage),
+      url: getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format),
     };
   }, [rawStream, attemptStage]);
 
@@ -398,6 +411,10 @@ export function OwnPlayer({
   };
 
   const handleOverlayClick = () => {
+    if (engine.state !== "playing") {
+      handleVideoClick();
+      return;
+    }
     if (!controlsVisible) {
       showControls();
       return;
