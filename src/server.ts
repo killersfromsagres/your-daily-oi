@@ -6,6 +6,8 @@ import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSe
 import { getTmdbData, getTmdbTvSeasons } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
+import { loadCanais, loadRadios } from "./lib/canais";
+import { getCanalEPG } from "./lib/epg";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -625,6 +627,11 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
       upstreamHeaders["Origin"] = "https://sushianimes.com.br";
     }
 
+    const customUa = url.searchParams.get("ua") || url.searchParams.get("agente");
+    if (customUa) {
+      upstreamHeaders["User-Agent"] = customUa;
+    }
+
     if (clientRange) {
       upstreamHeaders["Range"] = clientRange;
     }
@@ -810,6 +817,271 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
   }
 }
 
+function rewriteLiveTagUris(line: string, baseUrl: string, referer?: string, ua?: string): string {
+  return line.replace(/URI=(["']?)([^"',\s]+)\1/g, (match, quote, u) => {
+    if (u.includes("/api/live-proxy")) return match;
+    try {
+      const abs = new URL(u, baseUrl).toString();
+      const q = quote || '"';
+      let target = `/api/live-proxy?url=${encodeURIComponent(abs)}`;
+      if (referer) target += `&referer=${encodeURIComponent(referer)}`;
+      if (ua) target += `&ua=${encodeURIComponent(ua)}`;
+      return `URI=${q}${target}${q}`;
+    } catch {
+      return match;
+    }
+  });
+}
+
+function rewriteLiveHlsManifest(manifestText: string, baseUrl: string, referer?: string, ua?: string): string {
+  const lines = manifestText.split("\n");
+  const rewritten = lines.map((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return line;
+
+    if (trimmed.startsWith("#")) {
+      if (trimmed.includes("URI=")) {
+        return rewriteLiveTagUris(line, baseUrl, referer, ua);
+      }
+      return line;
+    }
+
+    if (trimmed.includes("/api/live-proxy")) return line;
+    try {
+      const abs = new URL(trimmed, baseUrl).toString();
+      let target = `/api/live-proxy?url=${encodeURIComponent(abs)}`;
+      if (referer) target += `&referer=${encodeURIComponent(referer)}`;
+      if (ua) target += `&ua=${encodeURIComponent(ua)}`;
+      return target;
+    } catch {
+      return line;
+    }
+  });
+  return rewritten.join("\n");
+}
+
+const liveManifestCache = new Map<string, { body: string; expires: number }>();
+
+/**
+ * Route Handler /api/live-proxy (Proxy HLS ao vivo com headers customizados e reescrita de segmentos)
+ */
+async function handleLiveProxyApi(request: Request, url: URL): Promise<Response> {
+  let targetUrl = url.searchParams.get("url");
+  if (!targetUrl) {
+    return new Response("URL ausente", { status: 400 });
+  }
+
+  while (targetUrl.includes("/api/live-proxy?url=") || targetUrl.includes("/api/hls-proxy?url=")) {
+    try {
+      const parsed = new URL(targetUrl, url.origin);
+      const inner = parsed.searchParams.get("url");
+      if (inner && inner !== targetUrl) targetUrl = inner;
+      else break;
+    } catch {
+      break;
+    }
+  }
+
+  if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
+    return new Response("URL inválida", { status: 400 });
+  }
+
+  if (isBlockedTargetUrl(targetUrl)) {
+    return new Response("Acesso proibido a URLs internas", {
+      status: 403,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  }
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
+
+  const customReferer = url.searchParams.get("referer") || undefined;
+  const customUa = url.searchParams.get("ua") || url.searchParams.get("agente") || undefined;
+  const clientRange = request.headers.get("range");
+
+  // Cache leve de manifesto ao vivo (10s)
+  if (!clientRange && request.method === "GET") {
+    const cached = liveManifestCache.get(targetUrl);
+    if (cached && cached.expires > Date.now()) {
+      return new Response(cached.body, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.apple.mpegurl",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Cache-Control": "public, max-age=10",
+        },
+      });
+    }
+  }
+
+  try {
+    const upstreamHeaders: Record<string, string> = {
+      "User-Agent":
+        customUa ||
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      Accept: "*/*",
+      "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    };
+
+    if (customReferer) {
+      upstreamHeaders["Referer"] = customReferer;
+      try {
+        upstreamHeaders["Origin"] = new URL(customReferer).origin;
+      } catch {}
+    } else {
+      upstreamHeaders["Referer"] = "https://saimo-tv.pages.dev/";
+      upstreamHeaders["Origin"] = "https://saimo-tv.pages.dev";
+    }
+
+    if (clientRange) {
+      upstreamHeaders["Range"] = clientRange;
+    }
+
+    const clientAcceptEncoding = request.headers.get("accept-encoding");
+    if (clientAcceptEncoding) {
+      upstreamHeaders["Accept-Encoding"] = clientAcceptEncoding;
+    }
+
+    const fetchCtrl = new AbortController();
+    const fetchTimer = setTimeout(() => fetchCtrl.abort(), 12000);
+
+    let res: Response;
+    try {
+      res = await fetch(targetUrl, {
+        method: request.method === "HEAD" ? "HEAD" : "GET",
+        headers: upstreamHeaders,
+        redirect: "follow",
+        signal: fetchCtrl.signal,
+      });
+      clearTimeout(fetchTimer);
+    } catch {
+      clearTimeout(fetchTimer);
+      return new Response("Timeout ao conectar ao upstream ao vivo", {
+        status: 504,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    if (res.status === 416 && upstreamHeaders["Range"]) {
+      delete upstreamHeaders["Range"];
+      const retryCtrl = new AbortController();
+      const retryTimer = setTimeout(() => retryCtrl.abort(), 12000);
+      try {
+        res = await fetch(targetUrl, {
+          method: request.method === "HEAD" ? "HEAD" : "GET",
+          headers: upstreamHeaders,
+          redirect: "follow",
+          signal: retryCtrl.signal,
+        });
+        clearTimeout(retryTimer);
+      } catch {
+        clearTimeout(retryTimer);
+      }
+    }
+
+    if (!res.ok) {
+      return new Response(`Erro upstream ${res.status}`, {
+        status: 502,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    const rawContentType = res.headers.get("content-type") || "";
+    const lowerTarget = targetUrl.toLowerCase();
+    const isSegment =
+      Boolean(clientRange) ||
+      lowerTarget.includes(".ts") ||
+      lowerTarget.includes(".m4s") ||
+      lowerTarget.includes(".aac") ||
+      rawContentType.includes("video/mp2t") ||
+      rawContentType.includes("video/mp4");
+
+    if (!isSegment) {
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (
+        trimmed.startsWith("#EXTM3U") ||
+        trimmed.includes("#EXTINF") ||
+        trimmed.includes("#EXT-X-STREAM-INF")
+      ) {
+        const finalBase = res.url || targetUrl;
+        const rewritten = rewriteLiveHlsManifest(text, finalBase, customReferer, customUa);
+
+        if (liveManifestCache.size > 200) {
+          const now = Date.now();
+          for (const [k, v] of liveManifestCache) {
+            if (v.expires < now) liveManifestCache.delete(k);
+          }
+          if (liveManifestCache.size > 300) liveManifestCache.clear();
+        }
+        liveManifestCache.set(targetUrl, {
+          body: rewritten,
+          expires: Date.now() + 10000,
+        });
+
+        return new Response(rewritten, {
+          status: 200,
+          headers: {
+            "Content-Type": "application/vnd.apple.mpegurl",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+            "Cache-Control": "public, max-age=10",
+          },
+        });
+      }
+
+      const headers = new Headers();
+      headers.set("Access-Control-Allow-Origin", "*");
+      headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      headers.set("Access-Control-Allow-Headers", "*");
+      headers.set("Content-Type", rawContentType || "text/plain");
+      return new Response(text, { status: res.status, headers });
+    }
+
+    // Segmento binário (.ts, .m4s): streaming pipe
+    const responseHeaders = new Headers();
+    responseHeaders.set("Access-Control-Allow-Origin", "*");
+    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    responseHeaders.set("Access-Control-Allow-Headers", "*");
+    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+
+    const contentType = rawContentType || "video/mp2t";
+    responseHeaders.set("Content-Type", contentType);
+
+    const contentLength = res.headers.get("content-length");
+    if (contentLength) responseHeaders.set("Content-Length", contentLength);
+
+    const contentRange = res.headers.get("content-range");
+    if (contentRange && res.status === 206) {
+      responseHeaders.set("Content-Range", contentRange);
+    }
+
+    const acceptRanges = res.headers.get("accept-ranges") || (res.status === 206 ? "bytes" : "bytes");
+    responseHeaders.set("Accept-Ranges", acceptRanges);
+
+    return new Response(request.method === "HEAD" ? null : res.body, {
+      status: res.status,
+      headers: responseHeaders,
+    });
+  } catch (err) {
+    console.error("Erro no live-proxy:", err);
+    return new Response("Erro no proxy de transmissão ao vivo", { status: 502 });
+  }
+}
+
 /**
  * Route Handler /api/proxy-stream (Proxy retransmissor transparente com Range, Referer e User-Agent)
  */
@@ -882,6 +1154,11 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
     ) {
       upstreamHeaders["Referer"] = "https://sushianimes.com.br/";
       upstreamHeaders["Origin"] = "https://sushianimes.com.br";
+    }
+
+    const customUa = url.searchParams.get("ua") || url.searchParams.get("agente");
+    if (customUa) {
+      upstreamHeaders["User-Agent"] = customUa;
     }
 
     const clientRange = request.headers.get("range");
@@ -1136,6 +1413,22 @@ export default {
       }
       if (url.pathname === "/api/hls-proxy") {
         return await handleHlsProxyApi(request, url);
+      }
+      if (url.pathname === "/api/live-proxy") {
+        return await handleLiveProxyApi(request, url);
+      }
+      if (url.pathname === "/api/canais") {
+        const data = await loadCanais();
+        return jsonResponse(data, 200, "public, max-age=3600");
+      }
+      if (url.pathname === "/api/radios") {
+        const data = await loadRadios();
+        return jsonResponse(data, 200, "public, max-age=3600");
+      }
+      if (url.pathname === "/api/epg") {
+        const canal = url.searchParams.get("canal") || "";
+        const data = await getCanalEPG(canal);
+        return jsonResponse(data, 200, "public, max-age=900");
       }
       if (url.pathname === "/api/animes-sushi") {
         return await handleAnimesSushiApi(url);

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import type { CatalogItem } from "@/lib/types";
+import type { CatalogItem, StreamSource } from "@/lib/types";
 import { cleanDisplayTitle, detectQuality } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
@@ -24,6 +24,7 @@ function MovieDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [movie, setMovie] = useState<CatalogItem | null>(null);
+  const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
 
@@ -31,15 +32,26 @@ function MovieDetailPage() {
     let active = true;
     setLoading(true);
 
-    fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" })
-      .then((res) => {
+    Promise.allSettled([
+      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((res) => {
         if (!res.ok) throw new Error("Erro");
         return res.json() as Promise<CatalogItem>;
-      })
-      .then((found) => {
+      }),
+      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((res) => {
+        if (!res.ok) throw new Error("Erro");
+        return res.json() as Promise<{ sources?: StreamSource[] }>;
+      }),
+    ])
+      .then(([itemRes, resolveRes]) => {
         if (!active) return;
-        setMovie(found);
-        setSaved(getSavedList().includes(found.id));
+        if (itemRes.status === "fulfilled" && itemRes.value && !(itemRes.value as any).error) {
+          const found = itemRes.value as CatalogItem;
+          setMovie(found);
+          setSaved(getSavedList().includes(found.id));
+        }
+        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
+          setExtraStreams(resolveRes.value.sources);
+        }
       })
       .catch(() => {
         fetch("/api/catalogo", { cache: "no-store" })
@@ -130,13 +142,14 @@ function MovieDetailPage() {
 
   const movieQuality = (() => {
     if (!movie) return "FULL HD 1080P";
-    const streams = movie.streams || [];
-    const qualities = streams.map((s) => s.quality || detectQuality(s.url)).filter(Boolean);
-    if (qualities.some((q) => q.includes("4K") || q.includes("2160") || q.includes("UHD"))) return "4K ULTRA HD";
-    if (qualities.some((q) => q.includes("2K") || q.includes("1440") || q.includes("QHD"))) return "2K QUAD HD";
-    if (qualities.some((q) => q.includes("1080") || q.includes("FHD") || q.includes("FULLHD") || q.includes("1080p"))) return "FULL HD 1080P";
-    if (qualities.some((q) => q.includes("720") || q.includes("HD") || q.includes("720p"))) return "HD 720P";
-    if (qualities.some((q) => q.includes("480") || q.includes("SD") || q.includes("480p"))) return "SD 480P";
+    const allStreams = [...(movie.streams || []), ...extraStreams];
+    const qualities = allStreams
+      .map((s) => s.quality || detectQuality(s.url, movie.title))
+      .filter(Boolean);
+    if (qualities.some((q) => /4k|2160|uhd/i.test(q)) || /4k|2160|uhd/i.test(movie.title)) return "4K ULTRA HD";
+    if (qualities.some((q) => /2k|1440|qhd/i.test(q)) || /2k|1440|qhd/i.test(movie.title)) return "2K QUAD HD";
+    if (qualities.some((q) => /720|720p/i.test(q)) && !qualities.some((q) => /1080|fhd/i.test(q))) return "HD 720P";
+    if (qualities.some((q) => /480|480p|sd/i.test(q)) && !qualities.some((q) => /1080|720/i.test(q))) return "SD 480P";
     return "FULL HD 1080P";
   })();
 

@@ -14,12 +14,16 @@ import { Route as AnimesRouteImport } from './routes/animes'
 import { Route as BuscaRouteImport } from './routes/busca'
 import { Route as LancamentosRouteImport } from './routes/lancamentos'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
+import { Route as TvRouteImport } from './routes/tv'
 import { Route as AnimeIdRouteImport } from './routes/anime.$id'
 import { Route as FilmeIdRouteImport } from './routes/filme.$id'
 import { Route as GenerosSlugRouteImport } from './routes/generos.$slug'
 import { Route as JogoSlugRouteImport } from './routes/jogo.$slug'
 import { Route as SerieIdRouteImport } from './routes/serie.$id'
+import { Route as TvIndexRouteImport } from './routes/tv.index'
+import { Route as TvRadiosRouteImport } from './routes/tv.radios'
 import { Route as AssistirFilmeIdRouteImport } from './routes/assistir.filme.$id'
+import { Route as TvCanalIdRouteImport } from './routes/tv.canal.$id'
 import { Route as AssistirAnimeIdTempEpRouteImport } from './routes/assistir.anime.$id.$temp.$ep'
 import { Route as AssistirSerieIdTempEpRouteImport } from './routes/assistir.serie.$id.$temp.$ep'
 
@@ -48,6 +52,11 @@ const MinhaListaRoute = MinhaListaRouteImport.update({
   path: '/minha-lista',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TvRoute = TvRouteImport.update({
+  id: '/tv',
+  path: '/tv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnimeIdRoute = AnimeIdRouteImport.update({
   id: '/anime/$id',
   path: '/anime/$id',
@@ -73,10 +82,25 @@ const SerieIdRoute = SerieIdRouteImport.update({
   path: '/serie/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TvIndexRoute = TvIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TvRoute,
+} as any)
+const TvRadiosRoute = TvRadiosRouteImport.update({
+  id: '/radios',
+  path: '/radios',
+  getParentRoute: () => TvRoute,
+} as any)
 const AssistirFilmeIdRoute = AssistirFilmeIdRouteImport.update({
   id: '/assistir/filme/$id',
   path: '/assistir/filme/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TvCanalIdRoute = TvCanalIdRouteImport.update({
+  id: '/canal/$id',
+  path: '/canal/$id',
+  getParentRoute: () => TvRoute,
 } as any)
 const AssistirAnimeIdTempEpRoute = AssistirAnimeIdTempEpRouteImport.update({
   id: '/assistir/anime/$id/$temp/$ep',
@@ -95,12 +119,16 @@ export interface FileRoutesByFullPath {
   '/busca': typeof BuscaRoute
   '/lancamentos': typeof LancamentosRoute
   '/minha-lista': typeof MinhaListaRoute
+  '/tv': typeof TvRouteWithChildren
   '/anime/$id': typeof AnimeIdRoute
   '/filme/$id': typeof FilmeIdRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/jogo/$slug': typeof JogoSlugRoute
   '/serie/$id': typeof SerieIdRoute
+  '/tv/radios': typeof TvRadiosRoute
+  '/tv/': typeof TvIndexRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
+  '/tv/canal/$id': typeof TvCanalIdRoute
   '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/assistir/serie/$id/$temp/$ep': typeof AssistirSerieIdTempEpRoute
 }
@@ -115,7 +143,10 @@ export interface FileRoutesByTo {
   '/generos/$slug': typeof GenerosSlugRoute
   '/jogo/$slug': typeof JogoSlugRoute
   '/serie/$id': typeof SerieIdRoute
+  '/tv/radios': typeof TvRadiosRoute
+  '/tv': typeof TvIndexRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
+  '/tv/canal/$id': typeof TvCanalIdRoute
   '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/assistir/serie/$id/$temp/$ep': typeof AssistirSerieIdTempEpRoute
 }
@@ -126,12 +157,16 @@ export interface FileRoutesById {
   '/busca': typeof BuscaRoute
   '/lancamentos': typeof LancamentosRoute
   '/minha-lista': typeof MinhaListaRoute
+  '/tv': typeof TvRouteWithChildren
   '/anime/$id': typeof AnimeIdRoute
   '/filme/$id': typeof FilmeIdRoute
   '/generos/$slug': typeof GenerosSlugRoute
   '/jogo/$slug': typeof JogoSlugRoute
   '/serie/$id': typeof SerieIdRoute
+  '/tv/radios': typeof TvRadiosRoute
+  '/tv/': typeof TvIndexRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
+  '/tv/canal/$id': typeof TvCanalIdRoute
   '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/assistir/serie/$id/$temp/$ep': typeof AssistirSerieIdTempEpRoute
 }
@@ -143,12 +178,16 @@ export interface FileRouteTypes {
     | '/busca'
     | '/lancamentos'
     | '/minha-lista'
+    | '/tv'
     | '/anime/$id'
     | '/filme/$id'
     | '/generos/$slug'
     | '/jogo/$slug'
     | '/serie/$id'
+    | '/tv/radios'
+    | '/tv/'
     | '/assistir/filme/$id'
+    | '/tv/canal/$id'
     | '/assistir/anime/$id/$temp/$ep'
     | '/assistir/serie/$id/$temp/$ep'
   fileRoutesByTo: FileRoutesByTo
@@ -163,7 +202,10 @@ export interface FileRouteTypes {
     | '/generos/$slug'
     | '/jogo/$slug'
     | '/serie/$id'
+    | '/tv/radios'
+    | '/tv'
     | '/assistir/filme/$id'
+    | '/tv/canal/$id'
     | '/assistir/anime/$id/$temp/$ep'
     | '/assistir/serie/$id/$temp/$ep'
   id:
@@ -173,12 +215,16 @@ export interface FileRouteTypes {
     | '/busca'
     | '/lancamentos'
     | '/minha-lista'
+    | '/tv'
     | '/anime/$id'
     | '/filme/$id'
     | '/generos/$slug'
     | '/jogo/$slug'
     | '/serie/$id'
+    | '/tv/radios'
+    | '/tv/'
     | '/assistir/filme/$id'
+    | '/tv/canal/$id'
     | '/assistir/anime/$id/$temp/$ep'
     | '/assistir/serie/$id/$temp/$ep'
   fileRoutesById: FileRoutesById
@@ -189,6 +235,7 @@ export interface RootRouteChildren {
   BuscaRoute: typeof BuscaRoute
   LancamentosRoute: typeof LancamentosRoute
   MinhaListaRoute: typeof MinhaListaRoute
+  TvRoute: typeof TvRouteWithChildren
   AnimeIdRoute: typeof AnimeIdRoute
   FilmeIdRoute: typeof FilmeIdRoute
   GenerosSlugRoute: typeof GenerosSlugRoute
@@ -236,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinhaListaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tv': {
+      id: '/tv'
+      path: '/tv'
+      fullPath: '/tv'
+      preLoaderRoute: typeof TvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/anime/$id': {
       id: '/anime/$id'
       path: '/anime/$id'
@@ -271,12 +325,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SerieIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tv/': {
+      id: '/tv/'
+      path: '/'
+      fullPath: '/tv/'
+      preLoaderRoute: typeof TvIndexRouteImport
+      parentRoute: typeof TvRoute
+    }
+    '/tv/radios': {
+      id: '/tv/radios'
+      path: '/radios'
+      fullPath: '/tv/radios'
+      preLoaderRoute: typeof TvRadiosRouteImport
+      parentRoute: typeof TvRoute
+    }
     '/assistir/filme/$id': {
       id: '/assistir/filme/$id'
       path: '/assistir/filme/$id'
       fullPath: '/assistir/filme/$id'
       preLoaderRoute: typeof AssistirFilmeIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/tv/canal/$id': {
+      id: '/tv/canal/$id'
+      path: '/canal/$id'
+      fullPath: '/tv/canal/$id'
+      preLoaderRoute: typeof TvCanalIdRouteImport
+      parentRoute: typeof TvRoute
     }
     '/assistir/anime/$id/$temp/$ep': {
       id: '/assistir/anime/$id/$temp/$ep'
@@ -295,12 +370,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface TvRouteChildren {
+  TvRadiosRoute: typeof TvRadiosRoute
+  TvIndexRoute: typeof TvIndexRoute
+  TvCanalIdRoute: typeof TvCanalIdRoute
+}
+
+const TvRouteChildren: TvRouteChildren = {
+  TvRadiosRoute: TvRadiosRoute,
+  TvIndexRoute: TvIndexRoute,
+  TvCanalIdRoute: TvCanalIdRoute,
+}
+
+const TvRouteWithChildren = TvRoute._addFileChildren(TvRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnimesRoute: AnimesRoute,
   BuscaRoute: BuscaRoute,
   LancamentosRoute: LancamentosRoute,
   MinhaListaRoute: MinhaListaRoute,
+  TvRoute: TvRouteWithChildren,
   AnimeIdRoute: AnimeIdRoute,
   FilmeIdRoute: FilmeIdRoute,
   GenerosSlugRoute: GenerosSlugRoute,

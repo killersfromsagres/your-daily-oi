@@ -356,6 +356,12 @@ export function Header({ onSearch }: HeaderProps) {
           )}
         </div>
 
+        {/* TV Ao Vivo */}
+        <Link to="/tv" className="ydo-nav-link ydo-nav-tv">
+          <span className="ydo-live-dot" />
+          <span>TV Ao Vivo</span>
+        </Link>
+
         <Link to="/lancamentos" className="ydo-nav-link">
           Lançamentos
         </Link>

@@ -21,8 +21,20 @@ export function MediaCard({
   const [imgFailed, setImgFailed] = useState(false);
   const hasDub = item.streams.some((s) => s.audio === "dub");
   const hasLeg = item.streams.some((s) => s.audio === "leg");
-  // Apenas títulos com lançamento futuro confirmado pelo TMDB são marcados como "Em breve"
-  const isComingSoon = Boolean(item.tmdb?.releaseYear && item.tmdb.releaseYear > new Date().getFullYear());
+  const isSeriesOrAnime = item.type === "a" || item.type === "s" || isAnimeItem(item);
+  const hasStreamsOrEpisodes =
+    (item.streams && item.streams.length > 0) ||
+    (item.seasons && item.seasons.some((s) => s.episodes && s.episodes.length > 0));
+  // Apenas filmes futuros sem qualquer reprodução disponível exibem "Em breve"
+  // Séries e animes nunca exibem "Em breve", pois possuem episódios indexados no acervo
+  const isComingSoon =
+    !isSeriesOrAnime &&
+    !hasStreamsOrEpisodes &&
+    Boolean(item.tmdb?.releaseYear && item.tmdb.releaseYear > new Date().getFullYear());
+
+  const is4k =
+    /4k|2160|uhd/i.test(item.title) ||
+    item.streams.some((s) => /4k|2160|uhd/i.test(s.quality || ""));
   const detailPath =
     item.type === "a" || (item.type === "s" && isAnimeItem(item))
       ? `/anime/${item.id}`
@@ -94,6 +106,19 @@ export function MediaCard({
                 }}
               >
                 Em breve
+              </span>
+            )}
+            {is4k && (
+              <span
+                className="ydo-badge"
+                style={{
+                  backgroundColor: "rgba(232, 180, 74, 0.2)",
+                  color: "#e8b44a",
+                  borderColor: "rgba(232, 180, 74, 0.4)",
+                  fontWeight: "800",
+                }}
+              >
+                4K
               </span>
             )}
             {hasDub && <span className="ydo-badge">DUB</span>}
