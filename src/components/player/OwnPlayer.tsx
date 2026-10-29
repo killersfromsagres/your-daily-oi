@@ -22,27 +22,14 @@ interface OwnPlayerProps {
 // 4b: Ordem de tentativa por tipo de relay
 const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
-  // CDNs conhecidos que exigem proxy por CORS ou Referer
-  if (
-    url.includes("hermesnewone.com") ||
-    url.includes("workers.dev") ||
-    url.includes("tech-cdn.top")
-  ) {
-    return true;
-  }
-  // Mixed content: qualquer http:// em página https:// deve ir via proxy
-  if (url.startsWith("http://")) {
-    return true;
-  }
-  // Relay do Saimo (filmes, séries, animes):
-  // Em datacenters (Vercel/Lovable), o servidor é bloqueado pelo Cloudflare do Saimo (desafio Turnstile).
-  // A tentativa direta sai do navegador real do usuário (no Brasil), que recebe o 302 limpo.
-  // Proxy fica como retentativa.
-  if (url.includes("saimo-tv.pages.dev/api/stream")) {
+  // Relay Saimo de SÉRIES: o Cloudflare do relay bloqueia datacenter ("Acesso negado").
+  // O acesso direto sai do navegador real do usuário, que recebe o 302 limpo.
+  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=series")) {
     return false;
   }
-  // Demais fontes (Internet Archive, MP4s diretos): direto primeiro, proxy como retentativa
-  return false;
+  // Todo o resto vai via proxy primeiro: CDNs com bloqueio de hotlink (hermesnewone),
+  // CORS (tech-cdn.top), mixed content (http:// em página https) e relay de FILMES.
+  return true;
 };
 
 const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1): string => {
@@ -142,6 +129,7 @@ export function OwnPlayer({
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [detectedQuality, setDetectedQuality] = useState<string | null>(null);
+  const autoSwitchCountRef = useRef(0);
 
   const updateVideoResolution = useCallback(() => {
     const v = videoRef.current;
@@ -212,6 +200,13 @@ export function OwnPlayer({
       recordFailedSource(rawStream.url);
       setAttemptStage(0);
 
+      // Teto de tentativas por sessão para evitar ciclo sem fim
+      autoSwitchCountRef.current++;
+      if (autoSwitchCountRef.current > orderedStreams.length * 2) {
+        console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
+        return;
+      }
+
       if (sourceIndex < orderedStreams.length - 1) {
         setAutoSwitchMsg("Trocando de servidor…");
         const timer = setTimeout(() => {
@@ -221,29 +216,6 @@ export function OwnPlayer({
         return () => clearTimeout(timer);
       }
     }
-  }, [engine.state, rawStream, attemptStage, sourceIndex, orderedStreams.length]);
-
-  // Timeout de 12s para evitar qualquer travamento em "Preparando reprodução..."
-  useEffect(() => {
-    if (engine.state !== "loading" && engine.state !== "idle") return;
-    if (!rawStream) return;
-
-    const timeout = setTimeout(() => {
-      console.warn(`[Zang Flix Player] Timeout de 12s atingido para a fonte ${rawStream.url}`);
-      if (attemptStage === 0) {
-        setAttemptStage(1);
-      } else {
-        recordFailedSource(rawStream.url);
-        setAttemptStage(0);
-        if (sourceIndex < orderedStreams.length - 1) {
-          setAutoSwitchMsg("Fonte lenta, alternando servidor…");
-          setSourceIndex((prev) => prev + 1);
-          setTimeout(() => setAutoSwitchMsg(null), 1000);
-        }
-      }
-    }, 12000);
-
-    return () => clearTimeout(timeout);
   }, [engine.state, rawStream, attemptStage, sourceIndex, orderedStreams.length]);
 
   const handleVideoClick = () => {
@@ -355,6 +327,7 @@ export function OwnPlayer({
 
   const handleSourceChange = (i: number) => {
     const prevTime = videoRef.current?.currentTime ?? 0;
+    autoSwitchCountRef.current = 0;
     setSourceIndex(i);
     setAttemptStage(0);
     setDetectedQuality(null);
@@ -539,6 +512,7 @@ export function OwnPlayer({
               className="ydo-btn-primary"
               onClick={() => {
                 clearFailedSources();
+                autoSwitchCountRef.current = 0;
                 const audio = getPreferredAudio();
                 const bestIdx = pickBestSourceIndex(orderedStreams, audio);
                 setSourceIndex(bestIdx);
