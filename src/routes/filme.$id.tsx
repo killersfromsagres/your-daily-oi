@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
@@ -128,27 +128,17 @@ function MovieDetailPage() {
   const titleDisplay = cleanDisplayTitle(movie.title);
   const runtimeDisplay = formatRuntime(movie.tmdb?.runtime);
 
-  const movieQuality = useMemo(() => {
+  const movieQuality = (() => {
     if (!movie) return "FULL HD 1080P";
     const streams = movie.streams || [];
     const qualities = streams.map((s) => s.quality || detectQuality(s.url)).filter(Boolean);
-    if (qualities.some((q) => q.includes("4K") || q.includes("2160") || q.includes("UHD"))) {
-      return "4K ULTRA HD";
-    }
-    if (qualities.some((q) => q.includes("2K") || q.includes("1440") || q.includes("QHD"))) {
-      return "2K QUAD HD";
-    }
-    if (qualities.some((q) => q.includes("1080") || q.includes("FHD") || q.includes("FULLHD") || q.includes("1080p"))) {
-      return "FULL HD 1080P";
-    }
-    if (qualities.some((q) => q.includes("720") || q.includes("HD") || q.includes("720p"))) {
-      return "HD 720P";
-    }
-    if (qualities.some((q) => q.includes("480") || q.includes("SD") || q.includes("480p"))) {
-      return "SD 480P";
-    }
+    if (qualities.some((q) => q.includes("4K") || q.includes("2160") || q.includes("UHD"))) return "4K ULTRA HD";
+    if (qualities.some((q) => q.includes("2K") || q.includes("1440") || q.includes("QHD"))) return "2K QUAD HD";
+    if (qualities.some((q) => q.includes("1080") || q.includes("FHD") || q.includes("FULLHD") || q.includes("1080p"))) return "FULL HD 1080P";
+    if (qualities.some((q) => q.includes("720") || q.includes("HD") || q.includes("720p"))) return "HD 720P";
+    if (qualities.some((q) => q.includes("480") || q.includes("SD") || q.includes("480p"))) return "SD 480P";
     return "FULL HD 1080P";
-  }, [movie]);
+  })();
 
   return (
     <div
