@@ -536,6 +536,91 @@ function rewriteHlsManifest(manifestText: string, baseUrl: string): string {
 }
 
 /**
+ * Cache e Route Handler /api/relay-resolve
+ * Resolve redirect 30x de saimo-tv.pages.dev/api/stream, aplica upgrade http->https e sniffer de HLS
+ */
+interface RelayResolveCache {
+  data: { ok: boolean; finalUrl?: string; isHls?: boolean };
+  expires: number;
+}
+const relayResolveCache = new Map<string, RelayResolveCache>();
+
+async function handleRelayResolveApi(url: URL): Promise<Response> {
+  const targetUrl = url.searchParams.get("url");
+  if (!targetUrl || !targetUrl.includes("saimo-tv.pages.dev/api/stream")) {
+    return jsonResponse({ ok: false, error: "URL inválida ou não suportada" }, 400);
+  }
+
+  const now = Date.now();
+  const cached = relayResolveCache.get(targetUrl);
+  if (cached && cached.expires > now) {
+    return jsonResponse(cached.data, 200, "no-store");
+  }
+
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+
+    const res = await fetch(targetUrl, {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Referer: "https://saimo-tv.pages.dev/",
+        Accept: "*/*",
+      },
+      redirect: "manual",
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+
+    let loc = res.headers.get("location") || res.headers.get("Location");
+    if (!loc) {
+      relayResolveCache.set(targetUrl, { data: { ok: false }, expires: now + 60000 });
+      return jsonResponse({ ok: false }, 200, "no-store");
+    }
+
+    if (loc.startsWith("http://")) {
+      loc = loc.replace(/^http:\/\//i, "https://");
+    }
+
+    let isHls = false;
+    const cleanLoc = loc.split("?")[0].toLowerCase();
+    if (cleanLoc.endsWith(".m3u8") || loc.includes(".m3u8")) {
+      isHls = true;
+    } else {
+      try {
+        const sniffCtrl = new AbortController();
+        const sniffTimer = setTimeout(() => sniffCtrl.abort(), 3000);
+        const sniffRes = await fetch(loc, {
+          method: "HEAD",
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            Referer: "https://saimo-tv.pages.dev/",
+          },
+          signal: sniffCtrl.signal,
+        });
+        clearTimeout(sniffTimer);
+        const ct = (sniffRes.headers.get("content-type") || "").toLowerCase();
+        if (ct.includes("application/vnd.apple.mpegurl") || ct.includes("audio/mpegurl") || ct.includes("mpegurl")) {
+          isHls = true;
+        }
+      } catch {
+        // Fallback mp4
+      }
+    }
+
+    const result = { ok: true, finalUrl: loc, isHls };
+    relayResolveCache.set(targetUrl, { data: result, expires: now + 5 * 60 * 1000 });
+    return jsonResponse(result, 200, "no-store");
+  } catch (err) {
+    console.warn(`[RelayResolve] Falha ao resolver ${targetUrl}:`, err);
+    return jsonResponse({ ok: false }, 200, "no-store");
+  }
+}
+
+/**
  * Route Handler /api/hls-proxy (Proxy HLS com reescrita completa de manifestos e streaming transparente de segmentos)
  */
 async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> {
@@ -658,8 +743,12 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
           signal: redirectCtrl.signal,
         });
         clearTimeout(redirectTimer);
-        const loc = redirectRes.headers.get("location");
-        if (loc && loc.startsWith("http")) {
+        const isRedirect = redirectRes.status >= 300 && redirectRes.status < 400;
+        let loc = redirectRes.headers.get("location") || redirectRes.headers.get("Location");
+        if (loc) {
+          if (loc.startsWith("http://")) {
+            loc = loc.replace(/^http:\/\//i, "https://");
+          }
           if (loc.includes("froststream") || loc.includes("cloutteam")) {
             return new Response("Upstream requer resolução direta no navegador", {
               status: 502,
@@ -667,7 +756,7 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
             });
           }
           targetUrl = loc;
-        } else if (!redirectRes.ok && redirectRes.status !== 302) {
+        } else if (!redirectRes.ok && !isRedirect) {
           return new Response("Relay upstream indisponível", {
             status: 502,
             headers: { "Access-Control-Allow-Origin": "*" },
@@ -1188,8 +1277,12 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
           signal: redirectCtrl.signal,
         });
         clearTimeout(redirectTimer);
-        const loc = redirectRes.headers.get("location");
-        if (loc && loc.startsWith("http")) {
+        const isRedirect = redirectRes.status >= 300 && redirectRes.status < 400;
+        let loc = redirectRes.headers.get("location") || redirectRes.headers.get("Location");
+        if (loc) {
+          if (loc.startsWith("http://")) {
+            loc = loc.replace(/^http:\/\//i, "https://");
+          }
           // Se o upstream redirecionou para bot challenge de datacenter (froststream / cloutteam)
           // Retorna 502 imediatamente para o player tentar o caminho direto do navegador
           if (loc.includes("froststream") || loc.includes("cloutteam")) {
@@ -1199,7 +1292,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
             });
           }
           targetUrl = loc;
-        } else if (!redirectRes.ok && redirectRes.status !== 302) {
+        } else if (!redirectRes.ok && !isRedirect) {
           return new Response("Relay upstream indisponível", {
             status: 502,
             headers: { "Access-Control-Allow-Origin": "*" },
@@ -1288,6 +1381,13 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
     responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
 
     const contentType = res.headers.get("content-type") || "video/mp4";
+    if (contentType.toLowerCase().includes("text/html")) {
+      console.warn(`[ProxyStream] Upstream retornou HTML em vez de vídeo para ${targetUrl}`);
+      return new Response("Erro upstream html", {
+        status: 502,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
     responseHeaders.set("Content-Type", contentType);
 
     const contentLength = res.headers.get("content-length");
@@ -1408,6 +1508,9 @@ export default {
       }
       if (url.pathname === "/api/resolve-vod") {
         return await handleResolveVodApi(url);
+      }
+      if (url.pathname === "/api/relay-resolve") {
+        return await handleRelayResolveApi(url);
       }
       if (url.pathname === "/api/proxy-stream") {
         return await handleProxyStreamApi(request, url);

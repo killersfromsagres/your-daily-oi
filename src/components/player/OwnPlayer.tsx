@@ -39,13 +39,28 @@ const isHlsStream = (url: string, format?: string): boolean => {
   return clean.endsWith(".m3u8") || url.includes(".m3u8");
 };
 
-const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1, format?: string): string => {
+const getStreamUrlForStage = (
+  rawUrl: string,
+  stage: 0 | 1,
+  format?: string,
+  resolvedDirectUrl?: string
+): string => {
   if (!rawUrl) return "";
   if (rawUrl.includes("/api/hls-proxy") || rawUrl.includes("/api/proxy-stream")) return rawUrl;
 
-  // HLS (.m3u8): SEMPRE usa o /api/hls-proxy em AMBOS os estágios com reescrita completa de segmentos
+  // A1: HLS (.m3u8):
+  // Estágio 0: /api/hls-proxy?url=... (proxy resolve hotlink/CORS/mixed-content)
+  // Estágio 1: URL direta tocada no navegador pelo hls.js (muitos CDNs bloqueiam datacenter mas servem IP residencial)
   if (isHlsStream(rawUrl, format)) {
-    return `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
+    if (stage === 0) {
+      return `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
+    }
+    // Se a URL HLS for http:// (mixed-content garantido no direto), NÃO tente o estágio 1
+    // Retorna a mesma URL do estágio 0 para ativar a regra A2 anti-estágio-duplicado
+    if (rawUrl.startsWith("http://")) {
+      return `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
+    }
+    return resolvedDirectUrl || rawUrl;
   }
 
   const preferredIsProxy = getPreferredAttemptIsProxy(rawUrl);
@@ -53,7 +68,7 @@ const getStreamUrlForStage = (rawUrl: string, stage: 0 | 1, format?: string): st
   if (useProxy) {
     return `/api/proxy-stream?url=${encodeURIComponent(rawUrl)}`;
   }
-  return rawUrl;
+  return resolvedDirectUrl || rawUrl;
 };
 
 export function pickBestSourceIndex(
@@ -92,6 +107,11 @@ export function pickBestSourceIndex(
     // Relay Saimo é um salto extra (302 + Cloudflare): usar como fallback, não como primeira escolha
     if (s.url.includes("saimo-tv.pages.dev/api/stream")) {
       score -= 250;
+    }
+
+    // A4: -300 se URL for http:// (incompatível com HTTPS direto no navegador, frequentemente bloqueia datacenter)
+    if (s.url.startsWith("http://")) {
+      score -= 300;
     }
 
     // -10 x priority (campo priority do servidor, 0 = principal, default 5)
@@ -149,6 +169,11 @@ export function OwnPlayer({
   const [detectedQuality, setDetectedQuality] = useState<string | null>(null);
   const autoSwitchCountRef = useRef(0);
   const pendingPlayRef = useRef<{ clickedAt: number } | null>(null);
+  const lastProgressRef = useRef<{ time: number; at: number } | null>(null);
+  const resolvedRelaysRef = useRef<Map<string, { finalUrl: string; isHls: boolean }>>(new Map());
+
+  const [resolvedDirectUrl, setResolvedDirectUrl] = useState<string | null>(null);
+  const [resolvedIsHls, setResolvedIsHls] = useState<boolean | null>(null);
 
   const updateVideoResolution = useCallback(() => {
     const v = videoRef.current;
@@ -174,11 +199,14 @@ export function OwnPlayer({
   // Cada fonte tenta o caminho preferido (stage 0) e depois o outro (stage 1), mantendo currentTime
   const currentStream: StreamSource | null = useMemo(() => {
     if (!rawStream) return null;
+    const finalUrl = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
+    const fmt = resolvedIsHls ? "hls" : rawStream.format;
     return {
       ...rawStream,
-      url: getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format),
+      format: fmt,
+      url: finalUrl,
     };
-  }, [rawStream, attemptStage]);
+  }, [rawStream, attemptStage, resolvedDirectUrl, resolvedIsHls]);
 
   const handleEnded = useCallback(() => {
     onEnded?.();
@@ -203,19 +231,119 @@ export function OwnPlayer({
     }
   }, [engine.state, currentStream]);
 
+  // A6: Se a fonte for relay e estiver em estágio direto, resolve no backend para obter a URL final
+  useEffect(() => {
+    if (!rawStream?.url) return;
+    if (!rawStream.url.includes("saimo-tv.pages.dev/api/stream")) return;
+
+    const preferredIsProxy = getPreferredAttemptIsProxy(rawStream.url);
+    const isDirect = (attemptStage === 0 && !preferredIsProxy) || (attemptStage === 1 && preferredIsProxy);
+    if (!isDirect) return;
+
+    const cached = resolvedRelaysRef.current.get(rawStream.url);
+    if (cached) {
+      if (resolvedDirectUrl !== cached.finalUrl || resolvedIsHls !== cached.isHls) {
+        setResolvedDirectUrl(cached.finalUrl);
+        setResolvedIsHls(cached.isHls);
+      }
+      return;
+    }
+
+    let active = true;
+    fetch(`/api/relay-resolve?url=${encodeURIComponent(rawStream.url)}`)
+      .then((res) => res.json())
+      .then((data: { ok: boolean; finalUrl?: string; isHls?: boolean }) => {
+        if (!active) return;
+        if (data.ok && data.finalUrl) {
+          resolvedRelaysRef.current.set(rawStream.url, {
+            finalUrl: data.finalUrl,
+            isHls: !!data.isHls,
+          });
+          setResolvedDirectUrl(data.finalUrl);
+          setResolvedIsHls(!!data.isHls);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [rawStream?.url, attemptStage, resolvedDirectUrl, resolvedIsHls]);
+
   // Chaveamento inteligente:
   // 1. Tenta o caminho preferencial da fonte (direto ou proxy dependendo do tipo)
   // 2. Se falhar, retenta a mesma fonte no caminho inverso preservando currentTime
-  // 3. Se ambos falharem, registra falha e avança para a próxima fonte
+  // 3. Se ambos falharem, registra falha e avança para a próxima fonte (A3: escada circular)
   useEffect(() => {
     if (engine.state === "error" && rawStream) {
       if (attemptStage === 0) {
-        console.warn(`[OwnPlayer] Falha no caminho inicial para ${rawStream.url}. Retentando caminho alternativo...`);
+        // A2 — Regra anti-estágio-duplicado. Antes de alternar o estágio, compare
+        // getStreamUrlForStage(url, próximoEstágio) com getStreamUrlForStage(url, estágioAtual).
+        // Se forem idênticas, NÃO gaste 8s re-tentando a mesma URL: registre a falha e avance de fonte imediatamente.
+        const currUrl = getStreamUrlForStage(rawStream.url, 0, rawStream.format);
+        const nextUrl = getStreamUrlForStage(rawStream.url, 1, rawStream.format);
+        if (currUrl === nextUrl) {
+          console.warn(`[OwnPlayer] Estágio 1 duplicado (${currUrl}). Avançando diretamente para próxima fonte...`);
+          recordFailedSource(rawStream.url);
+          autoSwitchCountRef.current++;
+          if (autoSwitchCountRef.current > orderedStreams.length * 2) {
+            console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
+            setAutoSwitchMsg(null);
+            return;
+          }
+          setAutoSwitchMsg("Trocando de servidor…");
+          const timer = setTimeout(() => {
+            setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
+            setAttemptStage(0);
+            setResolvedDirectUrl(null);
+            setResolvedIsHls(null);
+            setAutoSwitchMsg(null);
+          }, 800);
+          return () => clearTimeout(timer);
+        }
+
+        console.warn(`[OwnPlayer] Falha no estágio inicial para ${rawStream.url}. Preparando estágio alternativo...`);
+
+        // A6: Para relay Saimo antes do estágio direto, resolve no backend
+        if (rawStream.url.includes("saimo-tv.pages.dev/api/stream")) {
+          const cached = resolvedRelaysRef.current.get(rawStream.url);
+          if (cached) {
+            setResolvedDirectUrl(cached.finalUrl);
+            setResolvedIsHls(cached.isHls);
+            setAttemptStage(1);
+          } else {
+            fetch(`/api/relay-resolve?url=${encodeURIComponent(rawStream.url)}`)
+              .then((res) => res.json())
+              .then((data: { ok: boolean; finalUrl?: string; isHls?: boolean }) => {
+                if (data.ok && data.finalUrl) {
+                  resolvedRelaysRef.current.set(rawStream.url, {
+                    finalUrl: data.finalUrl,
+                    isHls: !!data.isHls,
+                  });
+                  setResolvedDirectUrl(data.finalUrl);
+                  setResolvedIsHls(!!data.isHls);
+                } else {
+                  setResolvedDirectUrl(null);
+                  setResolvedIsHls(null);
+                }
+                setAttemptStage(1);
+              })
+              .catch(() => {
+                setResolvedDirectUrl(null);
+                setResolvedIsHls(null);
+                setAttemptStage(1);
+              });
+          }
+          return;
+        }
+
+        setResolvedDirectUrl(null);
+        setResolvedIsHls(null);
         setAttemptStage(1);
         return;
       }
 
-      // Ambos os caminhos falharam para esta fonte: registra falha e avança
+      // Ambos os caminhos falharam para esta fonte: registra falha e avança (A3: escada circular)
       recordFailedSource(rawStream.url);
 
       // Teto de tentativas por sessão para evitar ciclo sem fim
@@ -226,17 +354,17 @@ export function OwnPlayer({
         return;
       }
 
-      if (sourceIndex < orderedStreams.length - 1) {
-        setAutoSwitchMsg("Trocando de servidor…");
-        const timer = setTimeout(() => {
-          setSourceIndex((prev) => prev + 1);
-          setAttemptStage(0);
-          setAutoSwitchMsg(null);
-        }, 800);
-        return () => clearTimeout(timer);
-      }
+      setAutoSwitchMsg("Trocando de servidor…");
+      const timer = setTimeout(() => {
+        setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
+        setAttemptStage(0);
+        setResolvedDirectUrl(null);
+        setResolvedIsHls(null);
+        setAutoSwitchMsg(null);
+      }, 800);
+      return () => clearTimeout(timer);
     }
-  }, [engine.state, rawStream, attemptStage, sourceIndex, orderedStreams.length]);
+  }, [engine.state, rawStream, attemptStage, orderedStreams.length]);
 
   // O selo de troca automática some assim que qualquer fonte entra em reprodução
   useEffect(() => {
@@ -250,9 +378,39 @@ export function OwnPlayer({
     void engine.play();
   }, [engine]);
 
-  // Watchdog de "play travado": se o usuário clicou em play mas o vídeo nunca iniciou (fonte travada sem dados)
+  // Watchdog de "play travado" e "congelamento mid-play" (A5)
   useEffect(() => {
     const id = setInterval(() => {
+      // A5: Watchdog de congelamento mid-play
+      if (engine.state === "playing") {
+        const now = Date.now();
+        if (!lastProgressRef.current || Math.abs(engine.currentTime - lastProgressRef.current.time) > 0.5) {
+          lastProgressRef.current = { time: engine.currentTime, at: now };
+        } else {
+          const elapsed = now - lastProgressRef.current.at;
+          if (elapsed > 15000 && engine.buffered <= engine.currentTime + 2) {
+            console.warn(`[OwnPlayer] Congelamento mid-play detectado (sem avanço há ${Math.round(elapsed / 1000)}s). Trocando de servidor...`);
+            lastProgressRef.current = null;
+            if (rawStream) {
+              recordFailedSource(rawStream.url);
+              autoSwitchCountRef.current++;
+              if (autoSwitchCountRef.current <= orderedStreams.length * 2) {
+                setAutoSwitchMsg("Trocando de servidor…");
+                setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
+                setAttemptStage(0);
+                setResolvedDirectUrl(null);
+                setResolvedIsHls(null);
+                setTimeout(() => setAutoSwitchMsg(null), 1200);
+              }
+            }
+            return;
+          }
+        }
+      } else {
+        lastProgressRef.current = null;
+      }
+
+      // Watchdog de "play travado": se o usuário clicou em play mas o vídeo nunca iniciou (fonte travada sem dados)
       const pending = pendingPlayRef.current;
       if (!pending) return;
 
@@ -268,22 +426,25 @@ export function OwnPlayer({
         return;
       }
 
-      // Caso 3: timeout de 6 segundos sem sair do lugar → fonte ruim, troca de servidor
+      // Caso 3: timeout de 6 segundos sem sair do lugar → fonte ruim, troca de servidor (A3 circular)
       if (Date.now() - pending.clickedAt > 6000 && engine.state !== "playing") {
         pendingPlayRef.current = null;
         if (rawStream) {
           recordFailedSource(rawStream.url);
-          if (sourceIndex < orderedStreams.length - 1) {
+          autoSwitchCountRef.current++;
+          if (autoSwitchCountRef.current <= orderedStreams.length * 2) {
             setAutoSwitchMsg("Trocando de servidor…");
-            setSourceIndex((prev) => prev + 1);
+            setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
             setAttemptStage(0);
+            setResolvedDirectUrl(null);
+            setResolvedIsHls(null);
             setTimeout(() => setAutoSwitchMsg(null), 1200);
           }
         }
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [engine.state, engine.currentTime, rawStream, sourceIndex, orderedStreams.length]);
+  }, [engine.state, engine.currentTime, engine.buffered, rawStream, orderedStreams.length]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
@@ -395,9 +556,12 @@ export function OwnPlayer({
   const handleSourceChange = (i: number) => {
     const prevTime = videoRef.current?.currentTime ?? 0;
     pendingPlayRef.current = null;
+    lastProgressRef.current = null;
     autoSwitchCountRef.current = 0;
     setSourceIndex(i);
     setAttemptStage(0);
+    setResolvedDirectUrl(null);
+    setResolvedIsHls(null);
     setDetectedQuality(null);
     if (sources[i]?.audio === "dub" || sources[i]?.audio === "leg") {
       setPreferredAudio(sources[i].audio as "dub" | "leg");
@@ -585,11 +749,14 @@ export function OwnPlayer({
               onClick={() => {
                 clearFailedSources();
                 pendingPlayRef.current = null;
+                lastProgressRef.current = null;
                 autoSwitchCountRef.current = 0;
                 const audio = getPreferredAudio();
                 const bestIdx = pickBestSourceIndex(orderedStreams, audio);
                 setSourceIndex(bestIdx);
                 setAttemptStage(0);
+                setResolvedDirectUrl(null);
+                setResolvedIsHls(null);
                 setAutoSwitchMsg(null);
               }}
             >

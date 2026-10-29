@@ -105,11 +105,11 @@ export function usePlayerEngine(
     let metadataLoaded = false;
     const metadataTimeout = setTimeout(() => {
       if (!metadataLoaded && !cancelled) {
-        console.warn(`[PlayerEngine] 12s timeout atingido sem loadedmetadata para: ${stream.url}`);
+        console.warn(`[PlayerEngine] 8s timeout atingido sem loadedmetadata para: ${stream.url}`);
         setState("error");
-        setError("Tempo limite excedido ao preparar reprodução (12s)");
+        setError("Tempo limite excedido ao preparar reprodução (8s)");
       }
-    }, 12000);
+    }, 8000);
 
     const onLoadedMetadata = () => {
       metadataLoaded = true;
@@ -180,10 +180,7 @@ export function usePlayerEngine(
           const Hls = await ensureHls();
           if (Hls?.isSupported()) {
             const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
-            const hlsUrl = url.includes("/api/hls-proxy")
-              ? url
-              : `/api/hls-proxy?url=${encodeURIComponent(url)}`;
-            hls.loadSource(hlsUrl);
+            hls.loadSource(url);
             hls.attachMedia(video);
             hls.on(Hls.Events.ERROR, (_, data: Record<string, unknown>) => {
               if (data["fatal"]) {
@@ -192,18 +189,11 @@ export function usePlayerEngine(
             });
             destroyRef.current = () => hls.destroy();
           } else {
-            const finalUrl = url.includes("/api/hls-proxy")
-              ? url
-              : `/api/hls-proxy?url=${encodeURIComponent(url)}`;
-            video.src = finalUrl;
+            video.src = url;
           }
         } else {
           // HLS nativo (iOS/Safari) ou MP4
-          let finalUrl = url;
-          if (isHls && !url.includes("/api/hls-proxy")) {
-            finalUrl = `/api/hls-proxy?url=${encodeURIComponent(url)}`;
-          }
-          video.src = finalUrl;
+          video.src = url;
           video.load();
         }
 
