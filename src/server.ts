@@ -8,6 +8,7 @@ import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG } from "./lib/epg";
+import { getJogosHoje } from "./lib/jogos";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -1429,6 +1430,10 @@ export default {
         const canal = url.searchParams.get("canal") || "";
         const data = await getCanalEPG(canal);
         return jsonResponse(data, 200, "public, max-age=900");
+      }
+      if (url.pathname === "/api/jogos-hoje") {
+        const data = await getJogosHoje();
+        return jsonResponse(data, 200, "public, max-age=1800");
       }
       if (url.pathname === "/api/animes-sushi") {
         return await handleAnimesSushiApi(url);

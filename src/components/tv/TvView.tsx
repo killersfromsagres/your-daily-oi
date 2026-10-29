@@ -5,6 +5,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import type { CanalTV } from "@/lib/canais";
 import type { CanalEPG } from "@/lib/epg";
 import { LivePlayer } from "@/components/player/LivePlayer";
+import { JogosShelf } from "@/components/tv/JogosShelf";
 import {
   Search,
   Star,
@@ -136,6 +137,18 @@ export function TvView({ initialCanalId }: TvViewProps) {
       });
     },
     [navigate]
+  );
+
+  const handleSelectCanalId = useCallback(
+    (canalId: string) => {
+      const found = canais.find((c) => c.id === canalId);
+      if (found) {
+        selectCanal(found);
+      } else {
+        setActiveId(canalId);
+      }
+    },
+    [canais, selectCanal]
   );
 
   // Busca EPG sob demanda para o canal ativo
@@ -288,6 +301,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </Link>
         </div>
       </div>
+
+      {/* Prateleira Jogos de Hoje (Brasileirão) */}
+      <JogosShelf onSelectCanalId={handleSelectCanalId} />
 
       {/* Grid Principal (2 Colunas Desktop / 1 Coluna Mobile) */}
       <div className="ydo-tv-layout">

@@ -1013,3 +1013,270 @@
   display: inline-block;
   animation: ydoLivePulse 1.8s infinite;
 }
+
+/* ==========================================================================
+   PRATELEIRA: JOGOS DE HOJE • BRASILEIRÃO (THE SPORTS DB)
+   ========================================================================== */
+
+.ydo-jogos-shelf {
+  max-width: 1680px;
+  margin: 0 auto 28px;
+  padding: 0 24px;
+}
+
+.ydo-jogos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ydo-jogos-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ydo-jogos-title {
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 0;
+}
+
+.ydo-jogos-badge-liga {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #e8b44a;
+  background: rgba(232, 180, 74, 0.12);
+  border: 1px solid rgba(232, 180, 74, 0.32);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.ydo-jogos-badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #e8b44a;
+  background: rgba(232, 180, 74, 0.2);
+  border: 1px solid rgba(232, 180, 74, 0.45);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ydo-jogos-track {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.ydo-jogos-track::-webkit-scrollbar {
+  display: none;
+}
+
+.ydo-jogos-card {
+  flex: 0 0 270px;
+  min-width: 270px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+.ydo-jogos-card:hover,
+.ydo-jogos-card:focus-visible {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(232, 180, 74, 0.45);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(232, 180, 74, 0.18);
+}
+
+.ydo-jogos-card.is-live {
+  border-color: rgba(232, 180, 74, 0.55);
+  box-shadow: 0 0 18px rgba(232, 180, 74, 0.22);
+  animation: ydoJogosPulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes ydoJogosPulse {
+  from {
+    border-color: rgba(232, 180, 74, 0.35);
+    box-shadow: 0 0 12px rgba(232, 180, 74, 0.15);
+  }
+  to {
+    border-color: rgba(232, 180, 74, 0.75);
+    box-shadow: 0 0 22px rgba(232, 180, 74, 0.32);
+  }
+}
+
+.ydo-jogos-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ydo-jogos-card-round {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.04em;
+}
+
+.ydo-jogos-time-badge {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ydo-jogos-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #e8b44a;
+  background: rgba(232, 180, 74, 0.2);
+  border: 1px solid rgba(232, 180, 74, 0.45);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.ydo-jogos-confronto {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.ydo-jogos-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.ydo-jogos-escudo-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.ydo-jogos-escudo-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #e8b44a;
+}
+
+.ydo-jogos-nome-time {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ydo-jogos-versus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ydo-jogos-x {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #e8b44a;
+  text-transform: lowercase;
+  opacity: 0.85;
+}
+
+.ydo-jogos-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+  margin-top: 2px;
+}
+
+.ydo-jogos-canal-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ydo-jogos-canal-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+.ydo-jogos-canal-monogram {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: rgba(232, 180, 74, 0.15);
+  color: #e8b44a;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ydo-jogos-canal-nome {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.ydo-jogos-tv-icon {
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}

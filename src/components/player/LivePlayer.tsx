@@ -85,6 +85,38 @@ async function ensureMpegts() {
 
 const LIVE_VOL_KEY = "zangflix:live-volume";
 
+function scoreFonte(f: FonteTV): number {
+  let score = 0;
+  const urlLower = f.url.toLowerCase();
+
+  // +3 se a URL contém .m3u8
+  if (urlLower.includes(".m3u8")) score += 3;
+
+  // +2 se é https://
+  if (urlLower.startsWith("https://")) score += 2;
+
+  // +1 por resolução declarada em qualidade (4K > FHD/1080 > HD/720 > resto)
+  const q = (f.qualidade || "").toUpperCase();
+  if (q.includes("4K") || q.includes("2160")) score += 4;
+  else if (q.includes("FHD") || q.includes("1080")) score += 3;
+  else if (q.includes("HD") || q.includes("720")) score += 2;
+  else if (q) score += 1;
+
+  // -5 se a URL contém error.txt, offline, .mpd, .xml ou termina sem extensão de mídia conhecida
+  const hasKnownExt = /\.(m3u8|ts|mp4|m4s|aac|mp3|webm)(\?|$)/i.test(urlLower);
+  if (
+    urlLower.includes("error.txt") ||
+    urlLower.includes("offline") ||
+    urlLower.includes(".mpd") ||
+    urlLower.includes(".xml") ||
+    !hasKnownExt
+  ) {
+    score -= 5;
+  }
+
+  return score;
+}
+
 export function LivePlayer({
   canal,
   epgAtual,
@@ -97,17 +129,21 @@ export function LivePlayer({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number } | null>(null);
 
-  // Ordena fontes viáveis (pulando .mpd e fontes com chave DASH)
+  // Ordena fontes viáveis (pulando .mpd e fontes com chave DASH) com pontuação inteligente
   const validStreams = useMemo(() => {
     const usable = canal.fontes.filter((f) => {
       if (f.chave) return false;
       if (f.url.includes(".mpd")) return false;
       return true;
     });
-    return sortStreamsByHealth(usable.length > 0 ? usable : canal.fontes);
+    const pool = usable.length > 0 ? usable : canal.fontes;
+    const sortedByScore = [...pool].sort((a, b) => scoreFonte(b) - scoreFonte(a));
+    return sortStreamsByHealth(sortedByScore);
   }, [canal.fontes]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
+  const [attemptMode, setAttemptMode] = useState<"proxy" | "direct">("proxy");
+  const [playNonce, setPlayNonce] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -126,25 +162,24 @@ export function LivePlayer({
   // Reseta ao trocar de canal
   useEffect(() => {
     setSourceIndex(0);
+    setAttemptMode("proxy");
     setError(false);
     setLoading(true);
     setAutoSwitchMsg(null);
+    setPlayNonce((n) => n + 1);
   }, [canal.id]);
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
 
-  // Resolve URL da fonte (direto se limpa, /api/live-proxy se exigir referer/agente)
+  // Resolve URL da fonte (proxy-first para todas as fontes, ou direto se for retentativa direct)
   const streamUrl = useMemo(() => {
     if (!rawFonte?.url) return "";
-    const u = rawFonte.url;
-    if (rawFonte.referer || rawFonte.agente) {
-      let proxy = `/api/live-proxy?url=${encodeURIComponent(u)}`;
-      if (rawFonte.referer) proxy += `&referer=${encodeURIComponent(rawFonte.referer)}`;
-      if (rawFonte.agente) proxy += `&ua=${encodeURIComponent(rawFonte.agente)}`;
-      return proxy;
-    }
-    return u;
-  }, [rawFonte]);
+    if (attemptMode === "direct") return rawFonte.url;
+    let proxy = `/api/live-proxy?url=${encodeURIComponent(rawFonte.url)}`;
+    if (rawFonte.referer) proxy += `&referer=${encodeURIComponent(rawFonte.referer)}`;
+    if (rawFonte.agente) proxy += `&ua=${encodeURIComponent(rawFonte.agente)}`;
+    return proxy;
+  }, [rawFonte, attemptMode]);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -200,18 +235,37 @@ export function LivePlayer({
     return () => clearInterval(interval);
   }, [isLiveEdge, syncToLiveEdge]);
 
-  // Avança para a próxima fonte caso haja falha fatal
+  // Avança para a próxima fonte caso haja falha fatal (com escada proxy -> direct)
   const handleFatalError = useCallback(() => {
     if (!rawFonte) return;
+
+    // Escada de tentativa: se falhou no proxy e a fonte for https:// (sem chave/DASH), tenta direto do navegador
+    if (
+      attemptMode === "proxy" &&
+      rawFonte.url.startsWith("https://") &&
+      !rawFonte.chave
+    ) {
+      console.warn(`[LivePlayer] Proxy falhou para fonte ${sourceIndex + 1}. Tentando modo direto.`);
+      setAttemptMode("direct");
+      setLoading(true);
+      setError(false);
+      setPlayNonce((n) => n + 1);
+      return;
+    }
+
+    // Se a tentativa direta também falhou (ou se a fonte é http:// que não pode direto por mixed-content),
+    // registra a fonte como falha e avança para a próxima fonte da lista
     recordFailedSource(rawFonte.url);
 
     if (sourceIndex < validStreams.length - 1) {
       setAutoSwitchMsg("Trocando fonte…");
       const timer = setTimeout(() => {
         setSourceIndex((prev) => prev + 1);
+        setAttemptMode("proxy");
         setLoading(true);
         setError(false);
         setAutoSwitchMsg(null);
+        setPlayNonce((n) => n + 1);
       }, 700);
       return () => clearTimeout(timer);
     } else {
@@ -219,7 +273,7 @@ export function LivePlayer({
       setError(true);
       setAutoSwitchMsg(null);
     }
-  }, [rawFonte, sourceIndex, validStreams.length]);
+  }, [rawFonte, attemptMode, sourceIndex, validStreams.length]);
 
   // Inicializa a reprodução do stream atual
   useEffect(() => {
@@ -230,13 +284,17 @@ export function LivePlayer({
     setLoading(true);
     setError(false);
 
-    // Timeout de 14s para inicialização do canal ao vivo
+    // Timeout de 10s para inicialização do canal ao vivo
     const timeout = setTimeout(() => {
-      if (!cancelled && loading) {
-        console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1}`);
+      if (!cancelled) {
+        if (video.readyState >= 3) {
+          // Dados suficientes já chegaram
+          return;
+        }
+        console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
         handleFatalError();
       }
-    }, 14000);
+    }, 10000);
 
     const onPlaying = () => {
       if (cancelled) return;
@@ -354,7 +412,7 @@ export function LivePlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [streamUrl, sourceIndex, handleFatalError]);
+  }, [streamUrl, sourceIndex, attemptMode, playNonce, handleFatalError]);
 
   // Ao vivo não pausa: clique no vídeo muta ou desmuta o áudio
   const handleToggleMute = useCallback(() => {
@@ -525,8 +583,10 @@ export function LivePlayer({
             onClick={() => {
               clearFailedSources();
               setSourceIndex(0);
+              setAttemptMode("proxy");
               setError(false);
               setLoading(true);
+              setPlayNonce((n) => n + 1);
             }}
           >
             <RefreshCw size={15} /> Tentar novamente
@@ -597,8 +657,11 @@ export function LivePlayer({
                       key={f.url + i}
                       onClick={() => {
                         setSourceIndex(i);
+                        setAttemptMode("proxy");
                         setSourcesOpen(false);
                         setLoading(true);
+                        setError(false);
+                        setPlayNonce((n) => n + 1);
                       }}
                       className={`ydo-live-source-item ${isCurrent ? "active" : ""}`}
                     >

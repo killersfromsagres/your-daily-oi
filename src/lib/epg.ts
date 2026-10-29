@@ -215,8 +215,10 @@ export async function getCanalEPG(nomeCanal: string): Promise<CanalEPG> {
     });
 
     if (!res.ok) {
+      const is403 = res.status === 403;
+      const ttl = is403 ? 6 * 60 * 60 * 1000 : 5 * 60 * 1000;
       const errRes: CanalEPG = { canal: nomeCanal, indisponivel: true };
-      epgCache.set(normKey, { data: errRes, expires: now + 5 * 60 * 1000 });
+      epgCache.set(normKey, { data: errRes, expires: now + ttl });
       return errRes;
     }
 
@@ -283,9 +285,11 @@ export async function getCanalEPG(nomeCanal: string): Promise<CanalEPG> {
 
     epgCache.set(normKey, { data: result, expires: now + EPG_TTL_MS });
     return result;
-  } catch {
+  } catch (err: any) {
+    const is403 = String(err?.message || "").includes("403");
+    const ttl = is403 ? 6 * 60 * 60 * 1000 : 5 * 60 * 1000;
     const fallbackRes: CanalEPG = { canal: nomeCanal, indisponivel: true };
-    epgCache.set(normKey, { data: fallbackRes, expires: now + 5 * 60 * 1000 });
+    epgCache.set(normKey, { data: fallbackRes, expires: now + ttl });
     return fallbackRes;
   }
 }

@@ -23,6 +23,7 @@ import { Route as SerieIdRouteImport } from './routes/serie.$id'
 import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvRadiosRouteImport } from './routes/tv.radios'
 import { Route as AssistirFilmeIdRouteImport } from './routes/assistir.filme.$id'
+import { Route as TvCanalIndexRouteImport } from './routes/tv.canal.index'
 import { Route as TvCanalIdRouteImport } from './routes/tv.canal.$id'
 import { Route as AssistirAnimeIdTempEpRouteImport } from './routes/assistir.anime.$id.$temp.$ep'
 import { Route as AssistirSerieIdTempEpRouteImport } from './routes/assistir.serie.$id.$temp.$ep'
@@ -97,6 +98,11 @@ const AssistirFilmeIdRoute = AssistirFilmeIdRouteImport.update({
   path: '/assistir/filme/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TvCanalIndexRoute = TvCanalIndexRouteImport.update({
+  id: '/canal/',
+  path: '/canal/',
+  getParentRoute: () => TvRoute,
+} as any)
 const TvCanalIdRoute = TvCanalIdRouteImport.update({
   id: '/canal/$id',
   path: '/canal/$id',
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/tv/': typeof TvIndexRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
   '/tv/canal/$id': typeof TvCanalIdRoute
+  '/tv/canal/': typeof TvCanalIndexRoute
   '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/assistir/serie/$id/$temp/$ep': typeof AssistirSerieIdTempEpRoute
 }
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/tv': typeof TvIndexRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
   '/tv/canal/$id': typeof TvCanalIdRoute
+  '/tv/canal': typeof TvCanalIndexRoute
   '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/assistir/serie/$id/$temp/$ep': typeof AssistirSerieIdTempEpRoute
 }
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/tv/': typeof TvIndexRoute
   '/assistir/filme/$id': typeof AssistirFilmeIdRoute
   '/tv/canal/$id': typeof TvCanalIdRoute
+  '/tv/canal/': typeof TvCanalIndexRoute
   '/assistir/anime/$id/$temp/$ep': typeof AssistirAnimeIdTempEpRoute
   '/assistir/serie/$id/$temp/$ep': typeof AssistirSerieIdTempEpRoute
 }
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/tv/'
     | '/assistir/filme/$id'
     | '/tv/canal/$id'
+    | '/tv/canal/'
     | '/assistir/anime/$id/$temp/$ep'
     | '/assistir/serie/$id/$temp/$ep'
   fileRoutesByTo: FileRoutesByTo
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/tv'
     | '/assistir/filme/$id'
     | '/tv/canal/$id'
+    | '/tv/canal'
     | '/assistir/anime/$id/$temp/$ep'
     | '/assistir/serie/$id/$temp/$ep'
   id:
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/tv/'
     | '/assistir/filme/$id'
     | '/tv/canal/$id'
+    | '/tv/canal/'
     | '/assistir/anime/$id/$temp/$ep'
     | '/assistir/serie/$id/$temp/$ep'
   fileRoutesById: FileRoutesById
@@ -346,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssistirFilmeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tv/canal/': {
+      id: '/tv/canal/'
+      path: '/canal'
+      fullPath: '/tv/canal/'
+      preLoaderRoute: typeof TvCanalIndexRouteImport
+      parentRoute: typeof TvRoute
+    }
     '/tv/canal/$id': {
       id: '/tv/canal/$id'
       path: '/canal/$id'
@@ -374,12 +393,14 @@ interface TvRouteChildren {
   TvRadiosRoute: typeof TvRadiosRoute
   TvIndexRoute: typeof TvIndexRoute
   TvCanalIdRoute: typeof TvCanalIdRoute
+  TvCanalIndexRoute: typeof TvCanalIndexRoute
 }
 
 const TvRouteChildren: TvRouteChildren = {
   TvRadiosRoute: TvRadiosRoute,
   TvIndexRoute: TvIndexRoute,
   TvCanalIdRoute: TvCanalIdRoute,
+  TvCanalIndexRoute: TvCanalIndexRoute,
 }
 
 const TvRouteWithChildren = TvRoute._addFileChildren(TvRouteChildren)
