@@ -126,6 +126,7 @@ function WatchMoviePage() {
           onBack={() => void navigate({ to: `/filme/${movie.id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
+          expectedRuntimeMin={movie.tmdb?.runtime || (movie as any)?.runtime || 90}
         />
       </PlayerErrorBoundary>
     </main>

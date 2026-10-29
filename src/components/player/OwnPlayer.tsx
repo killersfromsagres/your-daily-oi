@@ -1,12 +1,15 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles } from "lucide-react";
-import { usePlayerEngine } from "./usePlayerEngine";
+import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import { recordFailedSource, sortStreamsByHealth, clearFailedSources, getFailedUrls, getPreferredAudio, setPreferredAudio } from "@/lib/player-storage";
 import { APP_VERSION } from "@/lib/version";
+
+// Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
+const stage0FailedRelays = new Set<string>();
 
 interface OwnPlayerProps {
   streams: StreamSource[];
@@ -18,13 +21,14 @@ interface OwnPlayerProps {
   onTimeUpdate?: (t: number, duration?: number) => void;
   onEnded?: () => void;
   preferredAudio?: "dub" | "leg";
+  expectedRuntimeMin?: number;
 }
 
 // 4b: Ordem de tentativa por tipo de relay
 const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
   // A2: Relay Saimo (filmes e séries): direto-first no navegador do usuário (seguindo o 302 sem CORS)
-  if (url.includes("saimo-tv.pages.dev/api/stream")) {
+  if (isRelaySource(url)) {
     return false;
   }
   // Fontes diretas com CORS/hotlink/mixed-content vão via proxy primeiro
@@ -46,6 +50,12 @@ const getStreamUrlForStage = (
 ): string => {
   if (!rawUrl) return "";
   if (rawUrl.includes("/api/hls-proxy") || rawUrl.includes("/api/proxy-stream")) return rawUrl;
+
+  // Relay oficial do Saimo: consumido direto pelo navegador do usuário em ambos os estágios
+  // (Estágio 0 = hls.js direto; Estágio 1 = video.src nativo)
+  if (isRelaySource(rawUrl)) {
+    return rawUrl;
+  }
 
   // A1: HLS (.m3u8):
   // Estágio 0: /api/hls-proxy?url=... (proxy resolve hotlink/CORS/mixed-content)
@@ -149,6 +159,7 @@ export function OwnPlayer({
   onTimeUpdate,
   onEnded,
   preferredAudio = "dub",
+  expectedRuntimeMin,
 }: OwnPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -224,10 +235,27 @@ export function OwnPlayer({
   }, []);
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
+  const isRelay = isRelaySource(rawStream?.url);
+
+  // Pula estágio 0 (HLS probe) se este relay já falhou HLS na sessão
+  useEffect(() => {
+    if (rawStream?.url && isRelaySource(rawStream.url)) {
+      if (stage0FailedRelays.has(rawStream.url)) {
+        setAttemptStage(1);
+      }
+    }
+  }, [rawStream?.url]);
 
   // Cada fonte tenta o caminho preferido (stage 0) e depois o outro (stage 1), mantendo currentTime
   const currentStream: StreamSource | null = useMemo(() => {
     if (!rawStream) return null;
+    if (isRelay) {
+      return {
+        ...rawStream,
+        format: attemptStage === 0 ? "hls" : "mp4",
+        url: rawStream.url,
+      };
+    }
     const finalUrl = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
     const fmt = resolvedIsHls ? "hls" : rawStream.format;
     return {
@@ -235,14 +263,17 @@ export function OwnPlayer({
       format: fmt,
       url: finalUrl,
     };
-  }, [rawStream, attemptStage, resolvedDirectUrl, resolvedIsHls]);
+  }, [rawStream, attemptStage, isRelay, resolvedDirectUrl, resolvedIsHls]);
 
   const handleEnded = useCallback(() => {
     onEnded?.();
   }, [onEnded]);
 
   // TDZ SAFE: Declarado antes de qualquer useEffect/handler que o cite
-  const engine = usePlayerEngine(videoRef, currentStream, handleEnded);
+  const engine = usePlayerEngine(videoRef, currentStream, handleEnded, {
+    expectedRuntimeMin,
+    attemptStage,
+  });
 
   // Mantém currentTime atualizado para transferir caso haja chaveamento de rota ou fonte
   useEffect(() => {
@@ -300,15 +331,42 @@ export function OwnPlayer({
   }, [rawStream?.url, attemptStage, resolvedDirectUrl, resolvedIsHls]);
 
   // Chaveamento inteligente:
-  // 1. Tenta o caminho preferencial da fonte (direto ou proxy dependendo do tipo)
-  // 2. Se falhar, retenta a mesma fonte no caminho inverso preservando currentTime
-  // 3. Se ambos falharem, registra falha e avança para a próxima fonte (A3: escada circular)
+  // 1. Relay: dual-probe (Estágio 0 = hls.js direto -> Estágio 1 = video.src nativo -> catálogo)
+  // 2. Catálogo: Estágio 0 (proxy/direto) -> Estágio 1 (inverso) -> próxima fonte
   useEffect(() => {
     if (engine.state === "error" && rawStream) {
+      if (isRelaySource(rawStream.url)) {
+        if (attemptStage === 0) {
+          console.warn(`[OwnPlayer] Relay HLS probe falhou para ${rawStream.url}. Tentando estágio 1 nativo (video.src)...`);
+          stage0FailedRelays.add(rawStream.url);
+          setAttemptStage(1);
+          return;
+        }
+
+        // Estágio 1 falhou no relay: sem tentativa de proxy (datacenter 403). Registra falha e avança para catálogo.
+        console.warn(`[OwnPlayer] Relay nativo falhou para ${rawStream.url}. Avançando para fontes do catálogo...`);
+        recordFailedSource(rawStream.url);
+        autoSwitchCountRef.current++;
+        if (autoSwitchCountRef.current > orderedStreams.length * 2) {
+          console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
+          setAutoSwitchMsg(null);
+          return;
+        }
+        if (hasEverPlayedRef.current) {
+          setAutoSwitchMsg("Trocando de servidor…");
+        }
+        const timer = setTimeout(() => {
+          setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
+          setAttemptStage(0);
+          setResolvedDirectUrl(null);
+          setResolvedIsHls(null);
+          setAutoSwitchMsg(null);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+
+      // Fontes de catálogo (não relay)
       if (attemptStage === 0) {
-        // A2 — Regra anti-estágio-duplicado. Antes de alternar o estágio, compare
-        // getStreamUrlForStage(url, próximoEstágio) com getStreamUrlForStage(url, estágioAtual).
-        // Se forem idênticas, NÃO gaste 8s re-tentando a mesma URL: registre a falha e avance de fonte imediatamente.
         const currUrl = getStreamUrlForStage(rawStream.url, 0, rawStream.format);
         const nextUrl = getStreamUrlForStage(rawStream.url, 1, rawStream.format);
         if (currUrl === nextUrl) {
@@ -334,40 +392,6 @@ export function OwnPlayer({
         }
 
         console.warn(`[OwnPlayer] Falha no estágio inicial para ${rawStream.url}. Preparando estágio alternativo...`);
-
-        // A6: Para relay Saimo antes do estágio direto, resolve no backend
-        if (rawStream.url.includes("saimo-tv.pages.dev/api/stream")) {
-          const cached = resolvedRelaysRef.current.get(rawStream.url);
-          if (cached) {
-            setResolvedDirectUrl(cached.finalUrl);
-            setResolvedIsHls(cached.isHls);
-            setAttemptStage(1);
-          } else {
-            fetch(`/api/relay-resolve?url=${encodeURIComponent(rawStream.url)}`)
-              .then((res) => res.json())
-              .then((data: { ok: boolean; finalUrl?: string; isHls?: boolean }) => {
-                if (data.ok && data.finalUrl) {
-                  resolvedRelaysRef.current.set(rawStream.url, {
-                    finalUrl: data.finalUrl,
-                    isHls: !!data.isHls,
-                  });
-                  setResolvedDirectUrl(data.finalUrl);
-                  setResolvedIsHls(!!data.isHls);
-                } else {
-                  setResolvedDirectUrl(null);
-                  setResolvedIsHls(null);
-                }
-                setAttemptStage(1);
-              })
-              .catch(() => {
-                setResolvedDirectUrl(null);
-                setResolvedIsHls(null);
-                setAttemptStage(1);
-              });
-          }
-          return;
-        }
-
         setResolvedDirectUrl(null);
         setResolvedIsHls(null);
         setAttemptStage(1);
@@ -812,10 +836,10 @@ export function OwnPlayer({
         <div className="ydo-player-overlay ydo-player-error-overlay">
           <AlertCircle size={44} aria-hidden style={{ color: "#e8b44a" }} />
           <h3 style={{ fontSize: "1.2rem", fontWeight: "800", margin: "12px 0 6px", color: "#fff" }}>
-            Os servidores deste título estão fora do ar agora
+            Nenhum servidor conseguiu reproduzir este título agora
           </h3>
           <p style={{ color: "rgba(255, 255, 255, 0.7)", maxWidth: "460px", margin: "0 auto 18px", fontSize: "0.95rem" }}>
-            Tentamos todas as fontes disponíveis no momento. A disponibilidade pode retornar em breve.
+            Tentamos todas as fontes disponíveis no momento. Tente novamente em instantes.
           </p>
           <div className="ydo-player-error-actions">
             <button

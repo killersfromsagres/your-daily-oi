@@ -1,7 +1,7 @@
 /* ── Catalog & Media Types ────────────────────────────────────── */
 
 export type AudioTrack = "dub" | "leg";
-export type StreamFormat = "hls" | "ts" | "dash" | "mp4";
+export type StreamFormat = "hls" | "ts" | "dash" | "mp4" | "auto";
 
 export interface StreamSource {
   url: string;

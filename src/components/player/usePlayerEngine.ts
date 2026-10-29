@@ -1,8 +1,19 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StreamSource } from "@/lib/types";
+import { recordFailedSource } from "@/lib/player-storage";
 
 export type PlayerState = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
+
+export const isRelaySource = (url?: string | null): boolean => {
+  return Boolean(url && url.includes("saimo-tv.pages.dev/api/stream"));
+};
+
+export interface UsePlayerEngineOptions {
+  expectedRuntimeMin?: number;
+  attemptStage?: 0 | 1;
+  onFatalError?: (reason: string) => void;
+}
 
 interface PlayerEngine {
   state: PlayerState;
@@ -80,7 +91,8 @@ async function ensureMpegts() {
 export function usePlayerEngine(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   stream: StreamSource | null,
-  onEnded?: () => void
+  onEnded?: () => void,
+  options?: UsePlayerEngineOptions
 ): PlayerEngine {
   const [state, setState] = useState<PlayerState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -101,19 +113,73 @@ export function usePlayerEngine(
     setError(null);
 
     let cancelled = false;
+    let garbageTimer: ReturnType<typeof setTimeout> | null = null;
+    let frozenCheckInterval: ReturnType<typeof setInterval> | null = null;
+    let playingSince: number | null = null;
+
+    const isRelay = isRelaySource(stream.url);
+    const isStage0 = (options?.attemptStage ?? 0) === 0;
+
+    // Se for relay no stage 0, forçamos HLS (hls.js direto); no stage 1, forçamos nativo (video.src)
+    const isHls = isRelay
+      ? isStage0
+      : stream.format === "hls" ||
+        stream.url.includes(".m3u8") ||
+        stream.url.includes("/api/hls-proxy");
+
+    // Timeout de metadata: 6s para relay HLS probe, 8s para as demais fontes
+    const timeoutDuration = isRelay && isHls ? 6000 : 8000;
 
     let metadataLoaded = false;
     const metadataTimeout = setTimeout(() => {
       if (!metadataLoaded && !cancelled) {
-        console.warn(`[PlayerEngine] 8s timeout atingido sem loadedmetadata para: ${stream.url}`);
+        console.warn(`[PlayerEngine] ${timeoutDuration / 1000}s timeout atingido sem loadedmetadata para: ${stream.url}`);
         setState("error");
-        setError("Tempo limite excedido ao preparar reprodução (8s)");
+        setError(`Tempo limite excedido ao preparar reprodução (${timeoutDuration / 1000}s)`);
       }
-    }, 8000);
+    }, timeoutDuration);
+
+    const triggerGarbageDetected = (reason: string) => {
+      if (cancelled) return;
+      console.warn(`[PlayerEngine] Vídeo lixo/anúncio detectado (${reason}): ${stream.url}`);
+      recordFailedSource(stream.url);
+      destroyRef.current?.();
+      destroyRef.current = null;
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+      setState("error");
+      setError(`Vídeo inválido ou anúncio detectado: ${reason}`);
+      options?.onFatalError?.(reason);
+    };
+
+    const validateStreamHealth = () => {
+      if (cancelled || !video) return false;
+
+      // (b) Tiny banner resolution (ex.: banner de anúncio xbet 300x150)
+      if (video.videoWidth > 0 && video.videoWidth <= 320 && video.videoHeight <= 180) {
+        triggerGarbageDetected(`Resolução incompatível de anúncio (${video.videoWidth}x${video.videoHeight})`);
+        return true;
+      }
+
+      // (c) Duração incompatível com duração esperada do filme/série
+      const expectedMin = options?.expectedRuntimeMin;
+      const d = video.duration;
+      if (expectedMin && Number.isFinite(d) && d > 0) {
+        const minAcceptableSec = Math.min(expectedMin * 60 * 0.5, 600);
+        if (d < minAcceptableSec) {
+          triggerGarbageDetected(`Duração de anúncio/curto (${Math.round(d)}s < ${Math.round(minAcceptableSec)}s esperado)`);
+          return true;
+        }
+      }
+
+      return false;
+    };
 
     const onLoadedMetadata = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
+      validateStreamHealth();
     };
     const onTimeUpdate = () => {
       setCurrentTime(video.currentTime);
@@ -121,19 +187,48 @@ export function usePlayerEngine(
         setBuffered(video.buffered.end(video.buffered.length - 1));
       }
     };
-    const onDurationChange = () => setDuration(video.duration || 0);
+    const onDurationChange = () => {
+      setDuration(video.duration || 0);
+      validateStreamHealth();
+    };
     const onPlaying = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
       if (!cancelled) setState("playing");
       setError(null);
+
+      if (!playingSince) {
+        playingSince = Date.now();
+      }
+
+      if (garbageTimer) clearTimeout(garbageTimer);
+      // Validação ~4s após reprodução iniciada
+      garbageTimer = setTimeout(() => {
+        if (cancelled || !video) return;
+        // (a) Duração inválida ou zero após playing
+        if (!Number.isFinite(video.duration) || video.duration === 0) {
+          triggerGarbageDetected("Duração ausente ou zero após início de reprodução");
+          return;
+        }
+        validateStreamHealth();
+      }, 4000);
     };
+
+    // (d) Tempo congelado: readyState >= 2 && currentTime < 0.5 por 12s contínuos desde playing
+    frozenCheckInterval = setInterval(() => {
+      if (cancelled || !video || !playingSince) return;
+      if (video.readyState >= 2 && video.currentTime < 0.5) {
+        if (Date.now() - playingSince > 12000) {
+          triggerGarbageDetected("Vídeo congelado no início (00:00) há mais de 12s");
+        }
+      }
+    }, 1000);
+
     const onPause = () => { if (!cancelled && !video.ended) setState("paused"); };
     const onEnded_ = () => { if (!cancelled) { setState("paused"); onEnded?.(); } };
     const onCanPlay = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
-      // Não exibe estado "ready" se estiver no meio do carregamento inicial ou se o autoplay estiver em curso
       if (!cancelled && video.paused && state !== "playing" && state !== "loading") {
         setState("ready");
       }
@@ -161,10 +256,6 @@ export function usePlayerEngine(
 
     const setup = async () => {
       const { url } = stream;
-      const isHls =
-        stream.format === "hls" ||
-        url.includes(".m3u8") ||
-        url.includes("/api/hls-proxy");
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
       try {
@@ -182,9 +273,21 @@ export function usePlayerEngine(
             const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
             hls.loadSource(url);
             hls.attachMedia(video);
-            hls.on(Hls.Events.ERROR, (_, data: Record<string, unknown>) => {
-              if (data["fatal"]) {
-                if (!cancelled) { setState("error"); setError("Stream HLS falhou. Tentando fonte alternativa…"); }
+            hls.on(Hls.Events.ERROR, (_, data: any) => {
+              const isFatal = Boolean(data?.fatal);
+              const details = String(data?.details || "");
+              const type = String(data?.type || "");
+              const isManifestOrNetwork =
+                details.includes("manifest") ||
+                type === "networkError" ||
+                details.includes("bufferAppendError");
+
+              if (isFatal || (isRelay && isManifestOrNetwork)) {
+                if (!cancelled) {
+                  console.warn(`[PlayerEngine] HLS falhou (${details || type}) para: ${url}`);
+                  setState("error");
+                  setError("Stream HLS falhou. Tentando fonte alternativa…");
+                }
               }
             });
             destroyRef.current = () => hls.destroy();
@@ -223,6 +326,8 @@ export function usePlayerEngine(
     return () => {
       cancelled = true;
       clearTimeout(metadataTimeout);
+      if (garbageTimer) clearTimeout(garbageTimer);
+      if (frozenCheckInterval) clearInterval(frozenCheckInterval);
       video.removeEventListener("loadedmetadata", onLoadedMetadata);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("durationchange", onDurationChange);
@@ -239,7 +344,7 @@ export function usePlayerEngine(
       video.removeAttribute("src");
       video.load();
     };
-  }, [stream]);
+  }, [stream, options?.attemptStage, options?.expectedRuntimeMin]);
 
   const play = useCallback(async () => {
     const video = videoRef.current;

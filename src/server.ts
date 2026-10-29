@@ -399,7 +399,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       orderedSources.push({
         url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=dub`,
         audio: "dub",
-        format: "mp4",
+        format: "auto",
         quality: "FHD",
         name: "Servidor Principal (Dub)",
         priority: 0,
@@ -407,7 +407,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       orderedSources.push({
         url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=leg`,
         audio: "leg",
-        format: "mp4",
+        format: "auto",
         quality: "FHD",
         name: "Servidor Principal (Leg)",
         priority: 1,
@@ -416,7 +416,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       orderedSources.push({
         url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=dub`,
         audio: "dub",
-        format: "mp4",
+        format: "auto",
         quality: "FHD",
         name: "Servidor Principal (Dub)",
         priority: 0,
@@ -424,7 +424,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       orderedSources.push({
         url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=leg`,
         audio: "leg",
-        format: "mp4",
+        format: "auto",
         quality: "FHD",
         name: "Servidor Principal (Leg)",
         priority: 1,
@@ -534,10 +534,10 @@ function rewriteHlsManifest(manifestText: string, baseUrl: string): string {
 
 /**
  * Cache e Route Handler /api/relay-resolve
- * Resolve redirect 30x de saimo-tv.pages.dev/api/stream, aplica upgrade http->https e sniffer de HLS
+ * Resolve redirect 30x de saimo-tv.pages.dev/api/stream (até 5 saltos), upgrade http->https e sniffer de HLS/MP4
  */
 interface RelayResolveCache {
-  data: { ok: boolean; finalUrl?: string; isHls?: boolean };
+  data: { ok: boolean; finalUrl?: string; isHls?: boolean; contentType?: string; reason?: string };
   expires: number;
 }
 const relayResolveCache = new Map<string, RelayResolveCache>();
@@ -555,41 +555,84 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
   }
 
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 6000);
-
-    const res = await fetch(targetUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        Referer: "https://saimo-tv.pages.dev/",
-        Accept: "*/*",
-      },
-      redirect: "manual",
-      signal: ctrl.signal,
-    });
-    clearTimeout(timer);
-
-    let loc = res.headers.get("location") || res.headers.get("Location");
-    if (!loc) {
-      relayResolveCache.set(targetUrl, { data: { ok: false }, expires: now + 60000 });
-      return jsonResponse({ ok: false }, 200, "no-store");
-    }
-
-    if (loc.startsWith("http://")) {
-      loc = loc.replace(/^http:\/\//i, "https://");
-    }
-
+    let currentUrl = targetUrl;
+    let hops = 0;
+    let finalUrl = targetUrl;
+    let contentType = "";
     let isHls = false;
-    const cleanLoc = loc.split("?")[0].toLowerCase();
-    if (cleanLoc.endsWith(".m3u8") || loc.includes(".m3u8")) {
+    let isBlocked = false;
+
+    while (hops < 5) {
+      hops++;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4000);
+
+      try {
+        const res = await fetch(currentUrl, {
+          method: "GET",
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            Referer: "https://saimo-tv.pages.dev/",
+            Accept: "*/*",
+          },
+          redirect: "manual",
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+
+        if (res.status === 403) {
+          isBlocked = true;
+          break;
+        }
+
+        const loc = res.headers.get("location") || res.headers.get("Location");
+        if (res.status >= 300 && res.status < 400 && loc) {
+          let nextUrl = loc;
+          if (nextUrl.startsWith("/")) {
+            nextUrl = new URL(nextUrl, currentUrl).toString();
+          } else if (nextUrl.startsWith("http://")) {
+            nextUrl = nextUrl.replace(/^http:\/\//i, "https://");
+          }
+          currentUrl = nextUrl;
+          finalUrl = nextUrl;
+          continue;
+        }
+
+        contentType = (res.headers.get("content-type") || "").toLowerCase();
+        finalUrl = currentUrl;
+
+        if (contentType.includes("text/html")) {
+          isBlocked = true;
+        }
+        break;
+      } catch {
+        clearTimeout(timer);
+        break;
+      }
+    }
+
+    if (isBlocked) {
+      const blockedRes = { ok: false, reason: "blocked" };
+      relayResolveCache.set(targetUrl, { data: blockedRes, expires: now + 60000 });
+      return jsonResponse(blockedRes, 200, "no-store");
+    }
+
+    const clean = finalUrl.split("?")[0].toLowerCase();
+    if (contentType.includes("mpegurl") || clean.endsWith(".m3u8") || finalUrl.includes(".m3u8")) {
       isHls = true;
+    } else if (
+      contentType.includes("video/") ||
+      contentType.includes("octet-stream") ||
+      clean.endsWith(".mp4") ||
+      finalUrl.includes(".mp4")
+    ) {
+      isHls = false;
     } else {
       try {
         const sniffCtrl = new AbortController();
-        const sniffTimer = setTimeout(() => sniffCtrl.abort(), 3000);
-        const sniffRes = await fetch(loc, {
+        const sniffTimer = setTimeout(() => sniffCtrl.abort(), 2500);
+        const headRes = await fetch(finalUrl, {
           method: "HEAD",
           headers: {
             "User-Agent":
@@ -599,21 +642,28 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
           signal: sniffCtrl.signal,
         });
         clearTimeout(sniffTimer);
-        const ct = (sniffRes.headers.get("content-type") || "").toLowerCase();
-        if (ct.includes("application/vnd.apple.mpegurl") || ct.includes("audio/mpegurl") || ct.includes("mpegurl")) {
+        const headCt = (headRes.headers.get("content-type") || "").toLowerCase();
+        if (headCt.includes("mpegurl")) {
           isHls = true;
+          contentType = headCt;
+        } else if (headCt.includes("video/") || headCt.includes("octet-stream")) {
+          isHls = false;
+          contentType = headCt;
         }
-      } catch {
-        // Fallback mp4
-      }
+      } catch {}
     }
 
-    const result = { ok: true, finalUrl: loc, isHls };
+    const result = {
+      ok: true,
+      isHls,
+      finalUrl,
+      contentType: contentType || (isHls ? "application/vnd.apple.mpegurl" : "video/mp4"),
+    };
     relayResolveCache.set(targetUrl, { data: result, expires: now + 5 * 60 * 1000 });
     return jsonResponse(result, 200, "no-store");
   } catch (err) {
     console.warn(`[RelayResolve] Falha ao resolver ${targetUrl}:`, err);
-    return jsonResponse({ ok: false }, 200, "no-store");
+    return jsonResponse({ ok: false, reason: "blocked" }, 200, "no-store");
   }
 }
 

@@ -141,6 +141,7 @@ function WatchAnimePage() {
           onBack={() => void navigate({ to: `/anime/${id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
+          expectedRuntimeMin={anime?.tmdb?.runtime || 24}
         />
       </PlayerErrorBoundary>
     </main>

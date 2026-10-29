@@ -136,6 +136,7 @@ function WatchSeriesPage() {
           onBack={() => void navigate({ to: `/serie/${serie.id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
+          expectedRuntimeMin={serie.tmdb?.runtime || 45}
         />
       </PlayerErrorBoundary>
     </main>
