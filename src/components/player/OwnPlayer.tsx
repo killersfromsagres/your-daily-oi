@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2 } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles } from "lucide-react";
 import { usePlayerEngine } from "./usePlayerEngine";
+import { useVideoEnhancer } from "./useVideoEnhancer";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import { recordFailedSource, sortStreamsByHealth, clearFailedSources, getFailedUrls, getPreferredAudio, setPreferredAudio } from "@/lib/player-storage";
@@ -22,13 +23,11 @@ interface OwnPlayerProps {
 // 4b: Ordem de tentativa por tipo de relay
 const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
-  // Relay Saimo de SÉRIES: o Cloudflare do relay bloqueia datacenter ("Acesso negado").
-  // O acesso direto sai do navegador real do usuário, que recebe o 302 limpo.
-  if (url.includes("saimo-tv.pages.dev/api/stream") && url.includes("tipo=series")) {
+  // A2: Relay Saimo (filmes e séries): direto-first no navegador do usuário (seguindo o 302 sem CORS)
+  if (url.includes("saimo-tv.pages.dev/api/stream")) {
     return false;
   }
-  // Todo o resto vai via proxy primeiro: CDNs com bloqueio de hotlink (hermesnewone),
-  // CORS (tech-cdn.top), mixed content (http:// em página https) e relay de FILMES.
+  // Fontes diretas com CORS/hotlink/mixed-content vão via proxy primeiro
   return true;
 };
 
@@ -104,9 +103,9 @@ export function pickBestSourceIndex(
       score += 100;
     }
 
-    // Relay Saimo é um salto extra (302 + Cloudflare): usar como fallback, não como primeira escolha
+    // A1: Relay Saimo é a escolha primária (+2000) — mesma fonte FHD oficial do Saimo TV
     if (s.url.includes("saimo-tv.pages.dev/api/stream")) {
-      score -= 250;
+      score += 2000;
     }
 
     // A4: -300 se URL for http:// (incompatível com HTTPS direto no navegador, frequentemente bloqueia datacenter)
@@ -174,6 +173,36 @@ export function OwnPlayer({
 
   const [resolvedDirectUrl, setResolvedDirectUrl] = useState<string | null>(null);
   const [resolvedIsHls, setResolvedIsHls] = useState<boolean | null>(null);
+
+  // A4: Rastreia se o vídeo já tocou alguma vez (para chaveamento silencioso no carregamento inicial)
+  const hasEverPlayedRef = useRef(false);
+
+  // B1/B2: Upscaling HQ via WebGL2 shaders
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hqEnabled, setHqEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("zangflix:hq-enhance");
+    return saved !== null ? saved === "true" : true;
+  });
+  const [hqNotice, setHqNotice] = useState<string | null>(null);
+
+  const handleHqDowngrade = useCallback(() => {
+    setHqEnabled(false);
+    setHqNotice("HQ desativado por desempenho");
+    setTimeout(() => setHqNotice(null), 4000);
+  }, []);
+
+  const enhancer = useVideoEnhancer(videoRef, canvasRef, hqEnabled, handleHqDowngrade);
+
+  const toggleHq = useCallback(() => {
+    setHqEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("zangflix:hq-enhance", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   const updateVideoResolution = useCallback(() => {
     const v = videoRef.current;
@@ -291,7 +320,9 @@ export function OwnPlayer({
             setAutoSwitchMsg(null);
             return;
           }
-          setAutoSwitchMsg("Trocando de servidor…");
+          if (hasEverPlayedRef.current) {
+            setAutoSwitchMsg("Trocando de servidor…");
+          }
           const timer = setTimeout(() => {
             setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
             setAttemptStage(0);
@@ -354,7 +385,9 @@ export function OwnPlayer({
         return;
       }
 
-      setAutoSwitchMsg("Trocando de servidor…");
+      if (hasEverPlayedRef.current) {
+        setAutoSwitchMsg("Trocando de servidor…");
+      }
       const timer = setTimeout(() => {
         setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
         setAttemptStage(0);
@@ -368,6 +401,9 @@ export function OwnPlayer({
 
   // O selo de troca automática some assim que qualquer fonte entra em reprodução
   useEffect(() => {
+    if (engine.state === "playing") {
+      hasEverPlayedRef.current = true;
+    }
     if ((engine.state === "ready" || engine.state === "playing") && autoSwitchMsg !== null) {
       setAutoSwitchMsg(null);
     }
@@ -609,6 +645,17 @@ export function OwnPlayer({
         onClick={handleOverlayClick}
         onLoadedMetadata={updateVideoResolution}
         onCanPlay={updateVideoResolution}
+        style={{
+          opacity: enhancer.active ? 0 : 1,
+          transition: "opacity 0.25s ease-in-out",
+        }}
+      />
+
+      {/* Canvas WebGL2 para Upscaling HQ com nitidez adaptativa */}
+      <canvas
+        ref={canvasRef}
+        className={`ydo-hq-canvas ${enhancer.active ? "active" : ""}`}
+        aria-hidden="true"
       />
 
       {/* Clique na tela inteira do vídeo para Play/Pause ou revelar controles no mobile */}
@@ -677,6 +724,33 @@ export function OwnPlayer({
         >
           <RefreshCw size={14} className="animate-spin" style={{ color: "#e8b44a" }} />
           <span>{autoSwitchMsg}</span>
+        </div>
+      )}
+
+      {/* Aviso de HQ Desativado por Desempenho */}
+      {hqNotice && (
+        <div
+          style={{
+            position: "absolute",
+            top: "80px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 30,
+            backgroundColor: "rgba(10, 11, 20, 0.92)",
+            border: "1px solid rgba(232, 180, 74, 0.5)",
+            color: "#ffffff",
+            padding: "8px 18px",
+            borderRadius: "999px",
+            fontSize: "0.85rem",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
+          }}
+        >
+          <Sparkles size={14} style={{ color: "#e8b44a" }} />
+          <span>{hqNotice}</span>
         </div>
       )}
 
@@ -799,6 +873,9 @@ export function OwnPlayer({
           onRate={engine.setPlaybackRate}
           onSourceChange={handleSourceChange}
           onCast={engine.castToTv}
+          hqSupported={enhancer.supported}
+          hqActive={hqEnabled}
+          onToggleHq={toggleHq}
         />
       </div>
     </div>

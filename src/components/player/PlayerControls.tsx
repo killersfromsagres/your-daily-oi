@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  Sparkles,
 } from "lucide-react";
 import type { PlayerState } from "./usePlayerEngine";
 
@@ -55,6 +56,9 @@ interface PlayerControlsProps {
   onSourceChange: (i: number) => void;
   onCast?: () => void;
   onNext?: () => void;
+  hqSupported?: boolean;
+  hqActive?: boolean;
+  onToggleHq?: () => void;
 }
 
 export function PlayerControls({
@@ -80,6 +84,9 @@ export function PlayerControls({
   onSourceChange,
   onCast,
   onNext,
+  hqSupported,
+  hqActive,
+  onToggleHq,
 }: PlayerControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showServers, setShowServers] = useState(false);
@@ -399,6 +406,34 @@ export function PlayerControls({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Botão Upscaling HQ WebGL */}
+          {hqSupported && (
+            <button
+              onClick={onToggleHq}
+              className={`ydo-ctrl-btn ydo-hq-btn ${hqActive ? "active" : ""}`}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                backgroundColor: hqActive ? "rgba(232, 180, 74, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                border: hqActive ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.12)",
+                color: hqActive ? "#e8b44a" : "rgba(255, 255, 255, 0.75)",
+                fontSize: "0.78rem",
+                fontWeight: "800",
+                letterSpacing: "0.03em",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              title="HQ · Upscaling de imagem com nitidez adaptativa"
+              aria-label="Upscaling de imagem HQ"
+            >
+              <Sparkles size={14} style={{ color: hqActive ? "#e8b44a" : "currentColor" }} />
+              <span>HQ</span>
+            </button>
           )}
 
           {/* Menu de Configurações (Velocidade) */}

@@ -9,7 +9,13 @@ import { saveProgress, getProgressById } from "@/lib/storage";
 
 export const Route = createFileRoute("/assistir/anime/$id/$temp/$ep")({
   component: WatchAnimePage,
-  head: () => ({ meta: [{ title: "Assistir Anime — Zang Flix" }] }),
+  head: () => ({
+    meta: [{ title: "Assistir Anime — Zang Flix" }],
+    links: [
+      { rel: "preconnect", href: "https://saimo-tv.pages.dev" },
+      { rel: "dns-prefetch", href: "https://saimo-tv.pages.dev" },
+    ],
+  }),
 });
 
 function WatchAnimePage() {

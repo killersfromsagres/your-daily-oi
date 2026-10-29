@@ -393,8 +393,46 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
 
   const orderedSources: any[] = [];
 
-  // 1. Para filmes: fontes nativas diretas do catálogo têm PRIORIDADE MÁXIMA
-  // Elas reproduzem imediatamente via proxy com HTTP 206 sem depender de relay externo
+  // A3: Injeta os streams oficiais do relay Saimo TV como primeira escolha (reprodução instantânea direta)
+  if (item.tmdbId) {
+    if (tipo === "movie") {
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=dub`,
+        audio: "dub",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Dub)",
+        priority: 0,
+      });
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=leg`,
+        audio: "leg",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Leg)",
+        priority: 1,
+      });
+    } else {
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=dub`,
+        audio: "dub",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Dub)",
+        priority: 0,
+      });
+      orderedSources.push({
+        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=leg`,
+        audio: "leg",
+        format: "mp4",
+        quality: "FHD",
+        name: "Servidor Principal (Leg)",
+        priority: 1,
+      });
+    }
+  }
+
+  // Fontes diretas do catálogo como alternativas adicionais
   if (item.type === "f") {
     try {
       const directStreams = await getStreamsForItem("f", item.title);
@@ -405,8 +443,6 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       // continua com as fontes de relay
     }
   } else {
-    // 1b. Para séries e animes: a fonte exata do episódio (arquivo direto) vem SEMPRE antes do relay
-    // (o relay de séries já foi observado servindo o episódio 1 da temporada 1 no navegador)
     try {
       const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
       const foundSeason = seasons.find((s) => s.seasonNumber === temp);
@@ -416,45 +452,6 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       }
     } catch {
       // continua com as fontes de relay
-    }
-  }
-
-  // 2. Injeta os streams oficiais do relay Saimo TV como contingência / fallback
-  if (item.tmdbId) {
-    if (tipo === "movie") {
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=dub`,
-        audio: "dub",
-        format: "mp4",
-        quality: "FHD",
-        name: "Servidor Principal (Dub)",
-        priority: orderedSources.length,
-      });
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=leg`,
-        audio: "leg",
-        format: "mp4",
-        quality: "FHD",
-        name: "Servidor Principal (Leg)",
-        priority: orderedSources.length + 1,
-      });
-    } else {
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=dub`,
-        audio: "dub",
-        format: "mp4",
-        quality: "FHD",
-        name: "Servidor Principal (Dub)",
-        priority: orderedSources.length,
-      });
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=leg`,
-        audio: "leg",
-        format: "mp4",
-        quality: "FHD",
-        name: "Servidor Principal (Leg)",
-        priority: orderedSources.length + 1,
-      });
     }
   }
 
