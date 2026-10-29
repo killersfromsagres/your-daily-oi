@@ -76,6 +76,11 @@ export function pickBestSourceIndex(
       score += 100;
     }
 
+    // Relay Saimo é um salto extra (302 + Cloudflare): usar como fallback, não como primeira escolha
+    if (s.url.includes("saimo-tv.pages.dev/api/stream")) {
+      score -= 250;
+    }
+
     // -10 x priority (campo priority do servidor, 0 = principal, default 5)
     const prio = typeof s.priority === "number" ? s.priority : 5;
     score -= 10 * prio;
