@@ -135,6 +135,7 @@ export function OwnPlayer({
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [detectedQuality, setDetectedQuality] = useState<string | null>(null);
   const autoSwitchCountRef = useRef(0);
+  const pendingPlayRef = useRef<{ clickedAt: number } | null>(null);
 
   const updateVideoResolution = useCallback(() => {
     const v = videoRef.current;
@@ -231,6 +232,46 @@ export function OwnPlayer({
     }
   }, [engine.state, autoSwitchMsg]);
 
+  const handlePlay = useCallback(() => {
+    pendingPlayRef.current = { clickedAt: Date.now() };
+    void engine.play();
+  }, [engine]);
+
+  // Watchdog de "play travado": se o usuário clicou em play mas o vídeo nunca iniciou (fonte travada sem dados)
+  useEffect(() => {
+    const id = setInterval(() => {
+      const pending = pendingPlayRef.current;
+      if (!pending) return;
+
+      // Caso 1: o play funcionou — vídeo tocando ou avançando o tempo → limpa o registro
+      if (engine.state === "playing" && engine.currentTime > 0.5) {
+        pendingPlayRef.current = null;
+        return;
+      }
+
+      // Caso 2: usuário pausou deliberadamente
+      if (engine.state === "paused") {
+        pendingPlayRef.current = null;
+        return;
+      }
+
+      // Caso 3: timeout de 6 segundos sem sair do lugar → fonte ruim, troca de servidor
+      if (Date.now() - pending.clickedAt > 6000 && engine.state !== "playing") {
+        pendingPlayRef.current = null;
+        if (rawStream) {
+          recordFailedSource(rawStream.url);
+          if (sourceIndex < orderedStreams.length - 1) {
+            setAutoSwitchMsg("Trocando de servidor…");
+            setSourceIndex((prev) => prev + 1);
+            setAttemptStage(0);
+            setTimeout(() => setAutoSwitchMsg(null), 1200);
+          }
+        }
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [engine.state, engine.currentTime, rawStream, sourceIndex, orderedStreams.length]);
+
   const handleVideoClick = () => {
     if (engine.muted) {
       engine.setMuted(false);
@@ -238,7 +279,7 @@ export function OwnPlayer({
     if (engine.state === "playing") {
       engine.pause();
     } else {
-      void engine.play();
+      handlePlay();
     }
     showControls();
   };
@@ -315,7 +356,7 @@ export function OwnPlayer({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!containerRef.current?.contains(document.activeElement) && document.activeElement?.tagName !== "BODY") return;
-      if (e.key === " " || e.key === "k") { e.preventDefault(); engine.state === "playing" ? engine.pause() : void engine.play(); }
+      if (e.key === " " || e.key === "k") { e.preventDefault(); engine.state === "playing" ? engine.pause() : handlePlay(); }
       if (e.key === "ArrowRight") { e.preventDefault(); engine.seek(engine.currentTime + 10); }
       if (e.key === "ArrowLeft") { e.preventDefault(); engine.seek(engine.currentTime - 10); }
       if (e.key === "m") engine.setMuted(!engine.muted);
@@ -324,7 +365,7 @@ export function OwnPlayer({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [engine]);
+  }, [engine, handlePlay]);
 
   const sources = orderedStreams.map((s, i) => {
     let cleanName = (s.name || `Servidor ${i + 1}`).replace(/\s*\((?:dub|leg)[a-z]*\)$/i, "").trim();
@@ -340,6 +381,7 @@ export function OwnPlayer({
 
   const handleSourceChange = (i: number) => {
     const prevTime = videoRef.current?.currentTime ?? 0;
+    pendingPlayRef.current = null;
     autoSwitchCountRef.current = 0;
     setSourceIndex(i);
     setAttemptStage(0);
@@ -525,6 +567,7 @@ export function OwnPlayer({
               className="ydo-btn-primary"
               onClick={() => {
                 clearFailedSources();
+                pendingPlayRef.current = null;
                 autoSwitchCountRef.current = 0;
                 const audio = getPreferredAudio();
                 const bestIdx = pickBestSourceIndex(orderedStreams, audio);
@@ -562,7 +605,7 @@ export function OwnPlayer({
           sources={sources}
           currentSourceIndex={sourceIndex}
           detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "1080p"}
-          onPlay={() => void engine.play()}
+          onPlay={handlePlay}
           onPause={engine.pause}
           onSeek={engine.seek}
           onVolume={engine.setVolume}
