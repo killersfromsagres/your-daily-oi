@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CanalTV } from "@/lib/canais";
-import type { CanalEPG } from "@/lib/epg";
+import type { CanalEPG, ProgramaEPG } from "@/lib/epg";
 import { LivePlayer } from "@/components/player/LivePlayer";
 import { JogosShelf } from "@/components/tv/JogosShelf";
 import {
@@ -17,6 +17,8 @@ import {
   Sparkles,
   Layers,
   Heart,
+  CalendarClock,
+  X,
 } from "lucide-react";
 
 const LAST_CANAL_KEY = "zangflix:tv-last-channel";
@@ -38,6 +40,19 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [epgData, setEpgData] = useState<Record<string, CanalEPG>>({});
+
+  // Guia de Programação (Drawer / EPG completo)
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [gradeAgora, setGradeAgora] = useState<
+    Record<string, { atual: ProgramaEPG | null; proximo: ProgramaEPG | null }>
+  >({});
+  const [guideLoading, setGuideLoading] = useState(false);
+  const [guideSearch, setGuideSearch] = useState("");
+  const [guideVisibleCount, setGuideVisibleCount] = useState(40);
+  const gradeCacheRef = useRef<{
+    data: Record<string, { atual: ProgramaEPG | null; proximo: ProgramaEPG | null }>;
+    timestamp: number;
+  } | null>(null);
 
   // Paginação progressiva do painel de canais (renderiza ~35 por vez para alta performance com 408 canais)
   const [visibleCount, setVisibleCount] = useState(35);
@@ -172,6 +187,74 @@ export function TvView({ initialCanalId }: TvViewProps) {
     };
   }, [activeCanal?.nome, epgData]);
 
+  // Busca lista de grade completa ao abrir o Guia de Programação (com cache de 5 min)
+  useEffect(() => {
+    if (!guideOpen) return;
+    const now = Date.now();
+    if (gradeCacheRef.current && now - gradeCacheRef.current.timestamp < 5 * 60 * 1000) {
+      setGradeAgora(gradeCacheRef.current.data);
+      return;
+    }
+
+    let active = true;
+    setGuideLoading(true);
+
+    fetch("/api/epg/agora")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<
+          Array<{
+            canalNome: string;
+            atual: ProgramaEPG | null;
+            proximo: ProgramaEPG | null;
+          }>
+        >;
+      })
+      .then((list) => {
+        if (!active) return;
+        const map: Record<string, { atual: ProgramaEPG | null; proximo: ProgramaEPG | null }> = {};
+        for (const item of list) {
+          map[item.canalNome] = { atual: item.atual, proximo: item.proximo };
+        }
+        gradeCacheRef.current = { data: map, timestamp: Date.now() };
+        setGradeAgora(map);
+      })
+      .catch((err) => {
+        console.warn("[TvView] Falha ao carregar /api/epg/agora:", err);
+      })
+      .finally(() => {
+        if (active) setGuideLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [guideOpen]);
+
+  // Fecha guia com tecla Escape
+  useEffect(() => {
+    if (!guideOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setGuideOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [guideOpen]);
+
+  // Lista ordenada e filtrada para o Guia de Programação
+  const guideFilteredCanais = useMemo(() => {
+    const sorted = [...canais].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    if (!guideSearch.trim()) return sorted;
+    const q = guideSearch.toLowerCase().trim();
+    return sorted.filter(
+      (c) =>
+        c.nome.toLowerCase().includes(q) ||
+        c.categoria.toLowerCase().includes(q)
+    );
+  }, [canais, guideSearch]);
+
   // Navegação anterior / próximo canal
   const handlePrevCanal = useCallback(() => {
     if (canais.length === 0) return;
@@ -295,6 +378,15 @@ export function TvView({ initialCanalId }: TvViewProps) {
             <Layers size={14} />
             <span>Canais de TV</span>
           </Link>
+          <button
+            onClick={() => setGuideOpen((o) => !o)}
+            className={`ydo-tv-sublink-btn ${guideOpen ? "active" : ""}`}
+            type="button"
+            aria-label="Guia de Programação"
+          >
+            <CalendarClock size={14} />
+            <span>Guia de Programação</span>
+          </button>
           <Link to="/tv/radios" className="ydo-tv-sublink">
             <Radio size={14} />
             <span>Rádios Online</span>
@@ -312,9 +404,14 @@ export function TvView({ initialCanalId }: TvViewProps) {
           {activeCanal ? (
             <LivePlayer
               canal={activeCanal}
-              epgAtual={epgData[activeCanal.nome]?.atual}
+              epgAtual={
+                epgData[activeCanal.nome]?.atual ||
+                gradeAgora[activeCanal.nome]?.atual ||
+                undefined
+              }
               onPrevCanal={handlePrevCanal}
               onNextCanal={handleNextCanal}
+              onToggleGuide={() => setGuideOpen((o) => !o)}
             />
           ) : (
             <div className="ydo-live-player-container skeleton" />
@@ -493,6 +590,168 @@ export function TvView({ initialCanalId }: TvViewProps) {
           );
         })}
       </section>
+
+      {/* Guia de Programação (Drawer Lateral Overlay) */}
+      {guideOpen && (
+        <div
+          className="ydo-guia-overlay"
+          onClick={() => setGuideOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Guia de Programação"
+        >
+          <div
+            className="ydo-guia-drawer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ydo-guia-header">
+              <div className="ydo-guia-header-info">
+                <div className="ydo-guia-title-row">
+                  <CalendarClock size={20} style={{ color: "#e8b44a" }} />
+                  <h2 className="ydo-guia-title">Guia de Programação</h2>
+                </div>
+                <span className="ydo-guia-date">
+                  {new Intl.DateTimeFormat("pt-BR", {
+                    timeZone: "America/Sao_Paulo",
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  }).format(new Date())}
+                </span>
+              </div>
+              <button
+                onClick={() => setGuideOpen(false)}
+                className="ydo-guia-close-btn"
+                aria-label="Fechar Guia"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="ydo-guia-search-wrap">
+              <div className="ydo-guia-search-box">
+                <Search size={14} style={{ color: "rgba(255,255,255,0.4)" }} />
+                <input
+                  type="search"
+                  value={guideSearch}
+                  onChange={(e) => setGuideSearch(e.target.value)}
+                  placeholder="Filtrar canal no guia…"
+                  className="ydo-guia-search-input"
+                  aria-label="Filtrar canais no guia"
+                />
+              </div>
+            </div>
+
+            <div className="ydo-guia-body">
+              {guideLoading && Object.keys(gradeAgora).length === 0 ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="ydo-guia-skeleton" />
+                ))
+              ) : guideFilteredCanais.length === 0 ? (
+                <div
+                  style={{
+                    padding: "40px 16px",
+                    textAlign: "center",
+                    color: "rgba(255,255,255,0.4)",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  Nenhum canal encontrado.
+                </div>
+              ) : (
+                guideFilteredCanais.slice(0, guideVisibleCount).map((c) => {
+                  const epg = gradeAgora[c.nome] || epgData[c.nome];
+                  const isActive = c.id === activeId;
+
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        selectCanal(c);
+                        setGuideOpen(false);
+                      }}
+                      className={`ydo-guia-item ${isActive ? "active" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          selectCanal(c);
+                          setGuideOpen(false);
+                        }
+                      }}
+                    >
+                      <div className="ydo-guia-logo-container">
+                        {c.logo ? (
+                          <img
+                            src={c.logo}
+                            alt=""
+                            loading="lazy"
+                            className="ydo-guia-logo"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <span className="ydo-guia-monogram">
+                            {c.nome.slice(0, 3).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="ydo-guia-content">
+                        <div className="ydo-guia-canal-row">
+                          <span className="ydo-guia-canal-nome">{c.nome}</span>
+                          <span className="ydo-guia-categoria">{c.categoria}</span>
+                        </div>
+
+                        {epg?.atual ? (
+                          <div className="ydo-guia-linha-agora">
+                            <span className="ydo-live-dot" />
+                            <span>
+                              Agora: {epg.atual.titulo}
+                              {epg.atual.horario ? ` · ${epg.atual.horario}` : ""}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="ydo-guia-indisponivel">
+                            Programação indisponível agora
+                          </div>
+                        )}
+
+                        {epg?.proximo && (
+                          <div className="ydo-guia-linha-proximo">
+                            A seguir: {epg.proximo.titulo}
+                            {epg.proximo.horario ? ` · ${epg.proximo.horario}` : ""}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+
+              {guideVisibleCount < guideFilteredCanais.length && (
+                <button
+                  onClick={() => setGuideVisibleCount((prev) => prev + 40)}
+                  style={{
+                    margin: "12px auto",
+                    padding: "8px 20px",
+                    borderRadius: "999px",
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.7)",
+                    fontSize: "0.8rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Carregar mais canais
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

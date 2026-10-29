@@ -85,6 +85,9 @@ async function ensureMpegts() {
 
 const LIVE_VOL_KEY = "zangflix:live-volume";
 
+const initialModeFor = (f: FonteTV | undefined): "direct" | "proxy" =>
+  f?.url.startsWith("https://") && !f.chave ? "direct" : "proxy";
+
 function scoreFonte(f: FonteTV): number {
   let score = 0;
   const urlLower = f.url.toLowerCase();
@@ -142,7 +145,9 @@ export function LivePlayer({
   }, [canal.fontes]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
-  const [attemptMode, setAttemptMode] = useState<"proxy" | "direct">("proxy");
+  const [attemptMode, setAttemptMode] = useState<"direct" | "proxy">(() =>
+    initialModeFor(validStreams[0])
+  );
   const [playNonce, setPlayNonce] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -162,12 +167,12 @@ export function LivePlayer({
   // Reseta ao trocar de canal
   useEffect(() => {
     setSourceIndex(0);
-    setAttemptMode("proxy");
+    setAttemptMode(initialModeFor(validStreams[0]));
     setError(false);
     setLoading(true);
     setAutoSwitchMsg(null);
     setPlayNonce((n) => n + 1);
-  }, [canal.id]);
+  }, [canal.id, validStreams]);
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
 
@@ -235,33 +240,37 @@ export function LivePlayer({
     return () => clearInterval(interval);
   }, [isLiveEdge, syncToLiveEdge]);
 
-  // Avança para a próxima fonte caso haja falha fatal (com escada proxy -> direct)
+  // Avança para a próxima fonte caso haja falha fatal (com escada direct -> proxy)
   const handleFatalError = useCallback(() => {
     if (!rawFonte) return;
 
-    // Escada de tentativa: se falhou no proxy e a fonte for https:// (sem chave/DASH), tenta direto do navegador
+    // Se falhou no modo DIRETO e a fonte é https://, retenta via proxy
+    // (o proxy injeta referer/ua declarados no catálogo e resolve CORS/mixed-content):
     if (
-      attemptMode === "proxy" &&
+      attemptMode === "direct" &&
       rawFonte.url.startsWith("https://") &&
       !rawFonte.chave
     ) {
-      console.warn(`[LivePlayer] Proxy falhou para fonte ${sourceIndex + 1}. Tentando modo direto.`);
-      setAttemptMode("direct");
+      console.warn(`[LivePlayer] Modo direto falhou para fonte ${sourceIndex + 1}. Retentando via proxy.`);
+      setAttemptMode("proxy");
       setLoading(true);
       setError(false);
       setPlayNonce((n) => n + 1);
       return;
     }
 
-    // Se a tentativa direta também falhou (ou se a fonte é http:// que não pode direto por mixed-content),
-    // registra a fonte como falha e avança para a próxima fonte da lista
+    // Se falhou no PROXY (segunda tentativa da fonte), registra e avança para a próxima fonte:
     recordFailedSource(rawFonte.url);
 
     if (sourceIndex < validStreams.length - 1) {
+      const nextIndex = sourceIndex + 1;
+      const nextFonte = validStreams[nextIndex];
+      const nextMode = initialModeFor(nextFonte);
+
       setAutoSwitchMsg("Trocando fonte…");
       const timer = setTimeout(() => {
-        setSourceIndex((prev) => prev + 1);
-        setAttemptMode("proxy");
+        setSourceIndex(nextIndex);
+        setAttemptMode(nextMode);
         setLoading(true);
         setError(false);
         setAutoSwitchMsg(null);
@@ -273,7 +282,7 @@ export function LivePlayer({
       setError(true);
       setAutoSwitchMsg(null);
     }
-  }, [rawFonte, attemptMode, sourceIndex, validStreams.length]);
+  }, [rawFonte, attemptMode, sourceIndex, validStreams]);
 
   // Inicializa a reprodução do stream atual
   useEffect(() => {
@@ -583,7 +592,7 @@ export function LivePlayer({
             onClick={() => {
               clearFailedSources();
               setSourceIndex(0);
-              setAttemptMode("proxy");
+              setAttemptMode(initialModeFor(validStreams[0]));
               setError(false);
               setLoading(true);
               setPlayNonce((n) => n + 1);
@@ -657,7 +666,7 @@ export function LivePlayer({
                       key={f.url + i}
                       onClick={() => {
                         setSourceIndex(i);
-                        setAttemptMode("proxy");
+                        setAttemptMode(initialModeFor(f));
                         setSourcesOpen(false);
                         setLoading(true);
                         setError(false);

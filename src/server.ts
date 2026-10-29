@@ -7,7 +7,7 @@ import { getTmdbData, getTmdbTvSeasons } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { loadCanais, loadRadios } from "./lib/canais";
-import { getCanalEPG } from "./lib/epg";
+import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje } from "./lib/jogos";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
@@ -1528,6 +1528,10 @@ export default {
       if (url.pathname === "/api/radios") {
         const data = await loadRadios();
         return jsonResponse(data, 200, "public, max-age=3600");
+      }
+      if (url.pathname === "/api/epg/agora") {
+        const data = await getGradeAgora();
+        return jsonResponse(data, 200, "public, max-age=300");
       }
       if (url.pathname === "/api/epg") {
         const canal = url.searchParams.get("canal") || "";
