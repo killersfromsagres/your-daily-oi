@@ -203,12 +203,12 @@ export function OwnPlayer({
 
       // Ambos os caminhos falharam para esta fonte: registra falha e avança
       recordFailedSource(rawStream.url);
-      setAttemptStage(0);
 
       // Teto de tentativas por sessão para evitar ciclo sem fim
       autoSwitchCountRef.current++;
       if (autoSwitchCountRef.current > orderedStreams.length * 2) {
         console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
+        setAutoSwitchMsg(null);
         return;
       }
 
@@ -216,12 +216,20 @@ export function OwnPlayer({
         setAutoSwitchMsg("Trocando de servidor…");
         const timer = setTimeout(() => {
           setSourceIndex((prev) => prev + 1);
+          setAttemptStage(0);
           setAutoSwitchMsg(null);
         }, 800);
         return () => clearTimeout(timer);
       }
     }
   }, [engine.state, rawStream, attemptStage, sourceIndex, orderedStreams.length]);
+
+  // O selo de troca automática some assim que qualquer fonte entra em reprodução
+  useEffect(() => {
+    if ((engine.state === "ready" || engine.state === "playing") && autoSwitchMsg !== null) {
+      setAutoSwitchMsg(null);
+    }
+  }, [engine.state, autoSwitchMsg]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
