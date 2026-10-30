@@ -7,6 +7,8 @@ import {
   sortStreamsByHealth,
   recordFailedSource,
   clearFailedSources,
+  clearAllPlayerCaches,
+  autoCleanPlayerCache,
 } from "@/lib/player-storage";
 import {
   Volume2,
@@ -231,6 +233,7 @@ export function LivePlayer({
 
   // Reseta ao trocar de canal
   useEffect(() => {
+    autoCleanPlayerCache();
     setSourceIndex(0);
     setAttemptMode(initialModeFor(validStreams[0]));
     setError(false);
@@ -723,7 +726,7 @@ export function LivePlayer({
           <button
             className="ydo-btn-primary"
             onClick={() => {
-              clearFailedSources();
+              clearAllPlayerCaches();
               limparHostsSemCors();
               setSourceIndex(0);
               setAttemptMode(initialModeFor(validStreams[0]));
@@ -732,7 +735,7 @@ export function LivePlayer({
               setPlayNonce((n) => n + 1);
             }}
           >
-            <RefreshCw size={15} /> Tentar novamente
+            <RefreshCw size={15} /> Limpar Cache e Tentar Novamente
           </button>
         </div>
       )}

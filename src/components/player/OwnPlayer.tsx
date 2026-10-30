@@ -5,7 +5,16 @@ import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
-import { recordFailedSource, sortStreamsByHealth, clearFailedSources, getFailedUrls, getPreferredAudio, setPreferredAudio } from "@/lib/player-storage";
+import {
+  recordFailedSource,
+  sortStreamsByHealth,
+  clearFailedSources,
+  clearAllPlayerCaches,
+  autoCleanPlayerCache,
+  getFailedUrls,
+  getPreferredAudio,
+  setPreferredAudio,
+} from "@/lib/player-storage";
 import { APP_VERSION } from "@/lib/version";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
@@ -250,6 +259,7 @@ export function OwnPlayer({
   const lastTimeRef = useRef(initialTime);
 
   useEffect(() => {
+    autoCleanPlayerCache();
     console.info(`[Zang Flix Player] build ${APP_VERSION.version} (${APP_VERSION.commit})`);
   }, []);
 
@@ -864,7 +874,8 @@ export function OwnPlayer({
             <button
               className="ydo-btn-primary"
               onClick={() => {
-                clearFailedSources();
+                clearAllPlayerCaches();
+                stage0FailedRelays.clear();
                 pendingPlayRef.current = null;
                 lastProgressRef.current = null;
                 autoSwitchCountRef.current = 0;
@@ -877,7 +888,7 @@ export function OwnPlayer({
                 setAutoSwitchMsg(null);
               }}
             >
-              <RefreshCw size={16} /> Tentar de novo
+              <RefreshCw size={16} /> Limpar Cache e Tentar Novamente
             </button>
             {onBack && (
               <button

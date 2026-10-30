@@ -473,14 +473,21 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
 
   const { items } = await loadCatalog();
   const norm = normalizeTitle(id);
+  const numId = Number(id);
+  const isNumeric = !Number.isNaN(numId) && numId > 0;
+
   const item =
     items.get(`${typeKey}-${norm}`) ||
     Array.from(items.values()).find(
-      (i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey
+      (i) =>
+        ((isNumeric && i.tmdbId === numId) || i.id === id || normalizeTitle(i.title) === norm) &&
+        i.type === typeKey
     ) ||
     items.get(id) ||
     items.get(norm) ||
-    Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
+    (isNumeric
+      ? Array.from(items.values()).find((i) => i.tmdbId === numId)
+      : Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm));
 
   const tipo =
     tipoParam === "movie" || tipoParam === "f" || (item && item.type === "f")
@@ -492,22 +499,29 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     try {
       const sushiSources = await resolveSushiEpisodeStream(id, temp, ep);
       if (sushiSources && sushiSources.length > 0) {
-        return jsonResponse({
-          id,
-          title: item?.title || id,
-          tipo: "series",
-          sources: sushiSources,
-        });
+        return jsonResponse(
+          {
+            id,
+            title: item?.title || id,
+            tipo: "series",
+            sources: sushiSources,
+          },
+          200,
+          "no-store, no-cache, must-revalidate"
+        );
       }
     } catch {}
   }
 
   // Resolve fontes reais híbridas (FenixFlix + RedeFlix + Catálogo Expandido)
+  const effectiveTmdbId = item?.tmdbId || (isNumeric ? numId : undefined);
+  const effectiveTitle = item?.title || (isNumeric ? "" : id);
+
   const resolvedSources = await resolveVodStreams({
     tipo,
     id,
-    tmdbId: item?.tmdbId,
-    title: item?.title || id,
+    tmdbId: effectiveTmdbId,
+    title: effectiveTitle,
     season: temp,
     episode: ep,
   });
@@ -543,13 +557,17 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     return true;
   });
 
-  return jsonResponse({
-    id: item?.id || id,
-    title: item?.title || id,
-    tmdbId: item?.tmdbId,
-    tipo,
-    sources: dedupedSources,
-  });
+  return jsonResponse(
+    {
+      id: item?.id || id,
+      title: item?.title || id,
+      tmdbId: effectiveTmdbId,
+      tipo,
+      sources: dedupedSources,
+    },
+    200,
+    "no-store, no-cache, must-revalidate"
+  );
 }
 
 function isBlockedTargetUrl(target: string): boolean {
@@ -1212,8 +1230,25 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       cdnOrigin = new URL(targetUrl).origin;
     } catch {}
 
-    const defaultReferer = customReferer || (cdnOrigin ? `${cdnOrigin}/` : "");
-    const defaultOrigin = customReferer ? new URL(customReferer).origin : cdnOrigin;
+    let effectiveReferer = customReferer;
+    if (!effectiveReferer) {
+      if (
+        targetUrl.includes("sushianimes.com.br") ||
+        targetUrl.includes("maximaimg.online") ||
+        targetUrl.includes("pixel-sus-4k-image.com") ||
+        targetUrl.includes("playsus.online")
+      ) {
+        effectiveReferer = "https://sushianimes.com.br/";
+      } else if (
+        targetUrl.includes("embedplayer2.xyz") ||
+        targetUrl.includes("dadinhodetapioca.fun")
+      ) {
+        effectiveReferer = "https://embedplayer2.xyz/";
+      }
+    }
+
+    const defaultReferer = effectiveReferer || (cdnOrigin ? `${cdnOrigin}/` : "");
+    const defaultOrigin = effectiveReferer ? new URL(effectiveReferer).origin : cdnOrigin;
     const defaultUa =
       customUa ||
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";

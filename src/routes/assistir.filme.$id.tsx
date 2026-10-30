@@ -72,7 +72,7 @@ function WatchMoviePage() {
     return true;
   });
 
-  if (!movie || streams.length === 0) {
+  if (streams.length === 0) {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <Film size={48} style={{ color: "#e8b44a" }} />
@@ -85,16 +85,28 @@ function WatchMoviePage() {
     );
   }
 
-  const savedProgress = getProgressById(movie.id);
+  const effectiveMovie: CatalogItem = movie || {
+    id,
+    type: "f",
+    title: id,
+    tmdbId: !isNaN(Number(id)) ? Number(id) : null,
+    posterPath: "",
+    posterUrl: "",
+    genres: [],
+    tmdb: null,
+    streams,
+  };
+
+  const savedProgress = getProgressById(effectiveMovie.id);
 
   const handleTimeUpdate = (currentTime: number, duration?: number) => {
     if (currentTime < 2) return;
     saveProgress({
-      id: movie.id,
-      contentId: movie.id,
+      id: effectiveMovie.id,
+      contentId: effectiveMovie.id,
       type: "f",
-      title: movie.title,
-      posterUrl: movie.posterUrl,
+      title: effectiveMovie.title,
+      posterUrl: effectiveMovie.posterUrl,
       currentTime,
       duration: duration || 0,
       updatedAt: Date.now(),
@@ -115,18 +127,18 @@ function WatchMoviePage() {
     }}>
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
       <PlayerErrorBoundary
-        title={movie.title}
-        onBack={() => void navigate({ to: `/filme/${movie.id}` })}
+        title={effectiveMovie.title}
+        onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
       >
         <OwnPlayer
           streams={streams}
-          poster={movie.tmdb?.backdropUrl || movie.posterUrl}
-          title={movie.title}
+          poster={effectiveMovie.tmdb?.backdropUrl || effectiveMovie.posterUrl}
+          title={effectiveMovie.title}
           subtitle="Filmes"
-          onBack={() => void navigate({ to: `/filme/${movie.id}` })}
+          onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
-          expectedRuntimeMin={movie.tmdb?.runtime || (movie as any)?.runtime || 90}
+          expectedRuntimeMin={effectiveMovie.tmdb?.runtime || (effectiveMovie as any)?.runtime || 90}
         />
       </PlayerErrorBoundary>
     </main>

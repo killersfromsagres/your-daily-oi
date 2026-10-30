@@ -78,7 +78,7 @@ function WatchSeriesPage() {
     return true;
   });
 
-  if (!serie || streams.length === 0) {
+  if (streams.length === 0) {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <Tv size={48} style={{ color: "#e8b44a" }} />
@@ -93,16 +93,28 @@ function WatchSeriesPage() {
     );
   }
 
-  const savedProgress = getProgressById(`${serie.id}-t${temp}-e${ep}`);
+  const effectiveSerie: CatalogItem = serie || {
+    id,
+    type: "s",
+    title: id,
+    tmdbId: !isNaN(Number(id)) ? Number(id) : null,
+    posterPath: "",
+    posterUrl: "",
+    genres: [],
+    tmdb: null,
+    streams: [],
+  };
+
+  const savedProgress = getProgressById(`${effectiveSerie.id}-t${temp}-e${ep}`);
 
   const handleTimeUpdate = (currentTime: number, duration?: number) => {
     if (currentTime < 2) return;
     saveProgress({
-      id: `${serie.id}-t${temp}-e${ep}`,
-      contentId: serie.id,
+      id: `${effectiveSerie.id}-t${temp}-e${ep}`,
+      contentId: effectiveSerie.id,
       type: "s",
-      title: `${serie.title} (T${temp}:E${ep})`,
-      posterUrl: serie.posterUrl,
+      title: `${effectiveSerie.title} (T${temp}:E${ep})`,
+      posterUrl: effectiveSerie.posterUrl,
       season: Number(temp),
       episode: Number(ep),
       currentTime,
@@ -125,18 +137,18 @@ function WatchSeriesPage() {
     }}>
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
       <PlayerErrorBoundary
-        title={serie.title}
-        onBack={() => void navigate({ to: `/serie/${serie.id}` })}
+        title={effectiveSerie.title}
+        onBack={() => void navigate({ to: `/serie/${effectiveSerie.id}` })}
       >
         <OwnPlayer
           streams={streams}
-          poster={serie.tmdb?.backdropUrl || serie.posterUrl}
-          title={serie.title}
+          poster={effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl}
+          title={effectiveSerie.title}
           subtitle={`Série • Temporada ${temp} - Episódio ${ep}`}
-          onBack={() => void navigate({ to: `/serie/${serie.id}` })}
+          onBack={() => void navigate({ to: `/serie/${effectiveSerie.id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
-          expectedRuntimeMin={serie.tmdb?.runtime || 45}
+          expectedRuntimeMin={effectiveSerie.tmdb?.runtime || 45}
         />
       </PlayerErrorBoundary>
     </main>

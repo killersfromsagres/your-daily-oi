@@ -316,13 +316,33 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
     return cached.streams;
   }
 
+  let resolvedTmdbId = /^\d+$/.test(cleanId) ? cleanId : "";
+  if (!resolvedTmdbId && title) {
+    try {
+      const cleanTitle = title.replace(/^#+/, "").replace(/\s*\(\d{4}\)$/, "").trim();
+      const searchRes = await fetch(
+        `https://api.themoviedb.org/3/search/${isSerie ? "tv" : "movie"}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
+          cleanTitle
+        )}&language=pt-BR`,
+        { headers: { "User-Agent": BROWSER_UA, Accept: "application/json" }, signal: AbortSignal.timeout(3500) }
+      );
+      if (searchRes.ok) {
+        const sData = (await searchRes.json()) as { results?: Array<{ id: number }> };
+        if (sData?.results?.[0]?.id) {
+          resolvedTmdbId = String(sData.results[0].id);
+        }
+      }
+    } catch {}
+  }
+
+  const effectiveLookupId = resolvedTmdbId || cleanId;
   const allSources: StreamSource[] = [];
 
   // 1. RedeFlix Direct Streams (embedplayer2.xyz, koyeb.app)
-  if (cleanId) {
+  if (effectiveLookupId) {
     if (isSerie) {
       const rfSeriesMap = await getRedeflixSeries();
-      const rf = rfSeriesMap.get(cleanId);
+      const rf = rfSeriesMap.get(effectiveLookupId);
       if (rf) {
         const epKey = `${season}:${episode}`;
         const streams = rf.episodes.get(epKey) || [];
@@ -330,7 +350,7 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
       }
     } else {
       const rfFilmesMap = await getRedeflixFilmes();
-      const rf = rfFilmesMap.get(cleanId);
+      const rf = rfFilmesMap.get(effectiveLookupId);
       if (rf?.streams) {
         allSources.push(...rf.streams);
       }
@@ -338,15 +358,15 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
   }
 
   // 2. FenixFlix
-  if (cleanId) {
-    const fenixSources = await queryFenixFlix(isSerie, cleanId, season, episode);
+  if (effectiveLookupId) {
+    const fenixSources = await queryFenixFlix(isSerie, effectiveLookupId, season, episode);
     allSources.push(...fenixSources);
 
     // Se não achou streams e o ID é numérico (TMDB), tenta resolver IMDb ID via TMDB API
-    if (allSources.length === 0 && /^\d+$/.test(cleanId)) {
+    if (allSources.length === 0 && /^\d+$/.test(effectiveLookupId)) {
       try {
         const extRes = await fetch(
-          `https://api.themoviedb.org/3/${isSerie ? "tv" : "movie"}/${cleanId}/external_ids?api_key=${TMDB_API_KEY}`,
+          `https://api.themoviedb.org/3/${isSerie ? "tv" : "movie"}/${effectiveLookupId}/external_ids?api_key=${TMDB_API_KEY}`,
           { headers: { "User-Agent": BROWSER_UA, Accept: "application/json" }, signal: AbortSignal.timeout(4000) }
         );
         if (extRes.ok) {

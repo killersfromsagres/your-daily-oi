@@ -84,7 +84,7 @@ function WatchAnimePage() {
     return true;
   });
 
-  if (!anime || streams.length === 0) {
+  if (streams.length === 0) {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <Tv size={48} style={{ color: "#e8b44a" }} />
@@ -99,16 +99,28 @@ function WatchAnimePage() {
     );
   }
 
-  const savedProgress = getProgressById(`${anime?.id || id}-t${temp}-e${ep}`);
+  const effectiveAnime: CatalogItem = anime || {
+    id,
+    type: "a",
+    title: id,
+    tmdbId: !isNaN(Number(id)) ? Number(id) : null,
+    posterPath: "",
+    posterUrl: "",
+    genres: [],
+    tmdb: null,
+    streams: [],
+  };
+
+  const savedProgress = getProgressById(`${effectiveAnime.id}-t${temp}-e${ep}`);
 
   const handleTimeUpdate = (currentTime: number, duration?: number) => {
-    if (!anime || currentTime < 2) return;
+    if (currentTime < 2) return;
     saveProgress({
-      id: `${anime.id}-t${temp}-e${ep}`,
-      contentId: anime.id,
+      id: `${effectiveAnime.id}-t${temp}-e${ep}`,
+      contentId: effectiveAnime.id,
       type: "a",
-      title: `${anime.title} (T${temp}:E${ep})`,
-      posterUrl: anime.posterUrl,
+      title: `${effectiveAnime.title} (T${temp}:E${ep})`,
+      posterUrl: effectiveAnime.posterUrl,
       season: Number(temp),
       episode: Number(ep),
       currentTime,
@@ -130,18 +142,18 @@ function WatchAnimePage() {
       padding: 0,
     }}>
       <PlayerErrorBoundary
-        title={anime?.title || "Anime"}
-        onBack={() => void navigate({ to: `/anime/${id}` })}
+        title={effectiveAnime.title || "Anime"}
+        onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
       >
         <OwnPlayer
           streams={streams}
-          poster={anime?.tmdb?.backdropUrl || anime?.posterUrl}
-          title={anime?.title || "Anime"}
+          poster={effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl}
+          title={effectiveAnime.title || "Anime"}
           subtitle={`Temporada ${temp} - Episódio ${ep}`}
-          onBack={() => void navigate({ to: `/anime/${id}` })}
+          onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
-          expectedRuntimeMin={anime?.tmdb?.runtime || 24}
+          expectedRuntimeMin={effectiveAnime.tmdb?.runtime || 24}
         />
       </PlayerErrorBoundary>
     </main>
