@@ -6,7 +6,7 @@ import { recordFailedSource } from "@/lib/player-storage";
 export type PlayerState = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 
 export const isRelaySource = (url?: string | null): boolean => {
-  return Boolean(url && url.includes("saimo-tv.pages.dev/api/stream"));
+  return Boolean(url && (url.includes("saimo-tv.pages.dev/api/stream") || url.includes("/api/stream")));
 };
 
 export interface UsePlayerEngineOptions {
@@ -125,7 +125,10 @@ export function usePlayerEngine(
       ? isStage0
       : stream.format === "hls" ||
         stream.url.includes(".m3u8") ||
-        stream.url.includes("/api/hls-proxy");
+        stream.url.includes("/api/hls-proxy") ||
+        stream.url.includes("embedplayer2.xyz") ||
+        stream.url.includes("dadinhodetapioca.fun") ||
+        stream.url.split("?")[0].toLowerCase().endsWith(".txt");
 
     // Timeout de metadata: 6s para relay HLS probe, 8s para as demais fontes
     const timeoutDuration = isRelay && isHls ? 6000 : 8000;
@@ -205,8 +208,13 @@ export function usePlayerEngine(
       // Validação ~4s após reprodução iniciada
       garbageTimer = setTimeout(() => {
         if (cancelled || !video) return;
-        // (a) Duração inválida ou zero após playing
-        if (!Number.isFinite(video.duration) || video.duration === 0) {
+        // Se o vídeo já está avançando com sucesso no playback, não dispara alarme falso de duração
+        if (video.currentTime > 0.5) {
+          validateStreamHealth();
+          return;
+        }
+        // (a) Duração inválida ou zero após playing apenas se não progrediu
+        if ((!Number.isFinite(video.duration) || video.duration === 0) && video.currentTime < 0.1) {
           triggerGarbageDetected("Duração ausente ou zero após início de reprodução");
           return;
         }

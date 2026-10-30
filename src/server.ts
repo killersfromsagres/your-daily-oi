@@ -9,6 +9,7 @@ import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeS
 import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje } from "./lib/jogos";
+import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -347,120 +348,207 @@ async function handleItemApi(url: URL): Promise<Response> {
 }
 
 /**
- * Route Handler /api/resolve-vod (Play-First: nunca veta, devolve fontes ordenadas e relay)
+ * Route Handler /api/stream (Padrão Saimo TV)
+ * Redireciona 302 para stream sob demanda ou devolve JSON
+ */
+async function handleStreamApi(url: URL): Promise<Response> {
+  const tipo =
+    (url.searchParams.get("tipo") || url.searchParams.get("type") || "movie").toLowerCase() === "series"
+      ? "series"
+      : "movie";
+  let id = (url.searchParams.get("id") || "").trim();
+  const s = parseInt(
+    url.searchParams.get("s") ||
+      url.searchParams.get("t") ||
+      url.searchParams.get("temp") ||
+      url.searchParams.get("temporada") ||
+      "1",
+    10
+  );
+  const e = parseInt(
+    url.searchParams.get("e") ||
+      url.searchParams.get("ep") ||
+      url.searchParams.get("episodio") ||
+      "1",
+    10
+  );
+  const versao =
+    (url.searchParams.get("versao") || url.searchParams.get("v") || "dub").toLowerCase() === "leg"
+      ? "leg"
+      : "dub";
+  const querJson = url.searchParams.get("json") === "1";
+
+  if (!id) {
+    return jsonResponse({ error: 'Parâmetro "id" é obrigatório' }, 400);
+  }
+
+  if (id.includes(":")) {
+    const partes = id.split(":");
+    id = partes[0];
+  }
+
+  const { items } = await loadCatalog();
+  const norm = normalizeTitle(id);
+  const item =
+    items.get(`f-${norm}`) ||
+    items.get(`s-${norm}`) ||
+    items.get(id) ||
+    Array.from(items.values()).find(
+      (i) => i.id === id || String(i.tmdbId) === id || normalizeTitle(i.title) === norm
+    );
+
+  const tmdbId = item?.tmdbId || (/^\d+$/.test(id) ? Number(id) : null);
+  const title = item?.title || id;
+
+  const chosenUrl = await resolveSingleStreamRedirect({
+    tipo,
+    id,
+    tmdbId,
+    title,
+    season: s,
+    episode: e,
+    versao,
+  });
+
+  if (!chosenUrl) {
+    return jsonResponse({ error: "Nenhum stream encontrado para este título" }, 404);
+  }
+
+  const headers = new Headers();
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  headers.set("Cache-Control", "public, max-age=600");
+
+  if (querJson) {
+    return jsonResponse(
+      {
+        url: chosenUrl,
+        tipo,
+        id,
+        temporada: tipo === "series" ? s : undefined,
+        episodio: tipo === "series" ? e : undefined,
+        versao,
+      },
+      200,
+      "public, max-age=600"
+    );
+  }
+
+  headers.set("Location", chosenUrl);
+  return new Response(null, { status: 302, headers });
+}
+
+/**
+ * Route Handler /api/resolve-vod (Play-First: devolve fontes ordenadas e resolve URLs)
  */
 async function handleResolveVodApi(url: URL): Promise<Response> {
+  // 1. Suporte ao Saimo resolve-vod por URL (resolve dbonline / hubby-dmca / workers.dev)
+  const inputUrl = url.searchParams.get("url");
+  if (inputUrl) {
+    try {
+      const probeRes = await fetch(inputUrl, {
+        headers: { "User-Agent": "Mozilla/5.0", Range: "bytes=0-31" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(5000),
+      });
+      return jsonResponse({ url: probeRes.url || inputUrl });
+    } catch {
+      return jsonResponse({ url: null });
+    }
+  }
+
   const id = url.searchParams.get("id");
   if (!id) return jsonResponse({ error: "ID ausente" }, 400);
 
   const tipoParam = url.searchParams.get("tipo");
-  const typeKey = (tipoParam === "movie" || tipoParam === "f" || tipoParam === "filme")
-    ? "f"
-    : (tipoParam === "anime" || tipoParam === "a")
-    ? "a"
-    : "s";
+  const typeKey =
+    tipoParam === "movie" || tipoParam === "f" || tipoParam === "filme"
+      ? "f"
+      : tipoParam === "anime" || tipoParam === "a"
+      ? "a"
+      : "s";
 
-  const temp = parseInt(url.searchParams.get("temp") || "1", 10);
-  const ep = parseInt(url.searchParams.get("ep") || "1", 10);
+  const temp = parseInt(url.searchParams.get("temp") || url.searchParams.get("s") || "1", 10);
+  const ep = parseInt(url.searchParams.get("ep") || url.searchParams.get("e") || "1", 10);
 
   const { items } = await loadCatalog();
   const norm = normalizeTitle(id);
   const item =
     items.get(`${typeKey}-${norm}`) ||
-    Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey) ||
+    Array.from(items.values()).find(
+      (i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey
+    ) ||
     items.get(id) ||
     items.get(norm) ||
     Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
 
-  if (!item) {
-    if (typeKey === "a" || id.includes("-") || tipoParam === "anime") {
+  const tipo =
+    tipoParam === "movie" || tipoParam === "f" || (item && item.type === "f")
+      ? "movie"
+      : "series";
+
+  // Se for anime e tiver suporte via SushiAnimes
+  if (typeKey === "a" || id.includes("-") || tipoParam === "anime") {
+    try {
+      const sushiSources = await resolveSushiEpisodeStream(id, temp, ep);
+      if (sushiSources && sushiSources.length > 0) {
+        return jsonResponse({
+          id,
+          title: item?.title || id,
+          tipo: "series",
+          sources: sushiSources,
+        });
+      }
+    } catch {}
+  }
+
+  // Resolve fontes reais híbridas (FenixFlix + RedeFlix + Catálogo Expandido)
+  const resolvedSources = await resolveVodStreams({
+    tipo,
+    id,
+    tmdbId: item?.tmdbId,
+    title: item?.title || id,
+    season: temp,
+    episode: ep,
+  });
+
+  const orderedSources: any[] = [...resolvedSources];
+
+  // Adiciona fontes do catálogo local com expansão
+  if (item) {
+    if (item.type === "f") {
       try {
-        const sushiSources = await resolveSushiEpisodeStream(id, temp, ep);
-        if (sushiSources && sushiSources.length > 0) {
-          return jsonResponse({
-            id,
-            title: id,
-            tipo: "series",
-            sources: sushiSources,
-          });
+        const directStreams = await getStreamsForItem("f", item.title);
+        if (directStreams && directStreams.length > 0) {
+          orderedSources.push(...directStreams);
+        }
+      } catch {}
+    } else {
+      try {
+        const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
+        const foundSeason = seasons.find((s) => s.seasonNumber === temp);
+        const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
+        if (foundEp?.streams && foundEp.streams.length > 0) {
+          orderedSources.push(...foundEp.streams);
         }
       } catch {}
     }
-    return jsonResponse({ error: "Item não encontrado no catálogo" }, 404);
   }
 
-  const tipo = tipoParam || (item.type === "f" ? "movie" : "series");
-
-  const orderedSources: any[] = [];
-
-  // A3: Injeta os streams oficiais do relay Saimo TV como primeira escolha (reprodução instantânea direta)
-  if (item.tmdbId) {
-    if (tipo === "movie") {
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=dub`,
-        audio: "dub",
-        format: "auto",
-        quality: "FHD",
-        name: "Servidor Principal (Dub)",
-        priority: 0,
-      });
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=movie&id=${item.tmdbId}&versao=leg`,
-        audio: "leg",
-        format: "auto",
-        quality: "FHD",
-        name: "Servidor Principal (Leg)",
-        priority: 1,
-      });
-    } else {
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=dub`,
-        audio: "dub",
-        format: "auto",
-        quality: "FHD",
-        name: "Servidor Principal (Dub)",
-        priority: 0,
-      });
-      orderedSources.push({
-        url: `https://saimo-tv.pages.dev/api/stream?tipo=series&id=${item.tmdbId}&temp=${temp}&ep=${ep}&versao=leg`,
-        audio: "leg",
-        format: "auto",
-        quality: "FHD",
-        name: "Servidor Principal (Leg)",
-        priority: 1,
-      });
-    }
-  }
-
-  // Fontes diretas do catálogo como alternativas adicionais
-  if (item.type === "f") {
-    try {
-      const directStreams = await getStreamsForItem("f", item.title);
-      if (directStreams && directStreams.length > 0) {
-        orderedSources.push(...directStreams);
-      }
-    } catch {
-      // continua com as fontes de relay
-    }
-  } else {
-    try {
-      const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
-      const foundSeason = seasons.find((s) => s.seasonNumber === temp);
-      const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
-      if (foundEp?.streams && foundEp.streams.length > 0) {
-        orderedSources.push(...foundEp.streams);
-      }
-    } catch {
-      // continua com as fontes de relay
-    }
-  }
+  // Deduplicação estrita de URLs
+  const seen = new Set<string>();
+  const dedupedSources = orderedSources.filter((s) => {
+    if (!s?.url || seen.has(s.url)) return false;
+    seen.add(s.url);
+    return true;
+  });
 
   return jsonResponse({
-    id: item.id,
-    title: item.title,
-    tmdbId: item.tmdbId,
+    id: item?.id || id,
+    title: item?.title || id,
+    tmdbId: item?.tmdbId,
     tipo,
-    sources: orderedSources,
+    sources: dedupedSources,
   });
 }
 
@@ -1761,14 +1849,17 @@ export default {
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
       }
+      if (url.pathname === "/api/stream") {
+        return await handleStreamApi(url);
+      }
       if (url.pathname === "/api/resolve-vod") {
         return await handleResolveVodApi(url);
       }
       if (url.pathname === "/api/relay-resolve") {
         return await handleRelayResolveApi(url);
       }
-      if (url.pathname === "/api/proxy-stream") {
-        return await handleProxyStreamApi(request, url);
+      if (url.pathname === "/api/proxy" || url.pathname === "/api/proxy-stream") {
+        return await handleLiveProxyApi(request, url);
       }
       if (url.pathname === "/api/hls-proxy") {
         return await handleHlsProxyApi(request, url);

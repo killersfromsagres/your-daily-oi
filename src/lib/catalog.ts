@@ -8,9 +8,10 @@ import type {
   SeasonItem,
   EpisodeItem,
 } from "./types";
+import { getIndiceBases, expandBaseToken, isHlsUrl } from "./saimo-stream";
 
 // As URLs de catálogo:
-const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://saimo-filmes.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
+const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://filmes-saimo.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
 const SAIMO_RAW = (process.env.SAIMO_VOD_RAW ?? "https://raw.githubusercontent.com/gabrielsaimo/SaimoPlayer/main/vod").replace(/\/$/, "");
 const SNAPSHOT_URL = (process.env.NEXT_PUBLIC_SNAPSHOT_URL ?? "").replace(/\/$/, "");
 const ANIMES_PAGES = (process.env.ANIMES_VOD_PAGES ?? "").replace(/\/$/, "");
@@ -46,10 +47,8 @@ export function cleanDisplayTitle(title: string): string {
 }
 
 function detectFormat(url: string): StreamFormat {
-  if (/\.m3u8(\?|$)/i.test(url) || /\.txt(\?|$)/i.test(url)) return "hls";
+  if (isHlsUrl(url)) return "hls";
   if (/\.ts(\?|$)/i.test(url)) return "ts";
-  // URLs de relay do Saimo (ex: https://saimo-tv.pages.dev/api/stream?...)
-  if (/saimo-tv\.pages\.dev\/api\/stream/i.test(url)) return "mp4";
   return "mp4";
 }
 
@@ -80,15 +79,16 @@ export function detectQuality(url: string, title?: string): string {
   return "1080p";
 }
 
-function parseStreams(raw: string, audio: AudioTrack): StreamSource[] {
+function parseStreams(raw: string, audio: AudioTrack, bases: string[] = []): StreamSource[] {
   if (!raw) return [];
   const prefix = audio === "dub" ? "dub=" : "leg=";
   const part = raw.startsWith(prefix) ? raw.slice(prefix.length) : raw;
   return part
     .split(",")
-    .map((url) => url.trim())
+    .map((tok) => tok.trim())
+    .map((tok) => (bases.length > 0 ? expandBaseToken(tok, bases) : tok))
     .filter(isValidUrl)
-    .filter((url) => !url.includes("r2.dev")) // descarta bucket r2 que retorna 403 permanente
+    .filter((url) => !url.includes("r2.dev") && !url.includes("desativado.invalid"))
     .map((rawUrl, i) => {
       // Atualiza cdn.hermesnewone para https (evita bloqueio de mixed-content e Cloudflare challenge)
       const url = rawUrl.replace(/^http:\/\/cdn\.hermesnewone\.com/i, "https://cdn.hermesnewone.com");
@@ -96,7 +96,7 @@ function parseStreams(raw: string, audio: AudioTrack): StreamSource[] {
         url,
         format: detectFormat(url),
         audio,
-        priority: i,
+        priority: i + 2,
         quality: detectQuality(url),
       };
     });
@@ -329,7 +329,7 @@ function parseDestaques(text: string): HighlightRow[] {
 }
 
 // Parse de filmes-{letra}.txt: Título\tdub=URL1,URL2\tleg=URL1,...
-function parseFilmesFile(text: string): Map<string, StreamSource[]> {
+function parseFilmesFile(text: string, bases: string[] = []): Map<string, StreamSource[]> {
   const map = new Map<string, StreamSource[]>();
   for (const line of text.split("\n")) {
     if (line.startsWith("#")) continue;
@@ -339,8 +339,8 @@ function parseFilmesFile(text: string): Map<string, StreamSource[]> {
     if (!title) continue;
     const streams: StreamSource[] = [];
     for (const part of rest) {
-      if (part.startsWith("dub=")) streams.push(...parseStreams(part, "dub"));
-      else if (part.startsWith("leg=")) streams.push(...parseStreams(part, "leg"));
+      if (part.startsWith("dub=")) streams.push(...parseStreams(part, "dub", bases));
+      else if (part.startsWith("leg=")) streams.push(...parseStreams(part, "leg", bases));
     }
     if (streams.length > 0) {
       const normRaw = normalizeTitle(title);
@@ -366,7 +366,7 @@ let isBackgroundSyncing = false;
 // Parse completo de series-{letra}-{n}.txt:
 // @TítuloDaSérie
 // temp\tep\tdub/leg\tURLs...
-function parseSeriesData(text: string): {
+function parseSeriesData(text: string, bases: string[] = []): {
   streams: Map<string, StreamSource[]>;
   seasons: Map<string, SeasonItem[]>;
 } {
@@ -392,7 +392,7 @@ function parseSeriesData(text: string): {
     const seasonNumber = parseInt(tempRaw, 10) || 1;
     const episodeNumber = parseInt(epRaw, 10) || 1;
     const audio: AudioTrack = audioRaw?.toLowerCase() === "leg" ? "leg" : "dub";
-    const streams = parseStreams(urlsRaw ?? "", audio);
+    const streams = parseStreams(urlsRaw ?? "", audio, bases);
 
     if (streams.length > 0) {
       // 1. Guarda em streams gerais
@@ -463,6 +463,8 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
     return streamsCache.get(cacheKey)!;
   }
 
+  const bases = await getIndiceBases().catch(() => []);
+
   if (type === "a") {
     try {
       // Baixa em paralelo todas as partes (0..12) de animes para esta letra
@@ -476,7 +478,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
         .join("\n");
 
       if (combinedText.trim()) {
-        const { streams, seasons } = parseSeriesData(combinedText);
+        const { streams, seasons } = parseSeriesData(combinedText, bases);
         streamsCache.set(cacheKey, streams);
         seriesSeasonsCache.set(`a-${letter}`, seasons);
         return streams;
@@ -492,7 +494,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
   if (type === "f") {
     try {
       const text = await fetchText(getCatalogUrls(`filmes-${letter}.txt`));
-      const parsed = parseFilmesFile(text);
+      const parsed = parseFilmesFile(text, bases);
       streamsCache.set(cacheKey, parsed);
       return parsed;
     } catch {
@@ -515,7 +517,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
       .join("\n");
 
     if (combinedSeriesText.trim()) {
-      const { streams, seasons } = parseSeriesData(combinedSeriesText);
+      const { streams, seasons } = parseSeriesData(combinedSeriesText, bases);
       streamsCache.set(cacheKey, streams);
       seriesSeasonsCache.set(letter, seasons);
       return streams;

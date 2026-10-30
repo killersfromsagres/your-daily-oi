@@ -27,8 +27,12 @@ interface OwnPlayerProps {
 // 4b: Ordem de tentativa por tipo de relay
 const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
-  // A2: Relay Saimo (filmes e séries): direto-first no navegador do usuário (seguindo o 302 sem CORS)
+  // Relay Saimo / local /api/stream: direto-first
   if (isRelaySource(url)) {
+    return false;
+  }
+  // Fontes diretas https:// que são MP4 tocam direto no navegador primeiro
+  if (url.startsWith("https://") && !url.includes(".m3u8") && !url.includes(".txt") && !url.includes("embedplayer2.xyz")) {
     return false;
   }
   // Fontes diretas com CORS/hotlink/mixed-content vão via proxy primeiro
@@ -39,7 +43,13 @@ const isHlsStream = (url: string, format?: string): boolean => {
   if (format === "hls") return true;
   if (!url) return false;
   const clean = url.split("?")[0].toLowerCase();
-  return clean.endsWith(".m3u8") || url.includes(".m3u8");
+  return (
+    clean.endsWith(".m3u8") ||
+    clean.endsWith(".txt") ||
+    url.includes(".m3u8") ||
+    url.includes("embedplayer2.xyz") ||
+    url.includes("dadinhodetapioca.fun")
+  );
 };
 
 const getStreamUrlForStage = (
@@ -49,33 +59,42 @@ const getStreamUrlForStage = (
   resolvedDirectUrl?: string
 ): string => {
   if (!rawUrl) return "";
-  if (rawUrl.includes("/api/hls-proxy") || rawUrl.includes("/api/proxy-stream")) return rawUrl;
+  if (rawUrl.includes("/api/hls-proxy") || rawUrl.includes("/api/proxy-stream") || rawUrl.includes("/api/live-proxy")) return rawUrl;
 
-  // Relay oficial do Saimo: consumido direto pelo navegador do usuário em ambos os estágios
+  // Relay oficial do Saimo / local: consumido direto pelo navegador do usuário em ambos os estágios
   // (Estágio 0 = hls.js direto; Estágio 1 = video.src nativo)
   if (isRelaySource(rawUrl)) {
     return rawUrl;
   }
 
-  // A1: HLS (.m3u8):
-  // Estágio 0: /api/hls-proxy?url=... (proxy resolve hotlink/CORS/mixed-content)
+  // HLS (.m3u8, .txt, embedplayer2):
+  // Estágio 0: /api/live-proxy?url=... (proxy resolve hotlink/CORS/mixed-content)
   // Estágio 1: URL direta tocada no navegador pelo hls.js (muitos CDNs bloqueiam datacenter mas servem IP residencial)
   if (isHlsStream(rawUrl, format)) {
+    let proxyUrl = `/api/live-proxy?url=${encodeURIComponent(rawUrl)}`;
+    if (rawUrl.includes("embedplayer2.xyz")) {
+      proxyUrl += `&referer=${encodeURIComponent("https://embedplayer2.xyz/")}`;
+    }
     if (stage === 0) {
-      return `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
+      return proxyUrl;
     }
     // Se a URL HLS for http:// (mixed-content garantido no direto), NÃO tente o estágio 1
-    // Retorna a mesma URL do estágio 0 para ativar a regra A2 anti-estágio-duplicado
+    // Retorna a mesma URL do estágio 0 para ativar a regra anti-estágio-duplicado
     if (rawUrl.startsWith("http://")) {
-      return `/api/hls-proxy?url=${encodeURIComponent(rawUrl)}`;
+      return proxyUrl;
     }
     return resolvedDirectUrl || rawUrl;
+  }
+
+  // Se a URL for http://, mixed-content impede direto no navegador em HTTPS, usa proxy
+  if (rawUrl.startsWith("http://")) {
+    return `/api/live-proxy?url=${encodeURIComponent(rawUrl)}`;
   }
 
   const preferredIsProxy = getPreferredAttemptIsProxy(rawUrl);
   const useProxy = stage === 0 ? preferredIsProxy : !preferredIsProxy;
   if (useProxy) {
-    return `/api/proxy-stream?url=${encodeURIComponent(rawUrl)}`;
+    return `/api/live-proxy?url=${encodeURIComponent(rawUrl)}`;
   }
   return resolvedDirectUrl || rawUrl;
 };
