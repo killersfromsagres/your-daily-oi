@@ -3,7 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
-import { getTmdbData, getTmdbTvSeasons } from "./lib/tmdb";
+import { getTmdbData, getTmdbTvSeasons, getTmdbSeasonEpisodes, type TmdbEpisodeItem } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { loadCanais, loadRadios } from "./lib/canais";
@@ -438,6 +438,43 @@ async function handleStreamApi(url: URL): Promise<Response> {
   return new Response(null, { status: 302, headers });
 }
 
+const RESOLVIDOS_302 = new Map<string, { final: string; expira: number }>();
+const REDIRECIONADORES = ["dbonline.tech-cdn.top", "zjo.lat", "corruptx.org", "governosptx.org"];
+const precisaResolver302 = (u: string) => REDIRECIONADORES.some((h) => u.includes(h));
+
+async function resolverLegado(url: string): Promise<string | null> {
+  const cached = RESOLVIDOS_302.get(url);
+  if (cached && cached.expira > Date.now()) return cached.final;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const probe = await fetch(url, {
+      method: "GET",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Range: "bytes=0-1",
+      },
+      redirect: "follow",
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    let final = probe.url;
+    if (final && final !== url) {
+      if (final.startsWith("http://")) {
+        final = final.replace(/^http:\/\//i, "https://");
+      }
+      if (final.startsWith("https://")) {
+        RESOLVIDOS_302.set(url, { final, expira: Date.now() + 10 * 60 * 1000 });
+        return final;
+      }
+    }
+  } catch {
+    clearTimeout(timer);
+  }
+  return null;
+}
+
 /**
  * Route Handler /api/resolve-vod (Play-First: devolve fontes ordenadas e resolve URLs)
  */
@@ -549,9 +586,28 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     }
   }
 
+  // Resolução em paralelo de redirecionadores legados (dbonline, corruptx, etc.) para URLs finais https
+  const finalSources = await Promise.all(
+    orderedSources.map(async (s) => {
+      if (!s?.url) return s;
+      if (precisaResolver302(s.url)) {
+        const finalUrl = await resolverLegado(s.url);
+        if (finalUrl) {
+          return {
+            ...s,
+            url: finalUrl,
+            format: "mp4" as const,
+            priority: Math.min(typeof s.priority === "number" ? s.priority : 2, 1),
+          };
+        }
+      }
+      return s;
+    })
+  );
+
   // Deduplicação estrita de URLs
   const seen = new Set<string>();
-  const dedupedSources = orderedSources.filter((s) => {
+  const dedupedSources = finalSources.filter((s) => {
     if (!s?.url || seen.has(s.url)) return false;
     seen.add(s.url);
     return true;
@@ -568,6 +624,54 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     200,
     "no-store, no-cache, must-revalidate"
   );
+}
+
+const episodiosCache = new Map<string, { data: TmdbEpisodeItem[]; expira: number }>();
+
+/**
+ * Route Handler /api/episodios (Metadados detalhados da temporada para cards estilo Saimo)
+ */
+async function handleEpisodiosApi(url: URL): Promise<Response> {
+  const serieParam = url.searchParams.get("serie") || url.searchParams.get("id");
+  const tempParam =
+    url.searchParams.get("temporada") ||
+    url.searchParams.get("temp") ||
+    url.searchParams.get("season") ||
+    "1";
+  const tempNum = parseInt(tempParam, 10) || 1;
+
+  if (!serieParam) return jsonResponse([]);
+
+  let tmdbId: number | null = /^\d+$/.test(serieParam) ? Number(serieParam) : null;
+  if (!tmdbId) {
+    const { items } = await loadCatalog();
+    const norm = normalizeTitle(serieParam);
+    const item =
+      items.get(`s-${norm}`) ||
+      items.get(serieParam) ||
+      Array.from(items.values()).find(
+        (i) => i.id === serieParam || normalizeTitle(i.title) === norm
+      );
+    if (item?.tmdbId) {
+      tmdbId = item.tmdbId;
+    }
+  }
+
+  if (!tmdbId) return jsonResponse([]);
+
+  const cacheKey = `${tmdbId}:${tempNum}`;
+  const now = Date.now();
+  const cached = episodiosCache.get(cacheKey);
+  if (cached && cached.expira > now) {
+    return jsonResponse(cached.data, 200, "public, max-age=21600");
+  }
+
+  const eps = await getTmdbSeasonEpisodes(tmdbId, tempNum);
+  if (eps.length > 0) {
+    episodiosCache.set(cacheKey, { data: eps, expira: now + 6 * 60 * 60 * 1000 });
+  }
+
+  return jsonResponse(eps, 200, "public, max-age=21600");
 }
 
 function isBlockedTargetUrl(target: string): boolean {
@@ -1889,6 +1993,9 @@ export default {
       }
       if (url.pathname === "/api/resolve-vod") {
         return await handleResolveVodApi(url);
+      }
+      if (url.pathname === "/api/episodios") {
+        return await handleEpisodiosApi(url);
       }
       if (url.pathname === "/api/relay-resolve") {
         return await handleRelayResolveApi(url);

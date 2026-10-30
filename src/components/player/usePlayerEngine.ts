@@ -213,8 +213,9 @@ export function usePlayerEngine(
           validateStreamHealth();
           return;
         }
-        // (a) Duração inválida ou zero após playing apenas se não progrediu
-        if ((!Number.isFinite(video.duration) || video.duration === 0) && video.currentTime < 0.1) {
+        // (a) Duração inválida ou zero após playing apenas se não progrediu (Infinity é válido para transmissões EVENT)
+        const isDurationInvalid = video.duration === 0 || Number.isNaN(video.duration);
+        if (isDurationInvalid && video.currentTime < 0.1) {
           triggerGarbageDetected("Duração ausente ou zero após início de reprodução");
           return;
         }
@@ -222,10 +223,10 @@ export function usePlayerEngine(
       }, 4000);
     };
 
-    // (d) Tempo congelado: readyState >= 2 && currentTime < 0.5 por 12s contínuos desde playing
+    // (d) Tempo congelado: somente conta se o vídeo não estiver pausado
     frozenCheckInterval = setInterval(() => {
       if (cancelled || !video || !playingSince) return;
-      if (video.readyState >= 2 && video.currentTime < 0.5) {
+      if (!video.paused && video.readyState >= 2 && video.currentTime < 0.5) {
         if (Date.now() - playingSince > 12000) {
           triggerGarbageDetected("Vídeo congelado no início (00:00) há mais de 12s");
         }

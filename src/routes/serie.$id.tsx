@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Play, Star, Tv, Check, Heart, X, Users, Layers, Clapperboard, Sparkles } from "lucide-react";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { Play, Star, Tv, Check, Heart, X, Users, Layers, Clapperboard, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
-import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
+import { getSavedList, toggleSaved as toggleSavedStorage, getProgressById } from "@/lib/storage";
 
 export const Route = createFileRoute("/serie/$id")({
   component: SeriesDetailPage,
@@ -18,6 +18,68 @@ function SeriesDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [episodesMeta, setEpisodesMeta] = useState<Array<{
+    numero: number;
+    nome: string;
+    sinopse: string;
+    still: string | null;
+    duracao: string | null;
+  }>>([]);
+  const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const scrollTrackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!serie) return;
+    const serieKey = serie.tmdbId ? String(serie.tmdbId) : serie.id;
+    let active = true;
+    setLoadingEpisodes(true);
+
+    fetch(`/api/episodios?serie=${encodeURIComponent(serieKey)}&temporada=${selectedSeason}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!active) return;
+        if (Array.isArray(data) && data.length > 0) {
+          setEpisodesMeta(data);
+        } else {
+          setEpisodesMeta([]);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setEpisodesMeta([]);
+      })
+      .finally(() => {
+        if (active) setLoadingEpisodes(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [serie?.id, serie?.tmdbId, selectedSeason]);
+
+  const checkEpisodeProgress = (epNum: number) => {
+    if (typeof window === "undefined" || !serie) return null;
+    const p =
+      getProgressById(`${serie.id}-t${selectedSeason}-e${epNum}`) ||
+      getProgressById(`${serie.id}-s${selectedSeason}-e${epNum}`);
+    if (p && p.currentTime > 2) {
+      const dur = p.duration > 0 ? p.duration : 45 * 60;
+      const percent = Math.min(100, Math.max(5, Math.round((p.currentTime / dur) * 100)));
+      return { percent, currentTime: p.currentTime };
+    }
+    try {
+      const raw = localStorage.getItem(`movie-progress-assistir/serie/${serie.id}/${selectedSeason}/${epNum}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.currentTime > 2) {
+          const dur = parsed.duration > 0 ? parsed.duration : 45 * 60;
+          const percent = Math.min(100, Math.max(5, Math.round((parsed.currentTime / dur) * 100)));
+          return { percent, currentTime: parsed.currentTime };
+        }
+      }
+    } catch {}
+    return null;
+  };
 
   useEffect(() => {
     let active = true;
@@ -125,6 +187,33 @@ function SeriesDetailPage() {
   const seasons = serie.seasons || [];
   const currentSeasonData = seasons.find((s) => s.seasonNumber === selectedSeason) || seasons[0];
   const episodesList = currentSeasonData?.episodes || [];
+
+  const scrollTrack = (direction: "left" | "right") => {
+    if (!scrollTrackRef.current) return;
+    const delta = direction === "left" ? -460 : 460;
+    scrollTrackRef.current.scrollBy({ left: delta, behavior: "smooth" });
+  };
+
+  const allEpNumbers = Array.from(
+    new Set([
+      ...episodesList.map((e) => e.episodeNumber),
+      ...episodesMeta.map((m) => m.numero),
+    ])
+  ).sort((a, b) => a - b);
+
+  const itemsToRender = allEpNumbers.map((num) => {
+    const m = episodesMeta.find((meta) => meta.numero === num);
+    const cat = episodesList.find((ep) => ep.episodeNumber === num);
+    return {
+      numero: num,
+      nome: m?.nome || cat?.title || `Episódio ${num}`,
+      sinopse: m?.sinopse || "",
+      still: m?.still || null,
+      duracao: m?.duracao || null,
+    };
+  });
+
+  const anySeasonProgress = itemsToRender.some((item) => checkEpisodeProgress(item.numero) !== null);
 
   return (
     <div
@@ -519,11 +608,73 @@ function SeriesDetailPage() {
               border: "1px solid rgba(255, 255, 255, 0.08)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-              <Layers size={20} style={{ color: "#e8b44a" }} />
-              <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#fff", margin: 0 }}>
-                Seletor de Temporadas
-              </h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Layers size={20} style={{ color: "#e8b44a" }} />
+                <h3 style={{ fontSize: "1.05rem", fontWeight: "800", color: "#fff", margin: 0 }}>
+                  Episódios da Série
+                </h3>
+              </div>
+
+              {/* Setas de rolagem da trilha de episódios */}
+              {itemsToRender.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    onClick={() => scrollTrack("left")}
+                    aria-label="Rolar para esquerda"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      border: "1px solid rgba(255, 255, 255, 0.14)",
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.2)";
+                      e.currentTarget.style.borderColor = "#e8b44a";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
+                    }}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => scrollTrack("right")}
+                    aria-label="Rolar para direita"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      border: "1px solid rgba(255, 255, 255, 0.14)",
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.2)";
+                      e.currentTarget.style.borderColor = "#e8b44a";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.14)";
+                    }}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {seasons.length === 0 ? (
@@ -546,10 +697,11 @@ function SeriesDetailPage() {
               </div>
             ) : (
               <>
-                {/* Botões das Temporadas Disponíveis */}
+                {/* Pílulas de Temporadas com contagem de episódios */}
                 <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
                   {seasons.map((s) => {
                     const isActive = selectedSeason === s.seasonNumber;
+                    const count = s.episodes?.length || 0;
                     return (
                       <button
                         key={s.seasonNumber}
@@ -567,54 +719,243 @@ function SeriesDetailPage() {
                           boxShadow: isActive ? "0 4px 14px rgba(232, 180, 74, 0.3)" : "none",
                         }}
                       >
-                        Temporada {s.seasonNumber}
+                        Temporada {s.seasonNumber} {count > 0 ? `(${count})` : ""}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Grid dos Episódios da Temporada Selecionada */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                    gap: "10px",
-                  }}
-                >
-                  {episodesList.map((ep) => (
-                    <Link
-                      key={ep.episodeNumber}
-                      to={`/assistir/serie/${serie.id}/${selectedSeason}/${ep.episodeNumber}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "12px 14px",
-                        borderRadius: "12px",
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
-                        border: "1px solid rgba(255, 255, 255, 0.09)",
-                        color: "#ffffff",
-                        textDecoration: "none",
-                        fontSize: "0.85rem",
-                        fontWeight: "600",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.15)";
-                        e.currentTarget.style.borderColor = "#e8b44a";
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
-                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.09)";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      <Clapperboard size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
-                      <span>Episódio {ep.episodeNumber}</span>
-                    </Link>
-                  ))}
-                </div>
+                {/* Trilha horizontal de cards 16:9 estilo Saimo TV */}
+                {loadingEpisodes && itemsToRender.length === 0 ? (
+                  <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "12px" }}>
+                    {[1, 2, 3, 4].map((n) => (
+                      <div
+                        key={n}
+                        style={{
+                          width: "clamp(260px, 26vw, 310px)",
+                          height: "220px",
+                          borderRadius: "14px",
+                          backgroundColor: "rgba(255, 255, 255, 0.03)",
+                          flexShrink: 0,
+                        }}
+                        className="skeleton"
+                      />
+                    ))}
+                  </div>
+                ) : itemsToRender.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "2rem",
+                      textAlign: "center",
+                      color: "rgba(255, 255, 255, 0.5)",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Nenhum episódio cadastrado para esta temporada.
+                  </div>
+                ) : (
+                  <div
+                    ref={scrollTrackRef}
+                    style={{
+                      display: "flex",
+                      gap: "16px",
+                      overflowX: "auto",
+                      scrollBehavior: "smooth",
+                      paddingBottom: "16px",
+                      scrollbarWidth: "none",
+                      WebkitOverflowScrolling: "touch",
+                    }}
+                  >
+                    {itemsToRender.map((item) => {
+                      const progress = checkEpisodeProgress(item.numero);
+                      const isFirst = item.numero === 1;
+
+                      return (
+                        <Link
+                          key={item.numero}
+                          to={`/assistir/serie/${serie.id}/${selectedSeason}/${item.numero}`}
+                          style={{
+                            width: "clamp(260px, 26vw, 310px)",
+                            flexShrink: 0,
+                            borderRadius: "14px",
+                            backgroundColor: "rgba(255, 255, 255, 0.03)",
+                            border: progress
+                              ? "1px solid rgba(232, 180, 74, 0.4)"
+                              : "1px solid rgba(255, 255, 255, 0.08)",
+                            padding: "10px",
+                            textDecoration: "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "10px",
+                            transition: "all 0.2s ease",
+                            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+                            e.currentTarget.style.borderColor = "#e8b44a";
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.03)";
+                            e.currentTarget.style.borderColor = progress
+                              ? "1px solid rgba(232, 180, 74, 0.4)"
+                              : "rgba(255, 255, 255, 0.08)";
+                            e.currentTarget.style.transform = "translateY(0)";
+                          }}
+                        >
+                          {/* Thumbnail 16:9 */}
+                          <div
+                            style={{
+                              position: "relative",
+                              width: "100%",
+                              aspectRatio: "16 / 9",
+                              borderRadius: "10px",
+                              overflow: "hidden",
+                              backgroundColor: "#11131e",
+                            }}
+                          >
+                            {item.still ? (
+                              <img
+                                src={item.still}
+                                alt={item.nome}
+                                loading="lazy"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                  display: "block",
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background:
+                                    "linear-gradient(135deg, rgba(232, 180, 74, 0.12), rgba(255, 255, 255, 0.03))",
+                                  color: "rgba(255, 255, 255, 0.35)",
+                                  fontSize: "2.5rem",
+                                  fontWeight: "900",
+                                }}
+                              >
+                                {item.numero}
+                              </div>
+                            )}
+
+                            {/* Selo Comece aqui / Continuar */}
+                            {progress ? (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: "8px",
+                                  left: "8px",
+                                  zIndex: 3,
+                                  backgroundColor: "#e8b44a",
+                                  color: "#0a0b14",
+                                  padding: "3px 8px",
+                                  borderRadius: "5px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: "800",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.04em",
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                                }}
+                              >
+                                Continuar
+                              </span>
+                            ) : isFirst && !anySeasonProgress ? (
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: "8px",
+                                  left: "8px",
+                                  zIndex: 3,
+                                  backgroundColor: "#4fe3d0",
+                                  color: "#0a0b14",
+                                  padding: "3px 8px",
+                                  borderRadius: "5px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: "800",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.04em",
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                                }}
+                              >
+                                Comece aqui
+                              </span>
+                            ) : null}
+
+                            {/* Barra de Progresso Dourada */}
+                            {progress ? (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: "4px",
+                                  backgroundColor: "rgba(255, 255, 255, 0.25)",
+                                  zIndex: 3,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    height: "100%",
+                                    width: `${progress.percent}%`,
+                                    backgroundColor: "#e8b44a",
+                                  }}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {/* Metadados e Título */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: "0.95rem",
+                                fontWeight: "700",
+                                color: "#ffffff",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                              title={`${item.numero}. ${item.nome}`}
+                            >
+                              {item.numero}. {item.nome.replace(new RegExp(`^Episódio\\s*${item.numero}[:\\s-]*`, "i"), "") || item.nome}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "0.8rem",
+                                color: "rgba(255, 255, 255, 0.55)",
+                                fontWeight: "600",
+                              }}
+                            >
+                              {item.duracao || "47 min"} • Dublado
+                            </div>
+                            <p
+                              style={{
+                                fontSize: "0.82rem",
+                                color: "rgba(255, 255, 255, 0.65)",
+                                lineHeight: "1.4",
+                                margin: 0,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {item.sinopse || "Sem descrição disponível para este episódio."}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             )}
           </div>

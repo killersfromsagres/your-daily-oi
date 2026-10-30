@@ -28,6 +28,41 @@ async function tmdbFetch(path: string): Promise<unknown> {
   return await resFallback.json();
 }
 
+export interface TmdbEpisodeItem {
+  numero: number;
+  nome: string;
+  sinopse: string;
+  still: string | null;
+  duracao: string | null;
+}
+
+export async function getTmdbSeasonEpisodes(
+  tmdbId: number,
+  seasonNumber: number
+): Promise<TmdbEpisodeItem[]> {
+  try {
+    const data = (await tmdbFetch(`/tv/${tmdbId}/season/${seasonNumber}?`)) as {
+      episodes?: Array<{
+        episode_number: number;
+        name?: string;
+        overview?: string;
+        still_path?: string | null;
+        runtime?: number | null;
+      }>;
+    } | null;
+    if (!data || !Array.isArray(data.episodes)) return [];
+    return data.episodes.map((ep) => ({
+      numero: ep.episode_number,
+      nome: ep.name || `Episódio ${ep.episode_number}`,
+      sinopse: ep.overview || "",
+      still: ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : null,
+      duracao: ep.runtime ? `${ep.runtime} min` : null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function getTmdbTvSeasons(
   tmdbId: number
 ): Promise<Array<{ season_number: number; episode_count: number }> | null> {

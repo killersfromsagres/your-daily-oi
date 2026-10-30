@@ -376,7 +376,7 @@ export function OwnPlayer({
         console.warn(`[OwnPlayer] Relay nativo falhou para ${rawStream.url}. Avançando para fontes do catálogo...`);
         recordFailedSource(rawStream.url);
         autoSwitchCountRef.current++;
-        if (autoSwitchCountRef.current > orderedStreams.length * 2) {
+        if (autoSwitchCountRef.current > orderedStreams.length * 3) {
           console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
           setAutoSwitchMsg(null);
           return;
@@ -402,7 +402,7 @@ export function OwnPlayer({
           console.warn(`[OwnPlayer] Estágio 1 duplicado (${currUrl}). Avançando diretamente para próxima fonte...`);
           recordFailedSource(rawStream.url);
           autoSwitchCountRef.current++;
-          if (autoSwitchCountRef.current > orderedStreams.length * 2) {
+          if (autoSwitchCountRef.current > orderedStreams.length * 3) {
             console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
             setAutoSwitchMsg(null);
             return;
@@ -432,7 +432,7 @@ export function OwnPlayer({
 
       // Teto de tentativas por sessão para evitar ciclo sem fim
       autoSwitchCountRef.current++;
-      if (autoSwitchCountRef.current > orderedStreams.length * 2) {
+      if (autoSwitchCountRef.current > orderedStreams.length * 3) {
         console.warn(`[OwnPlayer] Limite máximo de tentativas automáticas atingido (${autoSwitchCountRef.current}).`);
         setAutoSwitchMsg(null);
         return;
