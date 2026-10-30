@@ -42,6 +42,7 @@ declare global {
       isSupported: () => boolean;
       Events: { ERROR: string; MANIFEST_PARSED: string };
       ErrorTypes: { NETWORK_ERROR: string; MEDIA_ERROR: string };
+      DefaultConfig?: { loader: any };
     };
     mpegts?: {
       createPlayer: (config: Record<string, unknown>) => {
@@ -54,6 +55,7 @@ declare global {
       };
       isSupported: () => boolean;
     };
+    shaka?: any;
   }
 }
 
@@ -83,41 +85,93 @@ async function ensureMpegts() {
   return window.mpegts;
 }
 
-const LIVE_VOL_KEY = "zangflix:live-volume";
-
-const initialModeFor = (f: FonteTV | undefined): "direct" | "proxy" =>
-  f?.url.startsWith("https://") && !f.chave ? "direct" : "proxy";
-
-function scoreFonte(f: FonteTV): number {
-  let score = 0;
-  const urlLower = f.url.toLowerCase();
-
-  // +3 se a URL contém .m3u8
-  if (urlLower.includes(".m3u8")) score += 3;
-
-  // +2 se é https://
-  if (urlLower.startsWith("https://")) score += 2;
-
-  // +1 por resolução declarada em qualidade (4K > FHD/1080 > HD/720 > resto)
-  const q = (f.qualidade || "").toUpperCase();
-  if (q.includes("4K") || q.includes("2160")) score += 4;
-  else if (q.includes("FHD") || q.includes("1080")) score += 3;
-  else if (q.includes("HD") || q.includes("720")) score += 2;
-  else if (q) score += 1;
-
-  // -5 se a URL contém error.txt, offline, .mpd, .xml ou termina sem extensão de mídia conhecida
-  const hasKnownExt = /\.(m3u8|ts|mp4|m4s|aac|mp3|webm)(\?|$)/i.test(urlLower);
-  if (
-    urlLower.includes("error.txt") ||
-    urlLower.includes("offline") ||
-    urlLower.includes(".mpd") ||
-    urlLower.includes(".xml") ||
-    !hasKnownExt
-  ) {
-    score -= 5;
+async function ensureShaka() {
+  if (!window.shaka) {
+    await loadScript("https://cdn.jsdelivr.net/npm/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    window.shaka?.polyfill?.installAll();
   }
+  return window.shaka;
+}
 
-  return score;
+const LIVE_VOL_KEY = "zangflix:live-volume";
+const SEM_CORS_KEY = "zangflix:sem-cors";
+
+function getHostsSemCors(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SEM_CORS_KEY);
+    if (raw) return JSON.parse(raw) as string[];
+  } catch {}
+  return [];
+}
+
+function hostSemCors(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return getHostsSemCors().includes(host);
+  } catch {
+    return false;
+  }
+}
+
+function marcarSemCors(url: string) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    const current = getHostsSemCors();
+    if (!current.includes(host)) {
+      const updated = [host, ...current].slice(0, 100);
+      localStorage.setItem(SEM_CORS_KEY, JSON.stringify(updated));
+    }
+  } catch {}
+}
+
+function limparHostsSemCors() {
+  try {
+    localStorage.removeItem(SEM_CORS_KEY);
+  } catch {}
+}
+
+const initialModeFor = (f: FonteTV | undefined): "direct" | "proxy" => {
+  if (!f) return "proxy";
+  // .txt masters vêm como text/plain sem CORS — direto no proxy
+  if (f.url.split("?")[0].toLowerCase().endsWith(".txt")) {
+    // ...exceto CDNs com CORS aberto (s23-cloudfront-net.lat toca direto)
+    if (!f.url.includes("s23-cloudfront-net.lat")) return "proxy";
+  }
+  if (!f.url.startsWith("https://")) return "proxy"; // http = mixed-content
+  if (f.chave || f.url.includes(".mpd")) return "direct"; // DASH direto primeiro
+  if (hostSemCors(f.url)) return "proxy"; // memória de hosts sem cors
+  return "direct";
+};
+
+// Corrige caminhos em proxies de terceiros que aninham o stream no parâmetro url=
+function fixNestedPath(parentUrl: string, childUrl: string): string {
+  try {
+    const parsedParent = new URL(parentUrl);
+    const nested = parsedParent.searchParams.get("url");
+    if (nested && !childUrl.startsWith("http://") && !childUrl.startsWith("https://")) {
+      const baseUrl = new URL(nested);
+      const resolvedChild = new URL(childUrl, baseUrl).toString();
+      parsedParent.searchParams.set("url", resolvedChild);
+      return parsedParent.toString();
+    }
+  } catch {}
+  try {
+    return new URL(childUrl, parentUrl).toString();
+  } catch {
+    return childUrl;
+  }
+}
+
+function makeNestedPathLoader(HlsClass: any, sourceUrl: string) {
+  return class NestedLoader extends HlsClass.DefaultConfig.loader {
+    load(context: any, config: any, callbacks: any) {
+      if (context && context.url) {
+        context.url = fixNestedPath(sourceUrl, context.url);
+      }
+      super.load(context, config, callbacks);
+    }
+  };
 }
 
 export function LivePlayer({
@@ -131,17 +185,22 @@ export function LivePlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number } | null>(null);
+  const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
 
-  // Ordena fontes viáveis (pulando .mpd e fontes com chave DASH) com pontuação inteligente
+  // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
     const usable = canal.fontes.filter((f) => {
-      if (f.chave) return false;
-      if (f.url.includes(".mpd")) return false;
-      return true;
+      const u = f.url.toLowerCase();
+      return !u.includes("error.txt") && !u.includes("offline");
     });
     const pool = usable.length > 0 ? usable : canal.fontes;
-    const sortedByScore = [...pool].sort((a, b) => scoreFonte(b) - scoreFonte(a));
-    return sortStreamsByHealth(sortedByScore);
+    const httpsList: FonteTV[] = [];
+    const httpList: FonteTV[] = [];
+    for (const f of pool) {
+      if (f.url.startsWith("https://")) httpsList.push(f);
+      else httpList.push(f);
+    }
+    return sortStreamsByHealth([...httpsList, ...httpList]);
   }, [canal.fontes]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
@@ -176,7 +235,7 @@ export function LivePlayer({
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
 
-  // Resolve URL da fonte (proxy-first para todas as fontes, ou direto se for retentativa direct)
+  // Resolve URL da fonte (direto ou retransmitido pelo live-proxy)
   const streamUrl = useMemo(() => {
     if (!rawFonte?.url) return "";
     if (attemptMode === "direct") return rawFonte.url;
@@ -240,49 +299,50 @@ export function LivePlayer({
     return () => clearInterval(interval);
   }, [isLiveEdge, syncToLiveEdge]);
 
-  // Avança para a próxima fonte caso haja falha fatal (com escada direct -> proxy)
-  const handleFatalError = useCallback(() => {
-    if (!rawFonte) return;
+  // Avança para a próxima fonte caso haja falha fatal (escada direto -> proxy -> próxima fonte)
+  const handleFatalError = useCallback(
+    (isCorsOrNetwork?: boolean) => {
+      if (!rawFonte) return;
 
-    // Se falhou no modo DIRETO e a fonte é https://, retenta via proxy
-    // (o proxy injeta referer/ua declarados no catálogo e resolve CORS/mixed-content):
-    if (
-      attemptMode === "direct" &&
-      rawFonte.url.startsWith("https://") &&
-      !rawFonte.chave
-    ) {
-      console.warn(`[LivePlayer] Modo direto falhou para fonte ${sourceIndex + 1}. Retentando via proxy.`);
-      setAttemptMode("proxy");
-      setLoading(true);
-      setError(false);
-      setPlayNonce((n) => n + 1);
-      return;
-    }
-
-    // Se falhou no PROXY (segunda tentativa da fonte), registra e avança para a próxima fonte:
-    recordFailedSource(rawFonte.url);
-
-    if (sourceIndex < validStreams.length - 1) {
-      const nextIndex = sourceIndex + 1;
-      const nextFonte = validStreams[nextIndex];
-      const nextMode = initialModeFor(nextFonte);
-
-      setAutoSwitchMsg("Trocando fonte…");
-      const timer = setTimeout(() => {
-        setSourceIndex(nextIndex);
-        setAttemptMode(nextMode);
+      // Se falhou no modo DIRETO, anota no cache sem-cors se foi erro de rede/CORS e tenta proxy
+      if (attemptMode === "direct") {
+        if (isCorsOrNetwork) {
+          marcarSemCors(rawFonte.url);
+        }
+        console.warn(`[LivePlayer] Modo direto falhou para fonte ${sourceIndex + 1}. Retentando via proxy.`);
+        setAttemptMode("proxy");
         setLoading(true);
         setError(false);
-        setAutoSwitchMsg(null);
         setPlayNonce((n) => n + 1);
-      }, 700);
-      return () => clearTimeout(timer);
-    } else {
-      setLoading(false);
-      setError(true);
-      setAutoSwitchMsg(null);
-    }
-  }, [rawFonte, attemptMode, sourceIndex, validStreams]);
+        return;
+      }
+
+      // Se falhou no modo PROXY (ou a fonte começou direto no proxy), registra falha e avança
+      recordFailedSource(rawFonte.url);
+
+      if (sourceIndex < validStreams.length - 1) {
+        const nextIndex = sourceIndex + 1;
+        const nextFonte = validStreams[nextIndex];
+        const nextMode = initialModeFor(nextFonte);
+
+        setAutoSwitchMsg("Trocando fonte…");
+        const timer = setTimeout(() => {
+          setSourceIndex(nextIndex);
+          setAttemptMode(nextMode);
+          setLoading(true);
+          setError(false);
+          setAutoSwitchMsg(null);
+          setPlayNonce((n) => n + 1);
+        }, 700);
+        return () => clearTimeout(timer);
+      } else {
+        setLoading(false);
+        setError(true);
+        setAutoSwitchMsg(null);
+      }
+    },
+    [rawFonte, attemptMode, sourceIndex, validStreams]
+  );
 
   // Inicializa a reprodução do stream atual
   useEffect(() => {
@@ -293,17 +353,16 @@ export function LivePlayer({
     setLoading(true);
     setError(false);
 
-    // Timeout de 10s para inicialização do canal ao vivo
+    // Timeout de 8s para conexão rápida em TV ao vivo (Saimo-grade)
     const timeout = setTimeout(() => {
       if (!cancelled) {
         if (video.readyState >= 3) {
-          // Dados suficientes já chegaram
           return;
         }
-        console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
-        handleFatalError();
+        console.warn(`[LivePlayer] 8s timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
+        handleFatalError(false);
       }
-    }, 10000);
+    }, 8000);
 
     const onPlaying = () => {
       if (cancelled) return;
@@ -319,7 +378,7 @@ export function LivePlayer({
     const onError = () => {
       if (cancelled) return;
       clearTimeout(timeout);
-      handleFatalError();
+      handleFatalError(attemptMode === "direct");
     };
 
     video.addEventListener("playing", onPlaying);
@@ -327,9 +386,61 @@ export function LivePlayer({
 
     const setup = async () => {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isDash = Boolean(rawFonte?.chave || rawFonte?.url.includes(".mpd"));
       const isTs = rawFonte?.url.includes(".ts") && !rawFonte.url.includes(".m3u8");
 
       try {
+        // 1. DASH + ClearKey via Shaka Player
+        if (isDash) {
+          const shaka = await ensureShaka();
+          if (!shaka?.Player?.isBrowserSupported?.()) {
+            console.warn("[LivePlayer] Shaka Player não suportado neste navegador, pulando DASH...");
+            handleFatalError(false);
+            return;
+          }
+
+          const player = new shaka.Player();
+          await player.attach(video);
+
+          if (rawFonte?.chave) {
+            const [keyId, key] = rawFonte.chave.split(":").map((s) => s.trim().toLowerCase());
+            if (keyId && key) {
+              player.configure({
+                drm: {
+                  clearKeys: {
+                    [keyId]: key,
+                  },
+                },
+              });
+            }
+          }
+
+          player.addEventListener("error", (event: any) => {
+            console.warn("[LivePlayer] Erro Shaka Player:", event?.detail);
+            if (!cancelled) handleFatalError(true);
+          });
+
+          await player.load(streamUrl);
+          shakaInstanceRef.current = {
+            destroy: () => player.destroy().catch(() => {}),
+          };
+
+          if (!cancelled) {
+            try {
+              await video.play();
+            } catch {
+              try {
+                video.muted = true;
+                setMuted(true);
+                setUnmuteNotice(true);
+                await video.play();
+              } catch {}
+            }
+          }
+          return;
+        }
+
+        // 2. MPEG-TS direto
         if (isTs) {
           const mpegts = await ensureMpegts();
           if (mpegts?.isSupported()) {
@@ -350,24 +461,32 @@ export function LivePlayer({
           }
         }
 
-        // HLS (.m3u8)
+        // 3. HLS (.m3u8)
         if (!isIOS && video.canPlayType("application/vnd.apple.mpegurl") === "") {
           const Hls = await ensureHls();
           if (Hls?.isSupported()) {
-            const hls = new Hls({
+            const hasNested = attemptMode === "direct" && rawFonte?.url.includes("url=");
+            const hlsConfig: Record<string, unknown> = {
               enableWorker: true,
               lowLatencyMode: true,
               liveSyncDurationCount: 3,
               liveMaxLatencyDurationCount: 8,
-            });
+            };
+
+            if (hasNested && (Hls as any).DefaultConfig?.loader) {
+              hlsConfig.loader = makeNestedPathLoader(Hls, rawFonte.url);
+            }
+
+            const hls = new Hls(hlsConfig);
 
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
 
-            hls.on(Hls.Events.ERROR, (_, data: Record<string, unknown>) => {
-              if (data["fatal"]) {
+            hls.on(Hls.Events.ERROR, (_, data: any) => {
+              if (data?.fatal) {
                 console.warn("[LivePlayer] Erro fatal Hls.js:", data);
-                if (!cancelled) handleFatalError();
+                const isNet = data?.type === "networkError";
+                if (!cancelled) handleFatalError(isNet);
               }
             });
 
@@ -389,21 +508,18 @@ export function LivePlayer({
           try {
             await video.play();
           } catch {
-            // Se o navegador bloquear som, toca mutado para não travar a transmissão
             try {
               video.muted = true;
               setMuted(true);
               setUnmuteNotice(true);
               await video.play();
-            } catch {
-              // Mantém loading ou aguarda gesto
-            }
+            } catch {}
           }
         }
       } catch (err) {
         if (!cancelled) {
           console.error("[LivePlayer] Falha ao configurar vídeo:", err);
-          handleFatalError();
+          handleFatalError(attemptMode === "direct");
         }
       }
     };
@@ -417,6 +533,8 @@ export function LivePlayer({
       video.removeEventListener("error", onError);
       hlsInstanceRef.current?.destroy();
       hlsInstanceRef.current = null;
+      shakaInstanceRef.current?.destroy();
+      shakaInstanceRef.current = null;
       video.pause();
       video.removeAttribute("src");
       video.load();
@@ -591,6 +709,7 @@ export function LivePlayer({
             className="ydo-btn-primary"
             onClick={() => {
               clearFailedSources();
+              limparHostsSemCors();
               setSourceIndex(0);
               setAttemptMode(initialModeFor(validStreams[0]));
               setError(false);

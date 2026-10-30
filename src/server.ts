@@ -954,11 +954,29 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
   }
 }
 
+function resolveLiveTargetUrl(baseUrl: string, childUri: string): string {
+  try {
+    const parsedBase = new URL(baseUrl);
+    const nested = parsedBase.searchParams.get("url");
+    if (nested && !childUri.startsWith("http://") && !childUri.startsWith("https://")) {
+      const nestedBase = new URL(nested);
+      const resolvedChild = new URL(childUri, nestedBase).toString();
+      parsedBase.searchParams.set("url", resolvedChild);
+      return parsedBase.toString();
+    }
+  } catch {}
+  try {
+    return new URL(childUri, baseUrl).toString();
+  } catch {
+    return childUri;
+  }
+}
+
 function rewriteLiveTagUris(line: string, baseUrl: string, referer?: string, ua?: string): string {
   return line.replace(/URI=(["']?)([^"',\s]+)\1/g, (match, quote, u) => {
     if (u.includes("/api/live-proxy")) return match;
     try {
-      const abs = new URL(u, baseUrl).toString();
+      const abs = resolveLiveTargetUrl(baseUrl, u);
       const q = quote || '"';
       let target = `/api/live-proxy?url=${encodeURIComponent(abs)}`;
       if (referer) target += `&referer=${encodeURIComponent(referer)}`;
@@ -985,7 +1003,7 @@ function rewriteLiveHlsManifest(manifestText: string, baseUrl: string, referer?:
 
     if (trimmed.includes("/api/live-proxy")) return line;
     try {
-      const abs = new URL(trimmed, baseUrl).toString();
+      const abs = resolveLiveTargetUrl(baseUrl, trimmed);
       let target = `/api/live-proxy?url=${encodeURIComponent(abs)}`;
       if (referer) target += `&referer=${encodeURIComponent(referer)}`;
       if (ua) target += `&ua=${encodeURIComponent(ua)}`;
@@ -997,10 +1015,46 @@ function rewriteLiveHlsManifest(manifestText: string, baseUrl: string, referer?:
   return rewritten.join("\n");
 }
 
+function rewriteMpdXml(mpdText: string, baseUrl: string, referer?: string, ua?: string): string {
+  let effectiveBase = baseUrl;
+  const baseUrlMatch = mpdText.match(/<BaseURL[^>]*>([^<]+)<\/BaseURL>/i);
+  if (baseUrlMatch) {
+    try {
+      effectiveBase = new URL(baseUrlMatch[1].trim(), baseUrl).toString();
+    } catch {}
+  }
+  let result = mpdText.replace(/<BaseURL[^>]*>[^<]*<\/BaseURL>/gi, "");
+
+  result = result.replace(
+    /(initialization|media|sourceURL|index)=(["'])(.*?)\2/gi,
+    (match, attr, quote, val) => {
+      if (!val || val.includes("/api/live-proxy")) return match;
+      try {
+        let absUrl: string;
+        if (val.startsWith("http://") || val.startsWith("https://")) {
+          absUrl = val;
+        } else {
+          const safeVal = val.replace(/\$([a-zA-Z0-9%_-]+)\$/g, "__TOKEN_$1__");
+          const resolved = new URL(safeVal, effectiveBase).toString();
+          absUrl = resolved.replace(/__TOKEN_([a-zA-Z0-9%_-]+)__/g, "$$$1$$");
+        }
+        let proxied = `/api/live-proxy?url=${encodeURIComponent(absUrl)}`;
+        if (referer) proxied += `&referer=${encodeURIComponent(referer)}`;
+        if (ua) proxied += `&ua=${encodeURIComponent(ua)}`;
+        proxied = proxied.replace(/%24([a-zA-Z0-9%_-]+)%24/g, "$$$1$$");
+        return `${attr}=${quote}${proxied}${quote}`;
+      } catch {
+        return match;
+      }
+    }
+  );
+  return result;
+}
+
 const liveManifestCache = new Map<string, { body: string; expires: number }>();
 
 /**
- * Route Handler /api/live-proxy (Proxy HLS ao vivo com headers customizados e reescrita de segmentos)
+ * Route Handler /api/live-proxy (Proxy Saimo-Grade com redirects manuais, cookies, resgate 403/404 e MPD)
  */
 async function handleLiveProxyApi(request: Request, url: URL): Promise<Response> {
   let targetUrl = url.searchParams.get("url");
@@ -1045,6 +1099,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
   const customReferer = url.searchParams.get("referer") || undefined;
   const customUa = url.searchParams.get("ua") || url.searchParams.get("agente") || undefined;
   const clientRange = request.headers.get("range");
+  const clientAcceptEncoding = request.headers.get("accept-encoding");
 
   // Cache leve de manifesto ao vivo (10s)
   if (!clientRange && request.method === "GET") {
@@ -1064,88 +1119,218 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
   }
 
   try {
-    const upstreamHeaders: Record<string, string> = {
-      "User-Agent":
-        customUa ||
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      Accept: "*/*",
-      "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    let cdnOrigin = "";
+    try {
+      cdnOrigin = new URL(targetUrl).origin;
+    } catch {}
+
+    const defaultReferer = customReferer || (cdnOrigin ? `${cdnOrigin}/` : "");
+    const defaultOrigin = customReferer ? new URL(customReferer).origin : cdnOrigin;
+    const defaultUa =
+      customUa ||
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+    const buildHeaders = (ref: string, orig: string, ua: string, bare?: boolean): Record<string, string> => {
+      if (bare) {
+        const h: Record<string, string> = { Accept: "*/*" };
+        if (clientRange) h["Range"] = clientRange;
+        return h;
+      }
+      const h: Record<string, string> = {
+        "User-Agent": ua,
+        Accept: "*/*",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+      };
+      if (ref) h["Referer"] = ref;
+      if (orig) h["Origin"] = orig;
+      if (clientRange) h["Range"] = clientRange;
+      if (clientAcceptEncoding) h["Accept-Encoding"] = clientAcceptEncoding;
+      return h;
     };
 
-    if (customReferer) {
-      upstreamHeaders["Referer"] = customReferer;
-      try {
-        upstreamHeaders["Origin"] = new URL(customReferer).origin;
-      } catch {}
-    } else {
-      upstreamHeaders["Referer"] = "https://saimo-tv.pages.dev/";
-      upstreamHeaders["Origin"] = "https://saimo-tv.pages.dev";
-    }
+    // Função de fetch com até 15 saltos de redirect mantendo cookies e headers
+    const fetchWithRedirects = async (
+      headersBuilder: (currUrl: string) => Record<string, string>
+    ): Promise<Response> => {
+      let currentUrl = targetUrl;
+      let hops = 0;
+      const cookieJar = new Map<string, string>();
 
-    if (clientRange) {
-      upstreamHeaders["Range"] = clientRange;
-    }
+      while (hops < 15) {
+        hops++;
+        const headers = headersBuilder(currentUrl);
 
-    const clientAcceptEncoding = request.headers.get("accept-encoding");
-    if (clientAcceptEncoding) {
-      upstreamHeaders["Accept-Encoding"] = clientAcceptEncoding;
-    }
+        if (cookieJar.size > 0) {
+          const cookieStr = Array.from(cookieJar.entries())
+            .map(([k, v]) => `${k}=${v}`)
+            .join("; ");
+          headers["Cookie"] = cookieStr;
+        }
 
-    const fetchCtrl = new AbortController();
-    const fetchTimer = setTimeout(() => fetchCtrl.abort(), 12000);
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8000);
 
-    let res: Response;
+        let hopRes: Response;
+        try {
+          hopRes = await fetch(currentUrl, {
+            method: request.method === "HEAD" ? "HEAD" : "GET",
+            headers,
+            redirect: "manual",
+            signal: ctrl.signal,
+          });
+          clearTimeout(timer);
+        } catch (err) {
+          clearTimeout(timer);
+          throw err;
+        }
+
+        const rawSetCookie = hopRes.headers.get("set-cookie");
+        if (rawSetCookie) {
+          const parts = rawSetCookie.split(/,(?=[^;]+=[^;]+)/);
+          for (const part of parts) {
+            const cookiePair = part.split(";")[0]?.trim();
+            if (cookiePair) {
+              const eqIdx = cookiePair.indexOf("=");
+              if (eqIdx > 0) {
+                const k = cookiePair.slice(0, eqIdx).trim();
+                const v = cookiePair.slice(eqIdx + 1).trim();
+                cookieJar.set(k, v);
+              }
+            }
+          }
+        }
+
+        if (hopRes.status >= 300 && hopRes.status < 400) {
+          const loc = hopRes.headers.get("location") || hopRes.headers.get("Location");
+          if (loc) {
+            currentUrl = new URL(loc, currentUrl).toString();
+            continue;
+          }
+        }
+
+        return hopRes;
+      }
+
+      throw new Error("Muitos redirecionamentos (>= 15)");
+    };
+
+    // Executa fetch com retentativa de 5xx (até 2x com 300ms de pausa)
+    const tryFetchWith5xxRetry = async (
+      headersBuilder: (currUrl: string) => Record<string, string>
+    ): Promise<Response> => {
+      let attempts = 0;
+      while (attempts < 3) {
+        attempts++;
+        try {
+          const res = await fetchWithRedirects(headersBuilder);
+          if (res.status >= 500 && res.status < 600 && attempts < 3) {
+            await new Promise((r) => setTimeout(r, 300));
+            continue;
+          }
+          return res;
+        } catch (err) {
+          if (attempts >= 3) throw err;
+          await new Promise((r) => setTimeout(r, 300));
+        }
+      }
+      throw new Error("Falha após retentativas 5xx");
+    };
+
+    let res: Response | null = null;
     try {
-      res = await fetch(targetUrl, {
-        method: request.method === "HEAD" ? "HEAD" : "GET",
-        headers: upstreamHeaders,
-        redirect: "follow",
-        signal: fetchCtrl.signal,
-      });
-      clearTimeout(fetchTimer);
+      res = await tryFetchWith5xxRetry(() => buildHeaders(defaultReferer, defaultOrigin, defaultUa));
     } catch {
-      clearTimeout(fetchTimer);
-      return new Response("Timeout ao conectar ao upstream ao vivo", {
-        status: 504,
+      // continua para estratégias de resgate
+    }
+
+    // Resgate cirúrgico para 403 / 404
+    if (!res || res.status === 403 || res.status === 404) {
+      const rescueHeaders = [
+        // 1. Referer original sem Origin
+        () => buildHeaders(defaultReferer, "", defaultUa),
+        // 2. UA Android Mobile sem Referer
+        () =>
+          buildHeaders(
+            "",
+            "",
+            "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36"
+          ),
+        // 3. UA Lavf/58.29.100 (ffmpeg - aceito por CDNs IPTV)
+        () => buildHeaders("", "", "Lavf/58.29.100"),
+        // 4. Sem headers extras (apenas Range)
+        () => buildHeaders("", "", "", true),
+      ];
+
+      for (const getRescueHeaders of rescueHeaders) {
+        try {
+          const rescueRes = await tryFetchWith5xxRetry(getRescueHeaders);
+          if (rescueRes.ok || rescueRes.status === 206) {
+            res = rescueRes;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    if (!res) {
+      return new Response("Erro upstream: falha na conexão", {
+        status: 502,
         headers: { "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    if (res.status === 416 && upstreamHeaders["Range"]) {
-      delete upstreamHeaders["Range"];
-      const retryCtrl = new AbortController();
-      const retryTimer = setTimeout(() => retryCtrl.abort(), 12000);
+    // Se o upstream rejeitar Range com 416 (Accept-Ranges: none), retenta sem Range
+    if (res.status === 416 && clientRange) {
       try {
-        res = await fetch(targetUrl, {
-          method: request.method === "HEAD" ? "HEAD" : "GET",
-          headers: upstreamHeaders,
-          redirect: "follow",
-          signal: retryCtrl.signal,
+        res = await tryFetchWith5xxRetry(() => {
+          const h = buildHeaders(defaultReferer, defaultOrigin, defaultUa);
+          delete h["Range"];
+          return h;
         });
-        clearTimeout(retryTimer);
-      } catch {
-        clearTimeout(retryTimer);
-      }
+      } catch {}
     }
 
-    if (!res.ok) {
+    if (!res.ok && res.status !== 206) {
       return new Response(`Erro upstream ${res.status}`, {
         status: 502,
         headers: { "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    const rawContentType = res.headers.get("content-type") || "";
-    const lowerTarget = targetUrl.toLowerCase();
+    const rawContentType = (res.headers.get("content-type") || "").toLowerCase();
+    const cleanTarget = targetUrl.split("?")[0].toLowerCase();
+
+    // Rejeita páginas de erro HTML / Cloudflare Challenge
+    if (rawContentType.includes("text/html")) {
+      return new Response("Erro upstream html", {
+        status: 502,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    }
+
+    const isMpd =
+      rawContentType.includes("application/dash+xml") ||
+      cleanTarget.endsWith(".mpd") ||
+      targetUrl.includes(".mpd");
+
+    const isHls =
+      rawContentType.includes("application/vnd.apple.mpegurl") ||
+      rawContentType.includes("audio/mpegurl") ||
+      cleanTarget.endsWith(".m3u8") ||
+      cleanTarget.endsWith(".txt") ||
+      targetUrl.includes(".m3u8");
+
     const isSegment =
       Boolean(clientRange) ||
-      lowerTarget.includes(".ts") ||
-      lowerTarget.includes(".m4s") ||
-      lowerTarget.includes(".aac") ||
+      cleanTarget.endsWith(".ts") ||
+      cleanTarget.endsWith(".m4s") ||
+      cleanTarget.endsWith(".aac") ||
+      cleanTarget.endsWith(".mp4") ||
       rawContentType.includes("video/mp2t") ||
       rawContentType.includes("video/mp4");
 
-    if (!isSegment) {
+    // Reescrita de Manifesto HLS
+    if (isHls && !isSegment) {
       const text = await res.text();
       const trimmed = text.trim();
       if (
@@ -1179,16 +1364,36 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
           },
         });
       }
-
-      const headers = new Headers();
-      headers.set("Access-Control-Allow-Origin", "*");
-      headers.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-      headers.set("Access-Control-Allow-Headers", "*");
-      headers.set("Content-Type", rawContentType || "text/plain");
-      return new Response(text, { status: res.status, headers });
     }
 
-    // Segmento binário (.ts, .m4s): streaming pipe
+    // Reescrita de Manifesto MPD / DASH
+    if (isMpd && !isSegment) {
+      try {
+        const text = await res.text();
+        if (text.includes("<MPD") || text.includes("<Period")) {
+          const finalBase = res.url || targetUrl;
+          const rewritten = rewriteMpdXml(text, finalBase, customReferer, customUa);
+          return new Response(rewritten, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/dash+xml",
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+              "Cache-Control": "public, max-age=10",
+            },
+          });
+        }
+      } catch (err) {
+        console.warn("[LiveProxy] Falha ao reescrever manifesto MPD:", err);
+        return new Response("Falha na reescrita de MPD", {
+          status: 502,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
+    // Segmento binário (.ts, .m4s, áudio/vídeo puro): streaming pipe
     const responseHeaders = new Headers();
     responseHeaders.set("Access-Control-Allow-Origin", "*");
     responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
@@ -1215,7 +1420,10 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
     });
   } catch (err) {
     console.error("Erro no live-proxy:", err);
-    return new Response("Erro no proxy de transmissão ao vivo", { status: 502 });
+    return new Response("Erro no proxy de transmissão ao vivo", {
+      status: 502,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
   }
 }
 

@@ -28,14 +28,55 @@ export interface RadioItem {
 
 const CANAIS_URL = "https://canais-saimo.pages.dev/catalogo.txt";
 const RADIOS_URL = "https://canais-saimo.pages.dev/radios.txt";
+const DESATIVADOS_URL = "https://saimo-tv.pages.dev/fontes-desativadas.json";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
+const DESATIVADOS_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 let canaisCache: CanalTV[] | null = null;
 let canaisCacheTime = 0;
 let canaisCategoriasCache: string[] = [];
 
+let desativadosCache: string[] = [];
+let desativadosCacheTime = 0;
+
 let radiosCache: RadioItem[] | null = null;
 let radiosCacheTime = 0;
+
+/**
+ * Obtém a lista atualizada de hostnames desativados da Saimo TV
+ */
+async function fetchFontesDesativadas(): Promise<string[]> {
+  const now = Date.now();
+  if (desativadosCache.length > 0 && now - desativadosCacheTime < DESATIVADOS_TTL_MS) {
+    return desativadosCache;
+  }
+
+  try {
+    const res = await fetch(DESATIVADOS_URL, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept: "application/json, */*",
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (res.ok) {
+      const data = (await res.json()) as { desativados?: string[] };
+      if (Array.isArray(data?.desativados)) {
+        desativadosCache = data.desativados
+          .filter((h): h is string => typeof h === "string")
+          .map((h) => h.toLowerCase().trim());
+        desativadosCacheTime = now;
+        return desativadosCache;
+      }
+    }
+  } catch (err) {
+    console.warn("[CanaisTV] Falha ao obter painel de fontes desativadas (usando fallback):", err);
+  }
+
+  return desativadosCache;
+}
 
 /**
  * Converte o nome do canal em slug URL-friendly
@@ -221,7 +262,30 @@ export async function loadCanais(): Promise<{
     }
 
     const text = await res.text();
-    const canais = parseCanais(text);
+    const canaisRaw = parseCanais(text);
+
+    // Painel de servidores desligados (Saimo TV): filtra hosts inativos
+    const desativados = await fetchFontesDesativadas();
+    const desativadosSet = new Set(desativados);
+
+    const canais: CanalTV[] = [];
+    for (const c of canaisRaw) {
+      const fontesVivas = c.fontes.filter((f) => {
+        try {
+          const host = new URL(f.url).hostname.toLowerCase();
+          return !desativadosSet.has(host);
+        } catch {
+          return false;
+        }
+      });
+      // Canal que ficou sem nenhuma fonte viva sai da lista temporariamente (peneirarCanais)
+      if (fontesVivas.length > 0) {
+        canais.push({
+          ...c,
+          fontes: fontesVivas,
+        });
+      }
+    }
 
     // Ordem preferencial de categorias
     const preferredOrder = [
