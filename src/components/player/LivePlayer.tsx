@@ -27,6 +27,7 @@ export interface LivePlayerProps {
   onNextCanal?: () => void;
   onPrevCanal?: () => void;
   onToggleGuide?: () => void;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 declare global {
@@ -180,6 +181,7 @@ export function LivePlayer({
   onNextCanal,
   onPrevCanal,
   onToggleGuide,
+  onLoadingChange,
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -209,6 +211,10 @@ export function LivePlayer({
   );
   const [playNonce, setPlayNonce] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
   const [error, setError] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -375,6 +381,12 @@ export function LivePlayer({
       }
     };
 
+    const onTimeUpdate = () => {
+      if (video.currentTime > 0.5) {
+        setIsLiveEdge(true);
+      }
+    };
+
     const onError = () => {
       if (cancelled) return;
       clearTimeout(timeout);
@@ -382,6 +394,7 @@ export function LivePlayer({
     };
 
     video.addEventListener("playing", onPlaying);
+    video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("error", onError);
 
     const setup = async () => {
@@ -530,6 +543,7 @@ export function LivePlayer({
       cancelled = true;
       clearTimeout(timeout);
       video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("error", onError);
       hlsInstanceRef.current?.destroy();
       hlsInstanceRef.current = null;
@@ -633,6 +647,7 @@ export function LivePlayer({
         ref={videoRef}
         className="ydo-live-video"
         playsInline
+        preload="none"
         // @ts-expect-error compatibilidade iOS Safari
         webkit-playsinline="true"
         onClick={handleToggleMute}
@@ -691,7 +706,7 @@ export function LivePlayer({
             <Tv size={36} className="ydo-live-loading-icon" />
             <div className="ydo-live-skeleton-bar short" />
             <div className="ydo-live-skeleton-bar" />
-            <span>Sintonizando transmissão…</span>
+            <span>Sintonizando…</span>
           </div>
         </div>
       )}
@@ -700,7 +715,7 @@ export function LivePlayer({
       {error && (
         <div className="ydo-live-error-overlay">
           <AlertCircle size={44} style={{ color: "#e8b44a" }} />
-          <h3>Canal fora do ar agora</h3>
+          <h3>Nenhum servidor disponível para este canal</h3>
           <p>
             Tentamos todas as {validStreams.length} fontes deste canal no momento.
             A disponibilidade pode retornar em breve.
@@ -769,7 +784,7 @@ export function LivePlayer({
               <span>
                 {rawFonte?.nome ||
                   rawFonte?.qualidade ||
-                  `Fonte ${sourceIndex + 1}`}
+                  `Servidor ${sourceIndex + 1}`}
               </span>
             </button>
 
@@ -779,7 +794,7 @@ export function LivePlayer({
                 {validStreams.map((f, i) => {
                   const isCurrent = i === sourceIndex;
                   const label =
-                    f.nome || f.qualidade || `Fonte ${i + 1}`;
+                    f.nome || f.qualidade || `Servidor ${i + 1}`;
                   return (
                     <button
                       key={f.url + i}

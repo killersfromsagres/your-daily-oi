@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import type { CanalTV } from "@/lib/canais";
+import { type CanalTV, fetchCanaisFallbackClient } from "@/lib/canais";
 import type { CanalEPG, ProgramaEPG } from "@/lib/epg";
 import { LivePlayer } from "@/components/player/LivePlayer";
 import { JogosShelf } from "@/components/tv/JogosShelf";
@@ -24,6 +24,32 @@ import {
 const LAST_CANAL_KEY = "zangflix:tv-last-channel";
 const FAV_CANAIS_KEY = "zangflix:tv-favorites";
 
+function ChannelLogo({
+  logo,
+  nome,
+  className,
+  monogramClass,
+}: {
+  logo?: string;
+  nome: string;
+  className: string;
+  monogramClass: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (!logo || failed) {
+    return <span className={monogramClass}>{nome.slice(0, 3).toUpperCase()}</span>;
+  }
+  return (
+    <img
+      src={logo}
+      alt=""
+      loading="lazy"
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 interface TvViewProps {
   initialCanalId?: string;
 }
@@ -33,6 +59,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [canais, setCanais] = useState<CanalTV[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [playerLoading, setPlayerLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<string>(initialCanalId || "");
@@ -84,10 +111,32 @@ export function TvView({ initialCanalId }: TvViewProps) {
     });
   }, []);
 
-  // Busca lista de canais da API /api/canais
+  // Busca lista de canais da API /api/canais com fallback direto ao Saimo TV no navegador
   useEffect(() => {
     let active = true;
     setLoading(true);
+
+    const applyCanaisData = (data: { canais: CanalTV[]; categorias: string[] }) => {
+      if (!active) return;
+      setCanais(data.canais);
+      setCategorias(data.categorias);
+
+      // Se houver initialCanalId válido, usa ele
+      if (initialCanalId && data.canais.some((c) => c.id === initialCanalId)) {
+        setActiveId(initialCanalId);
+      } else {
+        // Tenta reabrir o último canal assistido do localStorage
+        const lastSaved = localStorage.getItem(LAST_CANAL_KEY);
+        if (lastSaved && data.canais.some((c) => c.id === lastSaved)) {
+          setActiveId(lastSaved);
+        } else if (data.canais.length > 0) {
+          // Primeiro canal da lista (ou prioritário Globo/SporTV)
+          const defaultCanal =
+            data.canais.find((c) => /globo|sportv/i.test(c.nome)) || data.canais[0];
+          setActiveId(defaultCanal.id);
+        }
+      }
+    };
 
     fetch("/api/canais", { cache: "no-store" })
       .then((res) => {
@@ -99,29 +148,20 @@ export function TvView({ initialCanalId }: TvViewProps) {
         }>;
       })
       .then((data) => {
-        if (!active) return;
-        setCanais(data.canais);
-        setCategorias(data.categorias);
-
-        // Se houver initialCanalId válido, usa ele
-        if (initialCanalId && data.canais.some((c) => c.id === initialCanalId)) {
-          setActiveId(initialCanalId);
-        } else {
-          // Tenta reabrir o último canal assistido do localStorage
-          const lastSaved = localStorage.getItem(LAST_CANAL_KEY);
-          if (lastSaved && data.canais.some((c) => c.id === lastSaved)) {
-            setActiveId(lastSaved);
-          } else if (data.canais.length > 0) {
-            // Primeiro canal da lista (ou prioritário Globo/SporTV)
-            const defaultCanal =
-              data.canais.find((c) => /globo|sportv/i.test(c.nome)) || data.canais[0];
-            setActiveId(defaultCanal.id);
-          }
+        if (!data?.canais || data.canais.length === 0) {
+          throw new Error("Catálogo vazio retornado da API");
         }
+        applyCanaisData(data);
       })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : "Erro ao carregar canais");
+      .catch(async (err: unknown) => {
+        console.warn("[TvView] Rota /api/canais falhou, recorrendo ao catálogo direto do Saimo:", err);
+        try {
+          const fallbackData = await fetchCanaisFallbackClient();
+          applyCanaisData(fallbackData);
+        } catch (fbErr: unknown) {
+          if (!active) return;
+          setError(fbErr instanceof Error ? fbErr.message : "Erro ao carregar canais");
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -412,6 +452,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
               onPrevCanal={handlePrevCanal}
               onNextCanal={handleNextCanal}
               onToggleGuide={() => setGuideOpen((o) => !o)}
+              onLoadingChange={setPlayerLoading}
             />
           ) : (
             <div className="ydo-live-player-container skeleton" />
@@ -488,19 +529,12 @@ export function TvView({ initialCanalId }: TvViewProps) {
                     }}
                   >
                     <div className="ydo-tv-logo-container">
-                      {c.logo ? (
-                        <img
-                          src={c.logo}
-                          alt=""
-                          loading="lazy"
-                          className="ydo-tv-channel-logo"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLElement).style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <span className="ydo-tv-monogram">{c.nome.slice(0, 3).toUpperCase()}</span>
-                      )}
+                      <ChannelLogo
+                        logo={c.logo}
+                        nome={c.nome}
+                        className="ydo-tv-channel-logo"
+                        monogramClass="ydo-tv-monogram"
+                      />
                     </div>
 
                     <div className="ydo-tv-channel-info">
@@ -509,7 +543,11 @@ export function TvView({ initialCanalId }: TvViewProps) {
                         {isActive && <span className="ydo-live-dot" />}
                       </div>
                       <div className="ydo-tv-channel-epg-text">
-                        {epg?.titulo ? `${epg.horario ? `${epg.horario} · ` : ""}${epg.titulo}` : c.categoria}
+                        {isActive && playerLoading
+                          ? "Sintonizando…"
+                          : epg?.titulo
+                          ? `${epg.horario ? `${epg.horario} · ` : ""}${epg.titulo}`
+                          : c.categoria}
                       </div>
                     </div>
 
@@ -564,23 +602,20 @@ export function TvView({ initialCanalId }: TvViewProps) {
                       }}
                     >
                       <div className="ydo-tv-shelf-logo-box">
-                        {c.logo ? (
-                          <img
-                            src={c.logo}
-                            alt=""
-                            loading="lazy"
-                            className="ydo-tv-shelf-logo"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <span className="ydo-tv-monogram">{c.nome.slice(0, 3).toUpperCase()}</span>
-                        )}
+                        <ChannelLogo
+                          logo={c.logo}
+                          nome={c.nome}
+                          className="ydo-tv-shelf-logo"
+                          monogramClass="ydo-tv-monogram"
+                        />
                       </div>
                       <div className="ydo-tv-shelf-card-title">{c.nome}</div>
                       <div className="ydo-tv-shelf-card-epg">
-                        {epg?.titulo ? epg.titulo : c.categoria}
+                        {c.id === activeId && playerLoading
+                          ? "Sintonizando…"
+                          : epg?.titulo
+                          ? epg.titulo
+                          : c.categoria}
                       </div>
                     </div>
                   );
@@ -681,21 +716,12 @@ export function TvView({ initialCanalId }: TvViewProps) {
                       }}
                     >
                       <div className="ydo-guia-logo-container">
-                        {c.logo ? (
-                          <img
-                            src={c.logo}
-                            alt=""
-                            loading="lazy"
-                            className="ydo-guia-logo"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLElement).style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <span className="ydo-guia-monogram">
-                            {c.nome.slice(0, 3).toUpperCase()}
-                          </span>
-                        )}
+                        <ChannelLogo
+                          logo={c.logo}
+                          nome={c.nome}
+                          className="ydo-guia-logo"
+                          monogramClass="ydo-guia-monogram"
+                        />
                       </div>
 
                       <div className="ydo-guia-content">

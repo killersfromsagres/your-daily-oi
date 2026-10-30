@@ -231,6 +231,103 @@ export function parseRadios(texto: string): RadioItem[] {
 }
 
 /**
+ * Filtra fontes de hosts desativados e extrai categorias organizadas
+ */
+export function filterCanaisAndExtractCategories(
+  canaisRaw: CanalTV[],
+  desativados: string[] = []
+): { canais: CanalTV[]; categorias: string[] } {
+  const desativadosSet = new Set(desativados.map((d) => d.toLowerCase().trim()));
+
+  const canais: CanalTV[] = [];
+  for (const c of canaisRaw) {
+    const fontesVivas = c.fontes.filter((f) => {
+      try {
+        const host = new URL(f.url).hostname.toLowerCase();
+        return !desativadosSet.has(host);
+      } catch {
+        return false;
+      }
+    });
+    if (fontesVivas.length > 0) {
+      canais.push({
+        ...c,
+        fontes: fontesVivas,
+      });
+    }
+  }
+
+  const preferredOrder = [
+    "TV Aberta",
+    "Esportes",
+    "Notícias",
+    "Infantil",
+    "Documentários",
+    "Filmes e Séries",
+    "Variedades",
+  ];
+
+  const foundCats = new Set<string>();
+  for (const c of canais) {
+    if (c.categoria) foundCats.add(c.categoria);
+  }
+
+  const categorias: string[] = [];
+  for (const p of preferredOrder) {
+    if (foundCats.has(p)) {
+      categorias.push(p);
+      foundCats.delete(p);
+    }
+  }
+  for (const r of foundCats) {
+    categorias.push(r);
+  }
+
+  return { canais, categorias };
+}
+
+/**
+ * Fallback no navegador caso a rota /api/canais falhe ou esteja indisponível
+ */
+export async function fetchCanaisFallbackClient(): Promise<{
+  atualizadoEm: string;
+  categorias: string[];
+  canais: CanalTV[];
+}> {
+  const [txtRes, desativadosRes] = await Promise.allSettled([
+    fetch(CANAIS_URL),
+    fetch(DESATIVADOS_URL),
+  ]);
+
+  if (txtRes.status !== "fulfilled" || !txtRes.value.ok) {
+    throw new Error("Falha ao obter catálogo ao vivo de canais");
+  }
+
+  const text = await txtRes.value.text();
+  const canaisRaw = parseCanais(text);
+
+  let desativados: string[] = [];
+  if (desativadosRes.status === "fulfilled" && desativadosRes.value.ok) {
+    try {
+      const data = (await desativadosRes.value.json()) as { desativados?: string[] };
+      if (Array.isArray(data?.desativados)) {
+        desativados = data.desativados.filter((h): h is string => typeof h === "string");
+      }
+    } catch {
+      // ignora
+    }
+  }
+
+  const { canais, categorias } = filterCanaisAndExtractCategories(canaisRaw, desativados);
+
+  return {
+    atualizadoEm: new Date().toISOString(),
+    categorias,
+    canais,
+  };
+}
+
+/**
  * Carrega e faz cache server-side dos canais da Saimo TV
  */
 export async function loadCanais(): Promise<{
@@ -266,54 +363,7 @@ export async function loadCanais(): Promise<{
 
     // Painel de servidores desligados (Saimo TV): filtra hosts inativos
     const desativados = await fetchFontesDesativadas();
-    const desativadosSet = new Set(desativados);
-
-    const canais: CanalTV[] = [];
-    for (const c of canaisRaw) {
-      const fontesVivas = c.fontes.filter((f) => {
-        try {
-          const host = new URL(f.url).hostname.toLowerCase();
-          return !desativadosSet.has(host);
-        } catch {
-          return false;
-        }
-      });
-      // Canal que ficou sem nenhuma fonte viva sai da lista temporariamente (peneirarCanais)
-      if (fontesVivas.length > 0) {
-        canais.push({
-          ...c,
-          fontes: fontesVivas,
-        });
-      }
-    }
-
-    // Ordem preferencial de categorias
-    const preferredOrder = [
-      "TV Aberta",
-      "Esportes",
-      "Notícias",
-      "Infantil",
-      "Documentários",
-      "Filmes e Séries",
-      "Variedades",
-    ];
-
-    const foundCats = new Set<string>();
-    for (const c of canais) {
-      if (c.categoria) foundCats.add(c.categoria);
-    }
-
-    const categorias: string[] = [];
-    for (const p of preferredOrder) {
-      if (foundCats.has(p)) {
-        categorias.push(p);
-        foundCats.delete(p);
-      }
-    }
-    // Adiciona as categorias restantes que não estavam na lista preferencial
-    for (const r of foundCats) {
-      categorias.push(r);
-    }
+    const { canais, categorias } = filterCanaisAndExtractCategories(canaisRaw, desativados);
 
     canaisCache = canais;
     canaisCategoriasCache = categorias;
