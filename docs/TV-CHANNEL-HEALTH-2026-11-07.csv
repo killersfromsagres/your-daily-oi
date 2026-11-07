@@ -1,0 +1,266 @@
+# Auditoria de transmissão TV ao vivo
+# Data: 2026-11-07; origem de sondagem: GitHub Actions USA
+# Uma resposta 200/206 de playlist não confirma decodificação ou disponibilidade ao espectador.
+# HTTP 403 é um resultado observado nesta rede, não uma falha global definitiva.
+canal_id,canal,categoria,fontes_cadastradas,fontes_com_resposta_de_midia,fontes_403_401,status_na_rede_de_teste,http_e_host_das_fontes
+a-e-e,A&E,Documentários,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+adult-swim,Adult Swim,Variedades,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+amc,AMC,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+animal-planet,Animal Planet,Documentários,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+band,Band,TV Aberta,3,3,0,upstream-media-candidate,"206:vipwaytvcdn.multtv.tv.br; 206:138.204.86.4; 206:vipwaytvcdn.multtv.tv.br"
+cartoon-network,Cartoon Network,Infantil,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114"
+cnn-brasil,CNN Brasil,Notícias,4,3,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:d25usgadhphvwi.cloudfront.net; 206:45.162.64.114; 200:amg01391-sbtinfast-amg01391c4-lg-br-4597.playouts.now.amagi.tv"
+cnn-brasil-money,CNN Brasil Money,Notícias,1,1,0,upstream-media-candidate,200:amg01391-amg01391c57-amgplt0026.playout.now3.amagi.tv
+e,E!,Variedades,1,1,0,upstream-media-candidate,200:video49.mais.uol.com.br
+ge-tv,GE TV,Esportes,6,5,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:amg00716-globo-amg00716c1-tcl-br-9495.playouts.now.amagi.tv; 206:proxylinkurl.wored85282.workers.dev; 206:dfr80qz435crc.cloudfront.net; 206:amg00716-globo-amg00716c1-tcl-br-9495.playouts.now.amagi.tv; 200:45.185.11.126"
+globonews,GloboNews,Notícias,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:79.127.238.228; 200:45.185.11.126"
+globoplay-novelas,Globoplay Novelas,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:79.127.238.228"
+gnt,GNT,Variedades,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:79.127.238.228"
+history,History,Documentários,5,3,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 200:46.151.196.223; 206:170.83.16.50; 404:45.185.11.126"
+history-2,History 2,Documentários,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+jovem-pan-news,Jovem Pan News,Notícias,4,3,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:amg01391-sbtinfast-amg01391c3-lg-us-8995.playouts.now.amagi.tv; 206:186.219.52.187; 206:amg01391-amg01391c3-tcl-spain-5038.playouts.now.amagi.tv"
+megapix,Megapix,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+multishow,Multishow,Variedades,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+premiere-2,Premiere 2,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+premiere-3,Premiere 3,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+premiere-4,Premiere 4,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+premiere-5,Premiere 5,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+premiere-6,Premiere 6,Esportes,2,1,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+premiere-7,Premiere 7,Esportes,2,1,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+premiere-8,Premiere 8,Esportes,2,0,1,all-probes-failed,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 404:45.185.11.126"
+premiere-clubes,Premiere Clubes,Esportes,2,0,1,all-probes-failed,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 404:45.185.11.126"
+sbt,SBT,TV Aberta,3,2,1,upstream-media-candidate,"206:138.204.86.4; 403:aovivo.maissbt.com; 206:6836041ea1117.streamlock.net"
+sbt-news,SBT News,Notícias,4,4,0,upstream-media-candidate,"206:sbtnews.maissbt.com; 200:dai.google.com; 200:45.185.11.126; 206:sbtnews.maissbt.com"
+sony-channel,Sony Channel,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:170.83.16.50"
+sportv,SporTV,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+sportv-2,SporTV 2,Esportes,2,1,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+sportv-3,SporTV 3,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+canal-off,Canal OFF,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+telecine-action,Telecine Action,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+telecine-pipoca,Telecine Pipoca,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+telecine-premium,Telecine Premium,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+tv-brasil,TV Brasil,TV Aberta,2,2,0,upstream-media-candidate,"206:tvbrasil-stream.ebc.com.br; 206:45.162.64.114"
+universal-reality,Universal Reality,Filmes e Séries,1,1,0,upstream-media-candidate,200:45.185.11.126
+warner,Warner,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+impd,IMPD,Variedades,3,3,0,upstream-media-candidate,"206:68882bdaf156a.streamlock.net; 206:igrejamundial.nuvemplay.live; 206:68882bdaf156a.streamlock.net"
+globo-sp,Globo SP,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+cartoonito,Cartoonito,Infantil,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+cinemax,Cinemax,Filmes e Séries,3,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 404:45.185.11.126"
+discovery-channel,Discovery Channel,Documentários,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+discovery-kids,Discovery Kids,Infantil,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 200:45.185.11.126"
+discovery-theater,Discovery Theater,Documentários,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 200:45.185.11.126"
+espn,ESPN,Esportes,4,3,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4; 200:181.78.197.59"
+espn-2,ESPN 2,Esportes,2,1,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+espn-4,ESPN 4,Esportes,5,4,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4; 200:181.78.197.59; 200:45.185.11.126"
+espn-5,ESPN 5,Esportes,2,1,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+espn-6,ESPN 6,Esportes,2,1,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+hbo,HBO,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+hbo2,HBO2,Filmes e Séries,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 200:45.185.11.126"
+hbo-family,HBO Family,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+hbo-mundi,HBO Mundi,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+hbo-plus,HBO Plus,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+hbo-pop,HBO Pop,Filmes e Séries,3,2,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 200:45.185.11.126"
+hbo-signature,HBO Signature,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+hbo-xtreme,HBO Xtreme,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+record,Record,TV Aberta,3,2,0,upstream-media-candidate,"502:video07.logicahost.com.br; 206:138.204.86.4; 200:79.127.238.228"
+space,Space,Filmes e Séries,3,2,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4"
+tnt,TNT,Filmes e Séries,3,2,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4"
+tnt-series,TNT Séries,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+universal-tv,Universal TV,Filmes e Séries,2,0,1,all-probes-failed,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; timeout:getcdn.clarocdn.com.br"
+discovery-turbo,Discovery Turbo,Documentários,4,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4; 404:45.185.11.126"
+usa-network,USA Network,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+telecine-fun,Telecine Fun,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+telecine-cult,Telecine Cult,Filmes e Séries,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+telecine-touch,Telecine Touch,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+sony-movies,SONY Movies,Filmes e Séries,1,1,0,upstream-media-candidate,206:45.162.64.114
+globo,Globo,TV Aberta,1,1,0,upstream-media-candidate,206:138.204.86.4
+tooncast,Tooncast,Infantil,2,1,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:170.83.16.50"
+tlc,TLC,Variedades,1,1,0,upstream-media-candidate,200:79.127.238.228
+arte-1,Arte 1,Variedades,1,1,0,upstream-media-candidate,206:45.162.64.114
+tnt-novelas,TNT Novelas,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+discovery-science,Discovery Science,Documentários,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4"
+axn,AXN,Filmes e Séries,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 206:170.83.16.50"
+band-news,Band News,Notícias,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114"
+band-sports-hd,BAND SPORTS HD,Esportes,3,2,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:170.83.16.50"
+redetv,RedeTV!,TV Aberta,4,3,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:170.83.16.50; 206:tv01.zas.media"
+tv-cultura,TV Cultura,TV Aberta,3,2,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:player-tvcultura.stream.uol.com.br; 206:5b33b873179a2.streamlock.net"
+terra-viva,Terra Viva,Variedades,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:9ada494d.wurl.com"
+woohoo,Woohoo,Esportes,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:170.83.16.50"
+espn-3,ESPN 3,Esportes,3,2,1,upstream-media-candidate,"403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:138.204.86.4; 200:181.78.197.59"
+tv-gazeta,TV Gazeta,TV Aberta,3,3,0,upstream-media-candidate,"206:45.162.64.114; 206:45.162.64.114; 200:video08.logicahost.com.br"
+record-news,Record News,Notícias,7,6,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:rnw-rn-samsungtvplus.otteravision.com; 200:stream.ads.ottera.tv; 206:rnw-rn.otteravision.com; 206:rnw-rn-soultv.otteravision.com; 206:run-rnw-rn.otteravision.com"
+cancao-nova,Canção Nova,TV Aberta,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 200:46.151.196.223"
+tv-aparecida,TV Aparecida,TV Aberta,4,3,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:cdn.live.br1.jmvstream.com; 206:45.162.64.114; 200:cdn.jmvstream.com"
+rede-vida,Rede Vida,TV Aberta,5,4,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:d12e4o88jd8gex.cloudfront.net; 200:46.151.196.223; 206:186.219.52.187; 206:d12e4o88jd8gex.cloudfront.net"
+discovery-id,Discovery ID,Documentários,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4"
+fish-tv,Fish TV,Esportes,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:170.83.16.50"
+x-sports,X Sports,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+n-sports,N SPORTS,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+band-sp,Band SP,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+sbt-sp,SBT SP,TV Aberta,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+record-sp,Record SP,TV Aberta,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+canal-rural,Canal Rural,Variedades,1,1,0,upstream-media-candidate,206:186.219.52.187
+agro-mais,Agro Mais,Variedades,1,1,0,upstream-media-candidate,206:45.162.64.114
+cnt,CNT,TV Aberta,1,1,0,upstream-media-candidate,206:45.162.64.114
+tv-pai-eterno,TV Pai Eterno,Variedades,4,3,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:video09.logicahost.com.br; 206:45.162.64.114; 200:video09.logicahost.com.br"
+playtv,PlayTV,TV Aberta,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:isaocorp.cloudecast.com"
+rede-brasil,Rede Brasil,TV Aberta,2,2,0,upstream-media-candidate,"206:redebrasil.nuvemplay.live; 200:video09.logicahost.com.br"
+rede-gospel,Rede Gospel,Variedades,3,2,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:cdn.live.br1.jmvstream.com; 206:redegospel-aovivo.nuvemplay.live"
+trace-brazuca,Trace Brazuca,Variedades,2,2,0,upstream-media-candidate,"200:amg01131-tracetv-tracebrazuca-xiaomi-vvr19.amagi.tv; 200:cdn-uw2-prod.tsv2.amagi.tv"
+tv-camara,TV Câmara,TV Aberta,2,2,0,upstream-media-candidate,"206:45.162.64.114; 200:stream3.camara.gov.br"
+tv-evangelizar,TV Evangelizar,Variedades,3,2,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:170.83.16.50"
+tv-justica,TV Justiça,TV Aberta,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:170.83.16.50"
+tv-novo-tempo,TV Novo Tempo,Variedades,3,2,1,upstream-media-candidate,"403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:streamtv.novotempo.com"
+tv-senado,TV Senado,TV Aberta,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:170.83.16.50"
+rit,RIT,Variedades,2,2,0,upstream-media-candidate,"206:acesso.ecast.site; 206:stream.ecast.com.br"
+discovery-home-e-health,Discovery Home & Health,Documentários,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114"
+canal-agro,Canal Agro,Variedades,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:aovivo.equipea.com.br"
+blits-tv,Blits TV,Variedades,1,0,0,all-probes-failed,network-failure:stmv1.transmissaodigital.com
+com-brasil,Com Brasil,Variedades,2,2,0,upstream-media-candidate,"206:br5093.streamingdevideo.com.br; 206:dfr80qz435crc.cloudfront.net"
+sesc-tv,SESC TV,TV Aberta,1,1,0,upstream-media-candidate,206:45.162.64.114
+tvideonews,TVideoNews,Notícias,2,2,0,upstream-media-candidate,"206:video01.logicahost.com.br; 206:video01.logicahost.com.br"
+canal-educacao,Canal Educacao,TV Aberta,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:canaleducacao-stream.ebc.com.br"
+canal-futura,Canal Futura,TV Aberta,3,3,0,upstream-media-candidate,"206:45.162.64.114; 206:170.83.16.50; 206:186.219.52.187"
+canal-gov,Canal Gov,TV Aberta,1,1,0,upstream-media-candidate,206:canalgov-stream.ebc.com.br
+canal-uol,Canal UOL,Notícias,1,1,0,upstream-media-candidate,200:video24.mais.uol.com.br
+canal-do-boi,Canal do Boi,Variedades,2,2,0,upstream-media-candidate,"206:45.162.64.114; 206:170.83.16.50"
+cultura-fast,Cultura Fast,TV Aberta,1,1,0,upstream-media-candidate,200:fpa-gateway.tvcultura.com.br
+dumdum,DumDum,Infantil,3,3,0,upstream-media-candidate,"206:45.162.64.114; 206:186.219.52.187; 200:45.185.11.126"
+kpoptv-play,KpopTV Play,Variedades,1,1,0,upstream-media-candidate,200:giatv.bozztv.com
+masterchef,MasterChef,24 Horas,1,1,0,upstream-media-candidate,200:amg00627-amg00627c9-runtime-latam-2613.playouts.now.amagi.tv
+mytime-movie-network,MyTime Movie Network,Filmes e Séries,1,1,0,upstream-media-candidate,206:appletree-mytime-samsungbrazil.amagi.tv
+nickonline,NickOnline,Infantil,2,2,0,upstream-media-candidate,"218:x1colegal.com; 218:x1colegal.com"
+nicktoons-brasil,NickToons Brasil,Infantil,1,1,0,upstream-media-candidate,206:stmv2.srvif.com
+nickelodeon,Nickelodeon,Infantil,1,1,0,upstream-media-candidate,206:stmv2.srvif.com
+rede-tv,Rede TV!,TV Aberta,4,4,0,upstream-media-candidate,"206:45.162.64.114; 206:tv01.zas.media; 206:170.83.16.50; 206:tv01.zas.media"
+runtime,Runtime,Filmes e Séries,1,1,0,upstream-media-candidate,200:stream.ads.ottera.tv
+amazon-prime-video-01,Amazon Prime Video 01,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+amazon-prime-video-02,Amazon Prime Video 02,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+canal-goat-jogo-1,Canal GOAT (Jogo 1),Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+combate,Combate,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+dazn-jogo-1,DAZN (Jogo 1),Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-01,Disney+ 01,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-02,Disney+ 02,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+paramount-jogo-1,Paramount+ (Jogo 1),Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+paramount-jogo-2,Paramount+ (Jogo 2),Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+paramount-jogo-3,Paramount+ (Jogo 3),Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+max-01,MAX 01,Filmes e Séries,0,0,0,no-sources,
+max-02,MAX 02,Filmes e Séries,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+studio-universal,Studio Universal,Filmes e Séries,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+gloob,Gloob,Infantil,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+gloobinho,Gloobinho,Infantil,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+tv-ra-tim-bum,TV Rá Tim Bum,Infantil,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+band-rj,Band RJ,TV Aberta,0,0,0,no-sources,
+sbt-ba,SBT BA,TV Aberta,1,1,0,upstream-media-candidate,200:cdn.live.br1.jmvstream.com
+sbt-rj,SBT RJ,TV Aberta,0,0,0,no-sources,
+tve-bahia,TVE Bahia,TV Aberta,1,1,0,upstream-media-candidate,206:streaming.procergs.com.br
+bis,BIS,Variedades,1,1,0,upstream-media-candidate,200:45.185.11.126
+food-network,Food Network,Variedades,2,1,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 200:45.185.11.126"
+joias-sobre-rodas-24h,Joias Sobre Rodas 24H,24 Horas,1,1,0,upstream-media-candidate,200:joia24hr-vbxyvdsk.manus.space
+24h-chaves,24H Chaves,24 Horas,0,0,0,no-sources,
+24h-dragon-ball-z,24H Dragon Ball Z,24 Horas,0,0,0,no-sources,
+24h-naruto-classico,24H Naruto Clássico,24 Horas,0,0,0,no-sources,
+24h-os-simpsons,24H Os Simpsons,24 Horas,0,0,0,no-sources,
+24h-pica-pau,24H Pica Pau,24 Horas,0,0,0,no-sources,
+24h-todo-mundo-odeia-o-cris,24H Todo Mundo Odeia o Cris,24 Horas,0,0,0,no-sources,
+24h-friends,24H Friends,24 Horas,0,0,0,no-sources,
+discovery-world,Discovery World,Documentários,3,2,1,upstream-media-candidate,"403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz; 206:45.162.64.114; 206:138.204.86.4"
+cazetv-1,CazeTV 1,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+cazetv-2,CazeTV 2,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+pt-a-bola,PT - A Bola,Esportes,0,0,0,no-sources,
+pt-benfica-tv,PT - Benfica TV,Esportes,0,0,0,no-sources,
+pt-canal-11,PT - Canal 11,Esportes,0,0,0,no-sources,
+pt-eleven-1,PT - Eleven 1,Esportes,0,0,0,no-sources,
+pt-eleven-2,PT - Eleven 2,Esportes,0,0,0,no-sources,
+pt-eleven-3,PT - Eleven 3,Esportes,0,0,0,no-sources,
+pt-sporttv-1,PT - Sporttv 1,Esportes,0,0,0,no-sources,
+pt-sporttv-2,PT - Sporttv 2,Esportes,0,0,0,no-sources,
+pt-sporttv-3,PT - Sporttv 3,Esportes,0,0,0,no-sources,
+pt-sporttv-4,PT - Sporttv 4,Esportes,0,0,0,no-sources,
+pt-sporttv-5,PT - Sporttv 5,Esportes,0,0,0,no-sources,
+pt-sporttv-6,PT - Sporttv 6,Esportes,0,0,0,no-sources,
+pt-sporttv-7,PT - Sporttv 7,Esportes,0,0,0,no-sources,
+sportynet-1,SportyNet+ 1,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+sportynet-2,SportyNet+ 2,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+sportynet-3,SportyNet+ 3,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+globo-am,Globo AM,TV Aberta,0,0,0,no-sources,
+globo-ce,Globo CE,TV Aberta,0,0,0,no-sources,
+globo-es,Globo ES,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+globo-go,Globo GO,TV Aberta,0,0,0,no-sources,
+globo-pb,Globo PB,TV Aberta,0,0,0,no-sources,
+globo-pe,Globo PE,TV Aberta,0,0,0,no-sources,
+globo-rj,Globo RJ,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+globo-rs,Globo RS,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+record-go,Record GO,TV Aberta,0,0,0,no-sources,
+record-mg,Record MG,TV Aberta,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+record-rj,Record RJ,TV Aberta,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+hgtv,HGTV,Variedades,0,0,0,no-sources,
+a-fazenda-18-1,A Fazenda 18 1,PPV,0,0,0,no-sources,
+a-fazenda-18-2,A Fazenda 18 2,PPV,0,0,0,no-sources,
+a-fazenda-18-3,A Fazenda 18 3,PPV,0,0,0,no-sources,
+a-fazenda-18-5,A Fazenda 18 5,PPV,0,0,0,no-sources,
+cazetv-3,CazeTV 3,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+globo-df,Globo DF,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+globo-mg,Globo MG,TV Aberta,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+max-03,MAX 03,Filmes e Séries,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+sportynet,SportyNet,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+paramount-4,Paramount + 4,Variedades,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+ufc-fight-pass,UFC Fight Pass,PPV,0,0,0,no-sources,
+disney-plus-1,Disney Plus 1,Filmes e Séries,0,0,0,no-sources,
+paramount-plus-1,Paramount Plus 1,Filmes e Séries,0,0,0,no-sources,
+anime-channel-tv,Anime Channel TV,Infantil,1,1,0,upstream-media-candidate,206:stmv2.painelvideocast.com.br
+otaku-sign-tv,Otaku Sign TV,Infantil,1,1,0,upstream-media-candidate,206:stmv1.srvif.com
+geekdot,Geekdot,Infantil,1,1,0,upstream-media-candidate,206:stream.ichibansys.com
+nbx-tv-kids,NBX TV Kids,Infantil,1,1,0,upstream-media-candidate,206:stmv4.voxtvhd.com.br
+sbc-kids,SBC Kids,Infantil,1,1,0,upstream-media-candidate,206:video01.brascast.com
+rede-criancas,Rede Crianças,Infantil,1,1,0,upstream-media-candidate,200:video08.logicahost.com.br
+kuriakos-kids,Kuriakos Kids,Infantil,1,1,0,upstream-media-candidate,206:w2.manasat.com
+gospel-cartoon,Gospel Cartoon,Infantil,1,1,0,upstream-media-candidate,206:stmv1.srvif.com
+jetsons-tv,Jetsons TV,Infantil,1,1,0,upstream-media-candidate,206:stmv1.srvif.com
+24h-os-smurfs,24H Os Smurfs,24 Horas,1,1,0,upstream-media-candidate,206:d144py1prrd7ns.cloudfront.net
+tv-a-critica,TV A Crítica,TV Aberta,1,1,0,upstream-media-candidate,206:video01.brascast.com
+fifa-portugues,FIFA+ Português,Esportes,2,2,0,upstream-media-candidate,"206:c2657533.wurl.com; 206:e3be9ac5.wurl.com"
+globo-bahia,Globo Bahia,TV Aberta,1,1,0,upstream-media-candidate,206:hls1.sua.tv
+runtime-acao,Runtime Ação,Filmes e Séries,1,1,0,upstream-media-candidate,206:run-rt-ra.otteravision.com
+top-tv,Top TV,Músicas,1,1,0,upstream-media-candidate,206:isaocorp.cloudecast.com
+moviesphere-brazil,MovieSphere Brazil,Filmes e Séries,1,1,0,upstream-media-candidate,200:amg00353-amg00353c29-plex-us-3205.playouts.now.amagi.tv
+trace-urban,Trace Urban,Músicas,1,1,0,upstream-media-candidate,200:amg01076-lightningintern-traceurban-xiaomi-m78n3.amagi.tv
+sony-one-classics,Sony One Classics,Filmes e Séries,1,1,0,upstream-media-candidate,200:spt-sonyoneclassicas-1-br.samsung.wurl.tv
+classique-faroeste,Classique Faroeste,Filmes e Séries,1,1,0,upstream-media-candidate,200:amogonetworx-grjngo-1-eu.plex.wurl.tv
+loading-tv,Loading TV,Infantil,1,1,0,upstream-media-candidate,206:stmv1.srvif.com
+retro-cartoon,Retrô Cartoon,Infantil,0,0,0,no-sources,
+retro-music,Retro Music,Músicas,1,1,0,upstream-media-candidate,206:newstream.mediawork.cz
+now-rock,Now Rock,Músicas,1,1,0,upstream-media-candidate,206:lightning-now90s-rakuten.amagi.tv
+tv-classicos,TV Clássicos,Filmes e Séries,1,1,0,upstream-media-candidate,206:stmv2.painelvideocast.com.br
+apple-tv-01,Apple TV 01,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+apple-tv-02,Apple TV 02,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+apple-tv-03,Apple TV 03,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+apple-tv-04,Apple TV 04,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+apple-tv-05,Apple TV 05,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+apple-tv-06,Apple TV 06,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+cazetv-4,CazeTV 4,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-07,Disney+ 07,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-08,Disney+ 08,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-03,Disney+ 03,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-05,Disney+ 05,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-06,Disney+ 06,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+max-04,MAX 04,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+max-05,MAX 05,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+amc-series,AMC Séries,Filmes e Séries,1,0,1,all-probes-failed,403:d2-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+record-df,Record DF,TV Aberta,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+record-es,Record ES,TV Aberta,1,0,1,all-probes-failed,403:d3-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+disney-04,Disney+ 04,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+max,Max,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+max-06,Max 06,Esportes,1,0,1,all-probes-failed,403:d1-ywppjexvlyulasvmgzjdftfjikth2210oq80soveui6lkbi2iza2zf.cdn13embed.xyz
+tcm,TCM,Filmes e Séries,0,0,0,no-sources,
+mtv,MTV,Variedades,0,0,0,no-sources,
+a-fazenda-18-4,A Fazenda 18 4,24 Horas,0,0,0,no-sources,
+curta,Curta,Documentários,0,0,0,no-sources,
+a-e-e-s79,A&E (S79),Filmes e Séries,1,1,0,upstream-media-candidate,200:79.127.238.228
+axn-s79,AXN (S79),Filmes e Séries,1,0,0,all-probes-failed,network-failure:79.127.238.228
+caze-tv-st,CAZE TV (ST),Esportes,1,1,0,upstream-media-candidate,200:amg01391-amg01391c10-tcl-br-9630.playouts.now.amagi.tv
+combate-s46,COMBATE (S46),Esportes,1,1,0,upstream-media-candidate,200:46.151.196.223
+espn-2-s46,ESPN 2 (S46),Esportes,1,1,0,upstream-media-candidate,200:46.151.196.223
+n-sports-ot,N SPORTS (OT),Esportes,1,0,0,all-probes-failed,400:stream.ads.ottera.tv
+n-sports-rk,N SPORTS (RK),Esportes,0,0,0,no-sources,
+warner-channel-s79,WARNER CHANNEL (S79),Filmes e Séries,1,1,0,upstream-media-candidate,200:79.127.238.228

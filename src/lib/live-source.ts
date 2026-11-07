@@ -84,3 +84,40 @@ export function buildLiveProxyPath(
   if (source.agente) params.set("ua", source.agente);
   return "/api/live-proxy?" + params;
 }
+
+/**
+ * Resultado da auditoria pública: as três origens *.cdn13embed.xyz responderam
+ * HTTP 403 nas 137 fontes sondadas via datacenter. Não são excluídas, porque
+ * podem funcionar em outra rede; ficam apenas atrás de espelhos alternativos.
+ * URLs e tokens permanecem intactos.
+ */
+export function orderLiveSources<T extends LiveSourceLike>(sources: readonly T[]): T[] {
+  const highRisk = (source: T): boolean => {
+    try {
+      const host = new URL(source.url).hostname.toLowerCase();
+      return host === "cdn13embed.xyz" || host.endsWith(".cdn13embed.xyz");
+    } catch { return false; }
+  };
+  // Se não houver alternativa, mantém a fonte original como única tentativa.
+  if (sources.length < 2 || sources.every(highRisk)) return [...sources];
+  return [...sources].sort((left, right) => Number(highRisk(left)) - Number(highRisk(right)));
+}
+
+/**
+ * A requisição Range de um manifesto deve ser ignorada no proxy: reescrever
+ * URLs de playlists filhas e segmentos altera o corpo e o Content-Length.
+ * Repassar Range faz o player receber um 206 com URI relativa não reescrita.
+ */
+export function isLivePlaylistTarget(input: string): boolean {
+  try {
+    let current = new URL(input);
+    for (let depth = 0; depth < 3; depth++) {
+      const nested = current.searchParams.get("url");
+      if (!nested || !/^https?:\/\//i.test(nested)) break;
+      current = new URL(nested);
+    }
+    return /\.(?:m3u8?|mpd|txt)$/i.test(current.pathname);
+  } catch {
+    return false;
+  }
+}

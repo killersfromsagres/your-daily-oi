@@ -1,7 +1,7 @@
 name: Audit public Saimo TV frontend
 on:
   push:
-    branches: [feat/live-tv-studio-rebuild]
+    branches: [feat/live-tv-studio-rebuild, audit/all-tv-sources-live]
   workflow_dispatch:
 jobs:
   inspect:

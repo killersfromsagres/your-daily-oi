@@ -103,6 +103,37 @@ try {
     }
   }
   if (!success) throw new Error("Nenhum canal amostrado entregou playlist e fragmento real via Worker");
+
+  // O caminho de HBO usa um manifesto HLS com tracks de áudio relativas.
+  // Detecta se o proxy devolve linhas não reescritas que quebrariam o Hls.js.
+  const hbo = channels.find(ch => ch.id === "hbo");
+  if (hbo) {
+    const alternativeIndex = hbo.fontes.findIndex(s => !new URL(s.url).hostname.endsWith(".cdn13embed.xyz"));
+    if (alternativeIndex >= 0) {
+      const probeUrl = BASE + "/api/tv/stream?canal=hbo&fonte=" + alternativeIndex;
+      for (const ranged of [false, true]) {
+        const response = await fetch(probeUrl, {
+          headers: ranged ? { Range: "bytes=0-1535" } : undefined,
+          signal: timeout(12000),
+        });
+        const text = await response.text();
+        const stripped = text.split("\n").slice(0, 16).map(line => {
+          if (line.includes("/api/live-proxy?url=")) return "<rewritten proxy URL>";
+          if (/^https?:\/\//.test(line)) return "<unrewritten absolute URL>";
+          return line.trim().slice(0, 120);
+        });
+        console.log(JSON.stringify({ event:"worker-hbo-manifest",
+          ranged, status:response.status, type:response.headers.get("content-type"),
+          contentRange:response.headers.get("content-range"), hasHeader:text.includes("#EXTM3U"),
+          rewritten:text.includes("/api/live-proxy?url="), lines:stripped }));
+        if (response.status !== 200 || !text.includes("#EXTM3U") ||
+          !text.includes("/api/live-proxy?url=") || text.includes("\ntracks-v1a1/mono.m3u8")) {
+          throw new Error("HBO child HLS URI not rewritten (ranged=" + ranged + ")");
+        }
+      }
+    }
+  }
+
   // Rota legada é a que ainda está disponível no Vercel. Valida manifesto
   // e fragmento reais pelo mesmo endpoint que o frontend de compatibilidade usa.
   let legacySuccess = false;

@@ -11,12 +11,14 @@ const channel=process.env.LIVE_TEST_CHANNEL || "band";
 const blockModern=process.env.LIVE_BLOCK_CATALOG_PROXY === "1";
 const directBlock=process.env.LIVE_BLOCK_DIRECT_HOST || "";
 const requireLegacyPlayback=process.env.LIVE_REQUIRE_LEGACY_PLAYBACK === "1";
+const requirePlayback = process.env.LIVE_REQUIRE_PLAYBACK === "1";
+const expectProxy = process.env.LIVE_EXPECT_PROXY === "1";
 const worker=spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(WORKER_PORT)],{stdio:["ignore","pipe","pipe"]});
 let workerLogs="";
 worker.stderr.on("data",chunk=>{workerLogs=(workerLogs+String(chunk)).slice(-1000);});
 const temp=mkdtempSync(path.join(os.tmpdir(),"live-chrome-"));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-let chrome=null,ws=null;
+let chrome=null,ws=null,chromeStderr="";
 try{
  let ready=false;
  for(let i=0;i<48;i++){
@@ -30,9 +32,10 @@ try{
   "--remote-allow-origins=*","--remote-debugging-port="+CDP_PORT,
   "--user-data-dir="+temp,"--autoplay-policy=no-user-gesture-required",
   "--mute-audio",BASE+"/"
- ],{stdio:"ignore"});
+ ],{stdio:["ignore","ignore","pipe"]});
+ chrome.stderr?.on("data",chunk=>{chromeStderr=(chromeStderr+String(chunk)).slice(-2400);});
  let endpoint=null;
- for(let i=0;i<30;i++){
+ for(let i=0;i<75;i++){
   try{
    const data=await (await fetch("http://127.0.0.1:"+CDP_PORT+"/json/list",{signal:AbortSignal.timeout(1500)})).json();
    endpoint=(data.find(item=>item.type==="page")||data.find(item=>item.webSocketDebuggerUrl))?.webSocketDebuggerUrl||null;
@@ -40,7 +43,7 @@ try{
   }catch{}
   await sleep(300);
  }
- if(!endpoint)throw new Error("Chrome debugging page not found");
+ if(!endpoint)throw new Error("Chrome debugging page not found; exit="+chrome.exitCode+"; stderr="+chromeStderr);
  ws=new WebSocket(endpoint);
  await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
  const pending=new Map();let index=0;const failed=[],warnings=[];
@@ -101,6 +104,13 @@ try{
    await sleep(9000);await snapshot(41);
  }
  console.log(JSON.stringify({event:"browser-errors",channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,blockedResponses,failed,warnings}));
+ if(requirePlayback && ((lastSnapshot?.video?.time ?? 0)<7 ||
+    lastSnapshot?.video?.paused || lastSnapshot?.errorText)) {
+   throw new Error("No sustained playback for "+channel+": "+JSON.stringify(lastSnapshot));
+ }
+ if(expectProxy && catalogRequests < 2 && legacyRequests < 2) {
+   throw new Error("Expected catalog-backed proxy for "+channel+" but video never requested it");
+ }
  if(requireLegacyPlayback && (legacyMediaOk < 2 || (lastSnapshot?.video?.time ?? 0) < 5)) {
    throw new Error("HLS legacy proxy did not deliver media to Chrome (ok="+legacyMediaOk+
      ", time="+(lastSnapshot?.video?.time??0)+")");

@@ -1,0 +1,35 @@
+name: Verify closed TV channels in Chrome
+on:
+  push:
+    branches: [audit/all-tv-sources-live]
+  pull_request:
+    branches: [main]
+jobs:
+  closed-tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Unit tests
+        run: bun run test
+      - name: Type-check TV modules
+        run: bun scripts/typecheck-tv.mjs
+      - name: Build Cloudflare worker
+        run: bun run build
+      - name: Inspect HBO HLS proxy manifest and audio-track rewriting
+        run: bun scripts/smoke-saimo-live.mjs
+      - name: Band, open TV baseline
+        run: LIVE_TEST_CHANNEL=band LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: HBO, closed films and series
+        run: LIVE_TEST_CHANNEL=hbo LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: ESPN, closed sports
+        run: LIVE_TEST_CHANNEL=espn LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: TNT, closed movies
+        run: LIVE_TEST_CHANNEL=tnt LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: Discovery Channel, closed documentaries
+        run: LIVE_TEST_CHANNEL=discovery-channel LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: Telecine Action, report source degradation without blocking app release
+        run: LIVE_TEST_CHANNEL=telecine-action LIVE_EXPECT_PROXY=1 bun scripts/diagnose-live-browser.mjs
