@@ -481,5 +481,16 @@
   padding-left: 8px;
   font-weight: 800;
 }
+/* Only the HOJE label blinks; its original color stays unchanged. */
+.ydo-header .ydo-nav-football .ydo-football-today {
+  animation: zang-today-blink 1.7s ease-in-out infinite;
+}
+@keyframes zang-today-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .22; }
+}
 @media (max-width: 1120px) { .ydo-football-today { display: none; } }
-@media (prefers-reduced-motion:reduce) { .ydo-nav-football { transition:none !important; } }
+@media (prefers-reduced-motion:reduce) {
+  .ydo-nav-football { transition:none !important; }
+  .ydo-header .ydo-nav-football .ydo-football-today { animation:none; }
+}
