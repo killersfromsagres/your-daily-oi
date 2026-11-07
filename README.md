@@ -19,6 +19,14 @@ O catálogo de canais de TV agora tem cartões translúcidos, busca por filmes, 
 
 [Arquitetura, cobertura da grade e validação visual](docs/ZANG-TV-GLASS.md).
 
+## Experiência premium: episódios, ícones e futebol
+
+A navegação recebeu ícones editoriais profissionais e botão verde de **Jogos do Dia**. Séries e animes agora salvam progresso por episódio: não iniciado, parcial com porcentagem, assistido automático e marcação manual. O histórico antigo é preservado.
+
+A TV ao vivo apresenta apenas oito partidas de maior destaque. A rota **`/futebol`** mostra todos os confrontos do dia (no horário de Brasília) com os mais relevantes primeiro, escudos e canais identificados no EPG.
+
+[Documentação técnica, testes e limites](docs/ZANG-PREMIUM-EPISODES-FOOTBALL.md).
+
 ## Zang Sports — Central de jogos
 
 A área de TV agora apresenta uma agenda esportiva responsiva com **Brasileirão, Champions League, Libertadores, Copa do Brasil e grandes ligas europeias**. O calendário permite consultar os sete dias seguintes, com horários convertidos para Brasília, escudos, confrontos, placares, status ao vivo, filtros e cards clicáveis para as transmissões identificadas no guia brasileiro.
