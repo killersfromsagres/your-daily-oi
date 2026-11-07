@@ -77,7 +77,7 @@ export async function getIndiceBases(): Promise<string[]> {
   try {
     const candidates = [
       ...catalogUrls("indice.txt"),
-      ...(process.env.SAIMO_VOD_RAW ? [`${process.env.SAIMO_VOD_RAW.replace(/\\/$/, "")}/indice.txt`] : []),
+      ...(process.env.SAIMO_VOD_RAW ? [`${process.env.SAIMO_VOD_RAW.replace(/\/$/, "")}/indice.txt`] : []),
     ];
     const { text } = await fetchFirstText(candidates, "índice de bases", { timeoutMs: 5000 });
     const bases: string[] = [];
