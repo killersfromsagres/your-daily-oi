@@ -93,7 +93,7 @@ function WatchAnimePage() {
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
           Não encontramos fontes ativas para o Temporada {temp}, Episódio {ep}.
         </p>
-        <Link to={`/anime/${id}`} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+        <Link to="/anime/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
           <ArrowLeft size={16} /> Voltar ao Anime
         </Link>
       </main>
