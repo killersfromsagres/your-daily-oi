@@ -92,7 +92,7 @@ async function loadScript(src: string): Promise<void> {
 
 async function ensureHls() {
   if (!window.Hls) {
-    await loadScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js");
+    await loadScript("https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js");
   }
   return window.Hls;
 }
@@ -257,11 +257,17 @@ export function LivePlayer({
   const streamUrl = useMemo(() => {
     if (!rawFonte?.url) return "";
     if (attemptMode === "direct") return rawFonte.url;
-    let proxy = `/api/live-proxy?url=${encodeURIComponent(rawFonte.url)}`;
-    if (rawFonte.referer) proxy += `&referer=${encodeURIComponent(rawFonte.referer)}`;
-    if (rawFonte.agente) proxy += `&ua=${encodeURIComponent(rawFonte.agente)}`;
+    const index = canal.fontes.findIndex((candidate) => candidate.url === rawFonte.url);
+    if (index >= 0) {
+      // Backend resolves the URL and required headers from the trusted Saimo catalog.
+      return "/api/tv/stream?canal=" + encodeURIComponent(canal.id) + "&fonte=" + index;
+    }
+    // Compatibility for sources added by external integrations at runtime.
+    let proxy = "/api/live-proxy?url=" + encodeURIComponent(rawFonte.url);
+    if (rawFonte.referer) proxy += "&referer=" + encodeURIComponent(rawFonte.referer);
+    if (rawFonte.agente) proxy += "&ua=" + encodeURIComponent(rawFonte.agente);
     return proxy;
-  }, [rawFonte, attemptMode]);
+  }, [rawFonte, attemptMode, canal.id, canal.fontes]);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -403,7 +409,7 @@ export function LivePlayer({
     video.addEventListener("error", onError);
 
     const setup = async () => {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       let kind: LiveStreamFormat = rawFonte ? classifyLiveSource(rawFonte) : "auto";
       if (kind === "auto" && rawFonte) {
         const originalIndex = canal.fontes.findIndex((f) => f.url === rawFonte.url);
