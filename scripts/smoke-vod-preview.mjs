@@ -29,6 +29,24 @@ try {
   if (response.status === 200 && JSON.parse(body).format !== "mp4") {
     throw new Error("Formato inesperado do stream de teste (esperado MP4)");
   }
+  if (response.status === 200) {
+    // Somente 2 bytes reais: valida o corpo 206 do vídeo, sem baixar a mídia.
+    const media = await fetch(target.replace("&probe=1", ""), {
+      headers: { Range: "bytes=0-1" },
+      signal: AbortSignal.timeout(12000),
+    });
+    const bytes = await media.arrayBuffer();
+    console.log(JSON.stringify({
+      test: "GET /api/saimo-vod Range 0-1",
+      status: media.status,
+      contentType: media.headers.get("content-type"),
+      contentRange: media.headers.get("content-range")?.replace(/\/.+$/, "/<total>"),
+      bytes: bytes.byteLength,
+    }));
+    if (media.status !== 206 || bytes.byteLength !== 2 || !media.headers.get("content-range")?.startsWith("bytes 0-1/")) {
+      throw new Error("Resposta MP4 Range incompleta: seek não funcionará");
+    }
+  }
 } finally {
   child.kill("SIGTERM");
 }
