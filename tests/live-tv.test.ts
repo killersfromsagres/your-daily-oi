@@ -1,6 +1,6 @@
 // tests/live-tv.test.ts — Bun; Saimo catalog, formats, fallback and media probes.
 import { describe, test, expect, afterEach } from "bun:test";
-import { classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode } from "../src/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode } from "../src/lib/live-source";
 import { mergeCanaisCatalogs, parseCanais, filterCanaisAndExtractCategories } from "../src/lib/canais";
 import { handleLiveFormatApi } from "../src/lib/live-probe";
 
@@ -34,6 +34,33 @@ describe("Formatos Saimo", () => {
     expect(looksOffline({ url: "https://cdn.example/stream/123/error.txt" })).toBe(true);
     expect(looksOffline({ url: "https://cdn.example/play/abc/index.m3u8" })).toBe(false);
     expect(looksOffline({ url: "https://cdn.example/list.txt" })).toBe(false);
+  });
+});
+
+describe("Compatibilidade Vercel com proxy legado", () => {
+  const fonte = {
+    url: "https://cdn.example/stream.m3u8?token=a&b=1",
+    referer: "https://embed.example/watch/",
+    agente: "Chrome/124",
+  };
+
+  test("usa a rota catalogada em backend atualizado", () => {
+    const path = buildLiveProxyPath("amazon-prime-video-01", 0, fonte, true);
+    expect(path).toBe("/api/tv/stream?canal=amazon-prime-video-01&fonte=0");
+  });
+
+  test("troca para a rota legada quando o deploy não tem /api/tv/stream", () => {
+    const path = buildLiveProxyPath("amazon-prime-video-01", 0, fonte, false);
+    const url = new URL(path, "https://zangflix.vercel.app");
+    expect(url.pathname).toBe("/api/live-proxy");
+    expect(url.searchParams.get("url")).toBe(fonte.url);
+    expect(url.searchParams.get("referer")).toBe(fonte.referer);
+    expect(url.searchParams.get("ua")).toBe(fonte.agente);
+  });
+
+  test("fontes externas sem índice também utilizam o proxy legado", () => {
+    const path = buildLiveProxyPath("band", -1, fonte, true);
+    expect(path.startsWith("/api/live-proxy?")).toBe(true);
   });
 });
 
