@@ -24,6 +24,11 @@ const BROWSER_USER_AGENT =
 let catalogCache: Map<string, CatalogItem> | null = null;
 let highlightCache: HighlightRow[] | null = null;
 let cacheTime = 0;
+let metadataSourceStatus: "remote" | "fallback" | "uninitialized" = "uninitialized";
+let metadataSourceCheckedAt = 0;
+export function getCatalogSourceStatus() {
+  return { state: metadataSourceStatus, checkedAt: metadataSourceCheckedAt ? new Date(metadataSourceCheckedAt).toISOString() : null };
+}
 const CACHE_TTL = 6 * 60 * 60 * 1000;
 
 export function normalizeTitle(title: string): string {
@@ -579,6 +584,8 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
     fetchAnimeText("fichas.txt"),
   ]);
   const fichasText = fichasResult.status === "fulfilled" ? fichasResult.value : "";
+  metadataSourceStatus = fichasText ? "remote" : "fallback";
+  metadataSourceCheckedAt = Date.now();
   const destaquesText = destaquesResult.status === "fulfilled" ? destaquesResult.value : "";
   const animesFichasText = animesResult.status === "fulfilled" ? animesResult.value : "";
   if (!fichasText) {
