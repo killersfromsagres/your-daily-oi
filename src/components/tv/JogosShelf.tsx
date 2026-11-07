@@ -41,7 +41,7 @@ const longDay = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeri
 const shortDate = (date: string): Date => new Date(date + "T12:00:00Z");
 const dateLabel = (date: string) => humanDay.format(shortDate(date)).replace(/\.$/, "");
 
-function TeamCrest({ src, name }: { src?: string; name: string }) {
+function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
   const [bad, setBad] = useState(false);
   useEffect(() => setBad(false), [src]);
   const initials = name.split(" ").filter(Boolean).slice(0, 2).map(x => x[0]).join("").toUpperCase().slice(0, 3);
@@ -56,7 +56,7 @@ function TeamCrest({ src, name }: { src?: string; name: string }) {
 function MatchCard({ game, onWatch, onExplore }: {
   game: JogoBrasileirao;
   onWatch: (id: string) => void;
-  onExplore?: () => void;
+  onExplore?: (() => void) | undefined;
 }) {
   const active = game.status === "ao-vivo";
   const hasScore = game.placarCasa !== null && game.placarFora !== null;
@@ -197,7 +197,8 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   const jumpDays = (offset: number) => {
     const current = days.indexOf(day);
     const next = Math.min(6, Math.max(0,current + offset));
-    setDay(days[next]);
+    const selected = days[next];
+    if (selected) setDay(selected);
   };
 
   return (
