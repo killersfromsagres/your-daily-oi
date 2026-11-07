@@ -75,7 +75,7 @@ export interface RadioItem {
 const CANAIS_URL = "https://canais-saimo.pages.dev/catalogo.txt";
 const RADIOS_URL = "https://canais-saimo.pages.dev/radios.txt";
 const DESATIVADOS_URL = "https://saimo-tv.pages.dev/fontes-desativadas.json";
-const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos: Saimo muda as fontes ao vivo frequentemente
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos: as fontes de TV são rotativas
 const DESATIVADOS_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 let canaisCache: CanalTV[] | null = null;
