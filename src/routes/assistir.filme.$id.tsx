@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Film, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
+import { buildSaimoVodProxyUrl } from "@/lib/saimo-vod-url";
 
 export const Route = createFileRoute("/assistir/filme/$id")({
   component: WatchMoviePage,
@@ -28,30 +29,81 @@ function WatchMoviePage() {
 
   useEffect(() => {
     let active = true;
+    const abort = new AbortController();
+    let requestsRemaining = 2;
+    setMovie(null);
+    setExtraStreams([]);
     setLoading(true);
 
-    Promise.allSettled([
-      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((r) => r.json()),
-    ])
-      .then(([itemRes, resolveRes]) => {
-        if (!active) return;
-        if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
-          setMovie(itemRes.value as CatalogItem);
-        }
-        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
-          setExtraStreams(resolveRes.value.sources as StreamSource[]);
-        }
+    const requestDone = () => {
+      requestsRemaining--;
+      if (active && requestsRemaining === 0) setLoading(false);
+    };
+
+    // Prioriza o primeiro resultado útil: não espera o agregador de fontes externas
+    // para iniciar o MP4 do Saimo por proxy.
+    fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=movie`, {
+      cache: "no-store", signal: abort.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Item HTTP ${res.status}`);
+        return res.json() as Promise<CatalogItem>;
       })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .then((item) => {
+        if (!active || !item?.id) return;
+        setMovie(item);
+        if (item.tmdbId || item.streams?.length) setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (active) console.warn("[WatchMovie] Falha ao obter ficha:", err);
+      })
+      .finally(requestDone);
+
+    fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=movie`, {
+      cache: "no-store", signal: abort.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Resolve HTTP ${res.status}`);
+        return res.json() as Promise<{ sources?: StreamSource[] }>;
+      })
+      .then((result) => {
+        if (!active || !Array.isArray(result.sources)) return;
+        setExtraStreams(result.sources);
+        if (result.sources.length) setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (active) console.warn("[WatchMovie] Falha nas fontes complementares:", err);
+      })
+      .finally(requestDone);
 
     return () => {
       active = false;
+      abort.abort();
     };
   }, [id]);
+
+  const primaryStreams = useMemo<StreamSource[]>(() => {
+    if (!movie?.tmdbId) return [];
+    const movieId = String(movie.tmdbId);
+    return (["dub", "leg"] as const).map((audio) => ({
+      url: buildSaimoVodProxyUrl({ tipo: "movie", id: movieId, versao: audio }),
+      name: `Saimo TV · ${audio === "dub" ? "Dublado" : "Legendado"}`,
+      audio,
+      quality: "Auto",
+      format: "auto",
+      priority: -20,
+    }));
+  }, [movie?.tmdbId]);
+
+  // Fontes estáveis: adicionar alternativas não reinicializa o vídeo que já toca.
+  const streams = useMemo<StreamSource[]>(() => {
+    const seen = new Set<string>();
+    return [...primaryStreams, ...(movie?.streams || []), ...extraStreams].filter((s) => {
+      if (!s?.url || seen.has(s.url)) return false;
+      seen.add(s.url);
+      return true;
+    });
+  }, [primaryStreams, movie?.streams, extraStreams]);
 
   if (loading) {
     return (
@@ -61,16 +113,6 @@ function WatchMoviePage() {
     );
   }
 
-  // Combina as fontes nativas e do resolve-vod com deduplicação por URL
-  const seenUrls = new Set<string>();
-  const streams: StreamSource[] = [
-    ...(movie?.streams || []),
-    ...extraStreams,
-  ].filter((s) => {
-    if (!s?.url || seenUrls.has(s.url)) return false;
-    seenUrls.add(s.url);
-    return true;
-  });
 
   if (streams.length === 0) {
     return (
