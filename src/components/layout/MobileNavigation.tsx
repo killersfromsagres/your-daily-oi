@@ -40,6 +40,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
+  const navigatingRef = useRef(false);
   const [expanded, setExpanded] = useState<Section | null>(null);
   const [search, setSearch] = useState("");
 
@@ -47,6 +48,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
 
   useEffect(() => {
     if (!open) return;
+    navigatingRef.current = false;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -73,14 +75,20 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
     return () => {
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("keydown", handleKeys);
-      previousFocus?.focus({preventScroll:true});
+      // Restoring the old focus during route transition can jump the page on mobile.
+      if (!navigatingRef.current) previousFocus?.focus({preventScroll:true});
     };
   }, [open, onOpenChange]);
 
   const close = () => onOpenChange(false);
+  const navigateAndClose = () => {
+    navigatingRef.current = true;
+    onOpenChange(false);
+  };
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!search.trim()) return;
+    navigatingRef.current = true;
     void navigate({ to:"/busca", search:{ q:search.trim() } });
     setSearch("");
     close();
@@ -136,7 +144,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                 <button type="submit" aria-label="Pesquisar" disabled={!search.trim()}><ArrowRight size={18} /></button>
               </form>
 
-              <Link to="/futebol" className="zf-mobile-feature" onClick={close}>
+              <Link to="/futebol" className="zf-mobile-feature" onClick={navigateAndClose}>
                 <span className="zf-mobile-feature-symbol"><Trophy size={27} strokeWidth={2} /></span>
                 <span><small>ESPORTES EM DESTAQUE</small><strong>Jogos do Dia</strong>
                   <em>Partidas, placares e onde assistir</em></span>
@@ -145,17 +153,17 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
 
               <p className="zf-mobile-menu-label">NAVEGAR</p>
               <div className="zf-mobile-menu-grid">
-                <Link to="/" onClick={close}><Home size={20} /><span>Início</span></Link>
-                <Link to="/generos/$slug" params={{slug:"filmes"}} onClick={close}><Film size={20} /><span>Filmes</span></Link>
-                <Link to="/generos/$slug" params={{slug:"series"}} onClick={close}><Clapperboard size={20} /><span>Séries</span></Link>
-                <Link to="/animes" onClick={close}><Sparkles size={20} /><span>Animes</span></Link>
-                <Link to="/tv" onClick={close}><Tv2 size={20} /><span>TV ao vivo</span></Link>
-                <Link to="/lancamentos" onClick={close}><Compass size={20} /><span>Lançamentos</span></Link>
+                <Link to="/" onClick={navigateAndClose}><Home size={20} /><span>Início</span></Link>
+                <Link to="/generos/$slug" params={{slug:"filmes"}} onClick={navigateAndClose}><Film size={20} /><span>Filmes</span></Link>
+                <Link to="/generos/$slug" params={{slug:"series"}} onClick={navigateAndClose}><Clapperboard size={20} /><span>Séries</span></Link>
+                <Link to="/animes" onClick={navigateAndClose}><Sparkles size={20} /><span>Animes</span></Link>
+                <Link to="/tv" onClick={navigateAndClose}><Tv2 size={20} /><span>TV ao vivo</span></Link>
+                <Link to="/lancamentos" onClick={navigateAndClose}><Compass size={20} /><span>Lançamentos</span></Link>
                 <Link to="/minha-lista" className="zf-mobile-mylist" onClick={close}>
                   <Heart size={20} /><span>Minha lista</span>
                   {savedCount > 0 && <b>{savedCount}</b>}
                 </Link>
-                <Link to="/futebol" onClick={close}><Gamepad2 size={20} /><span>Futebol</span></Link>
+                <Link to="/futebol" onClick={navigateAndClose}><Gamepad2 size={20} /><span>Futebol</span></Link>
               </div>
 
               <p className="zf-mobile-menu-label">ENCONTRE ALGO PARA ASSISTIR</p>
@@ -172,7 +180,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                       <div className="zf-mobile-menu-genres">
                         {section.items.map(item => (
                           <Link key={item.slug} to="/generos/$slug" params={{slug:item.slug}}
-                            search={{tipo:section.type}} onClick={close}>{item.title}</Link>
+                            search={{tipo:section.type}} onClick={navigateAndClose}>{item.title}</Link>
                         ))}
                       </div>
                     )}
