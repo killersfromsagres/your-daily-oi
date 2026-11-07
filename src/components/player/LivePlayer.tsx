@@ -807,7 +807,7 @@ export function LivePlayer({
             {errorDetail ||
               (validStreams.length > 0
                 ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
-                : "O Saimo mantém este canal na lista, mas os links atuais estão temporariamente indisponíveis.")}
+                : "O Zang Flix mantém este canal no catálogo, mas as fontes atuais estão temporariamente indisponíveis.")}
           </p>
           <button
             className="ydo-btn-primary"
