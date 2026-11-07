@@ -2,6 +2,8 @@
 import { describe, test, expect, afterEach } from "bun:test";
 import { fetchFirstText, sourceUrls, SourceUnavailableError } from "../src/lib/saimo-source";
 import { parseCanais, filterCanaisAndExtractCategories } from "../src/lib/canais";
+import { loadCatalog, getStreamsForItem, getSeasonsForSeries } from "../src/lib/catalog";
+import { resolveVodStreams } from "../src/lib/saimo-stream";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -79,5 +81,47 @@ describe("TV online", () => {
     expect(result.canais).toHaveLength(1);
     expect(result.canais[0]?.fontes).toHaveLength(1);
     expect(result.canais[0]?.fontes[0]?.url).toContain("good.example");
+  });
+});
+
+describe("Fluxo real VOD: fichas, filmes, episódios e redirecionamento", () => {
+  test("carrega itens, um filme, uma temporada e fonte Saimo simulados", async () => {
+    const requests: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      requests.push(url);
+      if (url.includes("/fichas.txt")) return new Response(
+        "f\\tFilme Teste\\t550\\t/poster.jpg\\tDrama\\ns\\tSerie Teste\\t42\\t/poster2.jpg\\tDrama\\n",
+      );
+      if (url.includes("/destaques.txt")) return new Response("Em alta\\n");
+      if (url.includes("/indice.txt")) return new Response("base:0 https://cdn.example/\\n");
+      if (url.endsWith("/filmes-F.txt")) return new Response(
+        "Filme Teste\\tdub=https://cdn.example/filme.mp4\\tleg=https://cdn.example/filme-leg.m3u8",
+      );
+      if (url.endsWith("/series-S-0.txt")) return new Response(
+        "@Serie Teste\\t2026\\n1\\t1\\tdub\\thttps://cdn.example/episodio.mp4\\n",
+      );
+      if (url.includes("/api/stream")) return new Response(null, {
+        status: 302,
+        headers: { Location: "https://media.example/video.m3u8" },
+      });
+      return new Response("não encontrado", { status: 404 });
+    }) as typeof fetch;
+
+    const catalog = await loadCatalog();
+    expect([...catalog.items.values()].some((item) => item.title === "Filme Teste")).toBe(true);
+    expect([...catalog.items.values()].some((item) => item.title === "Serie Teste")).toBe(true);
+
+    const movieStreams = await getStreamsForItem("f", "Filme Teste");
+    expect(movieStreams.map((stream) => stream.audio)).toEqual(["dub", "leg"]);
+    const seasons = await getSeasonsForSeries("Serie Teste");
+    expect(seasons[0]?.episodes[0]?.streams[0]?.url).toBe("https://cdn.example/episodio.mp4");
+
+    const streams = await resolveVodStreams({
+      tipo: "movie", id: "550", title: "Filme Teste", tmdbId: 550,
+    });
+    expect(streams.some((source) => source.url === "https://media.example/video.m3u8")).toBe(true);
+    expect(streams.some((source) => source.audio === "leg")).toBe(true);
+    expect(requests.filter((url) => url.endsWith("series-S-0.txt"))).toHaveLength(1);
   });
 });
