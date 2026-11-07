@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { type CanalTV, fetchCanaisFallbackClient } from "@/lib/canais";
 import type { CanalEPG, ProgramaEPG } from "@/lib/epg";
+import { ChannelCard } from "@/components/tv/ChannelCard";
+import { resolveChannelProgram, searchableProgramText, type ProgramSlot } from "@/lib/tv-program";
 import { LivePlayer } from "@/components/player/LivePlayer";
 import { JogosShelf } from "@/components/tv/JogosShelf";
 
@@ -23,7 +25,7 @@ interface CatalogResponse {
   categorias: string[];
   atualizadoEm?: string;
 }
-interface EpgSlot { atual: ProgramaEPG | null; proximo: ProgramaEPG | null; }
+type EpgSlot = ProgramSlot;
 
 function readStoredArray(key: string): string[] {
   if (typeof window === "undefined") return [];
@@ -84,42 +86,6 @@ function ChannelLogo({ channel, small = false }: { channel: CanalTV; small?: boo
     </span>
   );
 }
-function ChannelCard({
-  channel, active, favorite, onSelect, onFavorite, listMode,
-}: {
-  channel: CanalTV; active: boolean; favorite: boolean;
-  onSelect: () => void; onFavorite: () => void; listMode: boolean;
-}) {
-  const available = channel.fontes.length > 0;
-  return (
-    <article className={"ztv-card" + (active ? " is-active" : "") +
-      (!available ? " is-unavailable" : "") + (listMode ? " is-list" : "")}>
-      <button
-        className="ztv-card-main" type="button" onClick={onSelect}
-        aria-label={"Assistir " + channel.nome + (available ? "" : " — sem fontes")}
-        aria-current={active ? "true" : undefined}
-      >
-        <ChannelLogo channel={channel} />
-        <span className="ztv-card-body">
-          <strong title={channel.nome}>{channel.nome}</strong>
-          <span className="ztv-card-category">{channel.categoria}</span>
-          <span className="ztv-card-meta">
-            <span className={"ztv-status-dot" + (available ? " is-on" : " is-off")} />
-            {available ? channel.fontes.length + (channel.fontes.length === 1 ? " fonte" : " fontes") : "Sem fonte"}
-          </span>
-        </span>
-        {active && <span className="ztv-card-playing">Assistindo</span>}
-      </button>
-      <button
-        type="button" className={"ztv-card-star" + (favorite ? " is-favorite" : "")}
-        onClick={onFavorite} aria-label={(favorite ? "Remover " : "Favoritar ") + channel.nome}
-        title={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-      >
-        <Star size={16} fill={favorite ? "currentColor" : "none"} />
-      </button>
-    </article>
-  );
-}
 
 export function TvView({ initialCanalId }: TvViewProps) {
   const navigate = useNavigate();
@@ -133,6 +99,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [category, setCategory] = useState("Todos");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [onlineOnly, setOnlineOnly] = useState(false);
+  const [programOnly, setProgramOnly] = useState(false);
   const [visible, setVisible] = useState(48);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,6 +111,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [guideQuery, setGuideQuery] = useState("");
   const [guide, setGuide] = useState<Record<string, EpgSlot>>({});
   const [guideLoading, setGuideLoading] = useState(false);
+  const [guideUpdatedAt, setGuideUpdatedAt] = useState<number | null>(null);
   const [activeEpg, setActiveEpg] = useState<CanalEPG | null>(null);
 
   useEffect(() => {
@@ -190,6 +158,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const requestRef = useRef<AbortController | null>(null);
   const refreshPending = useRef(false);
   const guideLastLoad = useRef(0);
+  const guidePending = useRef(false);
+  const guideRequest = useRef<AbortController | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const applyCatalog = useCallback((data: CatalogResponse) => {
@@ -300,23 +270,60 @@ export function TvView({ initialCanalId }: TvViewProps) {
     return () => { alive = false; };
   }, [active?.nome]);
 
-  useEffect(() => {
-    if (!guideOpen || Date.now() - guideLastLoad.current < 5 * 60_000) return;
-    let alive = true;
+  const refreshGuide = useCallback(async (force = false) => {
+    if (guidePending.current ||
+      (!force && Date.now() - guideLastLoad.current < 3 * 60_000)) return;
+    guidePending.current = true;
+    const controller = new AbortController();
+    guideRequest.current = controller;
     setGuideLoading(true);
-    fetch("/api/epg/agora", { cache: "no-store" })
-      .then(r => { if (!r.ok) throw new Error("EPG HTTP " + r.status); return r.json(); })
-      .then((entries: Array<{ canalNome: string; atual: ProgramaEPG | null; proximo: ProgramaEPG | null }>) => {
-        if (!alive || !Array.isArray(entries)) return;
-        const data: Record<string, EpgSlot> = {};
-        for (const item of entries) data[item.canalNome] = { atual: item.atual, proximo: item.proximo };
-        setGuide(data);
-        guideLastLoad.current = Date.now();
-      })
-      .catch(() => {})
-      .finally(() => { if (alive) setGuideLoading(false); });
-    return () => { alive = false; };
-  }, [guideOpen]);
+    try {
+      const response = await fetch("/api/epg/agora", {
+        cache: "no-store", signal: controller.signal,
+      });
+      if (!response.ok) throw new Error("EPG HTTP " + response.status);
+      const entries: unknown = await response.json();
+      if (!Array.isArray(entries)) throw new Error("Resposta de EPG inválida");
+      const mapped: Record<string, EpgSlot> = {};
+      for (const item of entries) {
+        if (!item || typeof item.canalNome !== "string") continue;
+        mapped[normalize(item.canalNome)] = {
+          atual: item.atual && typeof item.atual.titulo === "string" ? item.atual : null,
+          proximo: item.proximo && typeof item.proximo.titulo === "string" ? item.proximo : null,
+        };
+      }
+      if (controller.signal.aborted) return;
+      setGuide(mapped);
+      guideLastLoad.current = Date.now();
+      setGuideUpdatedAt(Date.now());
+    } catch (error) {
+      if (!controller.signal.aborted) console.warn("[Zang Flix] Guia de programação indisponível", error);
+    } finally {
+      guidePending.current = false;
+      if (guideRequest.current === controller) guideRequest.current = null;
+      if (!controller.signal.aborted) setGuideLoading(false);
+    }
+  }, []);
+
+  // Load the EPG for the whole grid, not just when someone opens the guide.
+  useEffect(() => {
+    if (channels.length) void refreshGuide();
+  }, [channels.length, refreshGuide]);
+  useEffect(() => {
+    if (guideOpen) void refreshGuide();
+  }, [guideOpen, refreshGuide]);
+  useEffect(() => {
+    const updateIfVisible = () => {
+      if (channels.length && document.visibilityState === "visible") void refreshGuide();
+    };
+    const interval = window.setInterval(updateIfVisible, 60_000);
+    document.addEventListener("visibilitychange", updateIfVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", updateIfVisible);
+    };
+  }, [channels.length, refreshGuide]);
+  useEffect(() => () => { guideRequest.current?.abort(); }, []);
 
   useEffect(() => {
     if (!guideOpen) return;
