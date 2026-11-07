@@ -1,7 +1,7 @@
 // tests/live-tv.test.ts — Bun; Saimo catalog, formats, fallback and media probes.
 import { describe, test, expect, afterEach } from "bun:test";
 import { classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode } from "../src/lib/live-source";
-import { mergeCanaisCatalogs, parseCanais, loadCanais } from "../src/lib/canais";
+import { mergeCanaisCatalogs, parseCanais, filterCanaisAndExtractCategories } from "../src/lib/canais";
 import { handleLiveFormatApi } from "../src/lib/live-probe";
 
 const originalFetch = globalThis.fetch;
@@ -51,6 +51,23 @@ describe("Catalogo multiorigem", () => {
     expect(merged).toHaveLength(3);
     expect(merged.find((ch) => ch.id === "band")?.fontes).toHaveLength(2);
     expect(merged.find((ch) => ch.id === "cartoon-network")?.categoria).toBe("Infantil");
+  });
+});
+
+describe("Exibição de canais indisponíveis", () => {
+  test("mantém o canal na lista quando só há error.txt", () => {
+    const list = parseCanais([
+      "canal: A&E", "categoria: Documentários",
+      "fonte: https://cdn.example/stream/error.txt",
+      "canal: Band", "categoria: TV Aberta",
+      "fonte: https://cdn.example/band.m3u8",
+    ].join("\n"));
+    const filtered = filterCanaisAndExtractCategories(list);
+    expect(filtered.canais).toHaveLength(2);
+    expect(filtered.canais[0]?.id).toBe("a-e");
+    expect(filtered.canais[0]?.fontes).toHaveLength(0);
+    expect(filtered.canais[0]?.indisponivel).toBe(true);
+    expect(filtered.canais[1]?.indisponivel).toBe(false);
   });
 });
 
