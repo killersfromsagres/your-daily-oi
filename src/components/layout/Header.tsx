@@ -61,7 +61,6 @@ export function Header({ onSearch }: HeaderProps) {
   const [seriesHover, setSeriesHover] = useState(false);
   const [animesHover, setAnimesHover] = useState(false);
   const [query, setQuery] = useState("");
-  const [currentTime, setCurrentTime] = useState("");
   const [savedCount, setSavedCount] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,19 +70,6 @@ export function Header({ onSearch }: HeaderProps) {
   const animesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  // Relógio digital personalizado
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-      );
-    };
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Monitora contagem de itens na Minha Lista
   useEffect(() => {
@@ -351,10 +337,10 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
 
         <Link to="/futebol" className="ydo-nav-link ydo-nav-football"
-          title="Todos os jogos de futebol do dia" aria-label="Central de futebol: jogos do dia">
-          <span className="zf-football-dot" aria-hidden="true" />
-          <FootballIcon size={19} />
+          title="Jogos, placares e onde assistir" aria-label="Jogos do Dia — jogos, placares e canais">
+          <span className="ydo-football-icon"><FootballIcon size={18} /></span>
           <span>Jogos do Dia</span>
+          <span className="ydo-football-today">HOJE</span>
         </Link>
 
         <Link to="/lancamentos" className="ydo-nav-link">
@@ -373,14 +359,6 @@ export function Header({ onSearch }: HeaderProps) {
 
       {/* Lado Direito: Relógio + Ícone de Pesquisa Profissional */}
       <div className="ydo-header-tools" ref={searchContainerRef}>
-        {/* Relógio Digital Personalizado */}
-        {currentTime && !searchOpen && (
-          <div className="ydo-clock-pill" title="Horário Atual">
-            <span className="ydo-clock-dot" />
-            <span className="ydo-clock-time">{currentTime}</span>
-          </div>
-        )}
-
         {/* Sistema de Busca Minimalista e Profissional */}
         {searchOpen ? (
           <form onSubmit={handleSearchSubmit} className="ydo-search-expand animate-scale-in">
