@@ -45,6 +45,18 @@ try{
  if(result.status!==0 || failures.length || !html.includes("Buscar canais") || !html.includes("Guia de programação")){
    throw new Error("Rendered TV UI incomplete: "+(result.stderr||"").slice(-500));
  }
+ const deepLink=spawnSync(executable,[
+   "--headless=new","--no-sandbox","--disable-gpu","--disable-dev-shm-usage",
+   "--disable-background-networking","--disable-extensions","--virtual-time-budget=7500",
+   "--window-size=1440,1000","--dump-dom",BASE+"/tv/canal/band"
+ ],{encoding:"utf8",maxBuffer:12*1024*1024,timeout:30000});
+ const deepHtml=deepLink.stdout||"";
+ const selectedBand=/class="ztv-now-copy"[\s\S]*?<h2>Band<\/h2>/.test(deepHtml);
+ console.log(JSON.stringify({
+   event:"browser-tv-deep-link",status:deepLink.status,selectedBand,
+   cards:(deepHtml.match(/class="ztv-card-main"/g)||[]).length,
+ }));
+ if(deepLink.status!==0 || !selectedBand) throw new Error("Direct /tv/canal/band navigation failed");
 } finally {
  worker.kill("SIGTERM");
 }
