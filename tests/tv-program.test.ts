@@ -27,11 +27,16 @@ describe("Guia de programação visível nos cards", () => {
     expect(result.endTime).toBe("20:00");
     expect(result.nextTitle).toBe("Próxima Atração");
   });
-  test("não mostra programação antiga como 'AGORA' quando o EPG fica defasado", () => {
+  test("troca automaticamente para o próximo programa quando chega o horário", () => {
     const result = resolveChannelProgram({atual:onAir,proximo:after}, "Filmes e Séries", iso("2026-11-07T21:20:00Z"));
-    expect(result.status).toBe("em-breve");
+    expect(result.status).toBe("agora");
+    expect(result.title).toBe("Próxima Atração");
+    expect(result.kind).toBe("Série");
+  });
+  test("não anuncia título antigo como atual depois de toda a grade terminar", () => {
+    const result = resolveChannelProgram({atual:onAir,proximo:after}, "Filmes e Séries", iso("2026-11-07T22:20:00Z"));
+    expect(result.status).toBe("sem-grade");
     expect(result.title).toBeNull();
-    expect(result.hasSchedule).toBe(true);
   });
   test("antes do próximo programa, não apresenta programa futuro como transmitido", () => {
     const result = resolveChannelProgram({atual:null,proximo:after}, "Filmes e Séries", iso("2026-11-07T20:20:00Z"));
