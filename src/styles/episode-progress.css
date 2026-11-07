@@ -46,3 +46,15 @@
   .zf-episode-progress-controls { padding: 9px 8px; }
   .zf-episode-mark { padding: 6px 7px; font-size: 9px; }
 }
+
+.zf-episode-icon {
+  display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
+  width:28px;height:28px;border-radius:9px;
+  background:rgba(236,188,116,.10);
+  border:1px solid rgba(237,192,125,.22);
+  color:#f0bd71;filter:drop-shadow(0 2px 4px rgba(241,185,106,.13));
+}
+.zf-episode-shell > a:hover .zf-episode-icon {
+  border-color:rgba(244,206,149,.46);
+  background:rgba(241,189,112,.17);
+}
