@@ -81,6 +81,12 @@ describe("Confirmação de emissoras",()=>{
     expect(match.canalId).toBeNull();
     expect(match.transmissao).toBe("nao-confirmada");
   });
+
+  test("reconhece nomes alternativos do Atlético-MG e do Athletico-PR sem aceitar adversário errado", () => {
+    expect(doesEpgDescribeFixture("Atlético-MG x Corinthians - Brasileirão", "Atlético Mineiro","Corinthians")).toBe(true);
+    expect(doesEpgDescribeFixture("Athletico PR x São Paulo", "Athletico Paranaense","São Paulo")).toBe(true);
+    expect(doesEpgDescribeFixture("Atlético-MG x Santos", "Atlético Mineiro","Corinthians")).toBe(false);
+  });
   test("EPG só confirma confronto quando ambos os times aparecem",()=>{
     expect(doesEpgDescribeFixture("Campeonato Brasileiro: Flamengo x Palmeiras", "Flamengo","Palmeiras")).toBe(true);
     expect(doesEpgDescribeFixture("Flamengo x Corinthians","Flamengo","Palmeiras")).toBe(false);
