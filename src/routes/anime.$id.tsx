@@ -5,6 +5,9 @@ import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
+import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
+import { countWatchedEpisodes } from "@/lib/episode-progress";
+import "@/styles/episode-progress.css";
 
 export const Route = createFileRoute("/anime/$id")({
   component: AnimeDetailPage,
@@ -18,6 +21,16 @@ function AnimeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [, updateEpisodeStatus] = useState(0);
+  useEffect(() => {
+    const refresh = () => updateEpisodeStatus(x => x + 1);
+    window.addEventListener("zangflix:episode-progress-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("zangflix:episode-progress-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -595,6 +608,10 @@ function AnimeDetailPage() {
                   })}
                 </div>
 
+                <div className="zf-episode-season-summary">
+                  <span>{episodesList.length} episódios disponíveis</span>
+                  <span>{countWatchedEpisodes("a", anime.id)} assistidos no anime</span>
+                </div>
                 {/* Grid dos Episódios */}
                 <div
                   style={{
@@ -604,8 +621,8 @@ function AnimeDetailPage() {
                   }}
                 >
                   {episodesList.map((ep) => (
+                    <div key={ep.episodeNumber} className="zf-episode-shell">
                     <Link
-                      key={ep.episodeNumber}
                       to={`/assistir/anime/${anime.id}/${selectedSeason}/${ep.episodeNumber}`}
                       style={{
                         display: "flex",
@@ -635,6 +652,11 @@ function AnimeDetailPage() {
                       <Clapperboard size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
                       <span>Episódio {ep.episodeNumber}</span>
                     </Link>
+                    <EpisodeProgressControls
+                      episode={{ type: "a", contentId: anime.id, season: selectedSeason, episode: ep.episodeNumber }}
+                      onUpdate={() => updateEpisodeStatus(x => x + 1)}
+                    />
+                    </div>
                   ))}
                 </div>
               </>
