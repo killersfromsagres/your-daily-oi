@@ -526,3 +526,184 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
     max-height: calc(100dvh - 16px);
   }
 }
+
+
+/* Landscape fullscreen: Screen Orientation API is attempted first. When the
+   mobile browser denies the lock, rotate the video surface in portrait.
+   This does not claim to physically rotate iOS or the device sensors. */
+@media (orientation: portrait) {
+  .ztv-player-frame .ydo-live-player-container.is-landscape-fallback:fullscreen,
+  .ztv-player-frame .ydo-live-player-container.is-landscape-fallback.is-theater {
+    position: fixed !important;
+    inset: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 100dvh !important;
+    height: 100dvw !important;
+    max-width: none !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    transform: translate(-50%, -50%) rotate(90deg) !important;
+    transform-origin: center center !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #000 !important;
+    z-index: 2147483000 !important;
+  }
+}
+.ztv-player-frame .ydo-live-player-container.is-landscape-fallback
+  .ydo-live-video {
+  object-fit: contain;
+}
+
+/* Professional compact controls for desktop web, with equal alignment and
+   readable icons. Scope to TV live player, leaving the mobile layout intact. */
+@media (min-width: 741px) and (pointer: fine) {
+  .ztv-player-frame .ydo-live-controls-bar {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 53px;
+    max-width: 100%;
+  }
+  .ztv-player-frame .ydo-live-controls-left,
+  .ztv-player-frame .ydo-live-controls-right {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 7px;
+    min-width: 0;
+  }
+  .ztv-player-frame .ydo-live-controls-right {
+    justify-content: flex-end;
+  }
+  .ztv-player-frame .ydo-live-volume-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ztv-player-frame .ydo-live-ctrl-btn {
+    display: inline-flex;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 5px;
+    border-radius: 8px;
+    transform: none;
+  }
+  .ztv-player-frame .ydo-live-ctrl-btn:hover {
+    transform: none;
+    color: #fff;
+    background: rgba(255,255,255,.09);
+  }
+  .ztv-player-frame .ydo-live-ctrl-btn svg,
+  .ztv-player-frame .zang-cast-trigger svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+  }
+  .ztv-player-frame .ydo-live-volume-slider {
+    flex: 0 1 57px;
+    width: 57px;
+    min-width: 35px;
+    height: 4px;
+  }
+  .ztv-player-frame .ydo-live-edge-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 5px 8px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .ztv-player-frame .ydo-live-latency-btn {
+    min-height: 31px;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 10px;
+    line-height: 1;
+    border-radius: 8px;
+  }
+  .ztv-player-frame .ydo-live-latency-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .ztv-player-frame .ydo-live-source-selector,
+  .ztv-player-frame .zang-cast-control {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+  .ztv-player-frame .ydo-live-source-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 31px;
+    max-width: clamp(84px, 11vw, 166px);
+    min-width: 0;
+    gap: 5px;
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 9px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .ztv-player-frame .ydo-live-source-pill svg {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+  }
+  .ztv-player-frame .ydo-live-source-pill span {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .ztv-player-frame .zang-cast-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    min-height: 32px;
+    min-width: 34px;
+    padding: 5px 8px;
+    gap: 6px;
+    border-radius: 9px;
+    white-space: nowrap;
+  }
+  .ztv-player-frame .zang-cast-trigger span {
+    font-size: 10px;
+    line-height: 1;
+  }
+}
+@media (min-width: 741px) and (max-width: 1140px) and (pointer: fine) {
+  .ztv-player-frame .ydo-live-controls-left,
+  .ztv-player-frame .ydo-live-controls-right { gap: 4px; }
+  .ztv-player-frame .ydo-live-controls-bar { gap: 4px; padding-inline: 8px; }
+  .ztv-player-frame .ydo-live-volume-slider { width: 38px; min-width: 32px; }
+  .ztv-player-frame .ydo-live-source-pill { max-width: 90px; }
+  .ztv-player-frame .zang-cast-trigger span { display: none; }
+}
+
+
+/* The inline theater fallback must escape the studio's own clipping and
+   isolation layer; suppress fixed navigation only during that mode. */
+html:has(.ydo-live-player-container.is-theater) .ztv-studio,
+html:has(.ydo-live-player-container.is-theater) .ztv-stage,
+html:has(.ydo-live-player-container.is-theater) .ztv-featured,
+html:has(.ydo-live-player-container.is-theater) .ztv-player-frame {
+  isolation: auto !important;
+  overflow: visible !important;
+}
+html:has(.ydo-live-player-container.is-theater) .ydo-header,
+html:has(.ydo-live-player-container.is-theater) .zf-mobile-dock {
+  display: none !important;
+}
