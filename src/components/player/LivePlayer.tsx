@@ -280,11 +280,14 @@ export function LivePlayer({
   const showControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(() => {
-      if (!sourcesOpen) {
-        setControlsVisible(false);
-      }
-    }, 3500);
+    if (sourcesOpen) return;
+    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3500);
+  }, [sourcesOpen]);
+
+  useEffect(() => {
+    if (!sourcesOpen) return;
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    setControlsVisible(true);
   }, [sourcesOpen]);
 
   // O modo "Menor atraso" prefere o live edge, com margem de buffer
