@@ -8,6 +8,8 @@ import { getSavedList, toggleSaved as toggleSavedStorage, getProgressById } from
 import { getEpisodeProgress, getEpisodePercentage, getEpisodeStatus, countWatchedEpisodes } from "@/lib/episode-progress";
 import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
 import "@/styles/episode-progress.css";
+import { EpisodeArtwork } from "@/components/catalog/EpisodeArtwork";
+import "@/styles/episode-artwork.css";
 
 export const Route = createFileRoute("/serie/$id")({
   component: SeriesDetailPage,
@@ -196,12 +198,9 @@ function SeriesDetailPage() {
     scrollTrackRef.current.scrollBy({ left: delta, behavior: "smooth" });
   };
 
-  const allEpNumbers = Array.from(
-    new Set([
-      ...episodesList.map((e) => e.episodeNumber),
-      ...episodesMeta.map((m) => m.numero),
-    ])
-  ).sort((a, b) => a - b);
+  // Metadados TMDB enriquecem a apresentação, mas não geram vídeos inexistentes.
+  const allEpNumbers = [...new Set(episodesList.map(e => e.episodeNumber))]
+    .sort((a, b) => a - b);
 
   const itemsToRender = allEpNumbers.map((num) => {
     const m = episodesMeta.find((meta) => meta.numero === num);
@@ -210,7 +209,7 @@ function SeriesDetailPage() {
       numero: num,
       nome: m?.nome || cat?.title || `Episódio ${num}`,
       sinopse: m?.sinopse || "",
-      still: m?.still || null,
+      still: cat?.thumbUrl || m?.still || null,
       duracao: m?.duracao || null,
     };
   });
@@ -811,8 +810,8 @@ function SeriesDetailPage() {
                             e.currentTarget.style.transform = "translateY(0)";
                           }}
                         >
-                          {/* Thumbnail 16:9 */}
-                          <div
+                          {/* Cena real do episódio, capa identificada quando imagem indisponível */}
+                          <div className="zf-series-episode-thumb"
                             style={{
                               position: "relative",
                               width: "100%",
@@ -822,36 +821,12 @@ function SeriesDetailPage() {
                               backgroundColor: "#11131e",
                             }}
                           >
-                            {item.still ? (
-                              <img
-                                src={item.still}
-                                alt={item.nome}
-                                loading="lazy"
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                  display: "block",
-                                }}
-                              />
-                            ) : (
-                              <div
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  background:
-                                    "linear-gradient(135deg, rgba(232, 180, 74, 0.12), rgba(255, 255, 255, 0.03))",
-                                  color: "rgba(255, 255, 255, 0.35)",
-                                  fontSize: "2.5rem",
-                                  fontWeight: "900",
-                                }}
-                              >
-                                {item.numero}
-                              </div>
-                            )}
+                            <EpisodeArtwork
+                              still={item.still}
+                              fallback={serie.tmdb?.backdropUrl || null}
+                              episodeNumber={item.numero}
+                              title={item.nome}
+                            />
 
                             {/* Selo Comece aqui / Continuar */}
                             {progress ? (
@@ -942,7 +917,7 @@ function SeriesDetailPage() {
                                 fontWeight: "600",
                               }}
                             >
-                              {item.duracao || "47 min"} • Dublado
+                              {item.duracao || "Duração não informada"}
                             </div>
                             <p
                               style={{
