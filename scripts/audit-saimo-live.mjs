@@ -49,13 +49,16 @@ const headers = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
   Accept: "*/*",
 };
-const declared = lines.filter(line => /^canal:\\s*/i.test(line.trim())).length;
-const sourceDecl = lines.filter(line => /^fonte:\\s*/i.test(line.trim())).length;
+const declared = lines.filter(line => line.trim().toLowerCase().startsWith("canal:")).length;
+const sourceDecl = lines.filter(line => line.trim().toLowerCase().startsWith("fonte:")).length;
+const errorSources = parsed.flatMap(ch => ch.fontes).filter(f => {
+  try { return new URL(f.url).pathname.toLowerCase().endsWith("/error.txt"); } catch { return false; }
+}).length;
 const unknownSamples = parsed.flatMap(c => c.fontes.map(f => ({ channel: c.nome, source: f }))).filter(({source}) => {
   try { return !/\\.(m3u8|mpd|ts|mp4)$/i.test(new URL(source.url).pathname); } catch { return false; }
 }).slice(0,12);
 console.log(JSON.stringify({
-  event:"coverage", declared, sourceDecl, parsedChannels:parsed.length,
+  event:"coverage", declared, sourceDecl, errorSources, parsedChannels:parsed.length,
   declaredVsParsed:declared-parsed.length,
   unknownPatterns:unknownSamples.map(({channel,source})=>({
     channel, path:new URL(source.url).pathname.replace(/\\d{4,}/g,"<id>").slice(0,100),
