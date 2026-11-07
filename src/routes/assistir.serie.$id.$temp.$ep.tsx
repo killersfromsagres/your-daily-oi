@@ -87,7 +87,7 @@ function WatchSeriesPage() {
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
           Não encontramos fontes para a Temporada {temp}, Episódio {ep}.
         </p>
-        <Link to={`/serie/${id}`} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+        <Link to="/serie/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
           <ArrowLeft size={16} /> Voltar para a Série
         </Link>
       </main>
