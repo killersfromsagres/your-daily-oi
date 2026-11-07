@@ -1,7 +1,7 @@
 // scripts/audit-saimo-ui.mjs — Node/Bun; inspect public Saimo frontend architecture, no media downloads.
 const BASE="https://saimo-tv.pages.dev/";
 const timeout=ms=>AbortSignal.timeout(ms);
-const urls=[BASE,"https://saimo-tv.pages.dev/ao-vivo","https://saimo-tv.pages.dev/tv","https://canais-saimo.pages.dev/catalogo.txt","https://saimo-tv.pages.dev/fontes-desativadas.json"];
+const urls=[BASE,"https://saimo-tv.pages.dev/ao-vivo","https://saimo-tv.pages.dev/tv","https://canais-saimo.pages.dev/catalogo.txt","https://canais-saimo.pages.dev/canais.txt","https://saimo-tv.pages.dev/fontes-desativadas.json"];
 const seen=new Set();const assets=[];
 for(const url of urls){
  try{
@@ -63,3 +63,12 @@ try {
    console.log(JSON.stringify({event:"player-selector",term,excerpt}));
  }
 }catch(e){console.log(JSON.stringify({event:"selector-error",error:String(e).slice(0,160)}));}
+
+try{
+ const raw=await (await fetch("https://saimo-tv.pages.dev/assets/catalog-DIpX5u0A.js",{signal:timeout(18000)})).text();
+ for(const term of ["canais.txt","catalogo.txt","listas","fontes-desativadas","function Cn(","saimo-sem-listas-v1"]){
+  const at=raw.indexOf(term);if(at<0)continue;
+  const snippet=raw.slice(Math.max(at-260,0),at+680).replace(/https?:\/\/[^\s"'),;]+/g,"<url>");
+  console.log(JSON.stringify({event:"catalog-flow",term,snippet}));
+ }
+}catch(e){console.log(JSON.stringify({event:"catalog-flow-error",error:String(e).slice(0,90)}))}
