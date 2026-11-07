@@ -9,6 +9,8 @@ if(!browser)throw new Error("Chrome unavailable");
 const WORKER_PORT=4176, CDP_PORT=9226, BASE="http://127.0.0.1:"+WORKER_PORT;
 const channel=process.env.LIVE_TEST_CHANNEL || "band";
 const blockModern=process.env.LIVE_BLOCK_CATALOG_PROXY === "1";
+const directBlock=process.env.LIVE_BLOCK_DIRECT_HOST || "";
+const requireLegacyPlayback=process.env.LIVE_REQUIRE_LEGACY_PLAYBACK === "1";
 const worker=spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(WORKER_PORT)],{stdio:["ignore","pipe","pipe"]});
 let workerLogs="";
 worker.stderr.on("data",chunk=>{workerLogs=(workerLogs+String(chunk)).slice(-1000);});
@@ -42,7 +44,8 @@ try{
  ws=new WebSocket(endpoint);
  await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
  const pending=new Map();let index=0;const failed=[],warnings=[];
- let legacyRequests=0,catalogRequests=0;
+ let legacyRequests=0,catalogRequests=0,legacyMediaOk=0;
+ let lastSnapshot=null;
  ws.addEventListener("message",event=>{
   let m;try{m=JSON.parse(String(event.data));}catch{return;}
   if(m.method==="Network.requestWillBeSent"){
@@ -55,6 +58,8 @@ try{
    if(m.error)p.reject(new Error(m.error.message));else p.resolve(m.result);
   }else if(m.method==="Network.responseReceived"){
    const response=m.params?.response;
+   if(response?.url?.includes("/api/live-proxy?url=") && response.status < 300 &&
+      /mpegurl|mp2t|video\/mp4/.test(response.mimeType||"")) legacyMediaOk++;
    if(response?.status>=400&&failed.length<20){
      try{const u=new URL(response.url);failed.push({status:response.status,host:u.hostname,path:u.pathname.slice(0,72)});}catch{}
    }
@@ -74,18 +79,30 @@ try{
   });
  }
  await send("Runtime.enable");await send("Network.enable");await send("Page.enable");
- if(blockModern)await send("Network.setBlockedURLs",{urls:[BASE+"/api/tv/stream*"]});
+ const blocked=[];
+ if(blockModern)blocked.push(BASE+"/api/tv/stream*");
+ if(directBlock)blocked.push("https://"+directBlock+"/*");
+ if(blocked.length)await send("Network.setBlockedURLs",{urls:blocked});
  await send("Page.navigate",{url:BASE+"/tv/canal/"+encodeURIComponent(channel)});
  const expression='(() => { const v=document.querySelector("video"); const src=v?.currentSrc||""; return JSON.stringify({channel:document.querySelector(".ztv-now-copy h2")?.textContent, errorText:document.querySelector(".ydo-live-error-overlay h3")?.textContent||null,loading:!!document.querySelector(".ydo-live-skeleton-overlay"),video:v&&{paused:v.paused,muted:v.muted,time:Math.round(v.currentTime*100)/100,ready:v.readyState,network:v.networkState,error:v.error?.code||null,srcHost:src?new URL(src).hostname:null}}); })()';
  async function snapshot(time){
   const r=await send("Runtime.evaluate",{expression,returnByValue:true});
-  console.log(JSON.stringify({event:"browser-snapshot",time,shot:JSON.parse(r.result?.value||"null")}));
+  lastSnapshot=JSON.parse(r.result?.value||"null");
+  console.log(JSON.stringify({event:"browser-snapshot",time,shot:lastSnapshot}));
  }
  await sleep(5000);await snapshot(5);
  await send("Runtime.evaluate",{expression:'(() => {const v=document.querySelector("video");if(v){v.muted=true;void v.play().catch(()=>{});}})()'});
  await sleep(9000);await snapshot(14);
  await sleep(9000);await snapshot(23);
- console.log(JSON.stringify({event:"browser-errors",channel,blockModern,legacyRequests,catalogRequests,failed,warnings}));
+ if(requireLegacyPlayback){
+   await sleep(9000);await snapshot(32);
+   await sleep(9000);await snapshot(41);
+ }
+ console.log(JSON.stringify({event:"browser-errors",channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,failed,warnings}));
+ if(requireLegacyPlayback && (legacyMediaOk < 2 || (lastSnapshot?.video?.time ?? 0) < 5)) {
+   throw new Error("HLS legacy proxy did not deliver media to Chrome (ok="+legacyMediaOk+
+     ", time="+(lastSnapshot?.video?.time??0)+")");
+ }
 } finally {
  try{ws?.close();}catch{}
  try{chrome?.kill("SIGTERM");}catch{}
