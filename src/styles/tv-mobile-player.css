@@ -692,3 +692,18 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
   .ztv-player-frame .ydo-live-source-pill { max-width: 90px; }
   .ztv-player-frame .zang-cast-trigger span { display: none; }
 }
+
+
+/* The inline theater fallback must escape the studio's own clipping and
+   isolation layer; suppress fixed navigation only during that mode. */
+html:has(.ydo-live-player-container.is-theater) .ztv-studio,
+html:has(.ydo-live-player-container.is-theater) .ztv-stage,
+html:has(.ydo-live-player-container.is-theater) .ztv-featured,
+html:has(.ydo-live-player-container.is-theater) .ztv-player-frame {
+  isolation: auto !important;
+  overflow: visible !important;
+}
+html:has(.ydo-live-player-container.is-theater) .ydo-header,
+html:has(.ydo-live-player-container.is-theater) .zf-mobile-dock {
+  display: none !important;
+}
