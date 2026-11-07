@@ -1,4 +1,5 @@
 import { fetchFirstText, sourceUrls } from "./saimo-source";
+import { looksOffline } from "./live-source";
 
 /** Também aceita listas IPTV M3U sem perder referer e user-agent. */
 export function parseM3UCanais(texto: string): CanalTV[] {
@@ -73,7 +74,7 @@ export interface RadioItem {
 const CANAIS_URL = "https://canais-saimo.pages.dev/catalogo.txt";
 const RADIOS_URL = "https://canais-saimo.pages.dev/radios.txt";
 const DESATIVADOS_URL = "https://saimo-tv.pages.dev/fontes-desativadas.json";
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutos: Saimo muda as fontes ao vivo frequentemente
 const DESATIVADOS_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 let canaisCache: CanalTV[] | null = null;
@@ -289,7 +290,7 @@ export function filterCanaisAndExtractCategories(
     const fontesVivas = c.fontes.filter((f) => {
       try {
         const host = new URL(f.url).hostname.toLowerCase();
-        return !desativadosSet.has(host);
+        return !desativadosSet.has(host) && !looksOffline(f);
       } catch {
         return false;
       }
@@ -373,6 +374,31 @@ export async function fetchCanaisFallbackClient(): Promise<{
 }
 
 /**
+ * Une espelhos e playlists M3U sem perder os canais do catálogo primário.
+ * Duplicatas por nome/slug recebem fontes alternativas, em vez de outra entrada.
+ */
+export function mergeCanaisCatalogs(catalogs: CanalTV[][]): CanalTV[] {
+  const merged = new Map<string, CanalTV>();
+  for (const catalog of catalogs) for (const canal of catalog) {
+    const key = slugifyCanal(canal.nome);
+    const current = merged.get(key);
+    if (!current) {
+      merged.set(key, { ...canal, id: key, fontes: [...canal.fontes] });
+      continue;
+    }
+    const known = new Set(current.fontes.map((f) => f.url));
+    for (const fonte of canal.fontes) {
+      if (!known.has(fonte.url)) {
+        current.fontes.push(fonte);
+        known.add(fonte.url);
+      }
+    }
+    if (!current.logo && canal.logo) current.logo = canal.logo;
+  }
+  return [...merged.values()];
+}
+
+/**
  * Carrega e faz cache server-side dos canais da Saimo TV
  */
 export async function loadCanais(): Promise<{
@@ -394,13 +420,24 @@ export async function loadCanais(): Promise<{
       typeof process !== "undefined" ? process.env.SAIMO_CANAIS_URLS : undefined,
       [CANAIS_URL],
     );
-    const { text } = await fetchFirstText(urls, "canais", { timeoutMs: 7000 });
-    const canaisRaw = parseCanais(text);
-    if (canaisRaw.length === 0) throw new Error("Catálogo sem canais ou formato não reconhecido");
+    const downloaded = await Promise.allSettled(
+      urls.map(async (sourceUrl) => {
+        const { text } = await fetchFirstText([sourceUrl], "canais", { timeoutMs: 8000 });
+        const parsed = parseCanais(text);
+        if (!parsed.length) throw new Error(`Formato sem canais: ${sourceUrl}`);
+        return parsed;
+      }),
+    );
+    const catalogs = downloaded
+      .filter((r): r is PromiseFulfilledResult<CanalTV[]> => r.status === "fulfilled")
+      .map((r) => r.value);
+    if (!catalogs.length) throw new Error("Todas as origens de canais estão indisponíveis");
+    const canaisRaw = mergeCanaisCatalogs(catalogs);
 
-    // Painel de servidores desligados (Saimo TV): filtra hosts inativos
+    // Exclui apenas fontes de manutenção e servidores declaradamente desativados.
     const desativados = await fetchFontesDesativadas();
     const { canais, categorias } = filterCanaisAndExtractCategories(canaisRaw, desativados);
+    if (!canais.length) throw new Error("Nenhum canal com fonte válida");
 
     canaisCache = canais;
     canaisCategoriasCache = categorias;
