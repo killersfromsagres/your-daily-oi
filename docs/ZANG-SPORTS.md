@@ -28,7 +28,7 @@ Fonte principal: ESPN Site API v2, placares por dia no futebol.
 
 Os endpoints são solicitados por **uma data YYYYMMDD**; o ESPN Site API retorna HTTP 400 quando se tenta um intervalo, então o usuário navega por sete dias e o backend consulta somente o dia selecionado, sem realizar 91 solicitações automaticamente. Requisições são agrupadas (até cinco simultâneas), possuem timeout, cache em memória de dois minutos, deduplicação entre requests concorrentes, retorno parcial se alguma liga falhar e recuperação de cache anterior em caso de indisponibilidade.
 
-Algumas ligas não têm jogos em determinado dia; um cartão nunca é criado para preencher espaço. No teste de integração de 07/11/2026, a API combinada retornou 27 partidas, entre elas jogos da Premier League, LaLiga, Itália, Alemanha, França, Portugal e Série B. Série A e Champions não tiveram partida nessa data nas respostas consultadas. Outras datas podem ter resultados diferentes.
+Algumas ligas não têm jogos em determinado dia; um cartão nunca é criado para preencher espaço. No teste de integração de 07/11/2026, a API combinada retornou **28 partidas**, entre elas jogos da Premier League, LaLiga, Itália, Alemanha, França, Portugal, Série B e Copa do Brasil. Foram encontradas **cinco correspondências de transmissão pelo EPG** (ESPN, ESPN 4 e Premiere Clubes para partidas específicas). Série A e Champions não tiveram partida nessa data nas respostas consultadas. Outras datas podem ter resultados diferentes.
 
 ## Horários e estados
 
