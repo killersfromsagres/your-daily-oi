@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Play, Info, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { cleanDisplayTitle } from "@/lib/catalog";
+import { getSizedHeroImage } from "@/lib/hero-images";
 
 export interface HeroItem {
   id: string;
@@ -31,16 +32,25 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
 
   const hero = items[activeIndex];
 
-  // Alterna o slide do carrossel a cada 7 segundos
+  // Avança apenas enquanto a aba está visível. Celulares recebem imagens menores
+  // e transições menos frequentes para evitar ocupação excessiva de memória.
   useEffect(() => {
     if (items.length <= 1) return;
+    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    if (prefersReducedMotion) return;
+    const compact = window.matchMedia?.("(max-width: 1120px)").matches ?? false;
     crossfadeTimer.current = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       setActiveIndex((i) => (i + 1) % items.length);
-    }, 7000);
+    }, compact ? 12000 : 8000);
     return () => {
       if (crossfadeTimer.current) clearInterval(crossfadeTimer.current);
     };
   }, [items.length]);
+
+  useEffect(() => {
+    if (activeIndex >= items.length && items.length > 0) setActiveIndex(0);
+  }, [activeIndex, items.length]);
 
   const nextSlide = () => {
     setActiveIndex((i) => (i + 1) % items.length);
@@ -55,41 +65,25 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
   const detailPath = hero.type === "f" ? `/filme/${hero.id}` : `/serie/${hero.id}`;
   const playPath = hero.type === "f" ? `/assistir/filme/${hero.id}` : `/assistir/serie/${hero.id}/1/1`;
 
-  // Imagem do backdrop em altíssima resolução original oficial (HD / 4K)
-  const bgImage = (item: HeroItem) => {
-    if (item.backdropUrl) {
-      return item.backdropUrl.replace(/\/w\d+/, "/original");
-    }
-    if (item.posterUrl) {
-      return item.posterUrl.replace("/w342", "/original");
-    }
-    return "";
-  };
-
   return (
     <section className="ydo-hero" aria-label="Carrossel em Destaque">
-      {/* Slides com transição cruzada e fade suave */}
-      {items.map((item, i) => {
-        const imageUrl = bgImage(item);
-        const isActive = i === activeIndex;
-
+      {/* Apenas o destaque atual é renderizado. Antes, 8 imagens /original
+          ocupavam simultaneamente o viewport mobile e podiam esgotar a memória. */}
+      {(() => {
+        const imageUrl = getSizedHeroImage(hero.backdropUrl, hero.posterUrl, "w1280");
+        const mobileUrl = getSizedHeroImage(hero.backdropUrl, hero.posterUrl, "w780");
         return (
-          <div
-            key={item.id}
-            className={`ydo-hero-slide ${isActive ? "is-active" : ""}`}
-            aria-hidden={!isActive}
-          >
+          <div key={hero.id} className="ydo-hero-slide is-active" aria-hidden={false}>
             {imageUrl && (
-              <img
-                src={imageUrl}
-                alt=""
-                className="ydo-hero-img"
-                loading={i === 0 ? "eager" : "lazy"}
-              />
+              <picture>
+                <source media="(max-width: 1120px)" srcSet={mobileUrl} />
+                <img src={imageUrl} alt="" className="ydo-hero-img"
+                  fetchPriority="high" loading="eager" decoding="async" />
+              </picture>
             )}
           </div>
         );
-      })}
+      })()}
 
       {/* Véus cinematográficos para legibilidade impecável */}
       <div className="ydo-hero-veil-left" aria-hidden="true" />
