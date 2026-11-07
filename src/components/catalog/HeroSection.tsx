@@ -28,9 +28,15 @@ interface HeroSectionProps {
 
 export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: HeroSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [failedBackdropId, setFailedBackdropId] = useState<string | null>(null);
+  const [failedPosterId, setFailedPosterId] = useState<string | null>(null);
   const crossfadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hero = items[activeIndex];
+  const itemsKey = items.map(item => item.id).join("|");
+
+  // When the server selects a new half-hour collection, show its first feature.
+  useEffect(() => { setActiveIndex(0); }, [itemsKey]);
 
   // Avança apenas enquanto a aba está visível. Celulares recebem imagens menores
   // e transições menos frequentes para evitar ocupação excessiva de memória.
@@ -52,6 +58,26 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
     if (activeIndex >= items.length && items.length > 0) setActiveIndex(0);
   }, [activeIndex, items.length]);
 
+  // Preload only the *next* desktop image, once the current artwork has settled.
+  // Never prefetch on mobile, data saver or slow connections.
+  useEffect(() => {
+    if (items.length <= 1 || document.visibilityState !== "visible") return;
+    if (window.matchMedia?.("(max-width: 1120px)").matches) return;
+    type NetworkInfo = { saveData?: boolean; effectiveType?: string };
+    const connection = (navigator as Navigator & { connection?: NetworkInfo }).connection;
+    if (connection?.saveData || ["slow-2g","2g","3g"].includes(connection?.effectiveType || "")) return;
+    const next = items[(activeIndex + 1) % items.length];
+    if (!next) return;
+    const src = getSizedHeroImage(next.backdropUrl, next.posterUrl, "w1280");
+    if (!src) return;
+    const timeout = window.setTimeout(() => {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = src;
+    }, 2500);
+    return () => window.clearTimeout(timeout);
+  }, [itemsKey, activeIndex]);
+
   const nextSlide = () => {
     setActiveIndex((i) => (i + 1) % items.length);
   };
@@ -67,18 +93,27 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
 
   return (
     <section className="ydo-hero" aria-label="Carrossel em Destaque">
-      {/* Apenas o destaque atual é renderizado. Antes, 8 imagens /original
-          ocupavam simultaneamente o viewport mobile e podiam esgotar a memória. */}
+      {/* One image in memory; quality scales with display size. */}
       {(() => {
-        const imageUrl = getSizedHeroImage(hero.backdropUrl, hero.posterUrl, "w1280");
-        const mobileUrl = getSizedHeroImage(hero.backdropUrl, hero.posterUrl, "w780");
+        const backdrop = failedBackdropId === hero.id ? null : hero.backdropUrl;
+        const poster = failedPosterId === hero.id ? null : hero.posterUrl;
+        const imageUrl = getSizedHeroImage(backdrop, poster, "w1280");
+        const mobileUrl = getSizedHeroImage(backdrop, poster, "w780");
+        const largeUrl = getSizedHeroImage(backdrop, poster, "original");
         return (
           <div key={hero.id} className="ydo-hero-slide is-active" aria-hidden={false}>
             {imageUrl && (
               <picture>
+                {/* Full-resolution only on 4K-scale screens; never on phones. */}
+                <source media="(min-width: 2200px)" srcSet={largeUrl} />
                 <source media="(max-width: 1120px)" srcSet={mobileUrl} />
                 <img src={imageUrl} alt="" className="ydo-hero-img"
-                  fetchPriority="high" loading="eager" decoding="async" />
+                  fetchPriority="high" loading="eager" decoding="async"
+                  onError={() => {
+                    if (failedBackdropId !== hero.id && hero.backdropUrl) setFailedBackdropId(hero.id);
+                    else setFailedPosterId(hero.id);
+                  }}
+                />
               </picture>
             )}
           </div>
