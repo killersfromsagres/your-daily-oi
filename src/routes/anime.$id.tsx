@@ -6,7 +6,8 @@ import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
-import { EpisodeIcon } from "@/components/catalog/EpisodeIcon";
+import { EpisodeArtwork } from "@/components/catalog/EpisodeArtwork";
+import "@/styles/episode-artwork.css";
 import { countWatchedEpisodes } from "@/lib/episode-progress";
 import "@/styles/episode-progress.css";
 
@@ -23,6 +24,25 @@ function AnimeDetailPage() {
   const [saved, setSaved] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [, updateEpisodeStatus] = useState(0);
+  const [episodeMetadata, setEpisodeMetadata] = useState<Array<{
+    numero: number; nome: string; sinopse: string; still: string | null; duracao: string | null;
+  }>>([]);
+  useEffect(() => {
+    setEpisodeMetadata([]);
+    if (!anime?.tmdbId || !anime.seasons?.some(s => s.seasonNumber === selectedSeason)) return;
+    const controller = new AbortController();
+    fetch("/api/episodios?serie=" + encodeURIComponent(String(anime.tmdbId)) +
+      "&temporada=" + encodeURIComponent(String(selectedSeason)), { signal: controller.signal })
+      .then(r => r.ok ? r.json() : [])
+      .then((value: unknown) => {
+        if (!controller.signal.aborted && Array.isArray(value)) {
+          setEpisodeMetadata(value.filter(x => x && typeof x.numero === "number"));
+        }
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [anime?.id, anime?.tmdbId, anime?.seasons, selectedSeason]);
+
   useEffect(() => {
     const refresh = () => updateEpisodeStatus(x => x + 1);
     window.addEventListener("zangflix:episode-progress-changed", refresh);
@@ -574,10 +594,10 @@ function AnimeDetailPage() {
               >
                 <Tv size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
                 <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "4px" }}>
-                  Episódios em preparação — volte em breve
+                  Nenhuma fonte de episódios confirmada
                 </h4>
                 <p style={{ color: "rgba(255, 255, 255, 0.55)", fontSize: "0.85rem", maxWidth: "420px", margin: "0 auto" }}>
-                  Estamos indexando os episódios completos deste título no acervo. Volte em breve!
+                  Ainda não encontramos uma lista reproduzível para este anime. O catálogo é atualizado quando novas fontes são disponibilizadas.
                 </p>
               </div>
             ) : (
@@ -610,55 +630,39 @@ function AnimeDetailPage() {
                 </div>
 
                 <div className="zf-episode-season-summary">
-                  <span>{episodesList.length} episódios disponíveis</span>
+                  <span>{episodesList.length} episódios encontrados no acervo</span>
                   <span>{countWatchedEpisodes("a", anime.id)} assistidos no anime</span>
                 </div>
-                {/* Grid dos Episódios */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                    gap: "10px",
-                  }}
-                >
-                  {episodesList.map((ep) => (
-                    <div key={ep.episodeNumber} className="zf-episode-shell">
-                    <Link
-                      to="/assistir/anime/$id/$temp/$ep" params={{id:anime.id,temp:String(selectedSeason),ep:String(ep.episodeNumber)}}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "12px 14px",
-                        borderRadius: "12px",
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
-                        border: "1px solid rgba(255, 255, 255, 0.09)",
-                        color: "#ffffff",
-                        textDecoration: "none",
-                        fontSize: "0.85rem",
-                        fontWeight: "600",
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "rgba(232, 180, 74, 0.15)";
-                        e.currentTarget.style.borderColor = "#e8b44a";
-                        e.currentTarget.style.transform = "translateY(-2px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
-                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.09)";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      <span className="zf-episode-icon"><EpisodeIcon size={22} /></span>
-                      <span>Episódio {ep.episodeNumber}</span>
-                    </Link>
-                    <EpisodeProgressControls
-                      episode={{ type: "a", contentId: anime.id, season: selectedSeason, episode: ep.episodeNumber }}
-                      onUpdate={() => updateEpisodeStatus(x => x + 1)}
-                    />
-                    </div>
-                  ))}
+                {/* Miniaturas reais do episódio, com capa ilustrativa somente como fallback. */}
+                <div className="zf-anime-episodes">
+                  {episodesList.map(ep => {
+                    const meta = episodeMetadata.find(item => item.numero === ep.episodeNumber);
+                    const title = meta?.nome && !/^epis[oó]dio\s*\d+$/i.test(meta.nome)
+                      ? meta.nome : ep.name || ep.title || "Episódio " + ep.episodeNumber;
+                    const still = ep.thumbUrl || meta?.still || null;
+                    return (
+                      <div key={ep.episodeNumber} className="zf-episode-shell">
+                        <Link
+                          to="/assistir/anime/$id/$temp/$ep"
+                          params={{ id: anime.id, temp: String(selectedSeason), ep: String(ep.episodeNumber) }}
+                          className="zf-anime-episode-card"
+                          aria-label={"Assistir episódio " + ep.episodeNumber + ": " + title}
+                        >
+                          <EpisodeArtwork still={still} fallback={anime.tmdb?.backdropUrl || null}
+                            episodeNumber={ep.episodeNumber} title={title} />
+                          <div className="zf-anime-episode-copy">
+                            <small>TEMPORADA {selectedSeason} · EP {String(ep.episodeNumber).padStart(2, "0")}</small>
+                            <strong>{title}</strong>
+                            {meta?.sinopse && <p>{meta.sinopse}</p>}
+                          </div>
+                        </Link>
+                        <EpisodeProgressControls
+                          episode={{ type: "a", contentId: anime.id, season: selectedSeason, episode: ep.episodeNumber }}
+                          onUpdate={() => updateEpisodeStatus(x => x + 1)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
