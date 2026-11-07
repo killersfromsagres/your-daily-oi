@@ -145,7 +145,23 @@ export function slugifyCanal(nome: string): string {
  */
 function normalizeCategoria(raw: string, nomeCanal: string): string {
   const c = raw.trim();
-  if (c) return c;
+  if (c) {
+    const key = c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // A lista M3U utiliza categorias em maiúsculas e nomes de grupos de TV.
+    // Sem normalização, "ESPORTES" e "Esportes" aparecem como seções diferentes.
+    const normalized: Record<string, string> = {
+      "esportes": "Esportes",
+      "espn": "Esportes",
+      "filmes e series": "Filmes e Séries",
+      "documentarios": "Documentários",
+      "noticias": "Notícias",
+      "tv aberta": "TV Aberta",
+      "infantil": "Infantil",
+      "variedades": "Variedades",
+      "musicas": "Músicas",
+    };
+    return normalized[key] || c;
+  }
 
   const n = nomeCanal.toLowerCase();
   if (/globo|sbt|record|band|cultura|redetv|gazeta/i.test(n)) return "TV Aberta";
