@@ -1,6 +1,7 @@
 "use client";
 // src/components/player/CastControl.tsx — React 19/browser; Chromecast, AirPlay and native remote playback.
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { Airplay, Cast, LoaderCircle, MonitorPlay, X } from "lucide-react";
 import type { FonteTV } from "@/lib/canais";
 import { classifyLiveSource } from "@/lib/live-source";
@@ -67,6 +68,28 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
   channelName: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 740px), (pointer: coarse) and (max-width: 900px)");
+    const update = () => setCompact(media.matches);
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !compact) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, compact]);
   const [castReady, setCastReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [casting, setCasting] = useState(false);
@@ -192,15 +215,7 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
     void videoRef.current?.play().catch(() => {});
   };
 
-  return (
-    <div className="zang-cast-control">
-      <button type="button" className={"ydo-live-ctrl-btn zang-cast-trigger" + (casting ? " is-casting" : "")}
-        title="Transmitir para a TV" aria-label="Transmitir para a TV"
-        aria-expanded={open} onClick={() => { setOpen(value => !value); setFeedback(""); }}>
-        <Cast size={19} /><span>Transmitir</span>
-      </button>
-      {open && (
-        <div className="zang-cast-menu" role="dialog" aria-label="Transmitir para a televisão">
+  const popup = (<div className="zang-cast-menu" role="dialog" aria-label="Transmitir para a televisão">
           <div className="zang-cast-head">
             <span className="zang-cast-head-icon"><MonitorPlay size={21} /></span>
             <div><strong>Assistir na TV</strong><small>Escolha como conectar</small></div>
@@ -218,8 +233,23 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
           {casting && <button type="button" className="zang-cast-stop" onClick={stopCasting}>Encerrar transmissão</button>}
           {feedback && <p className="zang-cast-feedback" role="status">{feedback}</p>}
           <p className="zang-cast-hint">A TV precisa estar na mesma rede e aceitar o formato do canal. Fontes com DRM ou bloqueios de origem podem não funcionar.</p>
-        </div>
-      )}
+        </div>);
+
+  return (
+    <div className="zang-cast-control">
+      <button type="button" className={"ydo-live-ctrl-btn zang-cast-trigger" + (casting ? " is-casting" : "")}
+        title="Transmitir para a TV" aria-label="Transmitir para a TV"
+        aria-expanded={open} onClick={() => { setOpen(value => !value); setFeedback(""); }}>
+        <Cast size={19} /><span>Transmitir</span>
+      </button>
+      {open && (compact && !document.fullscreenElement
+        ? createPortal(
+            <div className="zang-cast-mobile-overlay" onClick={() => setOpen(false)}>
+              <div onClick={event => event.stopPropagation()}>{popup}</div>
+            </div>,
+            document.body
+          )
+        : popup)}
     </div>
   );
 }
