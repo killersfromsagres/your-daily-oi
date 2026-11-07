@@ -21,3 +21,5 @@ jobs:
         run: bun scripts/smoke-adaptive-navigation.mjs
       - name: Mobile navigation click-through - Filmes, Séries and Animes
         run: bun scripts/smoke-mobile-menu-navigation.mjs
+      - name: Live player controls - visual collision check across widths
+        run: bun scripts/smoke-live-controls-layout.mjs
