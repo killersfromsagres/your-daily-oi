@@ -31,6 +31,22 @@ describe("Zang Live mobile-first player", () => {
     expect(css).toContain(".ydo-live-options-pip");
     expect(player).toContain("Transmissão e qualidade");
   });
+  test("requests landscape on fullscreen, unlocks on exit and rotates portrait fallback", () => {
+    expect(player).toContain("tryLockLandscape(getOrientation())");
+    expect(player).toContain("unlockLandscape(getOrientation())");
+    expect(player).toContain("is-landscape-fallback");
+    expect(player).toContain("rotateLandscapeFallback");
+    expect(css).toContain("rotate(90deg)");
+    expect(css).toContain("width: 100dvh !important");
+    expect(css).toContain("height: 100dvw !important");
+  });
+  test("desktop controls use smaller consistently aligned icons and source labels", () => {
+    expect(css).toContain("@media (min-width: 741px) and (pointer: fine)");
+    expect(css).toContain(".ztv-player-frame .ydo-live-ctrl-btn svg");
+    expect(css).toContain("width: 16px;");
+    expect(css).toContain("height: 32px;");
+    expect(css).toContain("text-overflow: ellipsis");
+  });
   test("keeps mobile cast dialog above the player and retains a responsive compact hero", () => {
     expect(cast).toContain('createPortal(');
     expect(cast).toContain("zang-cast-mobile-overlay");
