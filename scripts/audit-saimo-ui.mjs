@@ -53,3 +53,13 @@ try {
    console.log(JSON.stringify({event:"player-flow",term:needle,snippet:snip}));
  }
 }catch(e){console.log(JSON.stringify({event:"player-flow-error",error:String(e).slice(0,100)}))}
+
+try {
+ const raw=await (await fetch("https://saimo-tv.pages.dev/assets/player-CNVR4wyM.js",{signal:timeout(18000)})).text();
+ for(const term of ["function gp(","function Op(","function Bp(","function Ke(","function Cp(","function Dp(","function _p(","function Hv(","_p()","vp="]){
+   const at=raw.indexOf(term);
+   if(at<0)continue;
+   const excerpt=raw.slice(at,at+1300).replace(/https?:\/\/[^\s"'),;]+/g,"<url>").slice(0,1300);
+   console.log(JSON.stringify({event:"player-selector",term,excerpt}));
+ }
+}catch(e){console.log(JSON.stringify({event:"selector-error",error:String(e).slice(0,160)}));}
