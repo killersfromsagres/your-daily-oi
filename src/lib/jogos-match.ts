@@ -12,6 +12,7 @@ export interface JogoBrasileirao {
   rodada: string | undefined;
   liga: string;
   ligaId: string;
+  ligaLogo: string | null;
   grupo: "brasileirao" | "champions" | "copas" | "internacional";
   status: "agendado" | "ao-vivo" | "encerrado" | "adiado";
   placarCasa: number | null;
@@ -152,7 +153,7 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
     horarioLocal: horaBrasilia(start),
     inicioIso: start.toISOString(),
     dataLocal: data, rodada: competition?.notes?.[0]?.headline || undefined,
-    liga: liga.name, ligaId: liga.id, grupo: liga.grupo,
+    liga: liga.name, ligaId: liga.id, ligaLogo: null, grupo: liga.grupo,
     status, placarCasa: parseScore(home.score), placarFora: parseScore(away.score),
     destaque: liga.id === "bra.1" || liga.id === "uefa.champions" || isFeaturedTeam(homeName) || isFeaturedTeam(awayName),
     canalId: null, canalNome: null, canalLogo: null, transmissao: "nao-confirmada",
