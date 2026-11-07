@@ -73,6 +73,12 @@ try {
     return false;
   }
 
+  const backend = await fetch(BASE + "/api/tv/stream?canal=%21&fonte=0", { signal: timeout(7000) });
+  const backendBody = await backend.json();
+  if (backend.status !== 400 || typeof backendBody.error !== "string") {
+    throw new Error("Backend TV inválido ou frontend estático interceptando a rota");
+  }
+  console.log(JSON.stringify({ event: "worker-tv-backend", status: backend.status, valid: true }));
   const invalid = await fetch(BASE + "/api/tv/stream?canal=not-a-channel&fonte=0", { signal: timeout(7000) });
   if (invalid.status !== 404) throw new Error("Endpoint catalog-bound aceitou fonte inexistente");
   await invalid.body?.cancel();
