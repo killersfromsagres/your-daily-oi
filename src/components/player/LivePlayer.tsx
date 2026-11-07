@@ -5,7 +5,7 @@ import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import { CastControl } from "./CastControl";
-import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, type LiveLatencyMode } from "@/lib/live-latency";
+import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, type LiveLatencyMode } from "@/lib/live-latency";
 import { isMobileLandscapeTarget, shouldRotateFullscreenFallback, tryLockLandscape, unlockLandscape, type OrientationLock } from "@/lib/fullscreen-orientation";
 import {
   sortStreamsByHealth,
@@ -436,10 +436,21 @@ export function LivePlayer({
       if (video.currentTime > last + 0.3) {
         last = video.currentTime;
         advancedAt = Date.now();
-      } else if (video.readyState < 3 && Date.now() - advancedAt > 25_000) {
+      } else {
+        const stall = classifyLivePlaybackStall({
+          elapsedWithoutProgressMs: Date.now() - advancedAt,
+          currentTime: video.currentTime,
+          readyState: video.readyState,
+          paused: video.paused,
+          ended: video.ended,
+          seeking: video.seeking,
+        });
+        if (!stall) return;
         advancedAt = Date.now();
-        console.warn("[LivePlayer] Stream perdeu o buffer por 25s; tentando outra rota");
-        handleFatalError(true);
+        console.warn("[LivePlayer] Reprodução parada (" + stall + "); tentando outra rota ou fonte");
+        // A falta de progressão com readyState=4 não prova CORS; reserve
+        // o bloqueio do domínio ao caso de falha real de rede/buffer.
+        handleFatalError(video.readyState < 3);
       }
     }, 3000);
     return () => window.clearInterval(watchdog);
