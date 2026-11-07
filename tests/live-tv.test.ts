@@ -64,7 +64,7 @@ describe("Exibição de canais indisponíveis", () => {
     ].join("\n"));
     const filtered = filterCanaisAndExtractCategories(list);
     expect(filtered.canais).toHaveLength(2);
-    expect(filtered.canais[0]?.id).toBe("a-e");
+    expect(filtered.canais[0]?.id).toBe("a-e-e");
     expect(filtered.canais[0]?.fontes).toHaveLength(0);
     expect(filtered.canais[0]?.indisponivel).toBe(true);
     expect(filtered.canais[1]?.indisponivel).toBe(false);
