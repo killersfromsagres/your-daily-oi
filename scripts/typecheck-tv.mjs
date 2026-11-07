@@ -13,7 +13,7 @@ const tvPaths = [
   /^src\/lib\/live-probe\.ts\(/,
 ];
 const relevant = errors.filter(line => tvPaths.some(pattern => pattern.test(line)) ||
-  /^src\/server\.ts\(1(27[0-9]|28[0-9]|29[0-9]|30[0-9]),/.test(line));
+  /^src\/server\.ts\(12(7[6-9]|8[0-9]|9[0-5]),/.test(line));
 console.log(JSON.stringify({
   event:"tv-typecheck",tvErrors:relevant.length,
   inheritedProjectErrors:errors.length-relevant.length,
