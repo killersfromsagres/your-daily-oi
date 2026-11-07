@@ -2,7 +2,7 @@
 
 // src/components/tv/ChannelCard.tsx — glass channel card with actual EPG programme.
 import { useEffect, useState } from "react";
-import { Film, Play, Star } from "lucide-react";
+import { Clapperboard, Film, Music2, Newspaper, Play, Sparkles, Star, Trophy, Tv2 } from "lucide-react";
 import type { CanalTV } from "@/lib/canais";
 import { resolveChannelProgram, type ProgramSlot } from "@/lib/tv-program";
 
@@ -15,6 +15,7 @@ export interface ChannelCardProps {
   listMode: boolean;
   slot?: ProgramSlot | undefined;
   guideLoading: boolean;
+  nowMs: number;
 }
 
 function ChannelCrest({ channel }: { channel: CanalTV }) {
@@ -30,10 +31,20 @@ function ChannelCrest({ channel }: { channel: CanalTV }) {
 }
 
 export function ChannelCard({
-  channel, active, favorite, onSelect, onFavorite, listMode, slot, guideLoading,
+  channel, active, favorite, onSelect, onFavorite, listMode, slot, guideLoading, nowMs,
 }: ChannelCardProps) {
   const available = channel.fontes.length > 0;
-  const preview = resolveChannelProgram(slot, channel.categoria);
+  const preview = resolveChannelProgram(slot, channel.categoria + " " + channel.nome, nowMs);
+  const KindIcon = preview.kind === "Filme" ? Film :
+    preview.kind === "Série" || preview.kind === "Filmes e séries" ? Clapperboard :
+    preview.kind === "Anime" ? Sparkles :
+    preview.kind === "Esportes" ? Trophy :
+    preview.kind === "Notícias" ? Newspaper :
+    preview.kind === "Música" ? Music2 : Tv2;
+  const tone = preview.kind === "Filme" ? "is-movie" :
+    preview.kind === "Série" ? "is-series" :
+    preview.kind === "Anime" ? "is-anime" :
+    preview.kind === "Esportes" ? "is-sports" : "is-tv";
   const onAir = preview.status === "agora";
   const title = preview.title || (
     guideLoading ? "Buscando programação…" :
@@ -53,7 +64,7 @@ export function ChannelCard({
         aria-current={active ? "true" : undefined}
       >
         <span className="ztv-card-topline">
-          <span className="ztv-type-pill"><Film size={12} /> {preview.kind}</span>
+          <span className={"ztv-type-pill " + tone}><KindIcon size={12} /> {preview.kind}</span>
           {active ? <span className="ztv-card-active-pill">ASSISTINDO</span> :
             onAir ? <span className="ztv-card-live-pill"><span className="ztv-pulse" /> AGORA</span> : null}
         </span>
