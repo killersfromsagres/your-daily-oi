@@ -235,27 +235,6 @@ export function LivePlayer({
   const [error, setError] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [controlsDensity, setControlsDensity] = useState<"roomy" | "compact" | "minimal">("roomy");
-
-  // Fit controls to the *actual player width*, not the browser viewport.
-  // TV sidebars, embedded pages and desktop split views can shrink the video.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const sync = () => {
-      const width = el.getBoundingClientRect().width;
-      const next = width < 440 ? "minimal" : width < 920 ? "compact" : "roomy";
-      setControlsDensity(previous => previous === next ? previous : next);
-    };
-    sync();
-    if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(sync);
-      observer.observe(el);
-      return () => observer.disconnect();
-    }
-    window.addEventListener("resize", sync, { passive:true });
-    return () => window.removeEventListener("resize", sync);
-  }, []);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [theaterFullscreen, setTheaterFullscreen] = useState(false);
   const [rotateLandscapeFallback, setRotateLandscapeFallback] = useState(false);
@@ -273,6 +252,25 @@ export function LivePlayer({
   });
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [castOpen, setCastOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!sourcesOpen) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) setSourcesOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSourcesOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [sourcesOpen]);
+
   const [unmuteNotice, setUnmuteNotice] = useState(false);
 
   // Reseta ao trocar de canal
@@ -304,15 +302,15 @@ export function LivePlayer({
   const showControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (sourcesOpen) return;
+    if (sourcesOpen || castOpen) return;
     hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3500);
-  }, [sourcesOpen]);
+  }, [sourcesOpen, castOpen]);
 
   useEffect(() => {
-    if (!sourcesOpen) return;
+    if (!sourcesOpen && !castOpen) return;
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     setControlsVisible(true);
-  }, [sourcesOpen]);
+  }, [sourcesOpen, castOpen]);
 
   // O modo "Menor atraso" prefere o live edge, com margem de buffer
   // suficiente para evitar reconexões constantes em redes instáveis.
@@ -945,7 +943,6 @@ export function LivePlayer({
       ref={containerRef}
       className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "") + (rotateLandscapeFallback ? " is-landscape-fallback" : "")}
       data-controls-visible={controlsVisible}
-      data-controls-density={controlsDensity}
       onMouseMove={showControls}
       onTouchStart={showControls}
     >
@@ -964,16 +961,6 @@ export function LivePlayer({
         onClick={handleToggleMute}
         aria-label="Ativar ou desativar áudio"
       />
-
-      {/* Always reachable on small screens, even when other controls fade out. */}
-      <button type="button"
-        className="ydo-live-mobile-fullscreen"
-        onClick={handleFullscreenToggle}
-        aria-label={isFullscreen ? "Sair da tela cheia" : "Assistir em tela cheia"}
-        title={isFullscreen ? "Sair da tela cheia" : "Expandir vídeo"}
-      >
-        {isFullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
-      </button>
 
       {/* Alerta discreto quando autoplay iniciou mutado */}
       {unmuteNotice && muted && (
@@ -1062,130 +1049,86 @@ export function LivePlayer({
         </div>
       )}
 
-      {/* Barra de Controles Inferior */}
-      <div className={`ydo-live-controls-bar ${controlsVisible ? "visible" : ""}`}>
-        <div className="ydo-live-controls-left">
-          {/* Mudo / Volume (Ao vivo substitui play/pause por mute) */}
-          <div className="ydo-live-volume-wrap">
-            <button
-              onClick={handleToggleMute}
-              className="ydo-live-ctrl-btn"
-              aria-label={muted ? "Ativar som" : "Desativar som"}
-            >
-              {muted || volume === 0 ? <VolumeX size={19} /> : <Volume2 size={19} />}
-            </button>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={muted ? 0 : volume}
-              onChange={(e) => handleVolumeChange(Number(e.target.value))}
-              className="ydo-live-volume-slider"
-              aria-label="Volume"
-            />
-          </div>
-
-          {/* Botão AO VIVO dourado (volta à borda live se atrasar) */}
-          <button
-            onClick={syncToLiveEdge}
-            className={`ydo-live-edge-btn ${isLiveEdge ? "is-live" : "is-delayed"}`}
-            title={isLiveEdge ? "Transmissão em tempo real" : "Clique para voltar ao vivo"}
-          >
-            <span className="ydo-live-dot-inner" />
-            <span>AO VIVO</span>
+      {/* Uma única barra minimalista, sem os antigos estilos concorrentes. */}
+      <div className={"zf-player-toolbar" + (controlsVisible ? " is-visible" : "")}
+        role="toolbar" aria-label="Controles da TV ao vivo">
+        <div className="zf-player-tools-start">
+          <button type="button" className="zf-player-action"
+            onClick={handleToggleMute}
+            aria-label={muted || volume === 0 ? "Ativar som" : "Desativar som"}
+            title={muted || volume === 0 ? "Ativar som" : "Desativar som"}>
+            {muted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
-          <button
-            type="button"
-            className={"ydo-live-latency-btn" + (latencyMode === "fast" ? " is-fast" : "")}
-            onClick={toggleLatencyMode}
-            title={latencyMode === "fast" ? "Modo Menor atraso. Toque para priorizar estabilidade." : "Modo Estável. Toque para reduzir o atraso."}
-            aria-label={latencyMode === "fast" ? "Modo Menor atraso ativo. Alternar para Estável." : "Modo Estável ativo. Alternar para Menor atraso."}
-          >
-            <Gauge size={15} />
-            <span>{latencyMode === "fast" ? "Menor atraso" : "Estável"}</span>
+          <button type="button"
+            className={"zf-player-live" + (isLiveEdge ? " is-live" : "")}
+            onClick={syncToLiveEdge}
+            title={isLiveEdge ? "Transmissão ao vivo" : "Voltar para o ao vivo"}
+            aria-label={isLiveEdge ? "Ao vivo" : "Voltar para o ao vivo"}>
+            <span className="zf-player-live-dot" aria-hidden="true" />
+            <span className="zf-player-live-text">AO VIVO</span>
           </button>
         </div>
-
-        <div className="ydo-live-controls-right">
-          {/* Seletor de Fontes em Pill Glass */}
-          <div className="ydo-live-source-selector">
-            <button
-              onClick={() => setSourcesOpen((prev) => !prev)}
-              className="ydo-live-source-pill"
-              aria-label="Selecionar servidor ou qualidade"
-            >
-              <SlidersHorizontal size={13} />
-              <span>
-                {rawFonte?.nome ||
-                  rawFonte?.qualidade ||
-                  `Servidor ${sourceIndex + 1}`}
-              </span>
+        <div className="zf-player-tools-end">
+          <div className="zf-player-settings" ref={settingsRef}>
+            <button type="button" className="zf-player-action"
+              aria-expanded={sourcesOpen}
+              aria-haspopup="dialog"
+              aria-label="Qualidade e ajustes de reprodução"
+              title="Qualidade e ajustes"
+              onClick={() => { setSourcesOpen(open => !open); setCastOpen(false); }}>
+              <SlidersHorizontal size={16} />
             </button>
-
             {sourcesOpen && (
-              <div className="ydo-live-sources-menu animate-scale-in">
-                <div className="ydo-live-sources-header">Transmissão e qualidade</div>
-                <button type="button" className="ydo-live-source-item ydo-live-options-latency"
+              <div className="zf-player-menu" role="dialog" aria-label="Qualidade e ajustes de reprodução">
+                <div className="zf-player-menu-header">Ajustes do player</div>
+                <label className="zf-player-volume-control">
+                  <span>Volume</span>
+                  <input type="range" min={0} max={1} step={0.05}
+                    value={muted ? 0 : volume}
+                    onChange={(event) => handleVolumeChange(Number(event.target.value))}
+                    aria-label="Volume" />
+                </label>
+                <button type="button" className="zf-player-menu-option"
                   onClick={() => { toggleLatencyMode(); setSourcesOpen(false); }}>
+                  <Gauge size={15} />
                   <span>{latencyMode === "fast" ? "Menor atraso" : "Modo estável"}</span>
-                  <span className="ydo-live-source-badge">Alternar</span>
+                  <span className="zf-player-menu-hint">Alternar</span>
                 </button>
-                <button type="button" className="ydo-live-source-item ydo-live-options-pip"
+                <button type="button" className="zf-player-menu-option"
                   onClick={() => { handlePiPToggle(); setSourcesOpen(false); }}>
-                  <span>Janela flutuante (PiP)</span>
+                  <PictureInPicture2 size={15} />
+                  <span>Janela flutuante</span>
                 </button>
-                {validStreams.map((f, i) => {
-                  const isCurrent = i === sourceIndex;
-                  const label =
-                    f.nome || f.qualidade || `Servidor ${i + 1}`;
-                  return (
-                    <button
-                      key={f.url + i}
-                      onClick={() => {
-                        attemptedModesRef.current.delete(`${canal.id}:${f.url}`);
-                        handlingFailureRef.current = false;
-                        setSourceIndex(i);
-                        setAttemptMode(initialModeFor(f));
-                        setSourcesOpen(false);
-                        setLoading(true);
-                        setError(false);
-                        setPlayNonce((n) => n + 1);
-                      }}
-                      className={`ydo-live-source-item ${isCurrent ? "active" : ""}`}
-                    >
-                      <span className="ydo-live-source-name">{label}</span>
-                      {f.qualidade && (
-                        <span className="ydo-live-source-badge">{f.qualidade}</span>
-                      )}
-                    </button>
-                  );
-                })}
+                <div className="zf-player-menu-subtitle">Servidores e qualidade</div>
+                {validStreams.map((f, i) => (
+                  <button key={f.url + i} type="button"
+                    className={"zf-player-menu-option" + (i === sourceIndex ? " is-selected" : "")}
+                    onClick={() => {
+                      attemptedModesRef.current.delete(`${canal.id}:${f.url}`);
+                      handlingFailureRef.current = false;
+                      setSourceIndex(i);
+                      setAttemptMode(initialModeFor(f));
+                      setSourcesOpen(false);
+                      setLoading(true);
+                      setError(false);
+                      setPlayNonce(n => n + 1);
+                    }}>
+                    <SlidersHorizontal size={14} />
+                    <span className="zf-player-menu-server">{f.nome || f.qualidade || `Servidor ${i + 1}`}</span>
+                    {f.qualidade && <span className="zf-player-menu-hint">{f.qualidade}</span>}
+                  </button>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Enviar vídeo para Chromecast, Google TV, AirPlay ou reprodução remota */}
-          <CastControl videoRef={videoRef} source={rawFonte} streamUrl={streamUrl} channelName={canal.nome} />
-
-          {/* PiP */}
-          <button
-            onClick={handlePiPToggle}
-            className="ydo-live-ctrl-btn"
-            aria-label="Picture-in-Picture"
-            title="Janela flutuante (PiP)"
-          >
-            <PictureInPicture2 size={18} />
-          </button>
-
-          {/* Tela cheia */}
-          <button
+          <CastControl videoRef={videoRef} source={rawFonte}
+            streamUrl={streamUrl} channelName={canal.nome}
+            onDialogChange={(open) => { setCastOpen(open); if (open) setSourcesOpen(false); }} />
+          <button type="button" className="zf-player-action"
             onClick={handleFullscreenToggle}
-            className="ydo-live-ctrl-btn"
-            aria-label="Tela cheia"
-            title="Tela cheia (F)"
-          >
-            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            aria-label={isFullscreen ? "Sair da tela cheia" : "Assistir em tela cheia"}
+            title={isFullscreen ? "Sair da tela cheia" : "Tela cheia (F)"}>
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
           </button>
         </div>
       </div>
