@@ -2,6 +2,17 @@
 
 Plataforma de streaming completa estilo Netflix com catálogo em português (dublado e legendado), consumindo o acervo oficial Saimo TV e metadados TMDB.
 
+## Zang Live 2.0 — TV ao vivo
+
+A seção de TV foi remodelada com interface responsiva, canais, busca, favoritos, programação/EPG e player HLS/MPEG-TS/DASH com fontes alternativas.
+
+- Catálogos públicos Saimo: `catalogo.txt` + `canais.txt` (M3U), com atualização automática.
+- API de streaming por canal: `/api/tv/stream?canal=band&fonte=0`.
+- Verificação de backend: indica quando a publicação não disponibiliza os endpoints Nitro/Cloudflare.
+- Diagnóstico e testes: [Zang Live 2.0](docs/ZANG-LIVE-2.md).
+
+**Publicação:** após sincronizar o GitHub com Lovable, publique uma implantação que inclua as funções de servidor. Uma versão apenas estática consegue listar canais públicos, mas não pode retransmitir as fontes que exigem proxy.
+
 ## Build with Lovable
 
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/04b00ea6-c4b2-4756-b9f8-9a12ffa7c2d7).
