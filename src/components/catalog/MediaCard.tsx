@@ -50,8 +50,9 @@ export function MediaCard({
         </span>
       )}
 
-      <Link to={detailPath} className="ydo-card-poster-link" tabIndex={-1}>
-        <div className="ydo-card-poster">
+      <div className="ydo-card-poster">
+        <Link to={detailPath} className="ydo-card-poster-link"
+          aria-label={`Ver detalhes de ${item.title}`}>
           {!imgFailed && item.posterUrl ? (
             <img
               src={item.posterUrl}
@@ -68,6 +69,7 @@ export function MediaCard({
             </div>
           )}
           <div className="ydo-card-shade" />
+        </Link>
 
           {/* Hover overlay */}
           <div className="ydo-card-hover">
@@ -124,8 +126,7 @@ export function MediaCard({
             {hasDub && <span className="ydo-badge">DUB</span>}
             {hasLeg && <span className="ydo-badge ydo-badge-leg">LEG</span>}
           </div>
-        </div>
-      </Link>
+      </div>
 
       <div className="ydo-card-info">
         <Link to={detailPath} className="ydo-card-title">
