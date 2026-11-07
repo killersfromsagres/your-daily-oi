@@ -46,7 +46,7 @@ function AnimeDetailPage() {
         setAnime(found);
         setSaved(getSavedList().includes(found.id));
         if (found.seasons && found.seasons.length > 0) {
-          setSelectedSeason(found.seasons[0].seasonNumber);
+          setSelectedSeason(found.seasons[0]?.seasonNumber ?? 1);
         }
       })
       .catch(() => {
@@ -58,7 +58,7 @@ function AnimeDetailPage() {
               setAnime(sushiData);
               setSaved(getSavedList().includes(sushiData.id));
               if (sushiData.seasons && sushiData.seasons.length > 0) {
-                setSelectedSeason(sushiData.seasons[0].seasonNumber);
+                setSelectedSeason(sushiData.seasons[0]?.seasonNumber ?? 1);
               }
               return;
             }
@@ -443,7 +443,7 @@ function AnimeDetailPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
                 {seasons.length > 0 ? (
                   <Link
-                    to={`/assistir/anime/${anime.id}/${selectedSeason}/1`}
+                    to="/assistir/anime/$id/$temp/$ep" params={{id:anime.id,temp:String(selectedSeason),ep:"1"}}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -623,7 +623,7 @@ function AnimeDetailPage() {
                   {episodesList.map((ep) => (
                     <div key={ep.episodeNumber} className="zf-episode-shell">
                     <Link
-                      to={`/assistir/anime/${anime.id}/${selectedSeason}/${ep.episodeNumber}`}
+                      to="/assistir/anime/$id/$temp/$ep" params={{id:anime.id,temp:String(selectedSeason),ep:String(ep.episodeNumber)}}
                       style={{
                         display: "flex",
                         alignItems: "center",
