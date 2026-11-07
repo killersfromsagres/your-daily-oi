@@ -1,0 +1,528 @@
+/* src/styles/tv-mobile-player.css — responsive live TV/player layout, added after premium styles. */
+.ztv-title-mobile,
+.ztv-btn-label-mobile,
+.ydo-live-mobile-fullscreen,
+.ydo-live-options-latency,
+.ydo-live-options-pip { display: none; }
+
+.ztv-player-frame .ydo-live-player-container:fullscreen,
+.ztv-player-frame .ydo-live-player-container.is-theater {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  z-index: 2147483000 !important;
+  background: #000 !important;
+}
+.ztv-player-frame .ydo-live-player-container:fullscreen .ydo-live-video,
+.ztv-player-frame .ydo-live-player-container.is-theater .ydo-live-video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+.ztv-player-frame:has(.ydo-live-player-container.is-theater),
+.ztv-featured:has(.ydo-live-player-container.is-theater) {
+  overflow: visible !important;
+}
+html:has(.ydo-live-player-container.is-theater) .zf-mobile-dock,
+html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
+  display: none !important;
+}
+
+@media (max-width: 740px), (pointer: coarse) and (max-width: 900px) {
+  html:not([data-zf-platform="tv"]) .ztv-studio {
+    padding: calc(77px + env(safe-area-inset-top, 0px)) 10px
+      calc(110px + env(safe-area-inset-bottom, 0px));
+    overflow-x: clip;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-header {
+    padding: 17px 16px 15px;
+    margin-bottom: 12px;
+    border-radius: 18px;
+    gap: 13px;
+    box-shadow: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-intro {
+    width: 100%;
+    min-width: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-eyebrow {
+    font-size: 9px;
+    letter-spacing: .13em;
+    gap: 7px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-mobile-eyebrow-extra,
+  html:not([data-zf-platform="tv"]) .ztv-title-desktop,
+  html:not([data-zf-platform="tv"]) .ztv-btn-label-desktop { display: none; }
+  html:not([data-zf-platform="tv"]) .ztv-title-mobile,
+  html:not([data-zf-platform="tv"]) .ztv-btn-label-mobile { display: inline; }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-intro h1 {
+    font-size: clamp(29px, 7.8vw, 37px);
+    letter-spacing: -.045em;
+    margin: 8px 0 6px;
+    line-height: 1.05;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-intro p {
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 480px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-header-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    padding: 0;
+    width: 100%;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-header-actions .ztv-btn,
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-header-actions .ztv-btn-primary {
+    grid-column: auto;
+    display: inline-flex;
+    width: 100%;
+    min-width: 0;
+    min-height: 39px;
+    padding: 0 5px;
+    gap: 6px;
+    border-radius: 10px;
+    font-size: 11px !important;
+    font-weight: 750 !important;
+    white-space: nowrap;
+    transform: none;
+    box-shadow: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-header-actions .ztv-btn svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+    min-width: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-featured {
+    padding: 0;
+    min-width: 0;
+    border-radius: 14px;
+    box-shadow: none;
+    overflow: hidden;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-player-frame {
+    border-radius: 13px 13px 0 0;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    background: #05070b;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame > .ydo-live-player-container {
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    touch-action: manipulation;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-topbar {
+    padding: 7px 10px;
+    max-width: calc(100% - 50px);
+    background: linear-gradient(to bottom, rgba(5,7,12,.78), transparent);
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-badge-row {
+    gap: 5px;
+    margin-bottom: 2px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-badge-text {
+    font-size: 9px;
+    letter-spacing: .06em;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-pulse-dot {
+    width: 6px;
+    height: 6px;
+    box-shadow: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-cat-tag,
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-epg-subtitle {
+    display: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-channel-title {
+    font-size: 12px;
+    line-height: 1.25;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-mobile-fullscreen {
+    position: absolute;
+    display: flex;
+    top: 7px;
+    right: 7px;
+    z-index: 25;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 9px;
+    color: #fff;
+    background: rgba(9,15,25,.8);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-unmute-pill {
+    top: 46px;
+    bottom: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 20px);
+    min-height: 28px;
+    padding: 5px 9px;
+    gap: 6px;
+    border-radius: 8px;
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: 750;
+    box-shadow: 0 4px 12px rgba(0,0,0,.35);
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-unmute-pill svg {
+    width: 13px;
+    height: 13px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-unmute-pill:hover {
+    transform: translateX(-50%);
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 3px;
+    padding: 5px 7px 6px !important;
+    min-height: 42px;
+    max-width: 100%;
+    background: linear-gradient(to top, rgba(4,7,15,.95), rgba(4,7,15,.3));
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-left,
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-right {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-right {
+    margin-left: auto;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-volume-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-ctrl-btn {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    justify-content: center;
+    align-items: center;
+    transform: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-ctrl-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-volume-slider,
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-latency-btn {
+    display: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-edge-btn {
+    display: inline-flex;
+    min-width: 0;
+    height: 30px;
+    padding: 0 7px;
+    gap: 4px;
+    border-radius: 7px;
+    font-size: 9px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-dot-inner {
+    width: 5px;
+    height: 5px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-source-selector {
+    position: static;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-source-pill {
+    display: flex;
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255,255,255,.08);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-source-pill span {
+    display: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-source-pill svg {
+    width: 17px;
+    height: 17px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-right > .ydo-live-ctrl-btn[aria-label="Tela cheia"] {
+    display: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-right > .ydo-live-ctrl-btn[aria-label="Picture-in-Picture"] {
+    display: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-options-latency,
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-options-pip {
+    display: flex;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-sources-menu {
+    position: absolute;
+    left: 7px;
+    right: 7px;
+    bottom: calc(100% + 4px);
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: clamp(100px, 20vh, 150px);
+    overflow-y: auto;
+    z-index: 35;
+    border-radius: 11px;
+    padding: 5px;
+    background: rgba(12,19,31,.97);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 6px 25px rgba(0,0,0,.45);
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-sources-header {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-source-item {
+    min-height: 35px;
+    padding: 5px 9px;
+    gap: 8px;
+    font-size: 11px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .zang-cast-trigger {
+    display: flex;
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255,255,255,.07);
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .zang-cast-trigger svg {
+    width: 17px;
+    height: 17px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .zang-cast-trigger span { display:none; }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .zang-cast-menu {
+    position: fixed;
+    z-index: 2147480000;
+    left: 12px;
+    right: 12px;
+    bottom: calc(86px + env(safe-area-inset-bottom,0px));
+    width: auto;
+    max-height: calc(100dvh - 130px);
+    overflow-y: auto;
+    padding: 13px;
+    border-radius: 16px;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-error-overlay {
+    padding: 16px 12px;
+    gap: 8px;
+    overflow-y: auto;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-error-overlay h3 {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-error-overlay p {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-error-overlay .ydo-btn-primary {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 12px 11px;
+    gap: 9px;
+    min-height: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-main {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 9px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-main .ztv-logo {
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
+    padding: 5px;
+    border-radius: 9px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-copy h2 {
+    font-size: 14px;
+    margin: 2px 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-copy p {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-copy small {
+    display: none;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-actions .ztv-round-action {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-quick {
+    border-radius: 14px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-quick-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-quick-item {
+    scroll-snap-align: start;
+    width: min(56vw, 190px);
+    flex: 0 0 min(56vw, 190px);
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-explore-glass {
+    box-shadow: none;
+    padding: 18px 12px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-discover-shortcuts button {
+    min-height: 35px;
+    padding: 7px 10px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-guide-overlay {
+    padding: 0;
+  }
+}
+@media (max-width: 400px) {
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-panel {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-now-actions {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 740px) and (orientation: landscape), (pointer: coarse) and (max-height: 500px) {
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-player-container:fullscreen .ydo-live-controls-bar,
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-player-container.is-theater .ydo-live-controls-bar {
+    padding-bottom: calc(7px + env(safe-area-inset-bottom,0px)) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ztv-player-frame .ydo-live-controls-bar,
+  .ztv-player-frame .ydo-live-topbar,
+  .ztv-studio .ztv-btn { transition:none !important; }
+}
+
+
+/* Mobile Cast/AirPlay sheet is portaled to body: never clipped by 16:9 player. */
+.zang-cast-mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(88px + env(safe-area-inset-bottom,0px));
+  background: rgba(2,7,14,.72);
+  overscroll-behavior: contain;
+}
+.zang-cast-mobile-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.zang-cast-mobile-sheet {
+  z-index: 1;
+}
+.zang-cast-mobile-overlay > div {
+  position: relative;
+  width: min(100%,430px);
+  max-height: calc(100dvh - 116px);
+}
+.zang-cast-mobile-overlay .zang-cast-menu {
+  position: relative;
+  inset: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  max-height: calc(100dvh - 116px);
+  overflow-y: auto;
+  padding: 15px;
+  border-radius: 17px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (max-height: 490px) {
+  .zang-cast-mobile-overlay {
+    align-items: center;
+    padding: 8px;
+  }
+  .zang-cast-mobile-overlay .zang-cast-menu {
+    max-height: calc(100dvh - 16px);
+  }
+}
