@@ -62,6 +62,7 @@ export interface CanalTV {
   logo?: string;
   categoria: string;
   fontes: FonteTV[];
+  indisponivel?: boolean;
 }
 
 export interface RadioItem {
@@ -295,12 +296,13 @@ export function filterCanaisAndExtractCategories(
         return false;
       }
     });
-    if (fontesVivas.length > 0) {
-      canais.push({
-        ...c,
-        fontes: fontesVivas,
-      });
-    }
+    // Preserva todos os nomes de canais declarados no Saimo.
+    // Sem streams válidos, exibe-os como indisponíveis em vez de omiti-los.
+    canais.push({
+      ...c,
+      fontes: fontesVivas,
+      indisponivel: fontesVivas.length === 0,
+    });
   }
 
   const preferredOrder = [
@@ -437,7 +439,7 @@ export async function loadCanais(): Promise<{
     // Exclui apenas fontes de manutenção e servidores declaradamente desativados.
     const desativados = await fetchFontesDesativadas();
     const { canais, categorias } = filterCanaisAndExtractCategories(canaisRaw, desativados);
-    if (!canais.length) throw new Error("Nenhum canal com fonte válida");
+    if (!canais.some((canal) => canal.fontes.length > 0)) throw new Error("Nenhum canal com fonte válida");
 
     canaisCache = canais;
     canaisCategoriasCache = categorias;
