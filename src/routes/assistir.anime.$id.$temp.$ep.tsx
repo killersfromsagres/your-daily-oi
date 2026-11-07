@@ -6,6 +6,7 @@ import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
+import { getEpisodeProgress, saveEpisodeProgress, setEpisodeWatched } from "@/lib/episode-progress";
 
 export const Route = createFileRoute("/assistir/anime/$id/$temp/$ep")({
   component: WatchAnimePage,
@@ -92,7 +93,7 @@ function WatchAnimePage() {
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
           Não encontramos fontes ativas para o Temporada {temp}, Episódio {ep}.
         </p>
-        <Link to={`/anime/${id}`} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+        <Link to="/anime/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
           <ArrowLeft size={16} /> Voltar ao Anime
         </Link>
       </main>
@@ -111,16 +112,19 @@ function WatchAnimePage() {
     streams: [],
   };
 
+  const episodeKey = { type: "a" as const, contentId: effectiveAnime.id, season: Number(temp), episode: Number(ep) };
   const savedProgress = getProgressById(`${effectiveAnime.id}-t${temp}-e${ep}`);
+  const episodeSaved = getEpisodeProgress(episodeKey);
 
   const handleTimeUpdate = (currentTime: number, duration?: number) => {
     if (currentTime < 2) return;
+    saveEpisodeProgress(episodeKey, currentTime, duration || 0);
     saveProgress({
       id: `${effectiveAnime.id}-t${temp}-e${ep}`,
       contentId: effectiveAnime.id,
       type: "a",
       title: `${effectiveAnime.title} (T${temp}:E${ep})`,
-      posterUrl: effectiveAnime.posterUrl,
+      ...(effectiveAnime.posterUrl ? {posterUrl:effectiveAnime.posterUrl} : {}),
       season: Number(temp),
       episode: Number(ep),
       currentTime,
@@ -147,12 +151,13 @@ function WatchAnimePage() {
       >
         <OwnPlayer
           streams={streams}
-          poster={effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl}
+          {...(effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl ? {poster: effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl} : {})}
           title={effectiveAnime.title || "Anime"}
           subtitle={`Temporada ${temp} - Episódio ${ep}`}
           onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
-          initialTime={savedProgress?.currentTime || 0}
+          initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
+          onEnded={() => { setEpisodeWatched(episodeKey, true); }}
           expectedRuntimeMin={effectiveAnime.tmdb?.runtime || 24}
         />
       </PlayerErrorBoundary>

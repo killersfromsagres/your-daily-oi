@@ -1,0 +1,24 @@
+name: Verify premium icons episode history and football
+on:
+  push:
+    branches: [feat/premium-icons-episode-progress-football]
+  pull_request:
+    branches: [main]
+jobs:
+  premium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: All unit and integration tests
+        run: bun run test
+      - name: Build production bundle and regenerate TanStack route types
+        run: bun run build
+      - name: Strict typecheck changed modules
+        run: bun scripts/typecheck-premium.mjs
+      - name: Browser and ESPN fixture smoke
+        run: bun scripts/smoke-premium-experience.mjs

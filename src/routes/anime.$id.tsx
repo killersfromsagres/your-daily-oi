@@ -5,6 +5,10 @@ import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
+import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
+import { EpisodeIcon } from "@/components/catalog/EpisodeIcon";
+import { countWatchedEpisodes } from "@/lib/episode-progress";
+import "@/styles/episode-progress.css";
 
 export const Route = createFileRoute("/anime/$id")({
   component: AnimeDetailPage,
@@ -18,6 +22,16 @@ function AnimeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [, updateEpisodeStatus] = useState(0);
+  useEffect(() => {
+    const refresh = () => updateEpisodeStatus(x => x + 1);
+    window.addEventListener("zangflix:episode-progress-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("zangflix:episode-progress-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -33,7 +47,7 @@ function AnimeDetailPage() {
         setAnime(found);
         setSaved(getSavedList().includes(found.id));
         if (found.seasons && found.seasons.length > 0) {
-          setSelectedSeason(found.seasons[0].seasonNumber);
+          setSelectedSeason(found.seasons[0]?.seasonNumber ?? 1);
         }
       })
       .catch(() => {
@@ -45,7 +59,7 @@ function AnimeDetailPage() {
               setAnime(sushiData);
               setSaved(getSavedList().includes(sushiData.id));
               if (sushiData.seasons && sushiData.seasons.length > 0) {
-                setSelectedSeason(sushiData.seasons[0].seasonNumber);
+                setSelectedSeason(sushiData.seasons[0]?.seasonNumber ?? 1);
               }
               return;
             }
@@ -430,7 +444,7 @@ function AnimeDetailPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
                 {seasons.length > 0 ? (
                   <Link
-                    to={`/assistir/anime/${anime.id}/${selectedSeason}/1`}
+                    to="/assistir/anime/$id/$temp/$ep" params={{id:anime.id,temp:String(selectedSeason),ep:"1"}}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -595,6 +609,10 @@ function AnimeDetailPage() {
                   })}
                 </div>
 
+                <div className="zf-episode-season-summary">
+                  <span>{episodesList.length} episódios disponíveis</span>
+                  <span>{countWatchedEpisodes("a", anime.id)} assistidos no anime</span>
+                </div>
                 {/* Grid dos Episódios */}
                 <div
                   style={{
@@ -604,9 +622,9 @@ function AnimeDetailPage() {
                   }}
                 >
                   {episodesList.map((ep) => (
+                    <div key={ep.episodeNumber} className="zf-episode-shell">
                     <Link
-                      key={ep.episodeNumber}
-                      to={`/assistir/anime/${anime.id}/${selectedSeason}/${ep.episodeNumber}`}
+                      to="/assistir/anime/$id/$temp/$ep" params={{id:anime.id,temp:String(selectedSeason),ep:String(ep.episodeNumber)}}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -632,9 +650,14 @@ function AnimeDetailPage() {
                         e.currentTarget.style.transform = "translateY(0)";
                       }}
                     >
-                      <Clapperboard size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
+                      <span className="zf-episode-icon"><EpisodeIcon size={22} /></span>
                       <span>Episódio {ep.episodeNumber}</span>
                     </Link>
+                    <EpisodeProgressControls
+                      episode={{ type: "a", contentId: anime.id, season: selectedSeason, episode: ep.episodeNumber }}
+                      onUpdate={() => updateEpisodeStatus(x => x + 1)}
+                    />
+                    </div>
                   ))}
                 </div>
               </>

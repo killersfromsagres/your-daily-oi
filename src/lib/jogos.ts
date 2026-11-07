@@ -62,28 +62,59 @@ function matchChannel(
   ));
   return matched ? { id: matched.id, nome: matched.nome, ...(matched.logo ? { logo: matched.logo } : {}) } : null;
 }
-async function fetchFixturesForLeague(liga: LigaFutebol, date: string): Promise<{
-  liga: LigaFutebol; events: ESPNEvent[];
+// Fixtures that kick off after 21:00 Brasília may be assigned the following
+// UTC day by ESPN. Fetch that extra day for South American competitions only.
+const UTC_ROLLOVER_LEAGUES = new Set([
+  "bra.1", "bra.2", "bra.copa_do_brazil", "conmebol.libertadores", "conmebol.sudamericana",
+]);
+async function fetchScoreboardDay(liga: LigaFutebol, date: string): Promise<{
+  events: ESPNEvent[]; logo: string | null;
 }> {
-  // Scoreboard 'dates' supports a single YYYYMMDD for soccer, not date ranges.
   const url = ESPN_BASE + encodeURIComponent(liga.id) + "/scoreboard?dates=" +
     date.replace(/-/g, "") + "&limit=150";
   const res = await fetch(url, {
     headers: { Accept: "application/json", "User-Agent": "ZangFlix-Sports/1.0" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  if (!res.ok) throw new Error(liga.id + ": HTTP " + res.status);
+  if (!res.ok) throw new Error(liga.id + " " + date + ": HTTP " + res.status);
   const parsed: unknown = await res.json();
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Resposta ESPN inválida");
-  const events = (parsed as { events?: ESPNEvent[] }).events;
-  if (events !== undefined && !Array.isArray(events)) throw new Error("Lista de eventos inválida");
-  return { liga, events: events || [] };
+  const feed = parsed as { events?: ESPNEvent[]; leagues?: Array<{logo?: string; logos?: Array<{href?:string}>}> };
+  if (feed.events !== undefined && !Array.isArray(feed.events)) throw new Error("Lista de eventos inválida");
+  const candidate = feed.leagues?.[0]?.logos?.[0]?.href || feed.leagues?.[0]?.logo || null;
+  let logo: string | null = null;
+  if (candidate) {
+    try { const u=new URL(candidate); if (u.protocol==="https:") logo=u.href; } catch {}
+  }
+  return { events: feed.events || [], logo };
+}
+async function fetchFixturesForLeague(liga: LigaFutebol, date: string): Promise<{
+  liga: LigaFutebol; events: ESPNEvent[]; leagueLogo: string | null;
+  followupFailed: boolean;
+}> {
+  const primary=await fetchScoreboardDay(liga,date);
+  const byId=new Map<string,ESPNEvent>();
+  for (const event of primary.events) if(event.id)byId.set(event.id,event);
+  let followupFailed=false;
+  let leagueLogo=primary.logo;
+  if (UTC_ROLLOVER_LEAGUES.has(liga.id)) {
+    // Sequential per league: keep max five concurrent connections in Workers.
+    try {
+      const secondary=await fetchScoreboardDay(liga,addDaysUTC(date,1));
+      for (const event of secondary.events) if(event.id && !byId.has(event.id))byId.set(event.id,event);
+      if(!leagueLogo)leagueLogo=secondary.logo;
+    } catch (error) {
+      followupFailed=true;
+      console.warn("[Sports] Falha na verificação de jogos após virada UTC",liga.id,String(error).slice(0,120));
+    }
+  }
+  return { liga,events:[...byId.values()],leagueLogo,followupFailed };
 }
 async function fetchAllLeagues(date: string): Promise<{
-  items: { event: ESPNEvent; liga: LigaFutebol }[];
+  items: { event: ESPNEvent; liga: LigaFutebol; leagueLogo: string | null }[];
   successes: number; failed: string[];
 }> {
-  const items: { event: ESPNEvent; liga: LigaFutebol }[] = [];
+  const items: { event: ESPNEvent; liga: LigaFutebol; leagueLogo: string | null }[] = [];
   const failed: string[] = [];
   let successes = 0;
   // Bound concurrency to reduce provider overload and Cloudflare connection caps.
@@ -95,7 +126,8 @@ async function fetchAllLeagues(date: string): Promise<{
       if (!league) continue;
       if (result.status === "fulfilled") {
         successes++;
-        for (const event of result.value.events) items.push({ event, liga: result.value.liga });
+        for (const event of result.value.events) items.push({ event, liga: result.value.liga, leagueLogo: result.value.leagueLogo });
+        if (result.value.followupFailed) failed.push(league.id + "-utc");
       } else {
         failed.push(league.id);
         console.warn("[Sports] Falha ESPN", league.id, String(result.reason).slice(0, 150));
@@ -160,9 +192,12 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
   const { items, successes, failed } = await fetchAllLeagues(date);
   if (successes === 0) throw new Error("Nenhum provedor de agenda respondeu");
   const deduped = new Map<string, { item: JogoBrasileirao; raw: ESPNEvent }>();
-  for (const { event, liga } of items) {
+  for (const { event, liga, leagueLogo } of items) {
     const item = parseESPNFixture(event, liga, date);
-    if (item && !deduped.has(item.id)) deduped.set(item.id, { item, raw: event });
+    if (item && !deduped.has(item.id)) {
+      item.ligaLogo = leagueLogo;
+      deduped.set(item.id, { item, raw: event });
+    }
   }
   const games = await annotateBroadcasts([...deduped.values()], date);
   games.sort((a,b) => {

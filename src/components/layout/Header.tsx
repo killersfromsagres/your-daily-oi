@@ -1,27 +1,13 @@
 "use client";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
-  Search,
-  X,
-  ChevronDown,
-  Heart,
-  Film,
-  Tv,
-  Sparkles,
-  Flame,
-  Ghost,
-  Smile,
-  Rocket,
-  Compass,
-  Wand2,
-  Video,
-  Theater,
-  ShieldAlert,
-  Swords,
-  Zap,
+  Search, X, ChevronDown, Heart, Film, Tv, Sparkles, Flame, Ghost,
+  Clapperboard, Laugh, Rocket, Compass, WandSparkles, BookOpenCheck,
+  Swords, BrainCircuit, ScanEye, HandHeart, Layers3, Drama,
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
+import { FootballIcon } from "@/components/sports/FootballIcon";
 
 interface HeaderProps {
   onSearch?: (q: string) => void;
@@ -30,42 +16,42 @@ interface HeaderProps {
 interface CategoryItem {
   name: string;
   slug: string;
-  Icon: ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
+  Icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string; style?: React.CSSProperties }>;
 }
 
 const CATEGORIAS_FILMES: CategoryItem[] = [
   { name: "Ação", slug: "acao", Icon: Flame },
   { name: "Terror", slug: "terror", Icon: Ghost },
-  { name: "Comédia", slug: "comedia", Icon: Smile },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: Rocket },
-  { name: "Suspense", slug: "suspense", Icon: Search },
-  { name: "Romance", slug: "romance", Icon: Heart },
-  { name: "Animação", slug: "animacao", Icon: Sparkles },
+  { name: "Comédia", slug: "comedia", Icon: Laugh },
+  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: BrainCircuit },
+  { name: "Suspense", slug: "suspense", Icon: ScanEye },
+  { name: "Romance", slug: "romance", Icon: HandHeart },
+  { name: "Animação", slug: "animacao", Icon: Layers3 },
   { name: "Aventura", slug: "aventura", Icon: Compass },
-  { name: "Fantasia", slug: "fantasia", Icon: Wand2 },
-  { name: "Documentário", slug: "documentario", Icon: Video },
+  { name: "Fantasia", slug: "fantasia", Icon: WandSparkles },
+  { name: "Documentário", slug: "documentario", Icon: BookOpenCheck },
 ];
 
 const CATEGORIAS_SERIES: CategoryItem[] = [
   { name: "Ação", slug: "acao", Icon: Flame },
   { name: "Terror", slug: "terror", Icon: Ghost },
-  { name: "Comédia", slug: "comedia", Icon: Smile },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: Rocket },
-  { name: "Suspense", slug: "suspense", Icon: Search },
-  { name: "Romance", slug: "romance", Icon: Heart },
-  { name: "Animação", slug: "animacao", Icon: Sparkles },
+  { name: "Comédia", slug: "comedia", Icon: Laugh },
+  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: BrainCircuit },
+  { name: "Suspense", slug: "suspense", Icon: ScanEye },
+  { name: "Romance", slug: "romance", Icon: HandHeart },
+  { name: "Animação", slug: "animacao", Icon: Layers3 },
   { name: "Aventura", slug: "aventura", Icon: Compass },
-  { name: "Fantasia", slug: "fantasia", Icon: Wand2 },
-  { name: "Documentário", slug: "documentario", Icon: Video },
+  { name: "Fantasia", slug: "fantasia", Icon: WandSparkles },
+  { name: "Documentário", slug: "documentario", Icon: BookOpenCheck },
 ];
 
 const CATEGORIAS_ANIMES: CategoryItem[] = [
   { name: "Shounen", slug: "shounen", Icon: Swords },
   { name: "Ação", slug: "acao", Icon: Flame },
-  { name: "Fantasia", slug: "fantasia", Icon: Wand2 },
+  { name: "Fantasia", slug: "fantasia", Icon: WandSparkles },
   { name: "Animação", slug: "animacao", Icon: Sparkles },
   { name: "Aventura", slug: "aventura", Icon: Compass },
-  { name: "Poderes & Ficção", slug: "ficcao-cientifica", Icon: Zap },
+  { name: "Poderes & Ficção", slug: "ficcao-cientifica", Icon: BrainCircuit },
 ];
 
 export function Header({ onSearch }: HeaderProps) {
@@ -223,7 +209,8 @@ export function Header({ onSearch }: HeaderProps) {
           }}
         >
           <Link
-            to="/generos/filmes"
+            to="/generos/$slug"
+            params={{slug:"filmes"}}
             className={`ydo-nav-link ${moviesHover ? "is-active" : ""}`}
           >
             <span>Filmes</span>
@@ -233,7 +220,7 @@ export function Header({ onSearch }: HeaderProps) {
           {moviesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <Film size={14} style={{ color: "#e8b44a" }} />
+                <Clapperboard size={16} style={{ color: "#f3c786" }} />
                 <span>Gêneros de Filmes</span>
               </div>
               <div className="ydo-categories-grid">
@@ -248,7 +235,7 @@ export function Header({ onSearch }: HeaderProps) {
                       className="ydo-category-item"
                       onClick={() => setMoviesHover(false)}
                     >
-                      <Icon size={16} strokeWidth={2} className="ydo-category-icon" />
+                      <span className="ydo-genre-icon-shell"><Icon size={17} strokeWidth={2.1} className="ydo-category-icon" /></span>
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -272,7 +259,8 @@ export function Header({ onSearch }: HeaderProps) {
           }}
         >
           <Link
-            to="/generos/series"
+            to="/generos/$slug"
+            params={{slug:"series"}}
             className={`ydo-nav-link ${seriesHover ? "is-active" : ""}`}
           >
             <span>Séries</span>
@@ -282,7 +270,7 @@ export function Header({ onSearch }: HeaderProps) {
           {seriesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <Tv size={14} style={{ color: "#e8b44a" }} />
+                <Drama size={16} style={{ color: "#f3c786" }} />
                 <span>Gêneros de Séries</span>
               </div>
               <div className="ydo-categories-grid">
@@ -297,7 +285,7 @@ export function Header({ onSearch }: HeaderProps) {
                       className="ydo-category-item"
                       onClick={() => setSeriesHover(false)}
                     >
-                      <Icon size={16} strokeWidth={2} className="ydo-category-icon" />
+                      <span className="ydo-genre-icon-shell"><Icon size={17} strokeWidth={2.1} className="ydo-category-icon" /></span>
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -331,7 +319,7 @@ export function Header({ onSearch }: HeaderProps) {
           {animesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <Sparkles size={14} style={{ color: "#e8b44a" }} />
+                <WandSparkles size={16} style={{ color: "#f3c786" }} />
                 <span>Gêneros de Animes</span>
               </div>
               <div className="ydo-categories-grid">
@@ -346,7 +334,7 @@ export function Header({ onSearch }: HeaderProps) {
                       className="ydo-category-item"
                       onClick={() => setAnimesHover(false)}
                     >
-                      <Icon size={16} strokeWidth={2} className="ydo-category-icon" />
+                      <span className="ydo-genre-icon-shell"><Icon size={17} strokeWidth={2.1} className="ydo-category-icon" /></span>
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -360,6 +348,13 @@ export function Header({ onSearch }: HeaderProps) {
         <Link to="/tv" className="ydo-nav-link ydo-nav-tv">
           <span className="ydo-live-dot" />
           <span>TV Ao Vivo</span>
+        </Link>
+
+        <Link to="/futebol" className="ydo-nav-link ydo-nav-football"
+          title="Todos os jogos de futebol do dia" aria-label="Central de futebol: jogos do dia">
+          <span className="zf-football-dot" aria-hidden="true" />
+          <FootballIcon size={19} />
+          <span>Jogos do Dia</span>
         </Link>
 
         <Link to="/lancamentos" className="ydo-nav-link">

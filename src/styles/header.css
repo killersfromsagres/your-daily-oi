@@ -406,3 +406,24 @@
     width: 110px;
   }
 }
+
+/* Zang Flix editorial category icons — framed, consistent across all dropdowns. */
+.ydo-categories-dropdown {
+  border-color: rgba(234,195,136,.22);
+  background: linear-gradient(150deg,rgba(26,31,44,.97),rgba(10,14,24,.97));
+  box-shadow: 0 24px 65px rgba(0,0,0,.72), inset 0 1px rgba(255,255,255,.07);
+}
+.ydo-category-item { gap:9px; background:rgba(238,246,255,.042); padding:8px 10px; border-radius:12px; }
+.ydo-category-item:hover {background:rgba(241,197,126,.12);border-color:rgba(241,197,126,.35);}
+.ydo-genre-icon-shell {
+  width:31px; height:31px; flex:0 0 auto;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:9px;border:1px solid rgba(234,187,116,.19);
+  background:radial-gradient(circle at 35% 20%,rgba(247,209,148,.19),rgba(239,180,93,.055) 80%);
+  color:#f3bf70;box-shadow:inset 0 1px rgba(255,255,255,.06);
+}
+.ydo-category-icon {color:inherit;filter:drop-shadow(0 1px 3px rgba(241,178,81,.18));}
+.ydo-category-item:hover .ydo-genre-icon-shell {
+  border-color:rgba(243,207,149,.42);background:rgba(242,190,112,.18);
+}
+.ydo-dropdown-header svg {color:#f3c585;filter:drop-shadow(0 2px 4px rgba(240,188,103,.22));}

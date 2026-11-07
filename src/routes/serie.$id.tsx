@@ -5,6 +5,9 @@ import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage, getProgressById } from "@/lib/storage";
+import { getEpisodeProgress, getEpisodePercentage, getEpisodeStatus, countWatchedEpisodes } from "@/lib/episode-progress";
+import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
+import "@/styles/episode-progress.css";
 
 export const Route = createFileRoute("/serie/$id")({
   component: SeriesDetailPage,
@@ -18,6 +21,16 @@ function SeriesDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState(1);
+  const [, updateEpisodeStatus] = useState(0);
+  useEffect(() => {
+    const refresh = () => updateEpisodeStatus(x=>x+1);
+    window.addEventListener("zangflix:episode-progress-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("zangflix:episode-progress-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
   const [episodesMeta, setEpisodesMeta] = useState<Array<{
     numero: number;
     nome: string;
@@ -59,26 +72,15 @@ function SeriesDetailPage() {
 
   const checkEpisodeProgress = (epNum: number) => {
     if (typeof window === "undefined" || !serie) return null;
-    const p =
-      getProgressById(`${serie.id}-t${selectedSeason}-e${epNum}`) ||
-      getProgressById(`${serie.id}-s${selectedSeason}-e${epNum}`);
-    if (p && p.currentTime > 2) {
-      const dur = p.duration > 0 ? p.duration : 45 * 60;
-      const percent = Math.min(100, Math.max(5, Math.round((p.currentTime / dur) * 100)));
-      return { percent, currentTime: p.currentTime };
-    }
-    try {
-      const raw = localStorage.getItem(`movie-progress-assistir/serie/${serie.id}/${selectedSeason}/${epNum}`);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.currentTime > 2) {
-          const dur = parsed.duration > 0 ? parsed.duration : 45 * 60;
-          const percent = Math.min(100, Math.max(5, Math.round((parsed.currentTime / dur) * 100)));
-          return { percent, currentTime: parsed.currentTime };
-        }
-      }
-    } catch {}
-    return null;
+    const key = { type: "s" as const, contentId: serie.id, season: selectedSeason, episode: epNum };
+    const record = getEpisodeProgress(key);
+    const status = getEpisodeStatus(record);
+    if (status === "unwatched") return null;
+    return {
+      percent: getEpisodePercentage(record) || (status === "watched" ? 100 : 0),
+      currentTime: record?.currentTime || 0,
+      watched: status === "watched",
+    };
   };
 
   useEffect(() => {
@@ -95,7 +97,7 @@ function SeriesDetailPage() {
         setSerie(found);
         setSaved(getSavedList().includes(found.id));
         if (found.seasons && found.seasons.length > 0) {
-          setSelectedSeason(found.seasons[0].seasonNumber);
+          setSelectedSeason(found.seasons[0]?.seasonNumber ?? 1);
         }
       })
       .catch(() => {
@@ -497,7 +499,7 @@ function SeriesDetailPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
                 {seasons.length > 0 ? (
                   <Link
-                    to={`/assistir/serie/${serie.id}/${selectedSeason}/1`}
+                    to="/assistir/serie/$id/$temp/$ep" params={{id:serie.id,temp:String(selectedSeason),ep:"1"}}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -754,6 +756,11 @@ function SeriesDetailPage() {
                     Nenhum episódio cadastrado para esta temporada.
                   </div>
                 ) : (
+                  <>
+                  <div className="zf-episode-carousel-header">
+                    <span>{itemsToRender.length} episódios da temporada</span>
+                    <span>{countWatchedEpisodes("s", serie.id)} assistidos na série</span>
+                  </div>
                   <div
                     ref={scrollTrackRef}
                     style={{
@@ -771,11 +778,12 @@ function SeriesDetailPage() {
                       const isFirst = item.numero === 1;
 
                       return (
+                        <div key={item.numero} className={"zf-episode-shell" + (progress?.watched ? " is-watched" : progress ? " is-started" : "")}
+                          style={{width:"clamp(260px, 26vw, 310px)",flexShrink:0}}>
                         <Link
-                          key={item.numero}
-                          to={`/assistir/serie/${serie.id}/${selectedSeason}/${item.numero}`}
+                          to="/assistir/serie/$id/$temp/$ep" params={{id:serie.id,temp:String(selectedSeason),ep:String(item.numero)}}
                           style={{
-                            width: "clamp(260px, 26vw, 310px)",
+                            width: "100%",
                             flexShrink: 0,
                             borderRadius: "14px",
                             backgroundColor: "rgba(255, 255, 255, 0.03)",
@@ -853,7 +861,7 @@ function SeriesDetailPage() {
                                   top: "8px",
                                   left: "8px",
                                   zIndex: 3,
-                                  backgroundColor: "#e8b44a",
+                                  backgroundColor: progress?.watched ? "#4bd6a0" : "#e8b44a",
                                   color: "#0a0b14",
                                   padding: "3px 8px",
                                   borderRadius: "5px",
@@ -864,7 +872,7 @@ function SeriesDetailPage() {
                                   boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
                                 }}
                               >
-                                Continuar
+                                {progress?.watched ? "Assistido" : "Continuar · " + progress?.percent + "%"}
                               </span>
                             ) : isFirst && !anySeasonProgress ? (
                               <span
@@ -905,7 +913,7 @@ function SeriesDetailPage() {
                                   style={{
                                     height: "100%",
                                     width: `${progress.percent}%`,
-                                    backgroundColor: "#e8b44a",
+                                    backgroundColor: progress?.watched ? "#4bd6a0" : "#e8b44a",
                                   }}
                                 />
                               </div>
@@ -952,9 +960,15 @@ function SeriesDetailPage() {
                             </p>
                           </div>
                         </Link>
+                        <EpisodeProgressControls
+                          episode={{type:"s",contentId:serie.id,season:selectedSeason,episode:item.numero}}
+                          onUpdate={() => updateEpisodeStatus(x=>x+1)}
+                        />
+                        </div>
                       );
                     })}
                   </div>
+                  </>
                 )}
               </>
             )}
