@@ -16,7 +16,7 @@ interface HeaderProps {
 interface CategoryItem {
   name: string;
   slug: string;
-  Icon: ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>;
+  Icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string; style?: React.CSSProperties }>;
 }
 
 const CATEGORIAS_FILMES: CategoryItem[] = [
@@ -209,7 +209,8 @@ export function Header({ onSearch }: HeaderProps) {
           }}
         >
           <Link
-            to="/generos/filmes"
+            to="/generos/$slug"
+            params={{slug:"filmes"}}
             className={`ydo-nav-link ${moviesHover ? "is-active" : ""}`}
           >
             <span>Filmes</span>
@@ -258,7 +259,8 @@ export function Header({ onSearch }: HeaderProps) {
           }}
         >
           <Link
-            to="/generos/series"
+            to="/generos/$slug"
+            params={{slug:"series"}}
             className={`ydo-nav-link ${seriesHover ? "is-active" : ""}`}
           >
             <span>Séries</span>
