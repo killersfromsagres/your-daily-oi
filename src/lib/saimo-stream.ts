@@ -354,7 +354,7 @@ async function querySaimoOfficial(
         {
           url: buildSaimoVodProxyUrl({ tipo, id, versao: audio, temp: season, ep: episode }),
           audio,
-          name: `Saimo TV · Player principal (${audio.toUpperCase()})`,
+          name: `Zang Flix · Player principal (${audio.toUpperCase()})`,
           quality: "Auto",
           format: "auto" as const,
           priority: -10,
@@ -362,7 +362,7 @@ async function querySaimoOfficial(
         {
           url: finalUrl.toString(),
           audio,
-          name: `Saimo TV · Link direto (${audio.toUpperCase()})`,
+          name: `Zang Flix · Link direto (${audio.toUpperCase()})`,
           quality: "Auto",
           format: isHlsUrl(finalUrl.toString()) ? "hls" as const : "auto" as const,
           priority: 0,
