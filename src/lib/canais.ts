@@ -73,6 +73,7 @@ export interface RadioItem {
 }
 
 const CANAIS_URL = "https://canais-saimo.pages.dev/catalogo.txt";
+const CANAIS_M3U_URL = "https://canais-saimo.pages.dev/canais.txt";
 const RADIOS_URL = "https://canais-saimo.pages.dev/radios.txt";
 const DESATIVADOS_URL = "https://saimo-tv.pages.dev/fontes-desativadas.json";
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos: as fontes de TV são rotativas
@@ -342,8 +343,9 @@ export async function fetchCanaisFallbackClient(): Promise<{
   categorias: string[];
   canais: CanalTV[];
 }> {
-  const [txtRes, desativadosRes] = await Promise.allSettled([
+  const [txtRes, m3uRes, desativadosRes] = await Promise.allSettled([
     fetch(CANAIS_URL),
+    fetch(CANAIS_M3U_URL),
     fetch(DESATIVADOS_URL),
   ]);
 
@@ -352,7 +354,10 @@ export async function fetchCanaisFallbackClient(): Promise<{
   }
 
   const text = await txtRes.value.text();
-  const canaisRaw = parseCanais(text);
+  const primary = parseCanais(text);
+  const secondary = m3uRes.status === "fulfilled" && m3uRes.value.ok
+    ? parseCanais(await m3uRes.value.text()) : [];
+  const canaisRaw = mergeCanaisCatalogs([primary, secondary]);
 
   let desativados: string[] = [];
   if (desativadosRes.status === "fulfilled" && desativadosRes.value.ok) {
@@ -420,7 +425,7 @@ export async function loadCanais(): Promise<{
   try {
     const urls = sourceUrls(
       typeof process !== "undefined" ? process.env.SAIMO_CANAIS_URLS : undefined,
-      [CANAIS_URL],
+      [CANAIS_URL, CANAIS_M3U_URL],
     );
     const downloaded = await Promise.allSettled(
       urls.map(async (sourceUrl) => {

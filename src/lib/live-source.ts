@@ -44,12 +44,16 @@ export function looksOffline(source: LiveSourceLike): boolean {
 
 export function initialLiveMode(source: LiveSourceLike | undefined): LiveAccessMode {
   if (!source) return "proxy";
-  if (!source.url.startsWith("https://")) return "proxy";
-  // Referer and User-Agent cannot be set by HTMLVideoElement/hls.js.
-  if (source.referer || source.agente) return "proxy";
-  const format = classifyLiveSource(source);
-  if (format === "dash" && source.chave) return "direct";
-  if (format === "hls" && /\.txt(?:\?|$)/i.test(source.url)) return "proxy";
+  const url = effectiveStreamUrl(source.url);
+  if (!url) return "proxy";
+  if (url.protocol !== "https:") return "proxy"; // mixed-content on an HTTPS page
+  const host = url.hostname.toLowerCase();
+  // Public Saimo frontend prioritizes direct HLS for its CDN hosts even when
+  // a Referer/UA is provided for its *fallback* proxy route. The viewer's
+  // residential connection often works when an edge/datacenter proxy gets 403.
+  if (host.includes("s23-cloudfront-net.lat") || host.includes("s25-cloudfront-net.lat")) return "direct";
+  if (url.pathname.toLowerCase().endsWith(".txt")) return "proxy";
+  if (host.includes("dadinhodetapioca.fun")) return "proxy";
   return "direct";
 }
 

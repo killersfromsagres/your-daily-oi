@@ -90,23 +90,29 @@ async function loadScript(src: string): Promise<void> {
   try { await promise; } catch (error) { scriptRequests.delete(src); throw error; }
 }
 
+// Bundled engines: these dependencies already belong to the app and do not
+// depend on a third-party CDN being reachable at playback time.
 async function ensureHls() {
   if (!window.Hls) {
-    await loadScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js");
+    const module = await import("hls.js");
+    window.Hls = module.default as unknown as NonNullable<Window["Hls"]>;
   }
   return window.Hls;
 }
-
 async function ensureMpegts() {
   if (!window.mpegts) {
-    await loadScript("https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js");
+    const module = await import("mpegts.js");
+    window.mpegts = (module.default ?? module) as unknown as NonNullable<Window["mpegts"]>;
   }
   return window.mpegts;
 }
-
 async function ensureShaka() {
   if (!window.shaka) {
-    await loadScript("https://cdn.jsdelivr.net/npm/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    try {
+      await loadScript("https://cdn.jsdelivr.net/npm/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    } catch {
+      await loadScript("https://unpkg.com/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    }
     window.shaka?.polyfill?.installAll();
   }
   return window.shaka;
@@ -196,7 +202,7 @@ export function LivePlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number } | null>(null);
+  const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number | undefined } | null>(null);
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
   const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
   const handlingFailureRef = useRef(false);
@@ -257,11 +263,17 @@ export function LivePlayer({
   const streamUrl = useMemo(() => {
     if (!rawFonte?.url) return "";
     if (attemptMode === "direct") return rawFonte.url;
-    let proxy = `/api/live-proxy?url=${encodeURIComponent(rawFonte.url)}`;
-    if (rawFonte.referer) proxy += `&referer=${encodeURIComponent(rawFonte.referer)}`;
-    if (rawFonte.agente) proxy += `&ua=${encodeURIComponent(rawFonte.agente)}`;
+    const index = canal.fontes.findIndex((candidate) => candidate.url === rawFonte.url);
+    if (index >= 0) {
+      // Backend resolves the URL and required headers from the trusted Saimo catalog.
+      return "/api/tv/stream?canal=" + encodeURIComponent(canal.id) + "&fonte=" + index;
+    }
+    // Compatibility for sources added by external integrations at runtime.
+    let proxy = "/api/live-proxy?url=" + encodeURIComponent(rawFonte.url);
+    if (rawFonte.referer) proxy += "&referer=" + encodeURIComponent(rawFonte.referer);
+    if (rawFonte.agente) proxy += "&ua=" + encodeURIComponent(rawFonte.agente);
     return proxy;
-  }, [rawFonte, attemptMode]);
+  }, [rawFonte, attemptMode, canal.id, canal.fontes]);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -351,6 +363,30 @@ export function LivePlayer({
     setAutoSwitchMsg(null);
   }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams]);
 
+  // Detecta uma transmissão que perdeu os segmentos depois de começar a tocar.
+  // Evita trocar o canal durante pausas normais, seek ou buffering curto.
+  useEffect(() => {
+    if (!rawFonte || loading || error) return;
+    let last = videoRef.current?.currentTime ?? 0;
+    let advancedAt = Date.now();
+    const watchdog = window.setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.paused || video.ended || video.seeking) {
+        advancedAt = Date.now();
+        return;
+      }
+      if (video.currentTime > last + 0.3) {
+        last = video.currentTime;
+        advancedAt = Date.now();
+      } else if (video.readyState < 3 && Date.now() - advancedAt > 25_000) {
+        advancedAt = Date.now();
+        console.warn("[LivePlayer] Stream perdeu o buffer por 25s; tentando outra rota");
+        handleFatalError(true);
+      }
+    }, 3000);
+    return () => window.clearInterval(watchdog);
+  }, [rawFonte, loading, error, handleFatalError]);
+
   // Inicializa a reprodução do stream atual
   useEffect(() => {
     const video = videoRef.current;
@@ -403,7 +439,7 @@ export function LivePlayer({
     video.addEventListener("error", onError);
 
     const setup = async () => {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       let kind: LiveStreamFormat = rawFonte ? classifyLiveSource(rawFonte) : "auto";
       if (kind === "auto" && rawFonte) {
         const originalIndex = canal.fontes.findIndex((f) => f.url === rawFonte.url);
@@ -516,7 +552,7 @@ export function LivePlayer({
             };
 
             if (hasNested && (Hls as any).DefaultConfig?.loader) {
-              hlsConfig.loader = makeNestedPathLoader(Hls, rawFonte.url);
+              hlsConfig["loader"] = makeNestedPathLoader(Hls, rawFonte?.url || streamUrl);
             }
 
             const hls = new Hls(hlsConfig);
@@ -524,12 +560,25 @@ export function LivePlayer({
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
 
+            let recoveryCount = 0;
             hls.on(Hls.Events.ERROR, (_, data: any) => {
-              if (data?.fatal) {
-                console.warn("[LivePlayer] Erro fatal Hls.js:", data);
-                const isNet = data?.type === "networkError";
-                if (!cancelled) handleFatalError(isNet);
+              if (!data?.fatal || cancelled) return;
+              const isNet = data?.type === "networkError";
+              const isMedia = data?.type === "mediaError";
+              // One controlled recovery before switching to proxy or next CDN.
+              if (recoveryCount < 1 && (isNet || isMedia)) {
+                recoveryCount++;
+                if (isNet && typeof (hls as any).startLoad === "function") {
+                  (hls as any).startLoad(-1);
+                  return;
+                }
+                if (isMedia && typeof (hls as any).recoverMediaError === "function") {
+                  (hls as any).recoverMediaError();
+                  return;
+                }
               }
+              console.warn("[LivePlayer] HLS indisponível após recuperação:", data?.details || data?.type);
+              handleFatalError(isNet);
             });
 
             hlsInstanceRef.current = {
@@ -677,7 +726,6 @@ export function LivePlayer({
         className="ydo-live-video"
         playsInline
         preload="none"
-        // @ts-expect-error compatibilidade iOS Safari
         webkit-playsinline="true"
         onClick={handleToggleMute}
       />

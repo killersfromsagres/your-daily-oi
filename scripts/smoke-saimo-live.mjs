@@ -73,21 +73,30 @@ try {
     return false;
   }
 
+  const backend = await fetch(BASE + "/api/tv/stream?canal=%21&fonte=0", { signal: timeout(7000) });
+  const backendBody = await backend.json();
+  if (backend.status !== 400 || typeof backendBody.error !== "string") {
+    throw new Error("Backend TV inválido ou frontend estático interceptando a rota");
+  }
+  console.log(JSON.stringify({ event: "worker-tv-backend", status: backend.status, valid: true }));
+  const invalid = await fetch(BASE + "/api/tv/stream?canal=not-a-channel&fonte=0", { signal: timeout(7000) });
+  if (invalid.status !== 404) throw new Error("Endpoint catalog-bound aceitou fonte inexistente");
+  await invalid.body?.cancel();
+
   const candidates = [
     ...channels.filter((ch) => /^(band|sbt)$/i.test(ch.nome)).flatMap((ch) =>
-      ch.fontes.filter((src) => src.url.includes(".m3u8")).slice(0, 2).map((src) => ({ ch, src })),
+      ch.fontes.map((src, index) => ({ ch, src, index }))
+        .filter(({ src }) => src.url.includes(".m3u8")).slice(0, 2),
     ),
   ].slice(0, 4);
   let success = false;
-  for (const { ch, src } of candidates) {
-    const query = new URLSearchParams({ url: src.url });
-    if (src.referer) query.set("referer", src.referer);
-    if (src.agente) query.set("ua", src.agente);
+  for (const { ch, src, index } of candidates) {
+    const query = new URLSearchParams({ canal: ch.id, fonte: String(index) });
     try {
-      const res = await fetch(`${BASE}/api/live-proxy?${query}`, { signal: timeout(14000) });
+      const res = await fetch(`${BASE}/api/tv/stream?${query}`, { signal: timeout(14000) });
       const body = (await res.text()).slice(0, 250000);
       const manifest = res.ok && body.trimStart().startsWith("#EXTM3U");
-      console.log(JSON.stringify({ event: "worker-live-manifest", channel: ch.nome, status: res.status, type: res.headers.get("content-type"), manifest, proxiedSegments: body.includes("/api/live-proxy?url="), bytesRead: body.length }));
+      console.log(JSON.stringify({ event: "worker-live-manifest", via: "/api/tv/stream", channel: ch.nome, status: res.status, type: res.headers.get("content-type"), manifest, proxiedSegments: body.includes("/api/live-proxy?url="), bytesRead: body.length }));
       if (manifest && body.includes("/api/live-proxy?url=") && await probeMediaFragment(body)) { success = true; break; }
     } catch (error) {
       console.log(JSON.stringify({ event: "worker-live-manifest", channel: ch.nome, networkError: error instanceof Error ? error.name : "unknown" }));

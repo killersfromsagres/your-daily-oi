@@ -1,0 +1,30 @@
+name: Verify Zang Live studio
+on:
+  push:
+    branches: [feat/live-tv-studio-rebuild]
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Unit and integration tests
+        run: bun run test
+      - name: Production bundle
+        run: bun run build
+      - name: Cloudflare Worker real IPTV smoke test
+        run: bun scripts/smoke-saimo-live.mjs
+      - name: Headless browser rendering
+        run: bun scripts/smoke-tv-ui.mjs
+      - name: Route CSS and navigation checks
+        run: |
+          grep -q 'ztv-studio' src/components/tv/TvView.tsx
+          grep -q 'tv-studio.css?url' src/routes/__root.tsx
+          grep -q 'ztv-channel-grid' src/styles/tv-studio.css
+          grep -q 'Guia de programação' src/components/tv/TvView.tsx
