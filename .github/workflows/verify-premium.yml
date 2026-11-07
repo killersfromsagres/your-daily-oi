@@ -16,9 +16,9 @@ jobs:
         run: bun install --frozen-lockfile
       - name: All unit and integration tests
         run: bun run test
+      - name: Build production bundle and regenerate TanStack route types
+        run: bun run build
       - name: Strict typecheck changed modules
         run: bun scripts/typecheck-premium.mjs
-      - name: Build production bundle
-        run: bun run build
       - name: Browser and ESPN fixture smoke
         run: bun scripts/smoke-premium-experience.mjs
