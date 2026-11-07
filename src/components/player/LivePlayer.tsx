@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
+import { classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import {
   sortStreamsByHealth,
@@ -62,16 +63,31 @@ declare global {
   }
 }
 
+// Carregamento único por CDN, mesmo após trocar rapidamente de canal ou fonte.
+const scriptRequests = new Map<string, Promise<void>>();
 async function loadScript(src: string): Promise<void> {
-  if (document.querySelector(`script[src="${src}"]`)) return;
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Falha ao carregar script ${src}`));
-    document.head.appendChild(s);
-  });
+  let promise = scriptRequests.get(src);
+  if (!promise) {
+    promise = new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+      const script = existing || document.createElement("script");
+      const onLoad = () => { cleanup(); resolve(); };
+      const onError = () => { cleanup(); reject(new Error(`Falha ao carregar biblioteca: ${src}`)); };
+      const cleanup = () => {
+        script.removeEventListener("load", onLoad);
+        script.removeEventListener("error", onError);
+      };
+      script.addEventListener("load", onLoad, { once: true });
+      script.addEventListener("error", onError, { once: true });
+      if (!existing) {
+        script.src = src;
+        script.async = true;
+        document.head.appendChild(script);
+      }
+    });
+    scriptRequests.set(src, promise);
+  }
+  try { await promise; } catch (error) { scriptRequests.delete(src); throw error; }
 }
 
 async function ensureHls() {
@@ -134,17 +150,9 @@ function limparHostsSemCors() {
   } catch {}
 }
 
-const initialModeFor = (f: FonteTV | undefined): "direct" | "proxy" => {
+const initialModeFor = (f: FonteTV | undefined): LiveAccessMode => {
   if (!f) return "proxy";
-  // .txt masters vêm como text/plain sem CORS — direto no proxy
-  if (f.url.split("?")[0].toLowerCase().endsWith(".txt")) {
-    // ...exceto CDNs com CORS aberto (s23-cloudfront-net.lat toca direto)
-    if (!f.url.includes("s23-cloudfront-net.lat")) return "proxy";
-  }
-  if (!f.url.startsWith("https://")) return "proxy"; // http = mixed-content
-  if (f.chave || f.url.includes(".mpd")) return "direct"; // DASH direto primeiro
-  if (hostSemCors(f.url)) return "proxy"; // memória de hosts sem cors
-  return "direct";
+  return hostSemCors(f.url) ? "proxy" : initialLiveMode(f);
 };
 
 // Corrige caminhos em proxies de terceiros que aninham o stream no parâmetro url=
@@ -190,14 +198,13 @@ export function LivePlayer({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number } | null>(null);
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
+  const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
+  const handlingFailureRef = useRef(false);
 
   // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
-    const usable = canal.fontes.filter((f) => {
-      const u = f.url.toLowerCase();
-      return !u.includes("error.txt") && !u.includes("offline");
-    });
-    const pool = usable.length > 0 ? usable : canal.fontes;
+    // Marcadores de erro remoto não são streams reproduzíveis.
+    const pool = canal.fontes.filter((f) => !looksOffline(f));
     const httpsList: FonteTV[] = [];
     const httpList: FonteTV[] = [];
     for (const f of pool) {
@@ -234,10 +241,12 @@ export function LivePlayer({
   // Reseta ao trocar de canal
   useEffect(() => {
     autoCleanPlayerCache();
+    attemptedModesRef.current.clear();
+    handlingFailureRef.current = false;
     setSourceIndex(0);
     setAttemptMode(initialModeFor(validStreams[0]));
-    setError(false);
-    setLoading(true);
+    setError(validStreams.length === 0);
+    setLoading(validStreams.length > 0);
     setAutoSwitchMsg(null);
     setPlayNonce((n) => n + 1);
   }, [canal.id, validStreams]);
@@ -309,55 +318,48 @@ export function LivePlayer({
   }, [isLiveEdge, syncToLiveEdge]);
 
   // Avança para a próxima fonte caso haja falha fatal (escada direto -> proxy -> próxima fonte)
-  const handleFatalError = useCallback(
-    (isCorsOrNetwork?: boolean) => {
-      if (!rawFonte) return;
-
-      // Se falhou no modo DIRETO, anota no cache sem-cors se foi erro de rede/CORS e tenta proxy
-      if (attemptMode === "direct") {
-        if (isCorsOrNetwork) {
-          marcarSemCors(rawFonte.url);
-        }
-        console.warn(`[LivePlayer] Modo direto falhou para fonte ${sourceIndex + 1}. Retentando via proxy.`);
-        setAttemptMode("proxy");
-        setLoading(true);
-        setError(false);
-        setPlayNonce((n) => n + 1);
-        return;
-      }
-
-      // Se falhou no modo PROXY (ou a fonte começou direto no proxy), registra falha e avança
-      recordFailedSource(rawFonte.url);
-
-      if (sourceIndex < validStreams.length - 1) {
-        const nextIndex = sourceIndex + 1;
-        const nextFonte = validStreams[nextIndex];
-        const nextMode = initialModeFor(nextFonte);
-
-        setAutoSwitchMsg("Trocando fonte…");
-        const timer = setTimeout(() => {
-          setSourceIndex(nextIndex);
-          setAttemptMode(nextMode);
-          setLoading(true);
-          setError(false);
-          setAutoSwitchMsg(null);
-          setPlayNonce((n) => n + 1);
-        }, 700);
-        return () => clearTimeout(timer);
-      } else {
-        setLoading(false);
-        setError(true);
-        setAutoSwitchMsg(null);
-      }
-    },
-    [rawFonte, attemptMode, sourceIndex, validStreams]
-  );
+  // Timeout e erro do motor de vídeo podem ocorrer juntos; alternar uma única vez.
+  const handleFatalError = useCallback((isNetworkError = false) => {
+    if (!rawFonte || handlingFailureRef.current) return;
+    handlingFailureRef.current = true;
+    const key = `${canal.id}:${rawFonte.url}`;
+    const attempted = attemptedModesRef.current.get(key) || new Set<LiveAccessMode>();
+    attempted.add(attemptMode);
+    attemptedModesRef.current.set(key, attempted);
+    if (isNetworkError && attemptMode === "direct") marcarSemCors(rawFonte.url);
+    const alternative = nextLiveMode(rawFonte, attemptMode, attempted);
+    if (alternative) {
+      setAttemptMode(alternative);
+      setLoading(true);
+      setError(false);
+      setPlayNonce((n) => n + 1);
+      return;
+    }
+    recordFailedSource(rawFonte.url);
+    if (sourceIndex + 1 < validStreams.length) {
+      const next = sourceIndex + 1;
+      setSourceIndex(next);
+      setAttemptMode(initialModeFor(validStreams[next]));
+      setLoading(true);
+      setError(false);
+      setAutoSwitchMsg("Trocando fonte…");
+      setPlayNonce((n) => n + 1);
+      return;
+    }
+    setLoading(false);
+    setError(true);
+    setAutoSwitchMsg(null);
+  }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams]);
 
   // Inicializa a reprodução do stream atual
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !streamUrl) return;
-
+    if (!video || !streamUrl) {
+      setLoading(false);
+      if (!streamUrl) setError(true);
+      return;
+    }
+    handlingFailureRef.current = false;
     let cancelled = false;
     setLoading(true);
     setError(false);
@@ -368,10 +370,10 @@ export function LivePlayer({
         if (video.readyState >= 3) {
           return;
         }
-        console.warn(`[LivePlayer] 8s timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
+        console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
         handleFatalError(false);
       }
-    }, 8000);
+    }, 18000);
 
     const onPlaying = () => {
       if (cancelled) return;
@@ -402,8 +404,26 @@ export function LivePlayer({
 
     const setup = async () => {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isDash = Boolean(rawFonte?.chave || rawFonte?.url.includes(".mpd"));
-      const isTs = rawFonte?.url.includes(".ts") && !rawFonte.url.includes(".m3u8");
+      let kind: LiveStreamFormat = rawFonte ? classifyLiveSource(rawFonte) : "auto";
+      if (kind === "auto" && rawFonte) {
+        const originalIndex = canal.fontes.findIndex((f) => f.url === rawFonte.url);
+        if (originalIndex >= 0) {
+          try {
+            const response = await fetch(
+              `/api/live-format?canal=${encodeURIComponent(canal.id)}&fonte=${originalIndex}`,
+              { signal: AbortSignal.timeout(6500), cache: "no-store" },
+            );
+            if (response.ok) {
+              const info = (await response.json()) as { format?: LiveStreamFormat };
+              if (info.format && info.format !== "auto") kind = info.format;
+            }
+          } catch { /* O CDN pode estar inacessível ao backend. */ }
+        }
+      }
+      if (cancelled) return;
+      const isDash = kind === "dash";
+      const isTs = kind === "ts";
+      const isMp4 = kind === "mp4";
 
       try {
         // 1. DASH + ClearKey via Shaka Player
@@ -415,6 +435,7 @@ export function LivePlayer({
             return;
           }
 
+          if (cancelled) return;
           const player = new shaka.Player();
           await player.attach(video);
 
@@ -459,6 +480,7 @@ export function LivePlayer({
         // 2. MPEG-TS direto
         if (isTs) {
           const mpegts = await ensureMpegts();
+          if (cancelled) return;
           if (mpegts?.isSupported()) {
             const player = mpegts.createPlayer({
               type: "mpegts",
@@ -477,9 +499,13 @@ export function LivePlayer({
           }
         }
 
-        // 3. HLS (.m3u8)
-        if (!isIOS && video.canPlayType("application/vnd.apple.mpegurl") === "") {
+        // 3. MP4: reprodução nativa, sem passar conteúdo binário ao Hls.js.
+        if (isMp4) {
+          video.src = streamUrl;
+          video.load();
+        } else if (!isIOS && video.canPlayType("application/vnd.apple.mpegurl") === "") {
           const Hls = await ensureHls();
+          if (cancelled) return;
           if (Hls?.isSupported()) {
             const hasNested = attemptMode === "direct" && rawFonte?.url.includes("url=");
             const hlsConfig: Record<string, unknown> = {
@@ -718,15 +744,18 @@ export function LivePlayer({
       {error && (
         <div className="ydo-live-error-overlay">
           <AlertCircle size={44} style={{ color: "#e8b44a" }} />
-          <h3>Nenhum servidor disponível para este canal</h3>
+          <h3>{validStreams.length > 0 ? "Nenhum servidor disponível para este canal" : "Canal sem fonte ativa no catálogo"}</h3>
           <p>
-            Tentamos todas as {validStreams.length} fontes deste canal no momento.
-            A disponibilidade pode retornar em breve.
+            {validStreams.length > 0
+              ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
+              : "O Saimo mantém este canal na lista, mas os links atuais estão temporariamente indisponíveis."}
           </p>
           <button
             className="ydo-btn-primary"
             onClick={() => {
-              clearAllPlayerCaches();
+              attemptedModesRef.current.clear();
+                handlingFailureRef.current = false;
+                clearAllPlayerCaches();
               limparHostsSemCors();
               setSourceIndex(0);
               setAttemptMode(initialModeFor(validStreams[0]));
@@ -802,6 +831,8 @@ export function LivePlayer({
                     <button
                       key={f.url + i}
                       onClick={() => {
+                        attemptedModesRef.current.delete(`${canal.id}:${f.url}`);
+                        handlingFailureRef.current = false;
                         setSourceIndex(i);
                         setAttemptMode(initialModeFor(f));
                         setSourcesOpen(false);

@@ -130,9 +130,11 @@ export function TvView({ initialCanalId }: TvViewProps) {
         if (lastSaved && data.canais.some((c) => c.id === lastSaved)) {
           setActiveId(lastSaved);
         } else if (data.canais.length > 0) {
-          // Primeiro canal da lista (ou prioritário Globo/SporTV)
+          // Prefere fonte HLS realmente acessível e não inicia em canal offline.
           const defaultCanal =
-            data.canais.find((c) => /globo|sportv/i.test(c.nome)) || data.canais[0];
+            data.canais.find((c) => c.fontes.length > 0 && /^(band|sbt)$/i.test(c.nome)) ||
+            data.canais.find((c) => c.fontes.length > 0) ||
+            data.canais[0];
           setActiveId(defaultCanal.id);
         }
       }
@@ -171,6 +173,65 @@ export function TvView({ initialCanalId }: TvViewProps) {
       active = false;
     };
   }, [initialCanalId]);
+
+  // Atualiza canais e fontes periodicamente, como o Saimo, sem reiniciar
+  // o player quando a lista não mudou.
+  const lastChannelRefreshRef = useRef(Date.now());
+  useEffect(() => {
+    let alive = true;
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      if (Date.now() - lastChannelRefreshRef.current < 9 * 60_000) return;
+      lastChannelRefreshRef.current = Date.now();
+      controller?.abort();
+      controller = new AbortController();
+      fetch("/api/canais", { cache: "no-store", signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) throw new Error(`Catálogo HTTP ${res.status}`);
+          return res.json() as Promise<{ canais: CanalTV[]; categorias: string[] }>;
+        })
+        .then((data) => {
+          if (!alive || !data.canais?.length) return;
+          setCanais((previous) => {
+            const same = previous.length === data.canais.length &&
+              previous.every((item, index) => {
+                const next = data.canais[index];
+                return !!next && item.id === next.id &&
+                  item.indisponivel === next.indisponivel &&
+                  item.fontes.length === next.fontes.length &&
+                  item.fontes.every((font, j) => {
+                    const other = next.fontes[j];
+                    return !!other && font.url === other.url &&
+                      font.referer === other.referer &&
+                      font.agente === other.agente &&
+                      font.chave === other.chave;
+                  });
+              });
+            return same ? previous : data.canais;
+          });
+          setCategorias(data.categorias);
+          setError(null);
+          setActiveId((previous) => {
+            if (data.canais.some((ch) => ch.id === previous)) return previous;
+            return data.canais.find((ch) => ch.fontes.length)?.id || data.canais[0]?.id || "";
+          });
+        })
+        .catch((err: unknown) => {
+          if (alive && !(err instanceof Error && err.name === "AbortError")) {
+            console.warn("[TvView] Atualização automática do catálogo falhou:", err);
+          }
+        });
+    };
+    const id = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+      controller?.abort();
+    };
+  }, []);
 
   // Canal ativo atual
   const activeCanal = useMemo(() => {
@@ -409,7 +470,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </h1>
           <span className="ydo-tv-badge-live">
             <span className="ydo-live-dot" />
-            408 Canais
+            {canais.length} Canais
           </span>
         </div>
 
@@ -433,6 +494,21 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </Link>
         </div>
       </div>
+
+      {error && canais.length === 0 && (
+        <div role="alert" style={{ padding: "16px 24px", margin: "12px 24px", border: "1px solid rgba(232,180,74,0.35)", borderRadius: 12 }}>
+          <strong>Não foi possível atualizar a lista de TV.</strong>
+          <p style={{ opacity: 0.8, marginTop: 6 }}>{error}</p>
+          <button className="ydo-btn-secondary" type="button" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {canais.length > 0 && (
+        <p role="status" style={{ fontSize: 12, opacity: 0.75, padding: "0 24px", marginTop: 6 }}>
+          {canais.filter((c) => c.fontes.length > 0).length} com fontes cadastradas · {canais.filter((c) => c.indisponivel).length} temporariamente sem fonte
+        </p>
+      )}
 
       {/* Prateleira Jogos de Hoje (Brasileirão) */}
       <JogosShelf onSelectCanalId={handleSelectCanalId} />
@@ -521,7 +597,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                   <div
                     key={c.id}
                     onClick={() => selectCanal(c)}
-                    className={`ydo-tv-channel-item ${isActive ? "active" : ""}`}
+                    className={`ydo-tv-channel-item ${isActive ? "active" : ""} ${c.indisponivel ? "is-offline" : ""}`}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -540,10 +616,13 @@ export function TvView({ initialCanalId }: TvViewProps) {
                     <div className="ydo-tv-channel-info">
                       <div className="ydo-tv-channel-name-row">
                         <span className="ydo-tv-channel-name">{c.nome}</span>
-                        {isActive && <span className="ydo-live-dot" />}
+                        {isActive && !c.indisponivel && <span className="ydo-live-dot" />}
+                        {c.indisponivel && <span title="Fontes temporariamente indisponíveis" style={{ fontSize: "0.67rem", opacity: 0.65 }}>SEM FONTE</span>}
                       </div>
                       <div className="ydo-tv-channel-epg-text">
-                        {isActive && playerLoading
+                        {c.indisponivel
+                          ? "Canal temporariamente indisponível"
+                          : isActive && playerLoading
                           ? "Sintonizando…"
                           : epg?.titulo
                           ? `${epg.horario ? `${epg.horario} · ` : ""}${epg.titulo}`

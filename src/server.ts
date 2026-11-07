@@ -11,6 +11,7 @@ import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje } from "./lib/jogos";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
+import { handleLiveFormatApi } from "./lib/live-probe";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -681,6 +682,8 @@ function isBlockedTargetUrl(target: string): boolean {
     const parsed = new URL(target);
     const host = parsed.hostname.toLowerCase();
     if (
+      !["http:", "https:"].includes(parsed.protocol) ||
+      parsed.username || parsed.password ||
       host === "localhost" ||
       host.endsWith(".local") ||
       host.endsWith(".lovable.app") ||
@@ -1387,6 +1390,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
 
       while (hops < 15) {
         hops++;
+        if (isBlockedTargetUrl(currentUrl)) throw new Error("Redirecionamento para endereço interno bloqueado");
         const headers = headersBuilder(currentUrl);
 
         if (cookieJar.size > 0) {
@@ -1432,7 +1436,10 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
         if (hopRes.status >= 300 && hopRes.status < 400) {
           const loc = hopRes.headers.get("location") || hopRes.headers.get("Location");
           if (loc) {
-            currentUrl = new URL(loc, currentUrl).toString();
+            const next = new URL(loc, currentUrl);
+            if (isBlockedTargetUrl(next.href)) throw new Error("Destino interno ou protocolo inseguro");
+            if (next.hostname !== new URL(currentUrl).hostname) cookieJar.clear();
+            currentUrl = next.toString();
             continue;
           }
         }
@@ -2011,6 +2018,11 @@ export default {
       if (url.pathname === "/api/hls-proxy") {
         return await handleHlsProxyApi(request, url);
       }
+      if (url.pathname === "/api/live-format") {
+        return request.method === "GET"
+          ? await handleLiveFormatApi(url)
+          : jsonResponse({ error: "Método inválido" }, 405);
+      }
       if (url.pathname === "/api/live-proxy") {
         return await handleLiveProxyApi(request, url);
       }
@@ -2020,20 +2032,35 @@ export default {
         const catalogCount = vod.status === "fulfilled"
           ? Array.from(vod.value.items.values()).filter((item) => !item.alias).length
           : 0;
-        const channelCount = tv.status === "fulfilled" ? tv.value.canais.length : 0;
+        const channels = tv.status === "fulfilled" ? tv.value.canais : [];
+        const tvActiveCount = channels.filter((ch) => ch.fontes.length > 0).length;
+        const tvSourceCount = channels.reduce((count, ch) => count + ch.fontes.length, 0);
         return jsonResponse({
-          status: catalogState.state === "remote" && channelCount > 0 ? "operational" : "degraded",
+          status: catalogState.state === "remote" && tvActiveCount > 0 ? "operational" : "degraded",
           checkedAt: new Date().toISOString(),
           vod: { state: catalogState.state, items: catalogCount, checkedAt: catalogState.checkedAt },
-          tv: { state: channelCount > 0 ? "available" : "unavailable", channels: channelCount },
-          note: "Contagens de catálogo não comprovam que cada vídeo ou canal reproduz.",
+          tv: {
+            state: tvActiveCount > 0 ? "available" : "unavailable",
+            channels: channels.length,
+            withSources: tvActiveCount,
+            temporarilyUnavailable: channels.length - tvActiveCount,
+            sources: tvSourceCount,
+          },
+          note: "Uma fonte na lista pode retornar 403 ou expirar. Contagens não comprovam playback individual.",
         }, 200, "no-store");
       }
       if (url.pathname === "/api/canais") {
         const data = await loadCanais();
-        return data.canais.length > 0
-          ? jsonResponse(data, 200, "public, max-age=300")
-          : jsonResponse({ ...data, error: "Catálogo de TV remoto indisponível. Configure SAIMO_CANAIS_URLS para adicionar um espelho." }, 503);
+        const withSources = data.canais.filter((ch) => ch.fontes.length > 0).length;
+        const summary = {
+          total: data.canais.length,
+          withSources,
+          temporarilyUnavailable: data.canais.length - withSources,
+          sources: data.canais.reduce((n, ch) => n + ch.fontes.length, 0),
+        };
+        return withSources > 0
+          ? jsonResponse({ ...data, summary }, 200, "public, max-age=120")
+          : jsonResponse({ ...data, summary, error: "Catálogo de TV remoto indisponível. Configure SAIMO_CANAIS_URLS para espelhos." }, 503);
       }
       if (url.pathname === "/api/radios") {
         const data = await loadRadios();
