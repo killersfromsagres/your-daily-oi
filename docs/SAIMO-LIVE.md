@@ -15,7 +15,7 @@ Os números são um retrato temporário. A API `/api/canais` apresenta as contag
 
 ## Fluxo de reprodução
 
-1. `GET /api/canais` carrega o catálogo Saimo com cache de 15 minutos e aceita espelhos/playlist M3U adicionados em `SAIMO_CANAIS_URLS`.
+1. `GET /api/canais` carrega o catálogo Saimo com cache de 10 minutos e aceita espelhos/playlist M3U adicionados em `SAIMO_CANAIS_URLS`.
 2. O parser preserva URL, logo, categoria, qualidade, Referer, User-Agent e ClearKey fornecidos pelo catálogo.
 3. Canais sem fontes utilizáveis **continuam visíveis**, identificados como *SEM FONTE*.
 4. O player determina HLS (`.m3u8`, `.txt`), MPEG-TS (`.ts`), DASH (`.mpd`, ClearKey) ou MP4 (`.mp4`). Quando a URL não revela o formato, consulta `/api/live-format?canal=<slug>&fonte=<índice>`, que testa apenas links do catálogo.
