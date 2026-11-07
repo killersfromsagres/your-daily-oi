@@ -153,7 +153,7 @@ function WatchSeriesPage() {
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}
-          expectedRuntimeMin={effectiveSerie.tmdb?.runtime || 45}
+          {...(effectiveSerie.tmdb?.runtime && effectiveSerie.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveSerie.tmdb.runtime } : {})}
         />
       </PlayerErrorBoundary>
     </main>
