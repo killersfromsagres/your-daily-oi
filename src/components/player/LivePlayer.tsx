@@ -202,7 +202,7 @@ export function LivePlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number } | null>(null);
+  const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number | undefined } | null>(null);
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
   const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
   const handlingFailureRef = useRef(false);
@@ -528,7 +528,7 @@ export function LivePlayer({
             };
 
             if (hasNested && (Hls as any).DefaultConfig?.loader) {
-              hlsConfig.loader = makeNestedPathLoader(Hls, rawFonte.url);
+              hlsConfig["loader"] = makeNestedPathLoader(Hls, rawFonte?.url || streamUrl);
             }
 
             const hls = new Hls(hlsConfig);
@@ -689,7 +689,6 @@ export function LivePlayer({
         className="ydo-live-video"
         playsInline
         preload="none"
-        // @ts-expect-error compatibilidade iOS Safari
         webkit-playsinline="true"
         onClick={handleToggleMute}
       />
