@@ -6,6 +6,7 @@ import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
+import { EpisodeIcon } from "@/components/catalog/EpisodeIcon";
 import { countWatchedEpisodes } from "@/lib/episode-progress";
 import "@/styles/episode-progress.css";
 
@@ -649,7 +650,7 @@ function AnimeDetailPage() {
                         e.currentTarget.style.transform = "translateY(0)";
                       }}
                     >
-                      <Clapperboard size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
+                      <span className="zf-episode-icon"><EpisodeIcon size={22} /></span>
                       <span>Episódio {ep.episodeNumber}</span>
                     </Link>
                     <EpisodeProgressControls
