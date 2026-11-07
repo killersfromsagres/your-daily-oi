@@ -2,12 +2,11 @@
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
   Search, X, ChevronDown, Heart, Film, Tv, Sparkles, Flame, Ghost, Menu, Monitor,
-  Clapperboard, Laugh, Rocket, Compass, WandSparkles, BookOpenCheck,
+  Clapperboard, Laugh, Rocket, Compass, WandSparkles, BookOpenCheck, Trophy,
   Swords, BrainCircuit, ScanEye, HandHeart, Layers3, Drama,
 } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
-import { FootballIcon } from "@/components/sports/FootballIcon";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
 import { detectDeviceProfile, isWatchRoute, type DeviceProfile } from "@/lib/device-profile";
 import { installTvRemoteNavigation } from "@/lib/tv-remote";
@@ -415,7 +414,7 @@ export function Header({ onSearch }: HeaderProps) {
 
         <Link to="/futebol" className="ydo-nav-link ydo-nav-football"
           title="Jogos, placares e onde assistir" aria-label="Jogos do Dia — jogos, placares e canais">
-          <span className="ydo-football-icon"><FootballIcon size={18} /></span>
+          <span className="ydo-football-icon"><Trophy size={17} strokeWidth={2.1} /></span>
           <span>Jogos do Dia</span>
           <span className="ydo-football-today">HOJE</span>
         </Link>
