@@ -60,7 +60,18 @@ A leitura dos scripts públicos do Saimo confirmou que o frontend monta tentativ
 
 ## Verificação do player
 
-O teste de navegador Chrome com Cloudflare Wrangler utiliza canais reais, `/tv/canal/band`, `/tv/canal/hbo`, `/tv/canal/espn`, `/tv/canal/telecine-action`, e verifica o avanço do tempo do vídeo. O diagnóstico remoto é complementar: manifestos respondendo HTTP 206 não substituem esses testes de vídeo.
+O teste de navegador Chrome com Cloudflare Wrangler verificou a reprodução real dos canais, medindo o tempo atual do elemento HTMLVideoElement. Após corrigir a reescrita de manifestos enviados com Range:
+
+| Canal | Tempo aos 5 s | Tempo aos 23 s | Reprodução |
+| --- | ---: | ---: | --- |
+| Band | 3,41 s | 21,42 s | Aprovado |
+| HBO | 3,46 s | 21,46 s | Aprovado |
+| ESPN | 3,44 s | 21,45 s | Aprovado |
+| Telecine Action | 0 s | 0 s | Não reproduziu; o espelho recebeu HLS mas não entregou vídeo antes do timeout, e a fonte principal retornou HTTP 403 |
+
+A HBO inicialmente falhou com HTTP 404 em `/api/tv/tracks-v1a1/mono.m3u8`. Depois da correção, o mesmo teste recebeu playlist completa e reescrita (HTTP 200) com e sem Range, e reproduziu por 23 s. Isso demonstra causa e solução de um defeito do nosso proxy. O caso Telecine Action demonstra uma limitação real das fontes remotas, não um resultado a apresentar como resolvido.
+
+A sondagem de 369 URLs é um snapshot de headers e manifestos. Os testes de vídeo são validações separadas, não prova de reprodução de todos os canais.
 
 ## Produção
 
