@@ -5,7 +5,7 @@
 .zf-mobile-menu-layer { display:none; }
 
 /* Mobile-first fallback works before JS device classification, including hydration. */
-@media (max-width:960px), (pointer:coarse) and (max-width:1200px) {
+@media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
   html:not([data-zf-platform="tv"]) .ydo-header {
     top:calc(9px + env(safe-area-inset-top,0px));
     left:10px; right:10px; width:auto; max-width:none;
