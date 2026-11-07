@@ -277,6 +277,7 @@ export function usePlayerEngine(
       try {
         if (stream.format === "ts") {
           const mpegts = await ensureMpegts();
+          if (cancelled) return;
           if (mpegts?.isSupported()) {
             const player = mpegts.createPlayer({ type: "mpegts", url, isLive: false, cors: true });
             player.attachMediaElement(video);
@@ -285,6 +286,7 @@ export function usePlayerEngine(
           }
         } else if (isHls && !isIOS && video.canPlayType("application/vnd.apple.mpegurl") === "") {
           const Hls = await ensureHls();
+          if (cancelled) return;
           if (Hls?.isSupported()) {
             const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
             hls.loadSource(url);
