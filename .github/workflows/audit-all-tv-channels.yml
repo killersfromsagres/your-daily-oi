@@ -1,0 +1,24 @@
+name: Audit complete Saimo TV catalog
+on:
+  push:
+    branches: [audit/all-tv-sources-live]
+  workflow_dispatch:
+jobs:
+  full-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Audit every current channel and source with bounded GET
+        run: bun scripts/audit-all-tv-channels.mjs
+      - name: Save complete anonymized channel health report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zang-live-health-report
+          path: artifacts/tv-health-audit.json
+          if-no-files-found: warn
+          retention-days: 7
