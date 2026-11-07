@@ -408,3 +408,49 @@ html[data-zf-platform="tv"] .ydo-header .ydo-nav-football[data-status="active"] 
     filter: none !important;
   }
 }
+
+
+/* Incremental catalog rendering: keep mobile navigation responsive even when
+   the source has thousands of titles. */
+.zf-catalog-progress {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:13px;
+  padding:27px 14px 36px;
+  color:#94a5b9;
+  font-size:12px;
+  text-align:center;
+}
+.zf-catalog-load-more {
+  min-height:44px;
+  padding:11px 24px;
+  border:1px solid rgba(239,197,128,.47);
+  border-radius:12px;
+  color:#f4d39f;
+  font-size:13px;
+  font-weight:800;
+  background:#1e2838;
+  cursor:pointer;
+  transition:background-color .16s, border-color .16s;
+}
+.zf-catalog-load-more:hover {
+  background:#273549;
+  border-color:rgba(239,197,128,.74);
+}
+.zf-catalog-load-more:focus-visible {
+  outline:2px solid #f3cb90;
+  outline-offset:3px;
+}
+@media (max-width:740px) {
+  .zf-catalog-progress { padding-bottom:24px; }
+  .zf-catalog-load-more { width:min(100%,310px); }
+  .ydo-search-grid {
+    contain:layout style;
+    min-width:0;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .zf-catalog-load-more { transition:none; }
+}
