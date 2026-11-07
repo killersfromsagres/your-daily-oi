@@ -1,6 +1,6 @@
 "use client";
 // src/components/layout/MobileNavigation.tsx — premium bottom dock and accessible catalogue drawer.
-import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useId, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight, ChevronDown, Clapperboard, Compass, Film, Gamepad2,
@@ -79,7 +79,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
   }, [open, onOpenChange]);
 
   const close = () => onOpenChange(false);
-  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!search.trim()) return;
     void navigate({ to:"/busca", search:{ q:search.trim() } });
