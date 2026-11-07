@@ -30,7 +30,7 @@ export const LIGAS_FUTEBOL = [
   { id: "uefa.champions", name: "UEFA Champions League", grupo: "champions" },
   { id: "conmebol.libertadores", name: "CONMEBOL Libertadores", grupo: "copas" },
   { id: "conmebol.sudamericana", name: "Copa Sul-Americana", grupo: "copas" },
-  { id: "bra.copa_do_brasil", name: "Copa do Brasil", grupo: "copas" },
+  { id: "bra.copa_do_brazil", name: "Copa do Brasil", grupo: "copas" },
   { id: "eng.1", name: "Premier League", grupo: "internacional" },
   { id: "esp.1", name: "LaLiga", grupo: "internacional" },
   { id: "ita.1", name: "Serie A Italiana", grupo: "internacional" },
