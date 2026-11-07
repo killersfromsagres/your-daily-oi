@@ -248,3 +248,32 @@
 @media(prefers-reduced-motion:reduce){
  .zgame-center *, .zgame-center *::before{animation:none !important;transition:none !important;scroll-behavior:auto !important;}
 }
+
+
+/* Informação confirmada de emissoras mesmo sem fonte reproduzível no catálogo. */
+.zgame-announced {
+  display:flex;
+  align-items:flex-start;
+  gap:11px;
+  padding:13px 14px;
+  min-height:66px;
+  border:1px solid rgba(240,191,112,.22);
+  border-radius:12px;
+  background:linear-gradient(130deg,rgba(240,191,112,.10),rgba(240,191,112,.025));
+}
+.zgame-announced-icon {
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  color:#efc383;
+  background:rgba(239,194,124,.12);
+}
+.zgame-announced>span:last-child { min-width:0; display:flex; flex-direction:column; gap:4px; }
+.zgame-announced small { font-size:9px; font-weight:900; letter-spacing:.10em; color:#e6b875; }
+.zgame-announced strong { color:#eaf0f7; font-size:12px; font-weight:850; line-height:1.4; overflow-wrap:anywhere; }
+.zgame-announced em { font-size:10px; font-weight:500; font-style:normal; line-height:1.45; color:#9dacc0; }
+.zgame-watch small+small { font-size:10px; font-weight:500; color:#9aafc6; margin-top:3px; line-height:1.35; }
