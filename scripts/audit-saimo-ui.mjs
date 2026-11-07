@@ -41,3 +41,15 @@ for(const asset of [...new Set(assets)].slice(0,12)){
   }catch(e){console.log(JSON.stringify({event:"asset-error",path:new URL(asset).pathname,error:String(e).slice(0,100)}));}
 }
 console.log(JSON.stringify({event:"summary",scriptFiles:seen.size,urlsFound:assets.length}));
+
+// Fluxo do player público, sem extração de listas privadas, credenciais ou URLs de mídia.
+try {
+ const js=await (await fetch("https://saimo-tv.pages.dev/assets/player-CNVR4wyM.js",{signal:timeout(18000)})).text();
+ for(const needle of ["function Sp(","/api/proxy?url=","obterConfigShaka(","fonte:","fontes-desativadas","autoLevelEnabled","new Hls("]){
+   const at=js.indexOf(needle);
+   if(at<0)continue;
+   const snip=js.slice(Math.max(0,at-450),Math.min(js.length,at+800))
+      .replace(/https?:\/\/[^\s"'),;]+/g,"<url>").slice(0,1250);
+   console.log(JSON.stringify({event:"player-flow",term:needle,snippet:snip}));
+ }
+}catch(e){console.log(JSON.stringify({event:"player-flow-error",error:String(e).slice(0,100)}))}
