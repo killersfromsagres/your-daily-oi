@@ -31,6 +31,10 @@ describe("VOD movie, series and anime playback",()=>{
   expect(code).toContain('import("mpegts.js")');
   expect(code).not.toContain("https://cdn.jsdelivr.net/npm/hls.js");
   expect(code).not.toContain("https://cdn.jsdelivr.net/npm/mpegts.js");
+  // Switching episodes while an engine is being imported must not let an
+  // obsolete stream reattach to the new video.
+  expect(code).toContain("const Hls = await ensureHls();\n          if (cancelled) return;");
+  expect(code).toContain("const mpegts = await ensureMpegts();\n          if (cancelled) return;");
  });
  test("recognizes a direct HTTP 200 video response from official Saimo as a valid alternative", async()=>{
   const id="99188111";
