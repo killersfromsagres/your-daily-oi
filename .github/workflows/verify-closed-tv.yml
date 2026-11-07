@@ -19,6 +19,8 @@ jobs:
         run: bun scripts/typecheck-tv.mjs
       - name: Build Cloudflare worker
         run: bun run build
+      - name: Inspect HBO HLS proxy manifest and audio-track rewriting
+        run: bun scripts/smoke-saimo-live.mjs
       - name: Band, open TV baseline
         run: LIVE_TEST_CHANNEL=band LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
       - name: HBO, closed films and series
