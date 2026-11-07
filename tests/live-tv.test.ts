@@ -1,6 +1,6 @@
 // tests/live-tv.test.ts — Bun; Saimo catalog, formats, fallback and media probes.
 import { describe, test, expect, afterEach } from "bun:test";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources } from "../src/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, isLivePlaylistTarget, looksOffline, nextLiveMode, orderLiveSources } from "../src/lib/live-source";
 import { mergeCanaisCatalogs, parseCanais, filterCanaisAndExtractCategories } from "../src/lib/canais";
 import { handleLiveFormatApi } from "../src/lib/live-probe";
 
@@ -64,6 +64,22 @@ describe("Compatibilidade Vercel com proxy legado", () => {
   });
 });
 
+
+describe("Reescrita de playlists com HTTP Range", () => {
+  test("identifica manifestos HLS, DASH e TXT, mesmo com parâmetros", () => {
+    expect(isLivePlaylistTarget("http://cdn.example/hbo/index.m3u8?token=xyz")).toBe(true);
+    expect(isLivePlaylistTarget("https://cdn.example/master.mpd")).toBe(true);
+    expect(isLivePlaylistTarget("https://cdn.example/list.txt")).toBe(true);
+    expect(isLivePlaylistTarget("https://proxy.example/stream?url=https%3A%2F%2Fcdn.example%2Fhbo%2Fmaster.m3u8")).toBe(true);
+  });
+
+  test("preserva requisições Range de segmentos MPEG-TS e MP4", () => {
+    expect(isLivePlaylistTarget("https://cdn.example/seg/123.ts")).toBe(false);
+    expect(isLivePlaylistTarget("https://cdn.example/chunk.m4s")).toBe(false);
+    expect(isLivePlaylistTarget("https://cdn.example/movie.mp4")).toBe(false);
+    expect(isLivePlaylistTarget("file:///private/master.m3u8")).toBe(true);
+  });
+});
 
 describe("Priorização de espelhos em canais fechados", () => {
   const degraded = { url: "https://d3-test.cdn13embed.xyz/hbo/index.m3u8", qualidade: "FHD" };
