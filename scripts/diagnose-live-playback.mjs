@@ -44,6 +44,27 @@ for (const wanted of ["Amazon Prime Video 01","Band","SBT","CNN Brasil","Globo S
     }
   }
 }
+// Compare the public Saimo forwarding route for one failing channel without downloading media.
+const sample = channels.find(ch=>ch.nome==="Amazon Prime Video 01")?.fontes[0];
+if (sample){
+ const proxy = new URL("https://saimo-tv.pages.dev/api/proxy");
+ proxy.searchParams.set("url",sample.url);
+ if(sample.referer) proxy.searchParams.set("referer",sample.referer);
+ if(sample.agente) proxy.searchParams.set("ua",sample.agente);
+ try {
+  const result=await shortRequest(proxy.href,{headers:{Range:"bytes=0-1",Accept:"application/vnd.apple.mpegurl,*/*"}},7500);
+  console.log(JSON.stringify({event:"upstream-saimo-proxy",channel:"Amazon Prime Video 01",result}));
+ }catch(e){console.log(JSON.stringify({event:"upstream-saimo-proxy",error:e?.name||"network"}));}
+ const legacy = new URL("https://zangflix.vercel.app/api/live-proxy");
+ legacy.searchParams.set("url",sample.url);
+ if(sample.referer)legacy.searchParams.set("referer",sample.referer);
+ if(sample.agente)legacy.searchParams.set("ua",sample.agente);
+ try{
+  const result=await shortRequest(legacy.href,{headers:{Range:"bytes=0-1",Accept:"application/vnd.apple.mpegurl,*/*"}},11000);
+  console.log(JSON.stringify({event:"deployed-legacy-proxy",channel:"Amazon Prime Video 01",result}));
+ }catch(e){console.log(JSON.stringify({event:"deployed-legacy-proxy",error:e?.name||"network"}));}
+}
+
 const DEPLOY="https://zangflix.vercel.app";
 for(const url of ["/","/tv","/api/version","/api/canais","/api/tv/stream?canal=%21&fonte=0","/api/live-format?canal=band&fonte=0"]){
  try{ console.log(JSON.stringify({event:"deployment",path:url,probe:await shortRequest(DEPLOY+url,{headers:{Accept:"application/json,text/html,*/*"}},7500)})); }
