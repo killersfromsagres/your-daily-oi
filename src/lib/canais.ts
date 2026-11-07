@@ -1,3 +1,47 @@
+import { fetchFirstText, sourceUrls } from "./saimo-source";
+
+/** Também aceita listas IPTV M3U sem perder referer e user-agent. */
+export function parseM3UCanais(texto: string): CanalTV[] {
+  const channels = new Map<string, CanalTV>();
+  let meta: { nome: string; logo?: string; categoria: string; referer?: string; agente?: string } | null = null;
+  for (const raw of texto.replace(/\r/g, "").split("\n")) {
+    const line = raw.trim();
+    if (line.startsWith("#EXTINF:")) {
+      const attr = (name: string): string | undefined => {
+        const match = line.match(new RegExp(name + '="([^"]*)"', "i"));
+        return match?.[1]?.trim() || undefined;
+      };
+      const comma = line.indexOf(",");
+      const nome = (comma >= 0 ? line.slice(comma + 1) : attr("tvg-name"))?.trim() || attr("tvg-name") || "";
+      meta = nome ? {
+        nome, ...(attr("tvg-logo") ? { logo: attr("tvg-logo") } : {}),
+        categoria: normalizeCategoria(attr("group-title") || "", nome),
+      } : null;
+    } else if (meta && line.startsWith("#EXTVLCOPT:")) {
+      const option = line.slice(11);
+      const separator = option.indexOf("=");
+      if (separator > 0) {
+        const key = option.slice(0, separator).toLowerCase();
+        const value = option.slice(separator + 1).trim();
+        if (key === "http-referrer") meta.referer = value;
+        if (key === "http-user-agent") meta.agente = value;
+      }
+    } else if (meta && /^https?:\/\//i.test(line)) {
+      const key = slugifyCanal(meta.nome);
+      let canal = channels.get(key);
+      if (!canal) {
+        canal = { id: key, nome: meta.nome, ...(meta.logo ? { logo: meta.logo } : {}), categoria: meta.categoria, fontes: [] };
+        channels.set(key, canal);
+      }
+      if (!canal.fontes.some((fonte) => fonte.url === line)) {
+        canal.fontes.push({ url: line, ...(meta.referer ? { referer: meta.referer } : {}), ...(meta.agente ? { agente: meta.agente } : {}) });
+      }
+      meta = null;
+    }
+  }
+  return [...channels.values()];
+}
+
 /**
  * Módulo de Catálogo e Dados de TV Ao Vivo e Rádios (Saimo TV)
  */
@@ -114,6 +158,7 @@ function normalizeCategoria(raw: string, nomeCanal: string): string {
  * Faz o parser do arquivo catalogo.txt tolerante a falhas
  */
 export function parseCanais(texto: string): CanalTV[] {
+  if (texto.trimStart().startsWith("#EXTM3U")) return parseM3UCanais(texto);
   const lines = texto.split("\n");
   const canais: CanalTV[] = [];
   const slugCounts = new Map<string, number>();
@@ -345,21 +390,13 @@ export async function loadCanais(): Promise<{
   }
 
   try {
-    const res = await fetch(CANAIS_URL, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        Accept: "text/plain, */*",
-      },
-      signal: AbortSignal.timeout(15000),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Falha HTTP ${res.status} ao obter catalogo.txt de canais`);
-    }
-
-    const text = await res.text();
+    const urls = sourceUrls(
+      typeof process !== "undefined" ? process.env.SAIMO_CANAIS_URLS : undefined,
+      [CANAIS_URL],
+    );
+    const { text } = await fetchFirstText(urls, "canais", { timeoutMs: 7000 });
     const canaisRaw = parseCanais(text);
+    if (canaisRaw.length === 0) throw new Error("Catálogo sem canais ou formato não reconhecido");
 
     // Painel de servidores desligados (Saimo TV): filtra hosts inativos
     const desativados = await fetchFontesDesativadas();

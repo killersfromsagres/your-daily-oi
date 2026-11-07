@@ -1,0 +1,26 @@
+name: Verificar integrações Saimo
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/saimo-catalog-vod-tv-reliability]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Testes das fontes e TV
+        run: bun run test
+      - name: Build de produção
+        run: bun run build
+      - name: Diagnóstico público das fontes (informativo)
+        run: bun scripts/probe-saimo.mjs
