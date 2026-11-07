@@ -20,6 +20,8 @@ jobs:
         run: bun run build
       - name: Cloudflare Worker real IPTV smoke test
         run: bun scripts/smoke-saimo-live.mjs
+      - name: Headless browser rendering
+        run: bun scripts/smoke-tv-ui.mjs
       - name: Route CSS and navigation checks
         run: |
           grep -q 'ztv-studio' src/components/tv/TvView.tsx
