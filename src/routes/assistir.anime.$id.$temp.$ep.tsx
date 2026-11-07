@@ -154,7 +154,7 @@ function WatchAnimePage() {
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}
-          expectedRuntimeMin={effectiveAnime.tmdb?.runtime || 24}
+          {...(effectiveAnime.tmdb?.runtime && effectiveAnime.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveAnime.tmdb.runtime } : {})}
         />
       </PlayerErrorBoundary>
     </main>
