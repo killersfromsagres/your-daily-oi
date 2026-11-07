@@ -38,6 +38,41 @@ try {
   console.log(JSON.stringify({ event: "worker-live-format", status: probe.status, format: format.format }));
   if (probe.status !== 200 || format.format !== "hls") throw new Error("Rota de formato ao vivo não responde HLS");
 
+
+  async function probeMediaFragment(manifest) {
+    let currentManifest = manifest;
+    for (let depth = 0; depth < 3; depth++) {
+      const line = currentManifest.split(/\r?\n/).map((s) => s.trim()).find((s) => s && !s.startsWith("#"));
+      if (!line) return false;
+      const child = new URL(line, BASE);
+      if (child.origin !== BASE || child.pathname !== "/api/live-proxy") return false;
+      const upstream = child.searchParams.get("url") || "";
+      const manifestChild = /\.(m3u8?|txt)(\?|$)/i.test(upstream);
+      const response = await fetch(child.href, {
+        headers: manifestChild ? {} : { Range: "bytes=0-511" },
+        signal: timeout(14000),
+      });
+      if (!response.ok) {
+        console.log(JSON.stringify({ event: "worker-live-child", status: response.status, depth }));
+        await response.body?.cancel();
+        return false;
+      }
+      const mime = response.headers.get("content-type") || "";
+      if (manifestChild || mime.includes("mpegurl")) {
+        currentManifest = await response.text();
+        if (!currentManifest.trimStart().startsWith("#EXTM3U")) return false;
+        continue;
+      }
+      const reader = response.body?.getReader();
+      const first = reader ? await reader.read() : { done: true };
+      const received = first.value?.byteLength || 0;
+      await reader?.cancel();
+      console.log(JSON.stringify({ event: "worker-live-fragment", status: response.status, mime, bytesReceived: received }));
+      return received > 0;
+    }
+    return false;
+  }
+
   const candidates = [
     ...channels.filter((ch) => /^(band|sbt)$/i.test(ch.nome)).flatMap((ch) =>
       ch.fontes.filter((src) => src.url.includes(".m3u8")).slice(0, 2).map((src) => ({ ch, src })),
@@ -53,12 +88,12 @@ try {
       const body = (await res.text()).slice(0, 250000);
       const manifest = res.ok && body.trimStart().startsWith("#EXTM3U");
       console.log(JSON.stringify({ event: "worker-live-manifest", channel: ch.nome, status: res.status, type: res.headers.get("content-type"), manifest, proxiedSegments: body.includes("/api/live-proxy?url="), bytesRead: body.length }));
-      if (manifest && body.includes("/api/live-proxy?url=")) { success = true; break; }
+      if (manifest && body.includes("/api/live-proxy?url=") && await probeMediaFragment(body)) { success = true; break; }
     } catch (error) {
       console.log(JSON.stringify({ event: "worker-live-manifest", channel: ch.nome, networkError: error instanceof Error ? error.name : "unknown" }));
     }
   }
-  if (!success) throw new Error("Nenhum dos canais amostrados retornou manifesto HLS reescrito pelo Worker");
+  if (!success) throw new Error("Nenhum canal amostrado entregou playlist e fragmento real via Worker");
 } finally {
   child.kill("SIGTERM");
 }
