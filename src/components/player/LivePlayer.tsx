@@ -363,6 +363,30 @@ export function LivePlayer({
     setAutoSwitchMsg(null);
   }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams]);
 
+  // Detecta uma transmissão que perdeu os segmentos depois de começar a tocar.
+  // Evita trocar o canal durante pausas normais, seek ou buffering curto.
+  useEffect(() => {
+    if (!rawFonte || loading || error) return;
+    let last = videoRef.current?.currentTime ?? 0;
+    let advancedAt = Date.now();
+    const watchdog = window.setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.paused || video.ended || video.seeking) {
+        advancedAt = Date.now();
+        return;
+      }
+      if (video.currentTime > last + 0.3) {
+        last = video.currentTime;
+        advancedAt = Date.now();
+      } else if (video.readyState < 3 && Date.now() - advancedAt > 25_000) {
+        advancedAt = Date.now();
+        console.warn("[LivePlayer] Stream perdeu o buffer por 25s; tentando outra rota");
+        handleFatalError(true);
+      }
+    }, 3000);
+    return () => window.clearInterval(watchdog);
+  }, [rawFonte, loading, error, handleFatalError]);
+
   // Inicializa a reprodução do stream atual
   useEffect(() => {
     const video = videoRef.current;
@@ -536,12 +560,25 @@ export function LivePlayer({
             hls.loadSource(streamUrl);
             hls.attachMedia(video);
 
+            let recoveryCount = 0;
             hls.on(Hls.Events.ERROR, (_, data: any) => {
-              if (data?.fatal) {
-                console.warn("[LivePlayer] Erro fatal Hls.js:", data);
-                const isNet = data?.type === "networkError";
-                if (!cancelled) handleFatalError(isNet);
+              if (!data?.fatal || cancelled) return;
+              const isNet = data?.type === "networkError";
+              const isMedia = data?.type === "mediaError";
+              // One controlled recovery before switching to proxy or next CDN.
+              if (recoveryCount < 1 && (isNet || isMedia)) {
+                recoveryCount++;
+                if (isNet && typeof (hls as any).startLoad === "function") {
+                  (hls as any).startLoad(-1);
+                  return;
+                }
+                if (isMedia && typeof (hls as any).recoverMediaError === "function") {
+                  (hls as any).recoverMediaError();
+                  return;
+                }
               }
+              console.warn("[LivePlayer] HLS indisponível após recuperação:", data?.details || data?.type);
+              handleFatalError(isNet);
             });
 
             hlsInstanceRef.current = {
