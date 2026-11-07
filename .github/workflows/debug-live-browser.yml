@@ -1,0 +1,16 @@
+name: Debug browser playback for live TV
+on:
+  push:
+    branches: [fix/live-tv-production-playback]
+  workflow_dispatch:
+jobs:
+  player:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun scripts/diagnose-live-browser.mjs
