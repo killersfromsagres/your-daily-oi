@@ -640,3 +640,18 @@
 }
 
 
+
+
+/* Low-latency live mode switch: visible in the live player, compact on TV. */
+.ydo-live-latency-btn {
+  display:inline-flex; gap:7px; align-items:center; justify-content:center;
+  min-height:32px; padding:0 11px; border:1px solid rgba(209,222,238,.24);
+  border-radius:9px; background:rgba(15,24,38,.72); color:#cbd8e6;
+  font-size:11px; font-weight:850; white-space:nowrap;
+  transition:background .17s,border-color .17s,color .17s;
+}
+.ydo-live-latency-btn:hover { background:rgba(255,255,255,.10); border-color:rgba(232,202,146,.44); }
+.ydo-live-latency-btn.is-fast { color:#f8d99f; border-color:rgba(246,208,143,.41); background:rgba(237,188,106,.11); }
+.ydo-live-latency-btn:focus-visible { outline:2px solid #f5d6a1; outline-offset:2px; }
+@media(max-width:610px){.ydo-live-latency-btn{padding:0 8px;gap:4px;font-size:10px}.ydo-live-latency-btn span{display:none}}
+@media(prefers-reduced-motion:reduce){.ydo-live-latency-btn{transition:none}}
