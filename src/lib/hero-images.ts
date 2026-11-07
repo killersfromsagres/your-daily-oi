@@ -1,5 +1,5 @@
 // src/lib/hero-images.ts — memory-safe TMDB image resolution selection.
-export type HeroImageWidth = "w780" | "w1280";
+export type HeroImageWidth = "w780" | "w1280" | "original";
 
 /**
  * Use the correct CDN rendition instead of /original (often several megabytes).
