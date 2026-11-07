@@ -145,6 +145,9 @@ export function pickBestSourceIndex(
       score += 100;
     }
 
+    // Saimo via servidor do Zang Flix tem prioridade: aceita MP4 Range/206 sem CORS.
+    if (s.url.startsWith("/api/saimo-vod")) score += 2800;
+
     // A1: Relay Saimo é a escolha primária (+2000) — mesma fonte FHD oficial do Saimo TV
     if (s.url.includes("saimo-tv.pages.dev/api/stream")) {
       score += 2000;
