@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import {
   sortStreamsByHealth,
@@ -212,15 +212,10 @@ export function LivePlayer({
 
   // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
-    // Marcadores de erro remoto não são streams reproduzíveis.
+    // Tenta primeiro os espelhos que responderam com mídia no diagnóstico.
+    // Os CDNs problemáticos permanecem disponíveis como último recurso.
     const pool = canal.fontes.filter((f) => !looksOffline(f));
-    const httpsList: FonteTV[] = [];
-    const httpList: FonteTV[] = [];
-    for (const f of pool) {
-      if (f.url.startsWith("https://")) httpsList.push(f);
-      else httpList.push(f);
-    }
-    return sortStreamsByHealth([...httpsList, ...httpList]);
+    return sortStreamsByHealth(orderLiveSources(pool));
   }, [canal.fontes]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
@@ -399,8 +394,9 @@ export function LivePlayer({
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setErrorDetail(null);
 
-    // Timeout de 8s para conexão rápida em TV ao vivo (Saimo-grade)
+    // Timeout máximo para conectar cada rota de reprodução
     const timeout = setTimeout(() => {
       if (!cancelled) {
         if (video.readyState >= 3) {
@@ -577,8 +573,10 @@ export function LivePlayer({
               } else if (responseCode === 429) {
                 setErrorDetail("O servidor limitou as requisições (HTTP 429).");
               }
-              // One controlled recovery before switching to proxy or next CDN.
-              if (recoveryCount < 1 && (isNet || isMedia)) {
+              // HTTP 401/403/404/410/429 não são erros transitórios de buffer.
+              // Não desperdiçar até 18 s tentando recuperar uma playlist recusada.
+              const persistentHttp = [401, 403, 404, 410, 429].includes(responseCode);
+              if (!persistentHttp && recoveryCount < 1 && (isNet || isMedia)) {
                 recoveryCount++;
                 if (isNet && typeof (hls as any).startLoad === "function") {
                   (hls as any).startLoad(-1);
