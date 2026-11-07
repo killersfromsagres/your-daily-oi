@@ -1,0 +1,23 @@
+name: Verify Saimo live TV
+on:
+  push:
+    branches: [fix/saimo-live-tv-complete]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Testes de canais, formatos e fallback
+        run: bun run test
+      - name: Build Cloudflare de produção
+        run: bun run build
+      - name: Verificação de integração da TV ao vivo
+        run: bun scripts/smoke-saimo-live.mjs
