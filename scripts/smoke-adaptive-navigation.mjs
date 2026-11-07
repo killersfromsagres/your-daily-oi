@@ -82,6 +82,32 @@ try {
     !performanceSummary.trophyNavigation||!performanceSummary.hasMobileMenu){
     throw Error("Mobile homepage performance regression: "+String(home.stderr).slice(-700));
   }
+
+  // Validate TV route hydration at the same mobile viewport. Source playback
+  // may be unavailable in CI, but navigation and player container must render.
+  const tvResult = spawnSync(chrome, [
+    "--headless=new","--no-sandbox","--disable-gpu","--disable-dev-shm-usage",
+    "--disable-background-networking","--disable-extensions",
+    "--virtual-time-budget=12500","--window-size=390,844",
+    "--user-agent="+phoneUA,"--dump-dom",BASE + "/tv",
+  ], {encoding:"utf8",timeout:50000,maxBuffer:22*1024*1024});
+  const tvDom = tvResult.stdout || "";
+  const tvSummary = {
+    event:"mobile-tv-player-smoke",
+    exit:tvResult.status,
+    mobile:tvDom.includes('data-zf-platform="mobile"'),
+    stage:tvDom.includes("ztv-stage"),
+    player:tvDom.includes("ztv-player-frame"),
+    compactTitle:tvDom.includes("ztv-title-mobile"),
+    compactActions:tvDom.includes("ztv-btn-label-mobile"),
+    fullscreenWhenActive:!tvDom.includes('class="ydo-live-player-container"') ||
+      tvDom.includes("ydo-live-mobile-fullscreen"),
+  };
+  console.log(JSON.stringify(tvSummary));
+  if(tvResult.status!==0||!tvSummary.mobile||!tvSummary.stage||!tvSummary.player||
+    !tvSummary.compactTitle||!tvSummary.compactActions||!tvSummary.fullscreenWhenActive){
+    throw Error("Mobile live TV route smoke failed: "+String(tvResult.stderr).slice(-800));
+  }
 } finally {
   worker.kill("SIGTERM");
 }
