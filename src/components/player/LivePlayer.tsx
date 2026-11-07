@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
+import { CastControl } from "./CastControl";
 import {
   sortStreamsByHealth,
   recordFailedSource,
@@ -917,6 +918,9 @@ export function LivePlayer({
               </div>
             )}
           </div>
+
+          {/* Enviar vídeo para Chromecast, Google TV, AirPlay ou reprodução remota */}
+          <CastControl videoRef={videoRef} source={rawFonte} streamUrl={streamUrl} channelName={canal.nome} />
 
           {/* PiP */}
           <button
