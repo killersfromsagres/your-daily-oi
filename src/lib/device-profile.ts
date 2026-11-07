@@ -17,9 +17,9 @@ export function detectDeviceProfile(signals: DeviceSignals): DeviceProfile {
   const width = Number.isFinite(signals.viewportWidth) && signals.viewportWidth > 0
     ? signals.viewportWidth : 1280;
   if (TV_IDENTIFIERS.test(signals.userAgent)) return "tv";
-  if (width <= 960) return "mobile";
+  if (width <= 1120) return "mobile";
   if (MOBILE_IDENTIFIERS.test(signals.userAgent) && width < 1440) return "mobile";
-  if (signals.coarsePointer && signals.touchPoints > 0 && width <= 1180) return "mobile";
+  if (signals.coarsePointer && signals.touchPoints > 0 && width <= 1440) return "mobile";
   return "web";
 }
 
