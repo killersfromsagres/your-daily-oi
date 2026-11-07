@@ -1,7 +1,7 @@
 // scripts/smoke-vod-preview.mjs — Bun/Node; testa a rota do player no build real.
 import { spawn } from "node:child_process";
 
-const child = spawn("bun", ["run", "preview", "--host", "127.0.0.1", "--port", "4173"], {
+const child = spawn("bunx", ["nitro", "preview", "--host", "127.0.0.1", "--port", "4173"], {
   stdio: ["ignore", "pipe", "pipe"],
 });
 let stderr = "";
