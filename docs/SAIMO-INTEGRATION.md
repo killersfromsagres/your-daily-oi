@@ -43,6 +43,28 @@ SAIMO_CANAIS_URLS=https://canais-saimo.pages.dev/catalogo.txt
 
 Mantenha as URLs personalizadas sob sua administração, sem injetar credenciais ou parâmetros privados nos relatórios.
 
+## Reprodução de filmes pelo mesmo fluxo do Saimo
+
+O player usa o endpoint de catálogo `/api/item` para recuperar o ID TMDB e inicia imediatamente a fonte principal:
+
+```txt
+GET /api/saimo-vod?tipo=movie&id=550&versao=dub
+Range: bytes=0-
+```
+
+O servidor consulta `https://saimo-tv.pages.dev/api/stream` com o mesmo ID e idioma, acompanha redirecionamentos HTTPS seguros, e retransmite o MP4 com `206 Partial Content`, `Content-Range` e `Accept-Ranges` para permitir seek. Para mídia HLS, o manifesto é reescrito para que os segmentos sejam carregados pelo proxy existente de TV. A implementação não baixa o arquivo inteiro para a memória.
+
+Teste rápido sem baixar um filme:
+
+```sh
+curl "http://localhost:3000/api/saimo-vod?tipo=movie&id=550&probe=1"
+curl -H "Range: bytes=0-1" -i "http://localhost:3000/api/saimo-vod?tipo=movie&id=550"
+```
+
+A primeira resposta informa `format` e `rangeSupported`. A segunda deve retornar `206` e dois bytes reais se o fornecedor estiver acessível. Em produção, usar o endereço do próprio site no lugar de localhost. O teste automatizado reproduz esse fluxo via Wrangler.
+
+Quando o servidor do site não consegue alcançar o CDN, o player tenta o redirecionamento público diretamente e as fontes adicionais da lista. A disponibilidade depende do CDN de origem e dos formatos/codecs que o navegador suporta.
+
 ## Como diagnosticar
 
 1. Execute `bun scripts/probe-saimo.mjs` para medir códigos HTTP e tipos das origens, sem baixar os arquivos completos.
