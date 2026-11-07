@@ -51,9 +51,8 @@ O código novo precisa ser publicado no Vercel para que essas mudanças cheguem 
 - bun scripts/smoke-saimo-live.mjs
 - LIVE_TEST_CHANNEL=band bun scripts/diagnose-live-browser.mjs
 - LIVE_TEST_CHANNEL=sbt LIVE_BLOCK_CATALOG_PROXY=1 bun scripts/diagnose-live-browser.mjs
-- LIVE_TEST_CHANNEL=band LIVE_BLOCK_CATALOG_PROXY=1 LIVE_BLOCK_DIRECT_HOST=vipwaytvcdn.multtv.tv.br LIVE_REQUIRE_LEGACY_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
 
-A pipeline de verificação executa os cenários reais em Cloudflare Worker + Chrome e não concede acesso a conteúdo de origem bloqueado.
+A pipeline confirma ainda o proxy legado diretamente no Worker: a Band retornou manifesto HLS HTTP 200 e um fragmento MPEG-TS real HTTP 206 com 512 bytes. O teste de navegador do SBT verifica a alternância para fontes funcionais quando a rota moderna não existe. Não há acesso a conteúdo de origem bloqueado.
 
 ## Limitações
 
