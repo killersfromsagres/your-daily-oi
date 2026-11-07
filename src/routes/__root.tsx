@@ -16,6 +16,7 @@ import homeCss from "../styles/home.css?url";
 import playerCss from "../styles/player.css?url";
 import tvCss from "../styles/tv.css?url";
 import tvStudioCss from "../styles/tv-studio.css?url";
+import tvGlassCss from "../styles/tv-glass.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout";
 
@@ -74,6 +75,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: playerCss },
       { rel: "stylesheet", href: tvCss },
         { rel: "stylesheet", href: tvStudioCss },
+      { rel: "stylesheet", href: tvGlassCss },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/favicon.png" },
