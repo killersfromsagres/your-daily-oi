@@ -20,7 +20,7 @@ const ANIMES_PAGES = (process.env.ANIMES_VOD_PAGES ?? "").replace(/\/$/, "");
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
-// Cache em memória (renovado a cada 6h)
+// Cache em memória (renovado a cada 6h, 1 min quando upstream falha)
 let catalogCache: Map<string, CatalogItem> | null = null;
 let highlightCache: HighlightRow[] | null = null;
 let cacheTime = 0;
@@ -432,6 +432,31 @@ function getLetterKey(title: string): string {
   return "%23";
 }
 
+/** Lê partes numeradas sem disparar centenas de requisições por catálogo. */
+async function fetchNumberedParts(
+  prefix: "series" | "animes",
+  letter: string,
+  maxParts = 18,
+): Promise<string> {
+  const chunks: string[] = [];
+  for (let start = 0; start < maxParts; start += 3) {
+    const numbers = Array.from({ length: Math.min(3, maxParts - start) }, (_, i) => start + i);
+    const results = await Promise.allSettled(numbers.map((number) => {
+      const name = `${prefix}-${letter}-${number}.txt`;
+      return prefix === "animes" ? fetchAnimeText(name) : fetchText(getCatalogUrls(name));
+    }));
+    let added = 0;
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value.trim()) {
+        chunks.push(result.value);
+        added++;
+      }
+    }
+    if (added === 0) break; // Fim da sequência; não tenta partes inexistentes.
+  }
+  return chunks.join("\n");
+}
+
 /**
  * Carrega streams e temporadas de uma letra específica de filme, série ou anime
  */
@@ -448,15 +473,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
 
   if (type === "a") {
     try {
-      // Baixa em paralelo todas as partes (0..12) de animes para esta letra
-      const partIndices = Array.from({ length: 13 }, (_, i) => i);
-      const results = await Promise.allSettled(
-        partIndices.map((part) => fetchAnimeText(`animes-${letter}-${part}.txt`))
-      );
-      const combinedText = results
-        .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled" && !!r.value)
-        .map((r) => r.value)
-        .join("\n");
+      const combinedText = await fetchNumberedParts("animes", letter);
 
       if (combinedText.trim()) {
         const { streams, seasons } = parseSeriesData(combinedText, bases);
@@ -492,14 +509,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
   // Para séries (type === "s"):
   // Baixa em paralelo todas as partes (0..12) de séries para esta letra
   try {
-    const partIndices = Array.from({ length: 13 }, (_, i) => i);
-    const results = await Promise.allSettled(
-      partIndices.map((part) => fetchText(getCatalogUrls(`series-${letter}-${part}.txt`)))
-    );
-    const combinedSeriesText = results
-      .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled" && !!r.value)
-      .map((r) => r.value)
-      .join("\n");
+    const combinedSeriesText = await fetchNumberedParts("series", letter);
 
     if (combinedSeriesText.trim()) {
       const { streams, seasons } = parseSeriesData(combinedSeriesText, bases);
@@ -532,7 +542,7 @@ export async function getSeasonsForSeries(title: string, type: "s" | "a" = "s"):
   const norm = normalizeTitle(title);
   const letter = getLetterKey(title);
   const cacheMapKey = type === "a" ? `a-${letter}` : letter;
-  if (!seriesSeasonsCache.has(cacheMapKey)) {
+  if (!seriesSeasonsCache.has(cacheMapKey) || (streamsCacheExpires.get(`${type}-${letter}`) ?? 0) < Date.now()) {
     await getStreamsForLetter(type, letter);
   }
   const seriesMap = seriesSeasonsCache.get(cacheMapKey);
@@ -554,30 +564,6 @@ export async function getStreamsForItem(type: "f" | "s" | "a", title: string): P
   if (found && found.length > 0) return found;
 
   return [];
-}
-
-/**
- * Sincroniza em background todas as letras para pré-aquecer a busca sem travar a UI
- */
-function syncAllStreamsInBackground() {
-  if (isBackgroundSyncing) return;
-  isBackgroundSyncing = true;
-  const letters = ["%23", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")];
-
-  setTimeout(async () => {
-    try {
-      for (const l of letters) {
-        await Promise.allSettled([
-          getStreamsForLetter("f", l),
-          getStreamsForLetter("s", l),
-        ]);
-      }
-    } catch {
-      // Ignora erro em segundo plano
-    } finally {
-      isBackgroundSyncing = false;
-    }
-  }, 100);
 }
 
 export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; highlights: HighlightRow[] }> {
