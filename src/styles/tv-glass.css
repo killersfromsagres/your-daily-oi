@@ -188,6 +188,28 @@
   letter-spacing: .045em;
 }
 .ztv-type-pill svg { flex: 0 0 auto; }
+/* Content type accents — actual EPG category takes precedence. */
+.ztv-explore-glass .ztv-type-pill.is-movie {
+  color: #f7ce8f; background: rgba(238, 184, 106, .13);
+  border-color: rgba(239, 188, 115, .25);
+}
+.ztv-explore-glass .ztv-type-pill.is-series {
+  color: #a5c9fd; background: rgba(97, 156, 243, .12);
+  border-color: rgba(103, 157, 232, .25);
+}
+.ztv-explore-glass .ztv-type-pill.is-anime {
+  color: #dab9ff; background: rgba(174, 123, 238, .13);
+  border-color: rgba(188, 143, 246, .25);
+}
+.ztv-explore-glass .ztv-type-pill.is-sports {
+  color: #9de9c4; background: rgba(84, 201, 152, .11);
+  border-color: rgba(105, 217, 162, .24);
+}
+.ztv-explore-glass .ztv-type-pill.is-tv {
+  color: #c5d8ef; background: rgba(133, 171, 212, .085);
+  border-color: rgba(160, 188, 222, .18);
+}
+
 .ztv-explore-glass .ztv-card-active-pill,
 .ztv-explore-glass .ztv-card-live-pill {
   display: inline-flex;
