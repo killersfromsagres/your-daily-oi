@@ -1,860 +1,567 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Clock3,
+  Grid2X2, Heart, List, Radio, RefreshCw, Search, Signal,
+  Star, Tv2, WifiOff, X,
+} from "lucide-react";
 import { type CanalTV, fetchCanaisFallbackClient } from "@/lib/canais";
 import type { CanalEPG, ProgramaEPG } from "@/lib/epg";
 import { LivePlayer } from "@/components/player/LivePlayer";
 import { JogosShelf } from "@/components/tv/JogosShelf";
-import {
-  Search,
-  Star,
-  Tv,
-  Radio,
-  Flame,
-  ChevronRight,
-  ChevronLeft,
-  Sparkles,
-  Layers,
-  Heart,
-  CalendarClock,
-  X,
-} from "lucide-react";
 
-const LAST_CANAL_KEY = "zangflix:tv-last-channel";
-const FAV_CANAIS_KEY = "zangflix:tv-favorites";
+const FAVORITES_KEY = "zangflix:tv-favorites";
+const RECENTS_KEY = "zangflix:tv-recents-v1";
+const LAST_KEY = "zangflix:tv-last-channel";
+const REFRESH_INTERVAL_MS = 9 * 60 * 1000;
 
-function ChannelLogo({
-  logo,
-  nome,
-  className,
-  monogramClass,
-}: {
-  logo?: string;
-  nome: string;
-  className: string;
-  monogramClass: string;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (!logo || failed) {
-    return <span className={monogramClass}>{nome.slice(0, 3).toUpperCase()}</span>;
+interface TvViewProps { initialCanalId?: string; }
+interface CatalogResponse {
+  canais: CanalTV[];
+  categorias: string[];
+  atualizadoEm?: string;
+}
+interface EpgSlot { atual: ProgramaEPG | null; proximo: ProgramaEPG | null; }
+
+function readStoredArray(key: string): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string").slice(0, 100)
+      : [];
+  } catch { return []; }
+}
+function storeArray(key: string, values: string[]): void {
+  try { localStorage.setItem(key, JSON.stringify(values)); } catch { /* private mode */ }
+}
+function normalize(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((c, i) => {
+    const other = b[i];
+    return other?.id === c.id && other.nome === c.nome &&
+      other.logo === c.logo && other.categoria === c.categoria &&
+      c.fontes.length === other.fontes.length &&
+      c.fontes.every((source, j) => {
+        const alt = other.fontes[j];
+        return alt?.url === source.url && alt.referer === source.referer &&
+          alt.agente === source.agente && alt.chave === source.chave;
+      });
+  });
+}
+async function getCatalog(signal: AbortSignal): Promise<CatalogResponse> {
+  try {
+    const response = await fetch("/api/canais", { signal, cache: "no-store" });
+    if (!response.ok) throw new Error("Catálogo HTTP " + response.status);
+    const data = await response.json() as CatalogResponse;
+    if (!Array.isArray(data.canais) || !data.canais.length) throw new Error("Catálogo vazio");
+    return data;
+  } catch (error) {
+    if (signal.aborted) throw error;
+    // A origem pode continuar acessível no navegador quando o Worker estiver instável.
+    const fallback = await fetchCanaisFallbackClient();
+    if (!fallback.canais.length) throw error;
+    return fallback;
   }
-  return (
-    <img
-      src={logo}
-      alt=""
-      loading="lazy"
-      className={className}
-      onError={() => setFailed(true)}
-    />
-  );
 }
 
-interface TvViewProps {
-  initialCanalId?: string;
+function ChannelLogo({ channel, small = false }: { channel: CanalTV; small?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [channel.logo]);
+  const initials = channel.nome.trim().slice(0, small ? 2 : 3).toUpperCase();
+  return (
+    <span className={"ztv-logo" + (small ? " ztv-logo-small" : "")}>
+      {channel.logo && !failed && /^https?:\/\//i.test(channel.logo) ? (
+        <img src={channel.logo} alt="" loading="lazy" onError={() => setFailed(true)} />
+      ) : (
+        <span aria-hidden="true">{initials || "TV"}</span>
+      )}
+    </span>
+  );
+}
+function ChannelCard({
+  channel, active, favorite, onSelect, onFavorite, listMode,
+}: {
+  channel: CanalTV; active: boolean; favorite: boolean;
+  onSelect: () => void; onFavorite: () => void; listMode: boolean;
+}) {
+  const available = channel.fontes.length > 0;
+  return (
+    <article className={"ztv-card" + (active ? " is-active" : "") +
+      (!available ? " is-unavailable" : "") + (listMode ? " is-list" : "")}>
+      <button
+        className="ztv-card-main" type="button" onClick={onSelect}
+        aria-label={"Assistir " + channel.nome + (available ? "" : " — sem fontes")}
+        aria-current={active ? "true" : undefined}
+      >
+        <ChannelLogo channel={channel} />
+        <span className="ztv-card-body">
+          <strong title={channel.nome}>{channel.nome}</strong>
+          <span className="ztv-card-category">{channel.categoria}</span>
+          <span className="ztv-card-meta">
+            <span className={"ztv-status-dot" + (available ? " is-on" : " is-off")} />
+            {available ? channel.fontes.length + (channel.fontes.length === 1 ? " fonte" : " fontes") : "Sem fonte"}
+          </span>
+        </span>
+        {active && <span className="ztv-card-playing">Assistindo</span>}
+      </button>
+      <button
+        type="button" className={"ztv-card-star" + (favorite ? " is-favorite" : "")}
+        onClick={onFavorite} aria-label={(favorite ? "Remover " : "Favoritar ") + channel.nome}
+        title={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+      >
+        <Star size={16} fill={favorite ? "currentColor" : "none"} />
+      </button>
+    </article>
+  );
 }
 
 export function TvView({ initialCanalId }: TvViewProps) {
   const navigate = useNavigate();
-  const [canais, setCanais] = useState<CanalTV[]>([]);
-  const [categorias, setCategorias] = useState<string[]>([]);
+  const [channels, setChannels] = useState<CanalTV[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [activeId, setActiveId] = useState(initialCanalId || "");
+  const [favorites, setFavorites] = useState<string[]>(() => readStoredArray(FAVORITES_KEY));
+  const [recents, setRecents] = useState<string[]>(() => readStoredArray(RECENTS_KEY));
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("Todos");
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
+  const [onlineOnly, setOnlineOnly] = useState(false);
+  const [visible, setVisible] = useState(48);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [playerLoading, setPlayerLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [activeId, setActiveId] = useState<string>(initialCanalId || "");
-  const [activeCategory, setActiveCategory] = useState<string>("Todos");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [epgData, setEpgData] = useState<Record<string, CanalEPG>>({});
-
-  // Guia de Programação (Drawer / EPG completo)
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
-  const [gradeAgora, setGradeAgora] = useState<
-    Record<string, { atual: ProgramaEPG | null; proximo: ProgramaEPG | null }>
-  >({});
+  const [guideQuery, setGuideQuery] = useState("");
+  const [guide, setGuide] = useState<Record<string, EpgSlot>>({});
   const [guideLoading, setGuideLoading] = useState(false);
-  const [guideSearch, setGuideSearch] = useState("");
-  const [guideVisibleCount, setGuideVisibleCount] = useState(40);
-  const gradeCacheRef = useRef<{
-    data: Record<string, { atual: ProgramaEPG | null; proximo: ProgramaEPG | null }>;
-    timestamp: number;
-  } | null>(null);
+  const [activeEpg, setActiveEpg] = useState<CanalEPG | null>(null);
 
-  // Paginação progressiva do painel de canais (renderiza ~35 por vez para alta performance com 408 canais)
-  const [visibleCount, setVisibleCount] = useState(35);
-  const listObserverRef = useRef<HTMLDivElement>(null);
+  const lastRefresh = useRef(0);
+  const refreshPending = useRef(false);
+  const guideLastLoad = useRef(0);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
-  // Carrega favoritos do localStorage
-  useEffect(() => {
+  const applyCatalog = useCallback((data: CatalogResponse) => {
+    setChannels(previous => sameChannels(previous, data.canais) ? previous : data.canais);
+    setCategories(data.categorias || []);
+    setUpdatedAt(data.atualizadoEm || new Date().toISOString());
+    setCatalogError(null);
+    setActiveId(previous => {
+      if (initialCanalId && data.canais.some(c => c.id === initialCanalId)) return initialCanalId;
+      if (previous && data.canais.some(c => c.id === previous)) return previous;
+      let saved = "";
+      try { saved = localStorage.getItem(LAST_KEY) || ""; } catch {}
+      if (saved && data.canais.some(c => c.id === saved)) return saved;
+      const first = data.canais.find(c => c.fontes.length && /^(band|sbt)$/i.test(c.nome)) ||
+        data.canais.find(c => c.fontes.length) || data.canais[0];
+      return first?.id || "";
+    });
+  }, [initialCanalId]);
+
+  const refresh = useCallback(async (initial = false) => {
+    if (refreshPending.current) return;
+    refreshPending.current = true;
+    const controller = new AbortController();
+    if (initial) setLoading(true);
+    else setRefreshing(true);
     try {
-      const raw = localStorage.getItem(FAV_CANAIS_KEY);
-      if (raw) {
-        setFavorites(new Set(JSON.parse(raw)));
-      }
-    } catch {
-      // ignora
+      const data = await getCatalog(controller.signal);
+      applyCatalog(data);
+      lastRefresh.current = Date.now();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível buscar os canais";
+      setCatalogError(message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+      refreshPending.current = false;
     }
-  }, []);
+  }, [applyCatalog]);
 
-  const toggleFavorite = useCallback((id: string, e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      try {
-        localStorage.setItem(FAV_CANAIS_KEY, JSON.stringify(Array.from(next)));
-      } catch {}
+  useEffect(() => { void refresh(true); }, [refresh]);
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastRefresh.current > REFRESH_INTERVAL_MS) {
+        void refresh();
+      }
+    };
+    const timer = window.setInterval(check, 60_000);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    if (initialCanalId) setActiveId(initialCanalId);
+  }, [initialCanalId]);
+
+  const active = useMemo(() =>
+    channels.find(c => c.id === activeId) ||
+    channels.find(c => c.fontes.length > 0) || channels[0] || null,
+    [channels, activeId]);
+
+  const selectChannel = useCallback((channel: CanalTV) => {
+    setActiveId(channel.id);
+    setPlayerLoading(true);
+    setRecents(previous => {
+      const next = [channel.id, ...previous.filter(id => id !== channel.id)].slice(0, 18);
+      storeArray(RECENTS_KEY, next);
+      return next;
+    });
+    try { localStorage.setItem(LAST_KEY, channel.id); } catch {}
+    void navigate({ to: "/tv/canal/$id", params: { id: channel.id }, replace: true });
+  }, [navigate]);
+
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites(previous => {
+      const next = previous.includes(id) ? previous.filter(x => x !== id) : [...previous, id];
+      storeArray(FAVORITES_KEY, next);
       return next;
     });
   }, []);
 
-  // Busca lista de canais da API /api/canais com fallback direto ao Saimo TV no navegador
+  const activeIndex = channels.findIndex(c => c.id === active?.id);
+  const switchChannel = useCallback((direction: number) => {
+    if (!channels.length) return;
+    const playable = channels.filter(c => c.fontes.length > 0);
+    if (!playable.length) return;
+    const index = playable.findIndex(c => c.id === active?.id);
+    const next = playable[(index + direction + playable.length) % playable.length] || playable[0];
+    if (next) selectChannel(next);
+  }, [channels, active?.id, selectChannel]);
+
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-
-    const applyCanaisData = (data: { canais: CanalTV[]; categorias: string[] }) => {
-      if (!active) return;
-      setCanais(data.canais);
-      setCategorias(data.categorias);
-
-      // Se houver initialCanalId válido, usa ele
-      if (initialCanalId && data.canais.some((c) => c.id === initialCanalId)) {
-        setActiveId(initialCanalId);
-      } else {
-        // Tenta reabrir o último canal assistido do localStorage
-        const lastSaved = localStorage.getItem(LAST_CANAL_KEY);
-        if (lastSaved && data.canais.some((c) => c.id === lastSaved)) {
-          setActiveId(lastSaved);
-        } else if (data.canais.length > 0) {
-          // Prefere fonte HLS realmente acessível e não inicia em canal offline.
-          const defaultCanal =
-            data.canais.find((c) => c.fontes.length > 0 && /^(band|sbt)$/i.test(c.nome)) ||
-            data.canais.find((c) => c.fontes.length > 0) ||
-            data.canais[0];
-          setActiveId(defaultCanal.id);
-        }
-      }
-    };
-
-    fetch("/api/canais", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{
-          atualizadoEm: string;
-          categorias: string[];
-          canais: CanalTV[];
-        }>;
-      })
-      .then((data) => {
-        if (!data?.canais || data.canais.length === 0) {
-          throw new Error("Catálogo vazio retornado da API");
-        }
-        applyCanaisData(data);
-      })
-      .catch(async (err: unknown) => {
-        console.warn("[TvView] Rota /api/canais falhou, recorrendo ao catálogo direto do Saimo:", err);
-        try {
-          const fallbackData = await fetchCanaisFallbackClient();
-          applyCanaisData(fallbackData);
-        } catch (fbErr: unknown) {
-          if (!active) return;
-          setError(fbErr instanceof Error ? fbErr.message : "Erro ao carregar canais");
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [initialCanalId]);
-
-  // Atualiza canais e fontes periodicamente, como o Saimo, sem reiniciar
-  // o player quando a lista não mudou.
-  const lastChannelRefreshRef = useRef(Date.now());
-  useEffect(() => {
+    if (!active?.nome) return;
     let alive = true;
-    let controller: AbortController | null = null;
-    const refresh = () => {
-      if (document.visibilityState === "hidden") return;
-      if (Date.now() - lastChannelRefreshRef.current < 9 * 60_000) return;
-      lastChannelRefreshRef.current = Date.now();
-      controller?.abort();
-      controller = new AbortController();
-      fetch("/api/canais", { cache: "no-store", signal: controller.signal })
-        .then((res) => {
-          if (!res.ok) throw new Error(`Catálogo HTTP ${res.status}`);
-          return res.json() as Promise<{ canais: CanalTV[]; categorias: string[] }>;
-        })
-        .then((data) => {
-          if (!alive || !data.canais?.length) return;
-          setCanais((previous) => {
-            const same = previous.length === data.canais.length &&
-              previous.every((item, index) => {
-                const next = data.canais[index];
-                return !!next && item.id === next.id &&
-                  item.indisponivel === next.indisponivel &&
-                  item.fontes.length === next.fontes.length &&
-                  item.fontes.every((font, j) => {
-                    const other = next.fontes[j];
-                    return !!other && font.url === other.url &&
-                      font.referer === other.referer &&
-                      font.agente === other.agente &&
-                      font.chave === other.chave;
-                  });
-              });
-            return same ? previous : data.canais;
-          });
-          setCategorias(data.categorias);
-          setError(null);
-          setActiveId((previous) => {
-            if (data.canais.some((ch) => ch.id === previous)) return previous;
-            return data.canais.find((ch) => ch.fontes.length)?.id || data.canais[0]?.id || "";
-          });
-        })
-        .catch((err: unknown) => {
-          if (alive && !(err instanceof Error && err.name === "AbortError")) {
-            console.warn("[TvView] Atualização automática do catálogo falhou:", err);
-          }
-        });
-    };
-    const id = window.setInterval(refresh, 60_000);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      alive = false;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", refresh);
-      controller?.abort();
-    };
-  }, []);
-
-  // Canal ativo atual
-  const activeCanal = useMemo(() => {
-    return canais.find((c) => c.id === activeId) || canais[0];
-  }, [canais, activeId]);
-
-  // Atualiza canal ativo e persiste deep-link e localStorage
-  const selectCanal = useCallback(
-    (canal: CanalTV) => {
-      setActiveId(canal.id);
-      try {
-        localStorage.setItem(LAST_CANAL_KEY, canal.id);
-      } catch {}
-      // Atualiza URL para deep-link sem recarregar
-      void navigate({
-        to: "/tv/canal/$id",
-        params: { id: canal.id },
-        replace: true,
-      });
-    },
-    [navigate]
-  );
-
-  const handleSelectCanalId = useCallback(
-    (canalId: string) => {
-      const found = canais.find((c) => c.id === canalId);
-      if (found) {
-        selectCanal(found);
-      } else {
-        setActiveId(canalId);
-      }
-    },
-    [canais, selectCanal]
-  );
-
-  // Busca EPG sob demanda para o canal ativo
-  useEffect(() => {
-    if (!activeCanal?.nome) return;
-    const nome = activeCanal.nome;
-
-    if (epgData[nome]) return;
-
-    let active = true;
-    fetch(`/api/epg?canal=${encodeURIComponent(nome)}`)
-      .then((res) => res.json() as Promise<CanalEPG>)
-      .then((data) => {
-        if (!active) return;
-        setEpgData((prev) => ({ ...prev, [nome]: data }));
-      })
+    setActiveEpg(null);
+    fetch("/api/epg?canal=" + encodeURIComponent(active.nome))
+      .then(r => r.ok ? r.json() : null)
+      .then((item: CanalEPG | null) => { if (alive) setActiveEpg(item); })
       .catch(() => {});
+    return () => { alive = false; };
+  }, [active?.nome]);
 
-    return () => {
-      active = false;
-    };
-  }, [activeCanal?.nome, epgData]);
-
-  // Busca lista de grade completa ao abrir o Guia de Programação (com cache de 5 min)
   useEffect(() => {
-    if (!guideOpen) return;
-    const now = Date.now();
-    if (gradeCacheRef.current && now - gradeCacheRef.current.timestamp < 5 * 60 * 1000) {
-      setGradeAgora(gradeCacheRef.current.data);
-      return;
-    }
-
-    let active = true;
+    if (!guideOpen || Date.now() - guideLastLoad.current < 5 * 60_000) return;
+    let alive = true;
     setGuideLoading(true);
-
-    fetch("/api/epg/agora")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<
-          Array<{
-            canalNome: string;
-            atual: ProgramaEPG | null;
-            proximo: ProgramaEPG | null;
-          }>
-        >;
+    fetch("/api/epg/agora", { cache: "no-store" })
+      .then(r => { if (!r.ok) throw new Error("EPG HTTP " + r.status); return r.json(); })
+      .then((entries: Array<{ canalNome: string; atual: ProgramaEPG | null; proximo: ProgramaEPG | null }>) => {
+        if (!alive || !Array.isArray(entries)) return;
+        const data: Record<string, EpgSlot> = {};
+        for (const item of entries) data[item.canalNome] = { atual: item.atual, proximo: item.proximo };
+        setGuide(data);
+        guideLastLoad.current = Date.now();
       })
-      .then((list) => {
-        if (!active) return;
-        const map: Record<string, { atual: ProgramaEPG | null; proximo: ProgramaEPG | null }> = {};
-        for (const item of list) {
-          map[item.canalNome] = { atual: item.atual, proximo: item.proximo };
-        }
-        gradeCacheRef.current = { data: map, timestamp: Date.now() };
-        setGradeAgora(map);
-      })
-      .catch((err) => {
-        console.warn("[TvView] Falha ao carregar /api/epg/agora:", err);
-      })
-      .finally(() => {
-        if (active) setGuideLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+      .catch(() => {})
+      .finally(() => { if (alive) setGuideLoading(false); });
+    return () => { alive = false; };
   }, [guideOpen]);
 
-  // Fecha guia com tecla Escape
   useEffect(() => {
     if (!guideOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setGuideOpen(false);
-      }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGuideOpen(false);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("keydown", escape);
+    return () => document.removeEventListener("keydown", escape);
   }, [guideOpen]);
 
-  // Lista ordenada e filtrada para o Guia de Programação
-  const guideFilteredCanais = useMemo(() => {
-    const sorted = [...canais].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-    if (!guideSearch.trim()) return sorted;
-    const q = guideSearch.toLowerCase().trim();
-    return sorted.filter(
-      (c) =>
-        c.nome.toLowerCase().includes(q) ||
-        c.categoria.toLowerCase().includes(q)
-    );
-  }, [canais, guideSearch]);
+  const availableCount = useMemo(() => channels.filter(c => c.fontes.length > 0).length, [channels]);
+  const sourceCount = useMemo(() => channels.reduce((sum, c) => sum + c.fontes.length, 0), [channels]);
 
-  // Navegação anterior / próximo canal
-  const handlePrevCanal = useCallback(() => {
-    if (canais.length === 0) return;
-    const idx = canais.findIndex((c) => c.id === activeId);
-    const prevIdx = idx > 0 ? idx - 1 : canais.length - 1;
-    selectCanal(canais[prevIdx]);
-  }, [canais, activeId, selectCanal]);
-
-  const handleNextCanal = useCallback(() => {
-    if (canais.length === 0) return;
-    const idx = canais.findIndex((c) => c.id === activeId);
-    const nextIdx = idx < canais.length - 1 ? idx + 1 : 0;
-    selectCanal(canais[nextIdx]);
-  }, [canais, activeId, selectCanal]);
-
-  // Filtro de canais para o painel lateral
-  const filteredCanais = useMemo(() => {
-    let result = canais;
-
-    if (activeCategory === "Favoritos") {
-      result = result.filter((c) => favorites.has(c.id));
-    } else if (activeCategory !== "Todos") {
-      result = result.filter((c) => c.categoria === activeCategory);
+  const filtered = useMemo(() => {
+    const search = normalize(query);
+    let items = channels.filter(c => {
+      if (onlineOnly && c.fontes.length === 0) return false;
+      if (category === "Favoritos" && !favorites.includes(c.id)) return false;
+      if (category === "Recentes" && !recents.includes(c.id)) return false;
+      if (category !== "Todos" && category !== "Favoritos" && category !== "Recentes" && c.categoria !== category) return false;
+      return !search || normalize(c.nome + " " + c.categoria).includes(search);
+    });
+    if (category === "Recentes") {
+      items = [...items].sort((a, b) => recents.indexOf(a.id) - recents.indexOf(b.id));
+    } else {
+      items = [...items].sort((a, b) => Number(b.fontes.length > 0) - Number(a.fontes.length > 0) ||
+        a.nome.localeCompare(b.nome, "pt-BR"));
     }
+    return items;
+  }, [channels, query, category, favorites, recents, onlineOnly]);
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (c) =>
-          c.nome.toLowerCase().includes(q) ||
-          c.categoria.toLowerCase().includes(q)
-      );
-    }
-
-    return result;
-  }, [canais, activeCategory, searchQuery, favorites]);
-
-  // Reseta visibilidade ao mudar filtros de busca
+  useEffect(() => setVisible(48), [query, category, onlineOnly, layout]);
   useEffect(() => {
-    setVisibleCount(35);
-  }, [activeCategory, searchQuery]);
-
-  // Infinite scroll observer para a lista de canais
-  useEffect(() => {
-    const el = listObserverRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + 30, filteredCanais.length));
-        }
-      },
-      { rootMargin: "200px" }
-    );
-
-    observer.observe(el);
+    const node = loaderRef.current;
+    if (!node || filtered.length <= visible) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0]?.isIntersecting) setVisible(n => Math.min(n + 36, filtered.length));
+    }, { rootMargin: "300px" });
+    observer.observe(node);
     return () => observer.disconnect();
-  }, [filteredCanais.length]);
+  }, [filtered.length, visible]);
 
-  // Prateleiras por categoria para a seção inferior
-  const shelvesData = useMemo(() => {
-    if (canais.length === 0) return [];
+  const quickChannels = useMemo(() => {
+    const fav = channels.filter(c => c.fontes.length && favorites.includes(c.id));
+    const highlighted = channels.filter(c => c.fontes.length &&
+      /^(band|sbt|record|globo|cnn|espn|sportv|tv cultura)/i.test(c.nome));
+    const result = [...fav, ...highlighted, ...channels.filter(c => c.fontes.length)];
+    return result.filter((c, i) => result.findIndex(d => d.id === c.id) === i).slice(0, 12);
+  }, [channels, favorites]);
 
-    // Prateleira "Ao vivo agora" (Destaques com esportes e canais abertos populares)
-    const highlights = canais
-      .filter((c) =>
-        /globo|sportv|espn|premiere|tnt|band|record|sbt/i.test(c.nome)
-      )
-      .slice(0, 12);
+  const recentChannels = useMemo(() =>
+    recents.map(id => channels.find(c => c.id === id)).filter((c): c is CanalTV => !!c).slice(0, 8),
+    [channels, recents]);
 
-    const shelves = [
-      {
-        title: "Ao vivo agora",
-        icon: Flame,
-        items: highlights.length >= 6 ? highlights : canais.slice(0, 12),
-      },
-    ];
+  const guideChannels = useMemo(() => {
+    const search = normalize(guideQuery);
+    return channels.filter(c => !search || normalize(c.nome + " " + c.categoria).includes(search))
+      .slice(0, 130);
+  }, [channels, guideQuery]);
 
-    const shelfCategories = [
-      "TV Aberta",
-      "Esportes",
-      "Notícias",
-      "Infantil",
-      "Documentários",
-      "Filmes e Séries",
-      "Variedades",
-    ];
-
-    for (const cat of shelfCategories) {
-      const items = canais.filter((c) => c.categoria === cat);
-      if (items.length > 0) {
-        shelves.push({
-          title: cat,
-          icon: Tv,
-          items,
-        });
-      }
-    }
-
-    return shelves;
-  }, [canais]);
+  const currentProgram = (active && guide[active.nome]?.atual) || activeEpg?.atual || null;
+  const currentNext = (active && guide[active.nome]?.proximo) || activeEpg?.proximos?.[0] || null;
+  const fmtTime = (stamp: string | null) => {
+    if (!stamp) return "";
+    const d = new Date(stamp);
+    return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  };
 
   return (
-    <main className="ydo-tv-page">
-      {/* Subnavegação da seção TV */}
-      <div className="ydo-tv-subnav">
-        <div className="ydo-tv-subnav-left">
-          <h1 className="ydo-tv-main-title">
-            <Tv size={22} style={{ color: "#e8b44a" }} />
-            <span>TV Ao Vivo</span>
-          </h1>
-          <span className="ydo-tv-badge-live">
-            <span className="ydo-live-dot" />
-            {canais.length} Canais
-          </span>
-        </div>
-
-        <div className="ydo-tv-subnav-links">
-          <Link to="/tv" className="ydo-tv-sublink active">
-            <Layers size={14} />
-            <span>Canais de TV</span>
-          </Link>
-          <button
-            onClick={() => setGuideOpen((o) => !o)}
-            className={`ydo-tv-sublink-btn ${guideOpen ? "active" : ""}`}
-            type="button"
-            aria-label="Guia de Programação"
-          >
-            <CalendarClock size={14} />
-            <span>Guia de Programação</span>
-          </button>
-          <Link to="/tv/radios" className="ydo-tv-sublink">
-            <Radio size={14} />
-            <span>Rádios Online</span>
-          </Link>
-        </div>
-      </div>
-
-      {error && canais.length === 0 && (
-        <div role="alert" style={{ padding: "16px 24px", margin: "12px 24px", border: "1px solid rgba(232,180,74,0.35)", borderRadius: 12 }}>
-          <strong>Não foi possível atualizar a lista de TV.</strong>
-          <p style={{ opacity: 0.8, marginTop: 6 }}>{error}</p>
-          <button className="ydo-btn-secondary" type="button" onClick={() => window.location.reload()}>
-            Tentar novamente
-          </button>
-        </div>
-      )}
-      {canais.length > 0 && (
-        <p role="status" style={{ fontSize: 12, opacity: 0.75, padding: "0 24px", marginTop: 6 }}>
-          {canais.filter((c) => c.fontes.length > 0).length} com fontes cadastradas · {canais.filter((c) => c.indisponivel).length} temporariamente sem fonte
-        </p>
-      )}
-
-      {/* Prateleira Jogos de Hoje (Brasileirão) */}
-      <JogosShelf onSelectCanalId={handleSelectCanalId} />
-
-      {/* Grid Principal (2 Colunas Desktop / 1 Coluna Mobile) */}
-      <div className="ydo-tv-layout">
-        {/* Coluna Esquerda: Player Ao Vivo */}
-        <div className="ydo-tv-main-col">
-          {activeCanal ? (
-            <LivePlayer
-              canal={activeCanal}
-              epgAtual={
-                epgData[activeCanal.nome]?.atual ||
-                gradeAgora[activeCanal.nome]?.atual ||
-                undefined
-              }
-              onPrevCanal={handlePrevCanal}
-              onNextCanal={handleNextCanal}
-              onToggleGuide={() => setGuideOpen((o) => !o)}
-              onLoadingChange={setPlayerLoading}
-            />
-          ) : (
-            <div className="ydo-live-player-container skeleton" />
-          )}
-        </div>
-
-        {/* Coluna Direita: Painel e Lista de Canais */}
-        <aside className="ydo-tv-sidebar">
-          {/* Busca de canais */}
-          <div className="ydo-tv-search-box">
-            <Search size={15} className="ydo-tv-search-icon" aria-hidden />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar canal ou categoria…"
-              className="ydo-tv-search-input"
-              aria-label="Buscar canal de TV"
-            />
+    <main className="ztv-studio">
+      <div className="ztv-backdrop" aria-hidden="true" />
+      <div className="ztv-content">
+        <header className="ztv-header">
+          <div className="ztv-intro">
+            <span className="ztv-eyebrow"><span className="ztv-pulse" /> CENTRAL DE TRANSMISSÃO <span className="ztv-eyebrow-divider">/</span> ZANG LIVE</span>
+            <h1>TV ao vivo<span className="ztv-heading-dot">.</span></h1>
+            <p>Seus canais em um só lugar, com fontes alternativas e troca automática de servidor.</p>
           </div>
-
-          {/* Pílulas de Categoria */}
-          <div className="ydo-tv-category-pills">
-            <button
-              onClick={() => setActiveCategory("Todos")}
-              className={`ydo-tv-cat-pill ${activeCategory === "Todos" ? "active" : ""}`}
-            >
-              Todos ({canais.length})
+          <div className="ztv-header-actions">
+            <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => void refresh()} disabled={refreshing} aria-label="Atualizar lista de canais">
+              <RefreshCw size={16} className={refreshing ? "ztv-spinning" : ""} /> Atualizar
             </button>
-            {favorites.size > 0 && (
-              <button
-                onClick={() => setActiveCategory("Favoritos")}
-                className={`ydo-tv-cat-pill ${activeCategory === "Favoritos" ? "active" : ""}`}
-              >
-                ★ Favoritos ({favorites.size})
-              </button>
-            )}
-            {categorias.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`ydo-tv-cat-pill ${activeCategory === cat ? "active" : ""}`}
-              >
-                {cat}
-              </button>
-            ))}
+            <button type="button" className="ztv-btn ztv-btn-primary" onClick={() => setGuideOpen(true)}>
+              <CalendarDays size={16} /> Guia de programação
+            </button>
           </div>
+        </header>
 
-          {/* Lista Virtualizada / Lazy Loading de Canais */}
-          <div className="ydo-tv-channel-list">
-            {loading && canais.length === 0 ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="ydo-tv-channel-item skeleton" style={{ height: 56 }} />
-              ))
-            ) : filteredCanais.length === 0 ? (
-              <div style={{ padding: "32px 16px", textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: "0.88rem" }}>
-                Nenhum canal encontrado para a busca.
-              </div>
-            ) : (
-              filteredCanais.slice(0, visibleCount).map((c) => {
-                const isActive = c.id === activeId;
-                const isFav = favorites.has(c.id);
-                const epg = epgData[c.nome]?.atual;
+        <div className="ztv-statbar" role="status" aria-live="polite">
+          <span><Tv2 size={16} /><strong>{channels.length || "—"}</strong> canais no catálogo</span>
+          <span className="ztv-stat-separator" aria-hidden="true" />
+          <span><Signal size={16} /><strong>{availableCount || "—"}</strong> com fontes</span>
+          <span className="ztv-stat-separator" aria-hidden="true" />
+          <span><span className="ztv-stat-source-dot" /><strong>{sourceCount || "—"}</strong> links de transmissão</span>
+          {updatedAt && <span className="ztv-stat-updated">Lista sincronizada {fmtTime(updatedAt)}</span>}
+        </div>
 
-                return (
-                  <div
-                    key={c.id}
-                    onClick={() => selectCanal(c)}
-                    className={`ydo-tv-channel-item ${isActive ? "active" : ""} ${c.indisponivel ? "is-offline" : ""}`}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") selectCanal(c);
-                    }}
-                  >
-                    <div className="ydo-tv-logo-container">
-                      <ChannelLogo
-                        logo={c.logo}
-                        nome={c.nome}
-                        className="ydo-tv-channel-logo"
-                        monogramClass="ydo-tv-monogram"
-                      />
-                    </div>
-
-                    <div className="ydo-tv-channel-info">
-                      <div className="ydo-tv-channel-name-row">
-                        <span className="ydo-tv-channel-name">{c.nome}</span>
-                        {isActive && !c.indisponivel && <span className="ydo-live-dot" />}
-                        {c.indisponivel && <span title="Fontes temporariamente indisponíveis" style={{ fontSize: "0.67rem", opacity: 0.65 }}>SEM FONTE</span>}
-                      </div>
-                      <div className="ydo-tv-channel-epg-text">
-                        {c.indisponivel
-                          ? "Canal temporariamente indisponível"
-                          : isActive && playerLoading
-                          ? "Sintonizando…"
-                          : epg?.titulo
-                          ? `${epg.horario ? `${epg.horario} · ` : ""}${epg.titulo}`
-                          : c.categoria}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={(e) => toggleFavorite(c.id, e)}
-                      className={`ydo-tv-fav-btn ${isFav ? "is-fav" : ""}`}
-                      title={isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                      aria-label="Favoritar canal"
-                    >
-                      <Star size={14} fill={isFav ? "#e8b44a" : "none"} />
-                    </button>
-                  </div>
-                );
-              })
-            )}
-
-            {/* Elemento de sentinela para carregar mais itens */}
-            {visibleCount < filteredCanais.length && (
-              <div ref={listObserverRef} className="ydo-tv-loading-more">
-                Carregando mais canais…
-              </div>
-            )}
+        {catalogError && (
+          <div className="ztv-notice" role="alert">
+            <AlertCircle size={18} />
+            <span>{channels.length ? "Não foi possível atualizar as fontes; mantendo a última lista." : "A lista de TV não está acessível: " + catalogError}</span>
+            <button type="button" onClick={() => void refresh()}>Tentar novamente</button>
           </div>
-        </aside>
+        )}
+
+        <div className="ztv-stage">
+          <section className="ztv-featured" aria-label="Reprodutor de TV ao vivo">
+            <div className="ztv-player-frame">
+              {active ? (
+                <LivePlayer
+                  key={active.id}
+                  canal={active}
+                  epgAtual={currentProgram || undefined}
+                  onPrevCanal={() => switchChannel(-1)}
+                  onNextCanal={() => switchChannel(1)}
+                  onToggleGuide={() => setGuideOpen(true)}
+                  onLoadingChange={setPlayerLoading}
+                />
+              ) : (
+                <div className="ztv-player-placeholder">
+                  <Tv2 size={42} />
+                  <strong>{loading ? "Preparando sua TV…" : "Nenhum canal disponível"}</strong>
+                  <span>{loading ? "Carregando canais e servidores" : "Atualize o catálogo para tentar novamente"}</span>
+                </div>
+              )}
+            </div>
+            <div className="ztv-now-panel">
+              <div className="ztv-now-main">
+                {active && <ChannelLogo channel={active} />}
+                <div className="ztv-now-copy">
+                  <div className="ztv-now-kicker"><span className="ztv-pulse" /> AGORA NA TV <span>·</span> {active?.categoria || "Ao vivo"}</div>
+                  <h2>{active?.nome || "Escolha um canal"}</h2>
+                  <p>
+                    {currentProgram?.titulo
+                      ? (currentProgram.horario ? currentProgram.horario + " · " : "") + currentProgram.titulo
+                      : active?.fontes.length ? (playerLoading ? "Sintonizando transmissão…" : "Transmissão ao vivo") : "Canal sem fonte ativa no momento"}
+                  </p>
+                  {currentNext?.titulo && <small>Em seguida: {currentNext.titulo}</small>}
+                </div>
+              </div>
+              <div className="ztv-now-actions">
+                <button type="button" className="ztv-round-action" onClick={() => active && toggleFavorite(active.id)} disabled={!active} title="Favoritar canal" aria-label="Favoritar canal">
+                  <Heart size={18} fill={active && favorites.includes(active.id) ? "currentColor" : "none"} />
+                </button>
+                <button type="button" className="ztv-round-action" onClick={() => switchChannel(-1)} title="Canal anterior" aria-label="Canal anterior"><ChevronLeft size={20} /></button>
+                <button type="button" className="ztv-round-action" onClick={() => switchChannel(1)} title="Próximo canal" aria-label="Próximo canal"><ChevronRight size={20} /></button>
+              </div>
+            </div>
+          </section>
+
+          <aside className="ztv-quick" aria-label="Canais em destaque">
+            <div className="ztv-section-row">
+              <div><span className="ztv-label-small">ESCOLHA RÁPIDA</span><h2>Na sua TV</h2></div>
+              <span className="ztv-small-live"><span className="ztv-pulse" /> AO VIVO</span>
+            </div>
+            <div className="ztv-quick-scroll">
+              {loading && !quickChannels.length && Array.from({ length: 6 }).map((_, i) => <div key={i} className="ztv-quick-skeleton skeleton" />)}
+              {quickChannels.map((channel, index) => (
+                <button
+                  key={channel.id} type="button"
+                  className={"ztv-quick-item" + (active?.id === channel.id ? " is-active" : "")}
+                  onClick={() => selectChannel(channel)}
+                  aria-current={active?.id === channel.id ? "true" : undefined}
+                >
+                  <span className="ztv-quick-number">{String(index + 1).padStart(2, "0")}</span>
+                  <ChannelLogo channel={channel} small />
+                  <span className="ztv-quick-name"><strong>{channel.nome}</strong><small>{channel.categoria}</small></span>
+                  {active?.id === channel.id ? <span className="ztv-equalizer" aria-label="Reproduzindo"><i /><i /><i /></span> : <ChevronRight size={17} className="ztv-quick-arrow" />}
+                </button>
+              ))}
+            </div>
+            <div className="ztv-quick-footer">
+              <span><Signal size={14} /> {availableCount} canais com links</span>
+              <button type="button" onClick={() => document.getElementById("ztv-explore")?.scrollIntoView({ behavior: "smooth" })}>Ver todos <ChevronRight size={15} /></button>
+            </div>
+          </aside>
+        </div>
+
+        {recentChannels.length > 0 && (
+          <section className="ztv-recents" aria-label="Canais vistos recentemente">
+            <div className="ztv-section-row"><div><span className="ztv-label-small">SEU HISTÓRICO</span><h2>Assistidos recentemente</h2></div></div>
+            <div className="ztv-recent-scroll">
+              {recentChannels.map(channel => (
+                <button key={channel.id} type="button" className="ztv-recent-card" onClick={() => selectChannel(channel)}>
+                  <ChannelLogo channel={channel} small />
+                  <span>{channel.nome}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="ztv-explore" id="ztv-explore" aria-label="Catálogo de canais de TV">
+          <div className="ztv-section-row ztv-explore-heading">
+            <div><span className="ztv-label-small">NAVEGUE PELOS CANAIS</span><h2>Explore a programação</h2></div>
+            <div className="ztv-layout-switch" aria-label="Modo de visualização">
+              <button type="button" aria-label="Visualização em grade" aria-pressed={layout === "grid"} className={layout === "grid" ? "is-active" : ""} onClick={() => setLayout("grid")}><Grid2X2 size={18} /></button>
+              <button type="button" aria-label="Visualização em lista" aria-pressed={layout === "list"} className={layout === "list" ? "is-active" : ""} onClick={() => setLayout("list")}><List size={19} /></button>
+            </div>
+          </div>
+          <div className="ztv-filterbox">
+            <label className="ztv-search">
+              <Search size={19} />
+              <input type="search" value={query} placeholder="Buscar canais ou categorias…" onChange={event => setQuery(event.target.value)} aria-label="Buscar canais" />
+              {query && <button type="button" aria-label="Limpar busca" onClick={() => setQuery("")}><X size={16} /></button>}
+            </label>
+            <label className="ztv-only-available">
+              <input type="checkbox" checked={onlineOnly} onChange={event => setOnlineOnly(event.target.checked)} />
+              <span>Somente com fonte</span>
+            </label>
+          </div>
+          <div className="ztv-categories" role="group" aria-label="Filtrar por categoria">
+            {["Todos", "Favoritos", "Recentes", ...categories].map(cat => {
+              const count = cat === "Todos" ? channels.length :
+                cat === "Favoritos" ? channels.filter(c => favorites.includes(c.id)).length :
+                cat === "Recentes" ? recentChannels.length :
+                channels.filter(c => c.categoria === cat).length;
+              return (
+                <button type="button" key={cat} onClick={() => setCategory(cat)}
+                  className={"ztv-category" + (category === cat ? " is-active" : "")}
+                  aria-pressed={category === cat}>
+                  {cat === "Favoritos" && <Star size={14} />}
+                  {cat === "Recentes" && <Clock3 size={14} />}
+                  {cat}<span>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="ztv-results"><span>{filtered.length} {filtered.length === 1 ? "canal encontrado" : "canais encontrados"}</span><small>Fontes podem variar conforme a disponibilidade dos servidores.</small></div>
+          {loading && !channels.length ? (
+            <div className="ztv-channel-grid">
+              {Array.from({ length: 12 }).map((_, i) => <div key={i} className="ztv-card ztv-card-skeleton skeleton" />)}
+            </div>
+          ) : filtered.length ? (
+            <>
+              <div className={"ztv-channel-grid" + (layout === "list" ? " is-list" : "")}>
+                {filtered.slice(0, visible).map(channel => (
+                  <ChannelCard key={channel.id} channel={channel} active={active?.id === channel.id}
+                    favorite={favorites.includes(channel.id)}
+                    onSelect={() => selectChannel(channel)}
+                    onFavorite={() => toggleFavorite(channel.id)} listMode={layout === "list"} />
+                ))}
+              </div>
+              {visible < filtered.length && <div className="ztv-load-more" ref={loaderRef}><button type="button" onClick={() => setVisible(n => Math.min(n + 36, filtered.length))}>Carregar mais canais</button></div>}
+            </>
+          ) : (
+            <div className="ztv-empty">
+              <WifiOff size={35} />
+              <strong>{channels.length ? "Nenhum canal encontrado" : "Ainda sem canais"}</strong>
+              <p>{channels.length ? "Altere os filtros ou procure outro canal." : "Não foi possível obter a lista de canais."}</p>
+              <button type="button" onClick={() => { setCategory("Todos"); setQuery(""); setOnlineOnly(false); void refresh(); }}>Limpar filtros e atualizar</button>
+            </div>
+          )}
+        </section>
+
+        <section className="ztv-sports" aria-label="Programação esportiva"><JogosShelf onSelectCanalId={id => {
+          const channel = channels.find(c => c.id === id);
+          if (channel) selectChannel(channel);
+        }} /></section>
+
+        <footer className="ztv-footer">
+          <span><span className="ztv-pulse" /> ZANG LIVE</span>
+          <span>As transmissões dependem das fontes cadastradas e da disponibilidade de cada servidor.</span>
+          <Link to="/tv/radios"><Radio size={15} /> Ouça rádios online</Link>
+        </footer>
       </div>
 
-      {/* Prateleiras Horizontais de Canais por Categoria */}
-      <section className="ydo-tv-shelves">
-        {shelvesData.map((shelf) => {
-          const Icon = shelf.icon;
-          return (
-            <div key={shelf.title} className="ydo-tv-shelf-section">
-              <div className="ydo-tv-shelf-header">
-                <h3 className="ydo-tv-shelf-title">
-                  <Icon size={18} style={{ color: "#e8b44a" }} />
-                  <span>{shelf.title}</span>
-                </h3>
-              </div>
-
-              <div className="ydo-tv-shelf-track">
-                {shelf.items.map((c) => {
-                  const epg = epgData[c.nome]?.atual;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => selectCanal(c)}
-                      className="ydo-tv-shelf-card"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") selectCanal(c);
-                      }}
-                    >
-                      <div className="ydo-tv-shelf-logo-box">
-                        <ChannelLogo
-                          logo={c.logo}
-                          nome={c.nome}
-                          className="ydo-tv-shelf-logo"
-                          monogramClass="ydo-tv-monogram"
-                        />
-                      </div>
-                      <div className="ydo-tv-shelf-card-title">{c.nome}</div>
-                      <div className="ydo-tv-shelf-card-epg">
-                        {c.id === activeId && playerLoading
-                          ? "Sintonizando…"
-                          : epg?.titulo
-                          ? epg.titulo
-                          : c.categoria}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </section>
-
-      {/* Guia de Programação (Drawer Lateral Overlay) */}
       {guideOpen && (
-        <div
-          className="ydo-guia-overlay"
-          onClick={() => setGuideOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Guia de Programação"
-        >
-          <div
-            className="ydo-guia-drawer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="ydo-guia-header">
-              <div className="ydo-guia-header-info">
-                <div className="ydo-guia-title-row">
-                  <CalendarClock size={20} style={{ color: "#e8b44a" }} />
-                  <h2 className="ydo-guia-title">Guia de Programação</h2>
-                </div>
-                <span className="ydo-guia-date">
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    timeZone: "America/Sao_Paulo",
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  }).format(new Date())}
-                </span>
-              </div>
-              <button
-                onClick={() => setGuideOpen(false)}
-                className="ydo-guia-close-btn"
-                aria-label="Fechar Guia"
-              >
-                <X size={18} />
-              </button>
+        <div className="ztv-guide-overlay" onMouseDown={event => { if (event.target === event.currentTarget) setGuideOpen(false); }}>
+          <aside className="ztv-guide" role="dialog" aria-modal="true" aria-labelledby="ztv-guide-title">
+            <header className="ztv-guide-header">
+              <div><span className="ztv-label-small">O QUE ESTÁ PASSANDO</span><h2 id="ztv-guide-title">Guia de programação</h2><p>Agora e a seguir nos seus canais</p></div>
+              <button type="button" onClick={() => setGuideOpen(false)} aria-label="Fechar guia"><X size={22} /></button>
+            </header>
+            <label className="ztv-search ztv-guide-search"><Search size={18} /><input value={guideQuery} onChange={event => setGuideQuery(event.target.value)} placeholder="Pesquisar programação…" /></label>
+            <div className="ztv-guide-list">
+              {guideLoading && <p className="ztv-guide-loading">Atualizando a programação…</p>}
+              {guideChannels.map(channel => {
+                const slot = guide[channel.nome];
+                return (
+                  <button type="button" className={"ztv-guide-item" + (channel.id === active?.id ? " is-active" : "")}
+                    key={channel.id} onClick={() => { selectChannel(channel); setGuideOpen(false); }}>
+                    <ChannelLogo channel={channel} small />
+                    <span className="ztv-guide-item-info"><strong>{channel.nome}</strong>
+                      <span>{slot?.atual?.titulo || "Programação não informada"}</span>
+                      {slot?.proximo?.titulo && <small>Depois: {slot.proximo.titulo}</small>}
+                    </span>
+                    {slot?.atual?.horario && <span className="ztv-guide-time">{slot.atual.horario}</span>}
+                    <ChevronRight size={17} />
+                  </button>
+                );
+              })}
             </div>
-
-            <div className="ydo-guia-search-wrap">
-              <div className="ydo-guia-search-box">
-                <Search size={14} style={{ color: "rgba(255,255,255,0.4)" }} />
-                <input
-                  type="search"
-                  value={guideSearch}
-                  onChange={(e) => setGuideSearch(e.target.value)}
-                  placeholder="Filtrar canal no guia…"
-                  className="ydo-guia-search-input"
-                  aria-label="Filtrar canais no guia"
-                />
-              </div>
-            </div>
-
-            <div className="ydo-guia-body">
-              {guideLoading && Object.keys(gradeAgora).length === 0 ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="ydo-guia-skeleton" />
-                ))
-              ) : guideFilteredCanais.length === 0 ? (
-                <div
-                  style={{
-                    padding: "40px 16px",
-                    textAlign: "center",
-                    color: "rgba(255,255,255,0.4)",
-                    fontSize: "0.88rem",
-                  }}
-                >
-                  Nenhum canal encontrado.
-                </div>
-              ) : (
-                guideFilteredCanais.slice(0, guideVisibleCount).map((c) => {
-                  const epg = gradeAgora[c.nome] || epgData[c.nome];
-                  const isActive = c.id === activeId;
-
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => {
-                        selectCanal(c);
-                        setGuideOpen(false);
-                      }}
-                      className={`ydo-guia-item ${isActive ? "active" : ""}`}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          selectCanal(c);
-                          setGuideOpen(false);
-                        }
-                      }}
-                    >
-                      <div className="ydo-guia-logo-container">
-                        <ChannelLogo
-                          logo={c.logo}
-                          nome={c.nome}
-                          className="ydo-guia-logo"
-                          monogramClass="ydo-guia-monogram"
-                        />
-                      </div>
-
-                      <div className="ydo-guia-content">
-                        <div className="ydo-guia-canal-row">
-                          <span className="ydo-guia-canal-nome">{c.nome}</span>
-                          <span className="ydo-guia-categoria">{c.categoria}</span>
-                        </div>
-
-                        {epg?.atual ? (
-                          <div className="ydo-guia-linha-agora">
-                            <span className="ydo-live-dot" />
-                            <span>
-                              Agora: {epg.atual.titulo}
-                              {epg.atual.horario ? ` · ${epg.atual.horario}` : ""}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="ydo-guia-indisponivel">
-                            Programação indisponível agora
-                          </div>
-                        )}
-
-                        {epg?.proximo && (
-                          <div className="ydo-guia-linha-proximo">
-                            A seguir: {epg.proximo.titulo}
-                            {epg.proximo.horario ? ` · ${epg.proximo.horario}` : ""}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-
-              {guideVisibleCount < guideFilteredCanais.length && (
-                <button
-                  onClick={() => setGuideVisibleCount((prev) => prev + 40)}
-                  style={{
-                    margin: "12px auto",
-                    padding: "8px 20px",
-                    borderRadius: "999px",
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: "0.8rem",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  Carregar mais canais
-                </button>
-              )}
-            </div>
-          </div>
+          </aside>
         </div>
       )}
     </main>
