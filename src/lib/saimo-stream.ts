@@ -10,6 +10,7 @@
 
 import type { StreamSource, AudioTrack, StreamFormat } from "./types";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
+import { buildSaimoVodProxyUrl } from "./saimo-vod-url";
 
 const FENIX_BASE = "https://fenixflix.fenixhub.online";
 const CATALOG_BASE = process.env.SAIMO_VOD_PAGES || "https://filmes-saimo.pages.dev";
@@ -316,7 +317,7 @@ async function querySaimoOfficial(
   const sources = await Promise.all((["dub", "leg"] as const).map(async (audio) => {
     try {
       const endpoint = new URL(STREAM_API);
-      if (endpoint.protocol !== "https:") return null;
+      if (endpoint.protocol !== "https:") return [];
       endpoint.searchParams.set("tipo", tipo);
       endpoint.searchParams.set("id", id);
       endpoint.searchParams.set("versao", audio);
@@ -342,24 +343,36 @@ async function querySaimoOfficial(
           await response.body?.cancel();
         }
       }
-      if (!target) return null;
+      if (!target) return [];
       const finalUrl = new URL(target, endpoint);
-      if (!["http:", "https:"].includes(finalUrl.protocol)) return null;
-      if (finalUrl.host === endpoint.host && finalUrl.pathname === endpoint.pathname) return null;
-      if (/^(?:localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.)/i.test(finalUrl.hostname)) return null;
-      return {
-        url: finalUrl.toString(),
-        audio,
-        name: `Saimo TV (${audio.toUpperCase()})`,
-        quality: "Auto",
-        format: isHlsUrl(finalUrl.toString()) ? "hls" as const : "mp4" as const,
-        priority: 0,
-      };
+      if (!["http:", "https:"].includes(finalUrl.protocol)) return [];
+      if (finalUrl.host === endpoint.host && finalUrl.pathname === endpoint.pathname) return [];
+      if (/^(?:localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.)/i.test(finalUrl.hostname)) return [];
+      // Mesmo caminho usado pela API pública, mas com entrega same-origin e Range/206.
+      // URL direta fica disponível como fallback se o proxy não alcançar o CDN.
+      return [
+        {
+          url: buildSaimoVodProxyUrl({ tipo, id, versao: audio, temp: season, ep: episode }),
+          audio,
+          name: `Saimo TV · Player principal (${audio.toUpperCase()})`,
+          quality: "Auto",
+          format: "auto" as const,
+          priority: -10,
+        },
+        {
+          url: finalUrl.toString(),
+          audio,
+          name: `Saimo TV · Link direto (${audio.toUpperCase()})`,
+          quality: "Auto",
+          format: isHlsUrl(finalUrl.toString()) ? "hls" as const : "auto" as const,
+          priority: 0,
+        },
+      ];
     } catch {
-      return null;
+      return [];
     }
   }));
-  const streams = sources.filter((source): source is NonNullable<typeof source> => source !== null);
+  const streams: StreamSource[] = sources.flat();
   saimoStreamCache.set(cacheKey, {
     streams,
     expires: now + (streams.length ? STREAM_CACHE_TTL_MS : 60_000),
