@@ -344,6 +344,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
   }, [guideOpen]);
 
 
+  const availableCount = useMemo(() => channels.filter(c => c.fontes.length > 0).length, [channels]);
+
   const filtered = useMemo(() => {
     const search = normalize(query);
     let items = channels.filter(c => {
