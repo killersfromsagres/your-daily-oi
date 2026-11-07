@@ -283,3 +283,77 @@ html[data-zf-platform="tv"] .ydo-card:focus-within .ydo-card-poster {
 @media (prefers-reduced-transparency:reduce) {
   .zf-mobile-dock,.zf-mobile-menu-panel,.ydo-header { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
 }
+
+
+/* Responsive detail sheets. All original movie, anime and series content remains intact. */
+@media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
+  html:not([data-zf-platform="tv"]) .ydo-search-page {
+    padding-top:calc(94px + env(safe-area-inset-top,0px)) !important;
+    padding-inline:clamp(12px,3vw,24px) !important;
+    padding-bottom:35px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-overlay {
+    z-index:1250 !important;
+    padding:calc(8px + env(safe-area-inset-top,0px)) 8px calc(12px + env(safe-area-inset-bottom,0px)) !important;
+    align-items:flex-start !important; backdrop-filter:blur(9px) !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-shell {
+    width:min(100%,900px) !important;
+    border-radius:20px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-body {
+    padding:0 20px 28px !important; gap:24px !important;
+  }
+}
+@media (max-width:650px) {
+  html:not([data-zf-platform="tv"]) .zf-detail-hero {
+    min-height:0 !important; padding:72px 16px 23px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-foreground {
+    align-items:flex-start !important; flex-wrap:wrap; gap:13px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-poster {
+    width:99px !important; height:148px !important; border-radius:12px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-info {
+    flex:1 1 185px !important; min-width:0; gap:8px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-info h1 {
+    font-size:clamp(21px,5.4vw,29px) !important; line-height:1.13 !important;
+    overflow-wrap:anywhere;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-info p {
+    font-size:12px !important; line-height:1.5 !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-body {
+    padding:0 15px 26px !important; gap:20px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-overlay button[aria-label="Fechar"] {
+    top:15px !important; right:15px !important; width:43px !important; height:43px !important;
+  }
+}
+html[data-zf-platform="tv"] .zf-detail-overlay {
+  z-index:1200 !important;
+  padding:4vh 4vw !important;
+}
+html[data-zf-platform="tv"] .zf-detail-shell {
+  width:min(91vw,1500px) !important;
+  border-radius:26px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-hero {
+  min-height:540px !important;
+  padding:55px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-poster {
+  width:235px !important;
+  height:355px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-info {
+  flex:1 1 520px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-info h1 {
+  font-size:clamp(45px,3.1vw,78px) !important;
+}
+html[data-zf-platform="tv"] .zf-detail-body {
+  padding:0 55px 55px !important;
+}
