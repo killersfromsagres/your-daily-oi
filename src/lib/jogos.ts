@@ -29,7 +29,7 @@ const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/";
 
 function getConfiguredBroadcasters(): Record<string, string | string[]> {
   try {
-    const raw = typeof process !== "undefined" ? process.env.ZANG_JOGOS_CANAIS_JSON : undefined;
+    const raw = typeof process !== "undefined" ? process.env["ZANG_JOGOS_CANAIS_JSON"] : undefined;
     if (!raw || raw.length > 65_000) return {};
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
@@ -60,7 +60,7 @@ function matchChannel(
     ch.id.toLowerCase() === name.toLowerCase() ||
     normalizeSoccerName(ch.nome) === normalized
   ));
-  return matched ? { id: matched.id, nome: matched.nome, logo: matched.logo } : null;
+  return matched ? { id: matched.id, nome: matched.nome, ...(matched.logo ? { logo: matched.logo } : {}) } : null;
 }
 async function fetchFixturesForLeague(liga: LigaFutebol, date: string): Promise<{
   liga: LigaFutebol; events: ESPNEvent[];
@@ -90,14 +90,15 @@ async function fetchAllLeagues(date: string): Promise<{
   for (let i = 0; i < LIGAS_FUTEBOL.length; i += 5) {
     const batch = LIGAS_FUTEBOL.slice(i, i + 5);
     const results = await Promise.allSettled(batch.map(liga => fetchFixturesForLeague(liga, date)));
-    for (let index = 0; index < batch.length; index++) {
-      const result = results[index];
+    for (const [index, result] of results.entries()) {
+      const league = batch[index];
+      if (!league) continue;
       if (result.status === "fulfilled") {
         successes++;
         for (const event of result.value.events) items.push({ event, liga: result.value.liga });
       } else {
-        failed.push(batch[index].id);
-        console.warn("[Sports] Falha ESPN", batch[index].id, String(result.reason).slice(0, 150));
+        failed.push(league.id);
+        console.warn("[Sports] Falha ESPN", league.id, String(result.reason).slice(0, 150));
       }
     }
   }
@@ -147,7 +148,7 @@ async function annotateBroadcasts(
         game.canalNome = resolved.nome;
         game.canalLogo = resolved.logo || null;
         game.transmissao = "confirmada";
-        game.origemTransmissao = origin;
+        if (origin) game.origemTransmissao = origin;
       }
     }
   } catch (error) {
