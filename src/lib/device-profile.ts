@@ -10,7 +10,7 @@ export interface DeviceSignals {
 
 // TV engines may report Android/Linux or a desktop viewport. Identify the device,
 // not just its width, before choosing the 10-foot remote-control interface.
-const TV_IDENTIFIERS = /(?:smart[\s-]?tv|hbbtv|netcast|webos|web0s|tizen|roku|appletv|tvos|viera|bravia|googletv|google[\s-]?tv|android[\s-]?tv|fire[\s-]?tv|aft[a-z0-9]{3,}|shield[\s-]?tv|philips[\s-]?tv|television|opera[\s-]?tv|inettvbrowser)/i;
+const TV_IDENTIFIERS = /(?:smart[\s-]?tv|hbbtv|netcast|webos|web0s|tizen|roku|appletv|tvos|viera|bravia|googletv|google[\s-]?tv|android[\s-]?tv|fire[\s-]?tv|aft[a-z0-9]{1,}|shield[\s-]?tv|philips[\s-]?tv|television|opera[\s-]?tv|inettvbrowser)/i;
 const MOBILE_IDENTIFIERS = /(?:mobile|iphone|ipod|ipad|tablet|kindle|silk|opera mini)/i;
 
 export function detectDeviceProfile(signals: DeviceSignals): DeviceProfile {
