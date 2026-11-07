@@ -102,3 +102,22 @@ export function orderLiveSources<T extends LiveSourceLike>(sources: readonly T[]
   if (sources.length < 2 || sources.every(highRisk)) return [...sources];
   return [...sources].sort((left, right) => Number(highRisk(left)) - Number(highRisk(right)));
 }
+
+/**
+ * A requisição Range de um manifesto deve ser ignorada no proxy: reescrever
+ * URLs de playlists filhas e segmentos altera o corpo e o Content-Length.
+ * Repassar Range faz o player receber um 206 com URI relativa não reescrita.
+ */
+export function isLivePlaylistTarget(input: string): boolean {
+  try {
+    let current = new URL(input);
+    for (let depth = 0; depth < 3; depth++) {
+      const nested = current.searchParams.get("url");
+      if (!nested || !/^https?:\/\//i.test(nested)) break;
+      current = new URL(nested);
+    }
+    return /\.(?:m3u8?|mpd|txt)$/i.test(current.pathname);
+  } catch {
+    return false;
+  }
+}
