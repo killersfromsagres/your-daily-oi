@@ -8,19 +8,21 @@ const originalFetch=globalThis.fetch;
 afterEach(()=>{globalThis.fetch=originalFetch;});
 
 describe("Player controls without overlap",()=>{
- test("selects layout by the actual video width",()=>{
+ test("uses a single lightweight toolbar instead of parallel legacy controls",()=>{
   const source=read("components/player/LivePlayer.tsx");
-  expect(source).toContain('data-controls-density={controlsDensity}');
-  expect(source).toContain("new ResizeObserver(sync)");
-  expect(source).toContain('width < 440 ? "minimal" : width < 920 ? "compact" : "roomy"');
+  expect(source).toContain('className={"zf-player-toolbar"');
+  expect(source).not.toContain('data-controls-density={controlsDensity}');
+  expect(source).not.toContain('className="ydo-live-mobile-fullscreen"');
+  expect(source).toContain('aria-label="Qualidade e ajustes de reprodução"');
  });
- test("responsive CSS reserves separate areas for playback and advanced controls",()=>{
-  const css=read("styles/tv-mobile-player.css");
-  expect(css).toContain("grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)");
-  expect(css).toContain('data-controls-density="compact"');
-  expect(css).toContain('data-controls-density="minimal"');
-  expect(css).toContain("text-overflow: ellipsis");
-  expect(css).toContain("zang-cast-trigger span");
+ test("button geometry is intrinsic and identical across web and mobile",()=>{
+  const css=read("styles/live-controls-minimal.css");
+  expect(css).toContain("flex-flow: row nowrap");
+  expect(css).toContain("max-width: 100%");
+  expect(css).toContain("flex: 0 0 var(--zf-toolbar-icon)");
+  expect(css).toContain("width: var(--zf-toolbar-icon)");
+  expect(css).toContain("--zf-toolbar-icon: 30px");
+  expect(css).toContain(".zf-player-menu");
  });
 });
 
