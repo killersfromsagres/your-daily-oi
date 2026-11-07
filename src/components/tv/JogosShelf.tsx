@@ -141,7 +141,8 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
     const controller = new AbortController();
     previousRequest.current?.abort();
     previousRequest.current = controller;
-    setPending(true);
+    // Keep the current game cards visible during background score refreshes.
+    if (data?.dataLocal !== day) setPending(true);
     setFailure(null);
     // Cache-busting not required: the server returns at most 2-minute-old fixtures.
     fetch("/api/jogos-agenda?data=" + encodeURIComponent(day), {
