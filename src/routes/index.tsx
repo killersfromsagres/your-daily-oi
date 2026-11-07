@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Zang Flix reúne filmes e séries em uma experiência cinematográfica completa e fluida, consumindo o catálogo oficial Saimo TV.",
+          "Zang Flix reúne filmes, séries, animes e TV ao vivo em uma experiência cinematográfica completa e fluida.",
       },
       { property: "og:title", content: "Zang Flix — Cinema e Séries" },
       {
