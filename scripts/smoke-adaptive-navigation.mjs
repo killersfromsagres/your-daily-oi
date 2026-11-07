@@ -56,6 +56,32 @@ try {
       throw Error("Adaptive layout hydration failed for " + scenario.name + ": " + String(result.stderr).slice(-1100));
     }
   }
+
+  // The homepage is the heaviest mobile route. Verify it hydrates without
+  // mounting all eight original-resolution backdrops at once.
+  const phoneUA = cases[0].ua;
+  const homeArgs = ["--headless=new","--no-sandbox","--disable-gpu",
+    "--disable-dev-shm-usage","--disable-background-networking","--disable-extensions",
+    "--virtual-time-budget=12500","--window-size=390,844",
+    "--user-agent="+phoneUA,"--dump-dom",BASE + "/"];
+  const home = spawnSync(chrome, homeArgs, {
+    encoding:"utf8",timeout:50000,maxBuffer:20*1024*1024,
+  });
+  const homeDom = home.stdout || "";
+  const heroImages = [...homeDom.matchAll(/<img[^>]*class="ydo-hero-img"[^>]*>/g)].map(match=>match[0]);
+  const performanceSummary = {
+    event:"mobile-home-stability",
+    exit:home.status,
+    heroImages:heroImages.length,
+    hasOriginalBackdrop:heroImages.some(tag=>tag.includes("/original/")),
+    trophyNavigation:homeDom.includes("lucide-trophy"),
+    hasMobileMenu:homeDom.includes("zf-mobile-dock"),
+  };
+  console.log(JSON.stringify(performanceSummary));
+  if(home.status!==0||heroImages.length>1||performanceSummary.hasOriginalBackdrop||
+    !performanceSummary.trophyNavigation||!performanceSummary.hasMobileMenu){
+    throw Error("Mobile homepage performance regression: "+String(home.stderr).slice(-700));
+  }
 } finally {
   worker.kill("SIGTERM");
 }

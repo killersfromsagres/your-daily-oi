@@ -4,9 +4,8 @@ import { useEffect, useId, useRef, useState, type Dispatch, type FormEvent, type
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight, ChevronDown, Clapperboard, Compass, Film, Gamepad2,
-  Heart, Home, Menu, Search, Sparkles, Tv2, X,
+  Heart, Home, Menu, Search, Sparkles, Tv2, Trophy, X,
 } from "lucide-react";
-import { FootballIcon } from "@/components/sports/FootballIcon";
 import { mobileTabActive, isWatchRoute } from "@/lib/device-profile";
 
 type Section = "filmes" | "series" | "animes";
@@ -107,7 +106,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
         </Link>
         <Link to="/futebol" className={"zf-mobile-tab" + (mobileTabActive(pathname,"games") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"games") ? "page" : undefined}>
-          <FootballIcon size={21} /><span>Jogos</span>
+          <Trophy size={21} strokeWidth={2.1} /><span>Jogos</span>
         </Link>
         <button type="button" className={"zf-mobile-tab zf-mobile-menu-tab" + (open ? " is-active" : "")}
           onClick={() => onOpenChange(!open)} aria-expanded={open} aria-controls={panelId}
@@ -138,7 +137,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
               </form>
 
               <Link to="/futebol" className="zf-mobile-feature" onClick={close}>
-                <span className="zf-mobile-feature-symbol"><FootballIcon size={28} /></span>
+                <span className="zf-mobile-feature-symbol"><Trophy size={27} strokeWidth={2} /></span>
                 <span><small>ESPORTES EM DESTAQUE</small><strong>Jogos do Dia</strong>
                   <em>Partidas, placares e onde assistir</em></span>
                 <ArrowRight size={19} aria-hidden="true" />

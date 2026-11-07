@@ -429,31 +429,57 @@
 .ydo-dropdown-header svg {color:#f3c585;filter:drop-shadow(0 2px 4px rgba(240,188,103,.22));}
 
 
-/* ZANG FLIX · Jogos do Dia — ação prioritária sem relógio no header */
-.ydo-header .ydo-nav-football {
+/* Jogos do Dia — acabamento minimalista, sem verde, gradiente ou brilho. */
+.ydo-header .ydo-nav-football,
+.ydo-header .ydo-nav-football[data-status="active"] {
   min-height: 36px;
   gap: 8px;
   padding: 4px 12px 4px 7px;
-  border: 1px solid rgba(234, 188, 111, .46);
+  border: 1px solid rgba(231, 197, 147, .28);
   border-radius: 999px;
-  color: #ffe1a8;
-  background: linear-gradient(110deg, rgba(239, 194, 120, .17), rgba(238, 192, 108, .055));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 0 22px rgba(234,174,84,.055);
+  color: #e7dfd2;
+  background: #1b2230;
+  box-shadow: none;
+  text-shadow: none;
+  filter: none;
+  transform: none;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 750;
+  transition: background-color .15s ease, border-color .15s ease;
 }
 .ydo-header .ydo-nav-football:hover,
-.ydo-header .ydo-nav-football[data-status="active"] {
-  color: #141516;
-  background: linear-gradient(120deg, #ffe3b1, #e9b56b);
-  border-color: #ffe2aa;
-  box-shadow: 0 5px 23px rgba(232,174,79,.24);
+.ydo-header .ydo-nav-football[data-status="active"]:hover {
+  color: #f7e8d0;
+  border-color: rgba(231, 197, 147, .44);
+  background: #232b3a;
+  box-shadow: none;
+  filter: none;
+  transform: none;
 }
-.ydo-football-icon { width: 27px; height: 27px; border-radius: 50%; display:inline-flex; align-items:center; justify-content:center; color:#f6c986; background:rgba(244,192,110,.13); }
+.ydo-football-icon,
 .ydo-nav-football:hover .ydo-football-icon,
-.ydo-nav-football[data-status="active"] .ydo-football-icon { color:#141516; background:rgba(30,23,12,.10); }
-.ydo-football-today { font-size: 9px; line-height:1; letter-spacing:.085em; color:#eac891; border-left:1px solid rgba(242,202,141,.32); padding-left:8px; font-weight:900; }
+.ydo-nav-football[data-status="active"] .ydo-football-icon {
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #e8c18c;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+}
+.ydo-football-today,
 .ydo-nav-football:hover .ydo-football-today,
-.ydo-nav-football[data-status="active"] .ydo-football-today { color:#4b3216; border-left-color:rgba(42,29,10,.24); }
-@media (max-width: 1120px) { .ydo-football-today { display:none; } }
-@media (prefers-reduced-motion:reduce) { .ydo-nav-football { transition:none; } }
+.ydo-nav-football[data-status="active"] .ydo-football-today {
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: .085em;
+  color: #b5aa99;
+  border-left: 1px solid rgba(228, 208, 181, .22);
+  padding-left: 8px;
+  font-weight: 800;
+}
+@media (max-width: 1120px) { .ydo-football-today { display: none; } }
+@media (prefers-reduced-motion:reduce) { .ydo-nav-football { transition:none !important; } }
