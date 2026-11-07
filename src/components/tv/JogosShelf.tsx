@@ -2,14 +2,14 @@
 
 // src/components/tv/JogosShelf.tsx — React 19, Zang Live sports match center.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
+import { featuredFootballMatches } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
   Clock3, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
 } from "lucide-react";
-import {
-  addDaysUTC, dataBrasilia, fixturePriority,
-  type JogoBrasileirao,
-} from "@/lib/jogos-match";
+import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import "@/styles/jogos-center.css";
 
 interface JogosShelfProps {
@@ -27,15 +27,6 @@ interface SportsApiResponse {
   erro?: string;
 }
 
-type GameTab = "destaques" | "todos" | "brasileirao" | "champions" | "copas" | "internacional";
-const TABS: Array<{ id: GameTab; label: string }> = [
-  { id: "destaques", label: "Destaques" },
-  { id: "todos", label: "Todos" },
-  { id: "brasileirao", label: "Brasileirão" },
-  { id: "champions", label: "Champions" },
-  { id: "copas", label: "Copas" },
-  { id: "internacional", label: "Europa" },
-];
 const humanDay = new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" });
 const longDay = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const shortDate = (date: string): Date => new Date(date + "T12:00:00Z");
@@ -53,7 +44,7 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
     </span>
   );
 }
-function MatchCard({ game, onWatch, onExplore }: {
+export function MatchCard({ game, onWatch, onExplore }: {
   game: JogoBrasileirao;
   onWatch: (id: string) => void;
   onExplore?: (() => void) | undefined;
@@ -75,7 +66,12 @@ function MatchCard({ game, onWatch, onExplore }: {
           : "Transmissão ainda não confirmada"}
       >
       <div className="zgame-card-header">
-        <span className="zgame-league"><Trophy size={13} /> {game.liga}</span>
+        <span className="zgame-league">
+          <span className="zgame-league-emblem">
+            {game.ligaLogo ? <img src={game.ligaLogo} alt="" loading="lazy" /> : <CompetitionIcon size={19} />}
+          </span>
+          {game.liga}
+        </span>
         <span className={"zgame-kickoff" + (active ? " is-live" : "")}>
           {active ? <Radio size={12} /> : <Clock3 size={12} />} {time}
         </span>
@@ -127,7 +123,7 @@ function MatchCard({ game, onWatch, onExplore }: {
 export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfProps) {
   const [today, setToday] = useState(() => dataBrasilia(new Date()));
   const [day, setDay] = useState(() => dataBrasilia(new Date()));
-  const [tab, setTab] = useState<GameTab>("destaques");
+
   const [data, setData] = useState<SportsApiResponse | null>(null);
   const [pending, setPending] = useState(true);
   const [failure, setFailure] = useState<string | null>(null);
@@ -183,19 +179,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   }, [day, refreshKey]);
 
   const allGames = data?.dataLocal === day ? data.jogos : [];
-  const featured = useMemo(() => allGames.some(x => x.destaque), [allGames]);
-  const filtered = useMemo(() => {
-    const items = allGames.filter(game => {
-      if (tab === "todos") return true;
-      if (tab === "destaques") return featured ? game.destaque : true;
-      return game.grupo === tab;
-    });
-    if (tab === "destaques") return [...items].sort((a,b)=>
-      (b.status === "ao-vivo" ? 1 : 0) - (a.status === "ao-vivo" ? 1 : 0) ||
-      fixturePriority(b) - fixturePriority(a) ||
-      Date.parse(a.inicioIso) - Date.parse(b.inicioIso));
-    return [...items].sort((a,b)=>Date.parse(a.inicioIso)-Date.parse(b.inicioIso));
-  }, [allGames, featured, tab]);
+  const filtered = useMemo(() => featuredFootballMatches(allGames, 8), [allGames]);
 
   const live = allGames.filter(game=>game.status==="ao-vivo").length;
   const linked = allGames.filter(game=>game.canalId).length;
@@ -219,6 +203,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
         <div className="zgame-header-copy">
           <div className="zgame-kicker"><Activity size={14} /><span>AGENDA ESPORTIVA</span><span className="zgame-kicker-line" /><span>FUTEBOL AO VIVO</span></div>
           <h2>Hoje tem <em>jogo.</em></h2>
+          <Link to="/futebol" className="zf-football-inline-link"><FootballIcon size={16}/> Central completa de futebol <ArrowRight size={14}/></Link>
           <p>Brasileirão, Champions League e grandes campeonatos. Acompanhe os confrontos no horário de Brasília.</p>
         </div>
         <div className="zgame-header-actions">
@@ -259,11 +244,11 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
         </div>
       </div>
 
-      <div className="zgame-tabs" role="group" aria-label="Filtrar campeonatos">
-        {TABS.map(item => (
-          <button key={item.id} type="button" className={"zgame-tab" + (tab===item.id?" is-active":"")}
-            onClick={() => setTab(item.id)} aria-pressed={tab===item.id}>{item.label}</button>
-        ))}
+      <div className="zf-featured-summary">
+        <span><FootballIcon size={16} /> Só os confrontos mais relevantes</span>
+        <Link to="/futebol" className="zf-football-view-all">
+          Ver todos os {allGames.length} jogos <ArrowRight size={15} />
+        </Link>
       </div>
 
       {data?.parcial && !pending && (
@@ -287,12 +272,12 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
       ) : (
         <div className="zgame-empty">
           <CalendarDays size={28} />
-          <h4>{allGames.length ? "Nenhum confronto neste filtro" : "Sem partidas registradas para esta data"}</h4>
+          <h4>{allGames.length ? "Sem jogos de destaque nesta data" : "Sem partidas registradas para esta data"}</h4>
           <p>{allGames.length
-            ? "Escolha outra competição para ver os jogos disponíveis."
+            ? "Existem outros confrontos. Veja a agenda completa para consultar todos os jogos deste dia."
             : "Os jogos são atualizados automaticamente pela fonte de resultados. Selecione outro dia para consultar a próxima rodada."}</p>
           {allGames.length ? (
-            <button type="button" onClick={() => setTab("todos")}>Ver todos os jogos <ArrowRight size={15} /></button>
+            <Link to="/futebol" className="zf-football-view-all">Abrir agenda completa <ArrowRight size={15}/></Link>
           ) : day !== days[6] ? (
             <button type="button" onClick={() => jumpDays(1)}>Ver próximo dia <ArrowRight size={15}/></button>
           ) : null}
