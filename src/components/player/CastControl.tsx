@@ -43,9 +43,10 @@ function getCastContext(): CastContext | null {
   const media = w.chrome?.cast?.media;
   if (!factory || !media) return null;
   const context = factory.getInstance();
+  const policy = w.chrome?.cast?.AutoJoinPolicy?.ORIGIN_SCOPED;
   context.setOptions({
     receiverApplicationId: media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-    autoJoinPolicy: w.chrome?.cast?.AutoJoinPolicy?.ORIGIN_SCOPED,
+    ...(policy ? { autoJoinPolicy: policy } : {}),
   });
   return context;
 }
@@ -120,7 +121,10 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
     return () => {
       alive = false;
       window.clearTimeout(timer);
-      if (w.__onGCastApiAvailable === handler) w.__onGCastApiAvailable = oldHandler;
+      if (w.__onGCastApiAvailable === handler) {
+        if (oldHandler) w.__onGCastApiAvailable = oldHandler;
+        else delete w.__onGCastApiAvailable;
+      }
     };
   }, [open]);
 
@@ -129,7 +133,7 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
     const session = context.getCurrentSession();
     if (!session || !publicStreamUrl || !castMime || !media) throw new Error("Esta fonte não é compatível com a TV.");
     const info = new media.MediaInfo(publicStreamUrl, castMime);
-    info.streamType = media.StreamType?.LIVE;
+    if (media.StreamType?.LIVE) info.streamType = media.StreamType.LIVE;
     info.metadata = { metadataType: 0, title: channelName };
     await session.loadMedia(new media.LoadRequest(info));
     videoRef.current?.pause();
