@@ -1,0 +1,24 @@
+name: Verificar reprodução Saimo VOD
+
+on:
+  push:
+    branches: [fix/vod-playback-saimo-parity]
+  pull_request:
+    branches: [main]
+
+jobs:
+  playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Testes de VOD / MP4 / HLS / TV
+        run: bun run test
+      - name: Build de produção
+        run: bun run build
+      - name: Diagnóstico de redirecionamento Saimo (sem baixar filmes)
+        run: bun scripts/inspect-vod-redirect.mjs
