@@ -341,10 +341,12 @@ export function TvView({ initialCanalId }: TvViewProps) {
     const search = normalize(query);
     let items = channels.filter(c => {
       if (onlineOnly && c.fontes.length === 0) return false;
+      const slot = guide[normalize(c.nome)];
+      if (programOnly && !resolveChannelProgram(slot, c.categoria).hasSchedule) return false;
       if (category === "Favoritos" && !favorites.includes(c.id)) return false;
       if (category === "Recentes" && !recents.includes(c.id)) return false;
       if (category !== "Todos" && category !== "Favoritos" && category !== "Recentes" && c.categoria !== category) return false;
-      return !search || normalize(c.nome + " " + c.categoria).includes(search);
+      return !search || normalize(c.nome + " " + c.categoria + " " + searchableProgramText(slot)).includes(search);
     });
     if (category === "Recentes") {
       items = [...items].sort((a, b) => recents.indexOf(a.id) - recents.indexOf(b.id));
@@ -353,9 +355,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
         a.nome.localeCompare(b.nome, "pt-BR"));
     }
     return items;
-  }, [channels, query, category, favorites, recents, onlineOnly]);
+  }, [channels, guide, query, category, favorites, recents, onlineOnly, programOnly]);
 
-  useEffect(() => setVisible(48), [query, category, onlineOnly, layout]);
+  useEffect(() => setVisible(48), [query, category, onlineOnly, programOnly, layout]);
   useEffect(() => {
     const node = loaderRef.current;
     if (!node || filtered.length <= visible) return;
@@ -383,8 +385,12 @@ export function TvView({ initialCanalId }: TvViewProps) {
     return channels.filter(c => !search || normalize(c.nome + " " + c.categoria).includes(search));
   }, [channels, guideQuery]);
 
-  const currentProgram = (active && guide[active.nome]?.atual) || activeEpg?.atual || null;
-  const currentNext = (active && guide[active.nome]?.proximo) || activeEpg?.proximos?.[0] || null;
+  const currentSlot = active ? guide[normalize(active.nome)] : undefined;
+  const currentProgram = currentSlot?.atual || activeEpg?.atual || null;
+  const currentNext = currentSlot?.proximo || activeEpg?.proximos?.[0] || null;
+  const programmedCount = useMemo(() =>
+    channels.filter(c => resolveChannelProgram(guide[normalize(c.nome)], c.categoria).hasSchedule).length,
+    [channels, guide]);
   const fmtTime = (stamp: string | null) => {
     if (!stamp) return "";
     const d = new Date(stamp);
@@ -507,7 +513,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                 >
                   <span className="ztv-quick-number">{String(index + 1).padStart(2, "0")}</span>
                   <ChannelLogo channel={channel} small />
-                  <span className="ztv-quick-name"><strong>{channel.nome}</strong><small>{channel.categoria}</small></span>
+                  <span className="ztv-quick-name"><strong>{channel.nome}</strong><small title={guide[normalize(channel.nome)]?.atual?.titulo || channel.categoria}>{guide[normalize(channel.nome)]?.atual?.titulo || channel.categoria}</small></span>
                   {active?.id === channel.id ? <span className="ztv-equalizer" aria-label="Reproduzindo"><i /><i /><i /></span> : <ChevronRight size={17} className="ztv-quick-arrow" />}
                 </button>
               ))}
@@ -548,9 +554,13 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </section>
         )}
 
-        <section className="ztv-explore" id="ztv-explore" aria-label="Catálogo de canais de TV">
+        <section className="ztv-explore ztv-explore-glass" id="ztv-explore" aria-label="Catálogo Zang Flix de canais e programação">
           <div className="ztv-section-row ztv-explore-heading">
-            <div><span className="ztv-label-small">NAVEGUE PELOS CANAIS</span><h2>Explore a programação</h2></div>
+            <div>
+              <span className="ztv-label-small">ZANG FLIX <span className="ztv-explore-dot">·</span> DESCUBRA O QUE ESTÁ PASSANDO</span>
+              <h2>Explore a <span>programação.</span></h2>
+              <p className="ztv-explore-subtitle">Filmes, séries, animes, esportes e televisão. Saiba o conteúdo atual de cada canal antes de assistir.</p>
+            </div>
             <div className="ztv-layout-switch" aria-label="Modo de visualização">
               <button type="button" aria-label="Visualização em grade" aria-pressed={layout === "grid"} className={layout === "grid" ? "is-active" : ""} onClick={() => setLayout("grid")}><Grid2X2 size={18} /></button>
               <button type="button" aria-label="Visualização em lista" aria-pressed={layout === "list"} className={layout === "list" ? "is-active" : ""} onClick={() => setLayout("list")}><List size={19} /></button>
@@ -559,12 +569,16 @@ export function TvView({ initialCanalId }: TvViewProps) {
           <div className="ztv-filterbox">
             <label className="ztv-search">
               <Search size={19} />
-              <input type="search" value={query} placeholder="Buscar canais ou categorias…" onChange={event => setQuery(event.target.value)} aria-label="Buscar canais" />
+              <input type="search" value={query} placeholder="Buscar canal, filme, série, anime ou programa…" onChange={event => setQuery(event.target.value)} aria-label="Buscar canais" />
               {query && <button type="button" aria-label="Limpar busca" onClick={() => setQuery("")}><X size={16} /></button>}
             </label>
             <label className="ztv-only-available">
               <input type="checkbox" checked={onlineOnly} onChange={event => setOnlineOnly(event.target.checked)} />
               <span>Somente com fonte</span>
+            </label>
+            <label className="ztv-only-available">
+              <input type="checkbox" checked={programOnly} onChange={event => setProgramOnly(event.target.checked)} />
+              <span>Com programação identificada</span>
             </label>
           </div>
           <div className="ztv-categories" role="group" aria-label="Filtrar por categoria">
@@ -584,7 +598,14 @@ export function TvView({ initialCanalId }: TvViewProps) {
               );
             })}
           </div>
-          <div className="ztv-results"><span>{filtered.length} {filtered.length === 1 ? "canal encontrado" : "canais encontrados"}</span><small>Fontes podem variar conforme a disponibilidade dos servidores.</small></div>
+          <div className="ztv-results">
+            <span>{filtered.length} {filtered.length === 1 ? "canal encontrado" : "canais encontrados"}</span>
+            <small aria-live="polite">{guideLoading
+              ? "Consultando grade de programação…"
+              : guideUpdatedAt
+              ? programmedCount + " canais com programação identificada · Atualização automática"
+              : "Programação ainda não disponível · Exibindo os canais cadastrados"}</small>
+          </div>
           {loading && !channels.length ? (
             <div className="ztv-channel-grid">
               {Array.from({ length: 12 }).map((_, i) => <div key={i} className="ztv-card ztv-card-skeleton skeleton" />)}
@@ -596,7 +617,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
                   <ChannelCard key={channel.id} channel={channel} active={active?.id === channel.id}
                     favorite={favorites.includes(channel.id)}
                     onSelect={() => selectChannel(channel)}
-                    onFavorite={() => toggleFavorite(channel.id)} listMode={layout === "list"} />
+                    onFavorite={() => toggleFavorite(channel.id)}
+                    slot={guide[normalize(channel.nome)]} guideLoading={guideLoading}
+                    listMode={layout === "list"} />
                 ))}
               </div>
               {visible < filtered.length && <div className="ztv-load-more" ref={loaderRef}><button type="button" onClick={() => setVisible(n => Math.min(n + 36, filtered.length))}>Carregar mais canais</button></div>}
@@ -606,7 +629,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
               <WifiOff size={35} />
               <strong>{channels.length ? "Nenhum canal encontrado" : "Ainda sem canais"}</strong>
               <p>{channels.length ? "Altere os filtros ou procure outro canal." : "Não foi possível obter a lista de canais."}</p>
-              <button type="button" onClick={() => { setCategory("Todos"); setQuery(""); setOnlineOnly(false); void refresh(); }}>Limpar filtros e atualizar</button>
+              <button type="button" onClick={() => { setCategory("Todos"); setQuery(""); setOnlineOnly(false); setProgramOnly(false); void refresh(); void refreshGuide(true); }}>Limpar filtros e atualizar</button>
             </div>
           )}
         </section>
@@ -629,14 +652,14 @@ export function TvView({ initialCanalId }: TvViewProps) {
             <div className="ztv-guide-list">
               {guideLoading && <p className="ztv-guide-loading">Atualizando a programação…</p>}
               {guideChannels.map(channel => {
-                const slot = guide[channel.nome];
+                const slot = guide[normalize(channel.nome)];
                 return (
                   <button type="button" className={"ztv-guide-item" + (channel.id === active?.id ? " is-active" : "")}
                     key={channel.id} onClick={() => { selectChannel(channel); setGuideOpen(false); }}>
                     <ChannelLogo channel={channel} small />
                     <span className="ztv-guide-item-info"><strong>{channel.nome}</strong>
-                      <span>{slot?.atual?.titulo || "Programação não informada"}</span>
-                      {slot?.proximo?.titulo && <small>Depois: {slot.proximo.titulo}</small>}
+                      <span>{slot?.atual?.titulo || (slot?.proximo?.titulo ? "Em breve: " + slot.proximo.titulo : "Programação não informada")}</span>
+                      {slot?.atual?.titulo && slot?.proximo?.titulo && <small>Depois: {slot.proximo.titulo}</small>}
                     </span>
                     {slot?.atual?.horario && <span className="ztv-guide-time">{slot.atual.horario}</span>}
                     <ChevronRight size={17} />
