@@ -254,6 +254,10 @@ export function LivePlayer({
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [castOpen, setCastOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
+  const onCastDialogChange = useCallback((open: boolean) => {
+    setCastOpen(open);
+    if (open) setSourcesOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!sourcesOpen) return;
@@ -1075,7 +1079,7 @@ export function LivePlayer({
               aria-haspopup="dialog"
               aria-label="Qualidade e ajustes de reprodução"
               title="Qualidade e ajustes"
-              onClick={() => { setSourcesOpen(open => !open); setCastOpen(false); }}>
+              onClick={() => setSourcesOpen(open => !open)}>
               <SlidersHorizontal size={16} />
             </button>
             {sourcesOpen && (
@@ -1123,7 +1127,7 @@ export function LivePlayer({
           </div>
           <CastControl videoRef={videoRef} source={rawFonte}
             streamUrl={streamUrl} channelName={canal.nome}
-            onDialogChange={(open) => { setCastOpen(open); if (open) setSourcesOpen(false); }} />
+            onDialogChange={onCastDialogChange} settingsOpen={sourcesOpen} />
           <button type="button" className="zf-player-action"
             onClick={handleFullscreenToggle}
             aria-label={isFullscreen ? "Sair da tela cheia" : "Assistir em tela cheia"}
