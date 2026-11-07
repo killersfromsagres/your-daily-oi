@@ -357,7 +357,7 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
       </nav>
 
-      {/* Lado Direito: Relógio + Ícone de Pesquisa Profissional */}
+      {/* Busca do catálogo */}
       <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Sistema de Busca Minimalista e Profissional */}
         {searchOpen ? (
