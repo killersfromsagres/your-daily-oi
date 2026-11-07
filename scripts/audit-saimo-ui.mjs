@@ -72,3 +72,12 @@ try{
   console.log(JSON.stringify({event:"catalog-flow",term,snippet}));
  }
 }catch(e){console.log(JSON.stringify({event:"catalog-flow-error",error:String(e).slice(0,90)}))}
+
+try {
+ const { parseCanais, mergeCanaisCatalogs } = await import("../src/lib/canais.ts");
+ const [catalog,m3u]=await Promise.all(["https://canais-saimo.pages.dev/catalogo.txt","https://canais-saimo.pages.dev/canais.txt"].map(async u=>(await fetch(u,{signal:timeout(15000)})).text()));
+ const primary=parseCanais(catalog);
+ const secondary=parseCanais(m3u);
+ const combined=mergeCanaisCatalogs([primary,secondary]);
+ console.log(JSON.stringify({event:"secondary-m3u",primary:primary.length,m3uChannels:secondary.length,m3uSources:secondary.reduce((n,c)=>n+c.fontes.length,0),union:combined.length,uniqueNames:secondary.filter(ch=>!primary.some(p=>p.nome.toLowerCase()===ch.nome.toLowerCase())).map(x=>x.nome).slice(0,25)}));
+}catch(e){console.log(JSON.stringify({event:"secondary-m3u-error",error:String(e).slice(0,200)}));}
