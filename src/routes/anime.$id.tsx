@@ -178,6 +178,7 @@ function AnimeDetailPage() {
     <div
       role="dialog"
       aria-modal="true"
+      className="zf-detail-overlay"
       style={{
         position: "fixed",
         inset: 0,
@@ -196,6 +197,7 @@ function AnimeDetailPage() {
       }}
     >
       <div
+        className="zf-detail-shell"
         style={{
           position: "relative",
           width: "min(96vw, 1080px)",
@@ -246,6 +248,7 @@ function AnimeDetailPage() {
 
         {/* Banner 4K Desfocado */}
         <div
+          className="zf-detail-hero"
           style={{
             position: "relative",
             minHeight: "460px",
@@ -289,6 +292,7 @@ function AnimeDetailPage() {
 
           {/* Conteúdo em Primeiro Plano */}
           <div
+            className="zf-detail-foreground"
             style={{
               position: "relative",
               zIndex: 10,
@@ -301,6 +305,7 @@ function AnimeDetailPage() {
           >
             {/* Pôster 2:3 */}
             <div
+              className="zf-detail-poster"
               style={{
                 width: "185px",
                 height: "270px",
@@ -326,7 +331,7 @@ function AnimeDetailPage() {
             </div>
 
             {/* Informações Principais */}
-            <div style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div className="zf-detail-info" style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <span
                   style={{
@@ -538,7 +543,7 @@ function AnimeDetailPage() {
         </div>
 
         {/* Sinopse, Temporadas e Elenco */}
-        <div style={{ padding: "0 clamp(24px, 4vw, 48px) 36px", display: "flex", flexDirection: "column", gap: "28px" }}>
+        <div className="zf-detail-body" style={{ padding: "0 clamp(24px, 4vw, 48px) 36px", display: "flex", flexDirection: "column", gap: "28px" }}>
           <div>
             <h3
               style={{

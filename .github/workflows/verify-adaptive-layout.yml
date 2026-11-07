@@ -1,0 +1,21 @@
+name: Verify adaptive mobile web and Smart TV navigation
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  adaptive-navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Device profile and navigation tests
+        run: bun run test
+      - name: Production build and TypeScript compilation
+        run: bun run build
+      - name: Browser simulation - Android, desktop and Smart TV
+        run: bun scripts/smoke-adaptive-navigation.mjs

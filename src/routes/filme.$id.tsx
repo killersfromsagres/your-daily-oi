@@ -157,6 +157,7 @@ function MovieDetailPage() {
     <div
       role="dialog"
       aria-modal="true"
+      className="zf-detail-overlay"
       style={{
         position: "fixed",
         inset: 0,
@@ -176,6 +177,7 @@ function MovieDetailPage() {
     >
       {/* Container Principal do Filme */}
       <div
+        className="zf-detail-shell"
         style={{
           position: "relative",
           width: "min(96vw, 1080px)",
@@ -226,6 +228,7 @@ function MovieDetailPage() {
 
         {/* Banner de Altíssima Definição com Desfoque Profundo Cinematográfico */}
         <div
+          className="zf-detail-hero"
           style={{
             position: "relative",
             minHeight: "460px",
@@ -271,6 +274,7 @@ function MovieDetailPage() {
 
           {/* Conteúdo em Primeiro Plano: Pôster + Metadados + Botões */}
           <div
+            className="zf-detail-foreground"
             style={{
               position: "relative",
               zIndex: 10,
@@ -283,6 +287,7 @@ function MovieDetailPage() {
           >
             {/* Pôster Proporcional de Luxo */}
             <div
+              className="zf-detail-poster"
               style={{
                 width: "185px",
                 height: "270px",
@@ -318,7 +323,7 @@ function MovieDetailPage() {
             </div>
 
             {/* Informações Principais */}
-            <div style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div className="zf-detail-info" style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", gap: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <span
                   style={{

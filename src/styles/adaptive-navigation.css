@@ -1,0 +1,359 @@
+/* ZANG FLIX · adaptive experiences for pocket screens, browser and 10-foot TV. */
+.ydo-mobile-menu-trigger,
+.ydo-tv-remote-indicator,
+.zf-mobile-dock,
+.zf-mobile-menu-layer { display:none; }
+
+/* Mobile-first fallback works before JS device classification, including hydration. */
+@media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
+  html:not([data-zf-platform="tv"]) .ydo-header {
+    top:calc(9px + env(safe-area-inset-top,0px));
+    left:10px; right:10px; width:auto; max-width:none;
+    min-height:58px; height:58px; padding:0 10px 0 12px;
+    border-radius:18px; gap:8px; transform:none !important;
+    opacity:1 !important; background:rgba(12,19,31,.93);
+    border-color:rgba(237,200,143,.20);
+    box-shadow:0 8px 34px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.09);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-nav { display:none; }
+  html:not([data-zf-platform="tv"]) .ydo-logo { gap:8px; min-width:0; margin-right:0; }
+  html:not([data-zf-platform="tv"]) .ydo-logo-img { height:30px; max-width:66px; }
+  html:not([data-zf-platform="tv"]) .ydo-logo-text { font-size:16px; white-space:nowrap; letter-spacing:-.04em; }
+  html:not([data-zf-platform="tv"]) .ydo-header-tools { margin-left:auto; flex:0 1 auto; min-width:0; }
+  html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn {
+    width:43px; height:43px; border-radius:13px; color:#dde7f1;
+    border:1px solid rgba(255,255,255,.11);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn svg { width:19px; height:19px; }
+  html:not([data-zf-platform="tv"]) .ydo-mobile-menu-trigger {
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; flex:0 0 auto;
+    height:43px; padding:0 12px; border-radius:13px; border:1px solid rgba(234,190,125,.35);
+    background:linear-gradient(130deg,rgba(237,184,104,.18),rgba(234,184,110,.06));
+    color:#f8d7a3; font-size:12px; font-weight:850; letter-spacing:.01em;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-header.is-searching .ydo-logo,
+  html:not([data-zf-platform="tv"]) .ydo-header.is-searching .ydo-mobile-menu-trigger { display:none; }
+  html:not([data-zf-platform="tv"]) .ydo-header.is-searching .ydo-header-tools { width:100%; flex:1 1 100%; margin:0; }
+  html:not([data-zf-platform="tv"]) .ydo-search-expand {
+    width:100%; height:44px; padding:0 7px 0 13px; border-radius:12px; gap:9px;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-search-input { flex:1; width:100%; min-width:0; font-size:16px; }
+  html:not([data-zf-platform="tv"]) .ydo-search-clear,
+  html:not([data-zf-platform="tv"]) .ydo-search-close { min-width:34px; min-height:38px; flex-shrink:0; }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    position:fixed; z-index:1100; left:10px; right:10px;
+    bottom:calc(9px + env(safe-area-inset-bottom,0px));
+    min-height:69px; padding:5px;
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center;
+    border-radius:22px; border:1px solid rgba(255,255,255,.15);
+    background:linear-gradient(145deg,rgba(26,35,49,.97),rgba(11,17,28,.97));
+    box-shadow:0 14px 52px rgba(0,0,0,.68),inset 0 1px rgba(255,255,255,.085);
+    -webkit-backdrop-filter:blur(24px) saturate(145%); backdrop-filter:blur(24px) saturate(145%);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    min-width:0; min-height:56px; border-radius:16px;
+    color:#a1b0c4; text-decoration:none; text-align:center;
+    background:transparent; border:1px solid transparent; padding:5px 2px;
+    font:inherit; font-size:10px; font-weight:750; line-height:1.15;
+    transition:background .16s,color .16s;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab span:last-child { white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab.is-active { color:#f8d49d; background:rgba(237,187,107,.13); border-color:rgba(241,194,121,.21); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab:active { background:rgba(237,187,107,.19); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-live-icon {
+    display:grid; place-items:center; width:30px; height:30px; margin-top:-6px;
+    color:#f9d8a5; border-radius:11px;
+    border:1px solid rgba(242,203,138,.34); background:linear-gradient(140deg,#71502f,#362d28);
+    box-shadow:0 4px 18px rgba(218,163,79,.17);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-live.is-active .zf-mobile-live-icon { background:#f2c98a; color:#131822; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-layer { display:block; position:fixed; z-index:1400; inset:0; isolation:isolate; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim {
+    position:absolute; inset:0; width:100%; border:0; background:rgba(2,7,15,.75);
+    -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
+    position:absolute; top:0; right:0; bottom:0; width:min(440px,100%);
+    color:#f2f6fb; display:flex; flex-direction:column; min-height:0;
+    padding-top:env(safe-area-inset-top,0px);
+    border-left:1px solid rgba(244,208,147,.19);
+    background:
+      radial-gradient(circle at 85% 0%,rgba(223,158,72,.18),transparent 41%),
+      linear-gradient(165deg,#192637,#0e1623 58%,#0c131e);
+    box-shadow:-15px 0 70px rgba(0,0,0,.62);
+    animation:zf-mobile-slide-in .26s cubic-bezier(.2,1,.2,1) both;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-top {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:18px 21px 18px; border-bottom:1px solid rgba(240,245,255,.09);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand { display:flex; align-items:center; gap:11px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand img { width:45px; height:40px; object-fit:contain; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand div { display:flex; flex-direction:column; line-height:1.15; gap:4px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand small { letter-spacing:.14em; font-size:9px; font-weight:800; color:#a5b4c8; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand strong { font-size:22px; font-weight:900; letter-spacing:-.055em; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand strong span { color:#f3bf76; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-close {
+    width:44px; height:44px; display:grid; place-items:center; flex:0 0 auto;
+    border:1px solid rgba(232,242,253,.12); border-radius:13px;
+    background:rgba(255,255,255,.065); color:#e6edf5;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scroll {
+    flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    padding:18px 20px calc(28px + env(safe-area-inset-bottom,0px));
+    scrollbar-width:thin;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search {
+    display:flex; align-items:center; gap:10px; min-height:50px; padding:0 8px 0 14px;
+    color:#f4c885; border:1px solid rgba(240,202,144,.31); border-radius:14px;
+    background:rgba(5,10,19,.48);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search input {
+    flex:1; min-width:0; height:46px; background:transparent; border:0; outline:0;
+    color:#f5f7fb; font-size:16px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search input::placeholder { color:#8496ac; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search button {
+    display:grid; place-items:center; width:35px; height:35px; border:0; border-radius:9px;
+    background:#f1c582; color:#161b24;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search button:disabled { opacity:.4; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature {
+    display:flex; align-items:center; gap:12px; padding:17px 14px;
+    margin:19px 0 23px; min-height:96px; text-decoration:none; color:#f2e4d0;
+    border-radius:16px; border:1px solid rgba(247,200,125,.41);
+    background:linear-gradient(112deg,rgba(238,181,92,.20),rgba(229,169,91,.07) 70%),
+      radial-gradient(circle at 100% 50%,rgba(249,202,127,.12),transparent 65%);
+    box-shadow:inset 0 1px rgba(255,255,255,.10);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature-symbol {
+    flex:0 0 auto; width:47px; height:47px; display:grid; place-items:center;
+    border-radius:14px; background:rgba(251,219,164,.13); color:#f7c982;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature>span:nth-child(2) { display:flex; flex:1; flex-direction:column; min-width:0; gap:3px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature small { font-size:9px; color:#efc080; font-weight:850; letter-spacing:.12em; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature strong { color:#fff1d9; font-size:19px; font-weight:900; line-height:1.2; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature em { font-size:11px; color:#c3b4a3; font-style:normal; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-label { margin:0 0 11px; font-size:10px; font-weight:850; letter-spacing:.14em; color:#91a5bc; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:27px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a {
+    display:flex; align-items:center; gap:11px; min-width:0; min-height:59px; padding:0 12px;
+    border:1px solid rgba(219,232,248,.095); border-radius:13px;
+    background:rgba(255,255,255,.042); color:#e5eaf2; text-decoration:none;
+    font-size:12px; font-weight:760;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg { flex:0 0 auto; color:#e9ba76; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a span { overflow:hidden; text-overflow:ellipsis; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a:hover { background:rgba(236,184,102,.13); border-color:rgba(241,193,122,.30); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-mylist b { display:inline-grid; place-items:center; margin-left:auto; width:22px; height:22px; border-radius:50%; background:#f1c783; color:#171d25; font-size:11px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections { border:1px solid rgba(225,237,251,.10); border-radius:14px; overflow:hidden; background:rgba(255,255,255,.025); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-section + .zf-mobile-menu-section { border-top:1px solid rgba(225,237,251,.09); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-section>button {
+    display:flex; align-items:center; justify-content:space-between;
+    width:100%; min-height:54px; padding:0 15px; border:0; background:transparent;
+    color:#e1e8f1; font-size:12px; font-weight:800; text-align:left;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-section svg { color:#f0c584; transition:transform .18s; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-section svg.is-expanded { transform:rotate(180deg); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-genres {
+    display:flex; flex-wrap:wrap; gap:8px; padding:0 13px 15px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-genres a {
+    padding:9px 12px; border:1px solid rgba(239,196,126,.23);
+    border-radius:999px; background:rgba(239,188,116,.065); color:#e5d1b1;
+    text-decoration:none; font-size:11px; font-weight:700;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-footer { color:#6e8096; text-align:center; font-size:11px; padding:21px 0 0; }
+  html:not([data-zf-platform="tv"]) body { padding-bottom:calc(90px + env(safe-area-inset-bottom,0px)); }
+  html:not([data-zf-platform="tv"])[data-zf-watch="true"] body { padding-bottom:0; }
+
+  html:not([data-zf-platform="tv"]) .ydo-catalog { padding-bottom:28px; }
+  html:not([data-zf-platform="tv"]) .ydo-hero { height:clamp(510px,76svh,680px); }
+  html:not([data-zf-platform="tv"]) .ydo-hero-content { padding:0 20px 65px; max-width:100%; }
+  html:not([data-zf-platform="tv"]) .ydo-hero-title { font-size:clamp(30px,8vw,50px); line-height:1.04; }
+  html:not([data-zf-platform="tv"]) .ydo-hero-overview { max-width:490px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  html:not([data-zf-platform="tv"]) .ydo-hero-img { object-position:center top; }
+  html:not([data-zf-platform="tv"]) .ydo-row-header { padding-inline:16px; }
+  html:not([data-zf-platform="tv"]) .ydo-row-track { padding-inline:16px; gap:11px; }
+  html:not([data-zf-platform="tv"]) .ydo-card { width:clamp(128px,34vw,167px); }
+  html:not([data-zf-platform="tv"]) .ydo-search-page { padding-bottom:35px; }
+  html:not([data-zf-platform="tv"]) .ydo-search-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,132px),1fr)); gap:12px; }
+  html:not([data-zf-platform="tv"]) .ztv-studio { padding-bottom:32px; }
+  html:not([data-zf-platform="tv"]) .ztv-studio .ztv-stage { grid-template-columns:minmax(0,1fr); }
+  html:not([data-zf-platform="tv"]) .zgame-center { scroll-margin-top:85px; }
+}
+
+@keyframes zf-mobile-slide-in {
+  from { opacity:.6; transform:translateX(28px); }
+  to { opacity:1; transform:translateX(0); }
+}
+
+/* Extra-small devices: preserve comfortable touch sizes, no horizontal overflow. */
+@media (max-width:370px) {
+  html:not([data-zf-platform="tv"]) .ydo-logo-text { font-size:14px; }
+  html:not([data-zf-platform="tv"]) .ydo-logo-img { height:26px; max-width:52px; }
+  html:not([data-zf-platform="tv"]) .ydo-mobile-menu-trigger span { display:none; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock { left:5px; right:5px; gap:0; padding:4px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab { font-size:9px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scroll { padding-inline:14px; }
+}
+@media (max-height:530px) and (orientation:landscape) {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock { min-height:56px; bottom:5px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab { min-height:46px; gap:2px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-live-icon { width:27px; height:27px; margin:0; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-top { padding-block:10px; }
+}
+
+/* TV 10-foot layout: stable focus and scalable controls, regardless of viewport. */
+html[data-zf-platform="tv"] {
+  scroll-behavior:smooth;
+  font-size:clamp(16px,1.1vw,21px);
+}
+html[data-zf-platform="tv"] body {
+  background:#080c14;
+  overflow-x:hidden;
+}
+html[data-zf-platform="tv"] body::before,
+html[data-zf-platform="tv"] .ambient-glow { display:none; }
+html[data-zf-platform="tv"] .ydo-header {
+  position:fixed; top:2.4vh; left:50%; right:auto;
+  transform:translateX(-50%) translateY(0) !important;
+  opacity:1 !important;
+  width:calc(100% - 8vw); max-width:1820px;
+  min-height:76px; height:auto; padding:10px 24px;
+  border-radius:22px; gap:clamp(9px,1.6vw,26px);
+  background:rgba(12,18,30,.98); backdrop-filter:none; -webkit-backdrop-filter:none;
+  border:2px solid rgba(234,193,132,.26);
+  box-shadow:0 18px 56px rgba(0,0,0,.56);
+}
+html[data-zf-platform="tv"] .ydo-logo { gap:9px; margin-right:0; }
+html[data-zf-platform="tv"] .ydo-logo-img { height:36px; max-width:100px; }
+html[data-zf-platform="tv"] .ydo-logo-text { font-size:clamp(17px,1.2vw,24px); }
+html[data-zf-platform="tv"] .ydo-nav { display:flex; flex:1 1 auto; min-width:0; align-items:center; justify-content:space-around; gap:clamp(0px,.25vw,5px); }
+html[data-zf-platform="tv"] .ydo-nav-link { min-height:52px; padding:10px clamp(8px,.76vw,17px); font-size:clamp(13px,.96vw,19px); }
+html[data-zf-platform="tv"] .ydo-header .ydo-nav-football { min-height:51px; border-radius:14px; padding:6px 10px; font-size:clamp(12px,.91vw,18px); }
+html[data-zf-platform="tv"] .ydo-football-today { display:none; }
+html[data-zf-platform="tv"] .ydo-search-trigger-btn { width:50px; height:50px; border-radius:14px; }
+html[data-zf-platform="tv"] .ydo-search-trigger-btn svg { width:23px; height:23px; }
+html[data-zf-platform="tv"] .ydo-tv-remote-indicator { display:inline-flex; align-items:center; gap:7px; font-size:10px; font-weight:900; letter-spacing:.10em; color:#d7bc91; white-space:nowrap; }
+html[data-zf-platform="tv"] .ydo-mobile-menu-trigger,
+html[data-zf-platform="tv"] .zf-mobile-dock,
+html[data-zf-platform="tv"] .zf-mobile-menu-layer { display:none !important; }
+html[data-zf-platform="tv"] .ydo-categories-dropdown { width:430px; max-height:min(70vh,600px); overflow-y:auto; border:2px solid rgba(245,205,150,.38); }
+html[data-zf-platform="tv"] .ydo-category-item { min-height:53px; font-size:15px; }
+html[data-zf-platform="tv"] .ydo-hero { height:min(83vh,1050px); min-height:600px; }
+html[data-zf-platform="tv"] .ydo-hero-content { max-width:950px; padding-left:6vw; padding-bottom:10vh; }
+html[data-zf-platform="tv"] .ydo-hero-title { font-size:clamp(55px,4.8vw,100px); }
+html[data-zf-platform="tv"] .ydo-hero-overview { font-size:clamp(17px,1.25vw,25px); line-height:1.65; }
+html[data-zf-platform="tv"] .ydo-row-title { font-size:clamp(24px,1.7vw,36px); }
+html[data-zf-platform="tv"] .ydo-row-header,
+html[data-zf-platform="tv"] .ydo-row-track { padding-left:5vw; padding-right:5vw; }
+html[data-zf-platform="tv"] .ydo-row-track { gap:1.4vw; scroll-padding-inline:5vw; }
+html[data-zf-platform="tv"] .ydo-card { width:clamp(210px,12vw,270px); }
+html[data-zf-platform="tv"] .ydo-card-title { font-size:clamp(17px,1vw,21px); }
+html[data-zf-platform="tv"] .ydo-search-page { padding-top:140px; padding-left:5vw; padding-right:5vw; }
+html[data-zf-platform="tv"] .ztv-studio { padding:145px 5vw 80px; }
+html[data-zf-platform="tv"] .ztv-studio .ztv-header { padding:38px 45px; }
+html[data-zf-platform="tv"] .ztv-btn { min-height:56px; }
+html[data-zf-platform="tv"] .ztv-quick-item { min-height:66px; }
+html[data-zf-platform="tv"] .ztv-explore-glass .ztv-category,
+html[data-zf-platform="tv"] .ztv-explore-glass .ztv-card-watch { min-height:51px; }
+html[data-zf-platform="tv"] .zgame-day { min-height:97px; }
+html[data-zf-platform="tv"] .zgame-card-main { min-height:220px; }
+html[data-zf-platform="tv"] :is(a,button,input,select,textarea,[tabindex]):focus {
+  outline:4px solid #f5c77e !important; outline-offset:4px !important;
+  box-shadow:0 0 0 8px rgba(240,189,113,.20),0 8px 30px rgba(0,0,0,.25);
+}
+html[data-zf-platform="tv"] :is(a,button):focus { position:relative; z-index:3; }
+html[data-zf-platform="tv"] .ydo-card:focus-within .ydo-card-poster {
+  transform:scale(1.045); box-shadow:0 0 0 4px #f2c482,0 12px 40px rgba(0,0,0,.6); border-color:#f2c482;
+}
+@media (max-width:1350px) {
+  html[data-zf-platform="tv"] .ydo-header { width:calc(100% - 5vw); padding-inline:12px; gap:6px; }
+  html[data-zf-platform="tv"] .ydo-nav-link { padding-inline:7px; font-size:12px; }
+  html[data-zf-platform="tv"] .ydo-tv-remote-indicator { display:none; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .zf-mobile-menu-panel,
+  .zf-mobile-tab,
+  .zf-mobile-menu-genres a { animation:none !important; transition:none !important; }
+}
+@media (prefers-reduced-transparency:reduce) {
+  .zf-mobile-dock,.zf-mobile-menu-panel,.ydo-header { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+}
+
+
+/* Responsive detail sheets. All original movie, anime and series content remains intact. */
+@media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
+  html:not([data-zf-platform="tv"]) .ydo-search-page {
+    padding-top:calc(94px + env(safe-area-inset-top,0px)) !important;
+    padding-inline:clamp(12px,3vw,24px) !important;
+    padding-bottom:35px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-overlay {
+    z-index:1250 !important;
+    padding:calc(8px + env(safe-area-inset-top,0px)) 8px calc(12px + env(safe-area-inset-bottom,0px)) !important;
+    align-items:flex-start !important; backdrop-filter:blur(9px) !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-shell {
+    width:min(100%,900px) !important;
+    border-radius:20px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-body {
+    padding:0 20px 28px !important; gap:24px !important;
+  }
+}
+@media (max-width:650px) {
+  html:not([data-zf-platform="tv"]) .zf-detail-hero {
+    min-height:0 !important; padding:72px 16px 23px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-foreground {
+    align-items:flex-start !important; flex-wrap:wrap; gap:13px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-poster {
+    width:99px !important; height:148px !important; border-radius:12px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-info {
+    flex:1 1 185px !important; min-width:0; gap:8px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-info h1 {
+    font-size:clamp(21px,5.4vw,29px) !important; line-height:1.13 !important;
+    overflow-wrap:anywhere;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-info p {
+    font-size:12px !important; line-height:1.5 !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-body {
+    padding:0 15px 26px !important; gap:20px !important;
+  }
+  html:not([data-zf-platform="tv"]) .zf-detail-overlay button[aria-label="Fechar"] {
+    top:15px !important; right:15px !important; width:43px !important; height:43px !important;
+  }
+}
+html[data-zf-platform="tv"] .zf-detail-overlay {
+  z-index:1200 !important;
+  padding:4vh 4vw !important;
+}
+html[data-zf-platform="tv"] .zf-detail-shell {
+  width:min(91vw,1500px) !important;
+  border-radius:26px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-hero {
+  min-height:540px !important;
+  padding:55px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-poster {
+  width:235px !important;
+  height:355px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-info {
+  flex:1 1 520px !important;
+}
+html[data-zf-platform="tv"] .zf-detail-info h1 {
+  font-size:clamp(45px,3.1vw,78px) !important;
+}
+html[data-zf-platform="tv"] .zf-detail-body {
+  padding:0 55px 55px !important;
+}

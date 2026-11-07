@@ -1,13 +1,16 @@
 "use client";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
-  Search, X, ChevronDown, Heart, Film, Tv, Sparkles, Flame, Ghost,
+  Search, X, ChevronDown, Heart, Film, Tv, Sparkles, Flame, Ghost, Menu, Monitor,
   Clapperboard, Laugh, Rocket, Compass, WandSparkles, BookOpenCheck,
   Swords, BrainCircuit, ScanEye, HandHeart, Layers3, Drama,
 } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
 import { FootballIcon } from "@/components/sports/FootballIcon";
+import { MobileNavigation } from "@/components/layout/MobileNavigation";
+import { detectDeviceProfile, isWatchRoute, type DeviceProfile } from "@/lib/device-profile";
+import { installTvRemoteNavigation } from "@/lib/tv-remote";
 
 interface HeaderProps {
   onSearch?: (q: string) => void;
@@ -62,6 +65,9 @@ export function Header({ onSearch }: HeaderProps) {
   const [animesHover, setAnimesHover] = useState(false);
   const [query, setQuery] = useState("");
   const [savedCount, setSavedCount] = useState(0);
+  const [platform, setPlatform] = useState<DeviceProfile>("web");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = useRouterState({ select: state => state.location.pathname });
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -70,6 +76,53 @@ export function Header({ onSearch }: HeaderProps) {
   const animesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Viewport and input capabilities control the experience, with Smart TV user
+  // agents taking precedence. SSR layout remains mobile-safe via media queries.
+  useEffect(() => {
+    const coarse = typeof window.matchMedia === "function" ? window.matchMedia("(pointer: coarse)") : null;
+    let animationFrame = 0;
+    const synchronize = () => {
+      const device = detectDeviceProfile({
+        userAgent: navigator.userAgent,
+        viewportWidth: window.innerWidth,
+        coarsePointer: coarse?.matches ?? false,
+        touchPoints: navigator.maxTouchPoints || 0,
+      });
+      setPlatform(device);
+      document.documentElement.dataset["zfPlatform"] = device;
+    };
+    const request = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(synchronize);
+    };
+    synchronize();
+    window.addEventListener("resize", request, { passive:true });
+    window.addEventListener("orientationchange", request);
+    if (coarse && typeof coarse.addEventListener === "function") coarse.addEventListener("change", request);
+    else coarse?.addListener?.(request);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener("resize", request);
+      window.removeEventListener("orientationchange", request);
+      if (coarse && typeof coarse.removeEventListener === "function") coarse.removeEventListener("change", request);
+      else coarse?.removeListener?.(request);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset["zfWatch"] = isWatchRoute(pathname) ? "true" : "false";
+  }, [pathname]);
+
+  useEffect(() => {
+    if (platform !== "mobile") setMobileMenuOpen(false);
+  }, [platform]);
+
+  // Remote D-pad focus navigation is activated only for recognizable TVs.
+  useEffect(() => {
+    if (platform !== "tv" || isWatchRoute(pathname)) return;
+    return installTvRemoteNavigation();
+  }, [platform, pathname]);
 
   // Monitora contagem de itens na Minha Lista
   useEffect(() => {
@@ -81,8 +134,12 @@ export function Header({ onSearch }: HeaderProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-hide em idle (mouse parado por 4s)
+  // Autohide is desktop-only. Touch interfaces and D-pad remotes need persistent navigation.
   useEffect(() => {
+    if (platform !== "web" || (typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches)) {
+      setVisible(true);
+      return;
+    }
     const show = () => {
       setVisible(true);
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -102,7 +159,7 @@ export function Header({ onSearch }: HeaderProps) {
       document.removeEventListener("keydown", show);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [searchOpen, moviesHover, seriesHover, animesHover]);
+  }, [searchOpen, moviesHover, seriesHover, animesHover, platform]);
 
   // Atalho "/" para focar busca e Escape para fechar
   useEffect(() => {
@@ -155,8 +212,10 @@ export function Header({ onSearch }: HeaderProps) {
   };
 
   return (
+    <>
+    {!isWatchRoute(pathname) && (
     <header
-      className="ydo-header"
+      className={"ydo-header" + (searchOpen ? " is-searching" : "")}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-120%)",
@@ -184,6 +243,12 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Hover Filmes com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
+          onFocus={() => {
+            setMoviesHover(true); setSeriesHover(false); setAnimesHover(false);
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setMoviesHover(false);
+          }}
           onMouseEnter={() => {
             if (moviesTimerRef.current) clearTimeout(moviesTimerRef.current);
             setMoviesHover(true);
@@ -234,6 +299,12 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Hover Séries com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
+          onFocus={() => {
+            setMoviesHover(false); setSeriesHover(true); setAnimesHover(false);
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSeriesHover(false);
+          }}
           onMouseEnter={() => {
             if (seriesTimerRef.current) clearTimeout(seriesTimerRef.current);
             setSeriesHover(true);
@@ -284,6 +355,12 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Hover Animes com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
+          onFocus={() => {
+            setMoviesHover(false); setSeriesHover(false); setAnimesHover(true);
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setAnimesHover(false);
+          }}
           onMouseEnter={() => {
             if (animesTimerRef.current) clearTimeout(animesTimerRef.current);
             setAnimesHover(true);
@@ -414,6 +491,20 @@ export function Header({ onSearch }: HeaderProps) {
           </button>
         )}
       </div>
+      <button type="button" className="ydo-mobile-menu-trigger"
+        aria-expanded={mobileMenuOpen} aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+        onClick={() => setMobileMenuOpen(value => !value)}>
+        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        <span>Menu</span>
+      </button>
+      <span className="ydo-tv-remote-indicator" aria-hidden="true">
+        <Monitor size={17} /> MODO TV
+      </span>
     </header>
+    )}
+    {!isWatchRoute(pathname) && (
+      <MobileNavigation open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} savedCount={savedCount} />
+    )}
+    </>
   );
 }
