@@ -1,0 +1,22 @@
+name: Verify sports match center
+on:
+  push:
+    branches: [feat/sports-match-center]
+  pull_request:
+    branches: [main]
+jobs:
+  sports-center:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Unit and integration tests
+        run: bun run test
+      - name: Build production
+        run: bun run build
+      - name: Sports API, Brazilian times and Chrome visual smoke
+        run: bun scripts/smoke-sports-center.mjs
