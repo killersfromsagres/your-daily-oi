@@ -1554,9 +1554,12 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
     }
 
     if (!res.ok && res.status !== 206) {
-      return new Response(`Erro upstream ${res.status}`, {
-        status: 502,
-        headers: { "Access-Control-Allow-Origin": "*" },
+      // Expose actionable upstream HTTP status; do not disguise a permanent 403 as 502.
+      const upstreamStatus = res.status;
+      const status = [401, 403, 404, 410, 429].includes(upstreamStatus) ? upstreamStatus : 502;
+      return new Response("Origem retornou HTTP " + upstreamStatus, {
+        status,
+        headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
       });
     }
 
