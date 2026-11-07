@@ -235,6 +235,7 @@ export function LivePlayer({
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [theaterFullscreen, setTheaterFullscreen] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(() => {
     if (typeof window === "undefined") return 1;
@@ -698,17 +699,80 @@ export function LivePlayer({
     localStorage.setItem(LIVE_VOL_KEY, String(newVol));
   }, []);
 
+  // Native fullscreen when supported, including the iPhone's video-only API.
+  // Last resort: fixed-position theater mode for embedded mobile browsers.
   const handleFullscreenToggle = useCallback(() => {
     const el = containerRef.current;
+    const video = videoRef.current as (HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void;
+      webkitExitFullscreen?: () => void;
+      webkitDisplayingFullscreen?: boolean;
+    }) | null;
     if (!el) return;
-    if (!document.fullscreenElement) {
-      void el.requestFullscreen?.().catch(() => {});
-      setIsFullscreen(true);
-    } else {
-      void document.exitFullscreen?.().catch(() => {});
-      setIsFullscreen(false);
+    if (theaterFullscreen) {
+      setTheaterFullscreen(false);
+      return;
     }
-  }, []);
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.().catch(() => {});
+      return;
+    }
+    if (video?.webkitDisplayingFullscreen) {
+      video.webkitExitFullscreen?.();
+      return;
+    }
+    const fallback = () => setTheaterFullscreen(true);
+    // iPhone Safari's inline video generally lacks element requestFullscreen.
+    if (/iPhone|iPod/i.test(navigator.userAgent) && video?.webkitEnterFullscreen) {
+      try { video.webkitEnterFullscreen(); return; } catch { fallback(); return; }
+    }
+    if (typeof el.requestFullscreen === "function") {
+      void el.requestFullscreen().catch(fallback);
+      return;
+    }
+    const webkitContainer = el as HTMLDivElement & { webkitRequestFullscreen?: () => void };
+    if (webkitContainer.webkitRequestFullscreen) {
+      try { webkitContainer.webkitRequestFullscreen(); return; } catch { fallback(); return; }
+    }
+    if (video?.webkitEnterFullscreen) {
+      try { video.webkitEnterFullscreen(); return; } catch { fallback(); return; }
+    }
+    fallback();
+  }, [theaterFullscreen]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const onFullscreenChange = () =>
+      setIsFullscreen(Boolean(document.fullscreenElement || theaterFullscreen));
+    const onNativeStart = () => setIsFullscreen(true);
+    const onNativeEnd = () => setIsFullscreen(false);
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && theaterFullscreen) {
+        setTheaterFullscreen(false);
+        event.preventDefault();
+      }
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+    video?.addEventListener("webkitbeginfullscreen", onNativeStart);
+    video?.addEventListener("webkitendfullscreen", onNativeEnd);
+    window.addEventListener("keydown", onEscape);
+    onFullscreenChange();
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
+      video?.removeEventListener("webkitbeginfullscreen", onNativeStart);
+      video?.removeEventListener("webkitendfullscreen", onNativeEnd);
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, [theaterFullscreen]);
+
+  useEffect(() => {
+    if (!theaterFullscreen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [theaterFullscreen]);
 
   const handlePiPToggle = useCallback(() => {
     const video = videoRef.current;
@@ -756,7 +820,7 @@ export function LivePlayer({
   return (
     <div
       ref={containerRef}
-      className="ydo-live-player-container"
+      className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "")}
       data-controls-visible={controlsVisible}
       onMouseMove={showControls}
       onTouchStart={showControls}
@@ -776,6 +840,16 @@ export function LivePlayer({
         onClick={handleToggleMute}
         aria-label="Ativar ou desativar áudio"
       />
+
+      {/* Always reachable on small screens, even when other controls fade out. */}
+      <button type="button"
+        className="ydo-live-mobile-fullscreen"
+        onClick={handleFullscreenToggle}
+        aria-label={isFullscreen ? "Sair da tela cheia" : "Assistir em tela cheia"}
+        title={isFullscreen ? "Sair da tela cheia" : "Expandir vídeo"}
+      >
+        {isFullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
+      </button>
 
       {/* Alerta discreto quando autoplay iniciou mutado */}
       {unmuteNotice && muted && (
@@ -927,7 +1001,16 @@ export function LivePlayer({
 
             {sourcesOpen && (
               <div className="ydo-live-sources-menu animate-scale-in">
-                <div className="ydo-live-sources-header">Servidores Disponíveis</div>
+                <div className="ydo-live-sources-header">Transmissão e qualidade</div>
+                <button type="button" className="ydo-live-source-item ydo-live-options-latency"
+                  onClick={() => { toggleLatencyMode(); setSourcesOpen(false); }}>
+                  <span>{latencyMode === "fast" ? "Menor atraso" : "Modo estável"}</span>
+                  <span className="ydo-live-source-badge">Alternar</span>
+                </button>
+                <button type="button" className="ydo-live-source-item ydo-live-options-pip"
+                  onClick={() => { handlePiPToggle(); setSourcesOpen(false); }}>
+                  <span>Janela flutuante (PiP)</span>
+                </button>
                 {validStreams.map((f, i) => {
                   const isCurrent = i === sourceIndex;
                   const label =
