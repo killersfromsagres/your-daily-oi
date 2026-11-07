@@ -87,7 +87,7 @@ function WatchMoviePage() {
     const movieId = String(movie.tmdbId);
     return (["dub", "leg"] as const).map((audio) => ({
       url: buildSaimoVodProxyUrl({ tipo: "movie", id: movieId, versao: audio }),
-      name: `Saimo TV · ${audio === "dub" ? "Dublado" : "Legendado"}`,
+      name: `Zang Flix · ${audio === "dub" ? "Dublado" : "Legendado"}`,
       audio,
       quality: "Auto",
       format: "auto",

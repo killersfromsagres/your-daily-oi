@@ -202,7 +202,7 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
   } catch (error) {
     console.error("Erro na API /api/catalogo:", error);
     return jsonResponse(
-      { error: "Falha ao carregar acervo do Saimo TV", details: String(error) },
+      { error: "Falha ao carregar o acervo do Zang Flix", details: String(error) },
       502
     );
   }

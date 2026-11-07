@@ -1,0 +1,449 @@
+/* Zang Flix — Glass TV guide. Scoped to the TV channel explorer; VOD styles unchanged. */
+.ztv-explore-glass {
+  --zf-glass-line: rgba(221, 233, 250, .14);
+  --zf-glass-text: #f1f5fb;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(18px, 2.25vw, 32px);
+  border: 1px solid rgba(204, 221, 240, .20);
+  border-radius: 26px;
+  background:
+    radial-gradient(ellipse 670px 320px at -4% -15%, rgba(239, 188, 116, .14), transparent 77%),
+    radial-gradient(ellipse 500px 360px at 104% 0%, rgba(72, 115, 193, .14), transparent 77%),
+    linear-gradient(145deg, rgba(29, 40, 57, .83), rgba(12, 20, 33, .82) 52%, rgba(20, 28, 41, .88));
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  box-shadow: 0 22px 75px rgba(0, 0, 0, .29), inset 0 1px 0 rgba(255, 255, 255, .085);
+}
+.ztv-explore-glass::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(125deg, rgba(255,255,255,.045), transparent 31%, rgba(255,255,255,.015));
+  z-index: -1;
+}
+.ztv-explore-glass .ztv-explore-heading { align-items: flex-end; margin-bottom: 22px; }
+.ztv-explore-glass .ztv-explore-heading h2 {
+  font-size: clamp(24px, 2.7vw, 37px);
+  line-height: 1.1;
+  letter-spacing: -.055em;
+  font-weight: 850;
+  margin: 7px 0 7px;
+}
+.ztv-explore-glass .ztv-explore-heading h2 span { color: #efc483; }
+.ztv-explore-glass .ztv-explore-dot { padding: 0 5px; color: #70869c; }
+.ztv-explore-subtitle {
+  max-width: 750px;
+  margin: 0;
+  color: #9fb0c4;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ztv-explore-glass .ztv-layout-switch {
+  background: rgba(229, 241, 255, .055);
+  border: 1px solid rgba(228, 240, 252, .13);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.ztv-explore-glass .ztv-layout-switch button.is-active {
+  color: #f1c68b;
+  background: rgba(240, 191, 116, .17);
+}
+.ztv-explore-glass .ztv-search {
+  height: 51px;
+  border-radius: 14px;
+  background: rgba(233, 244, 255, .043);
+  border-color: rgba(221, 234, 251, .14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  transition: border-color .18s, background .18s, box-shadow .18s;
+}
+.ztv-explore-glass .ztv-search:focus-within {
+  border-color: rgba(238, 190, 119, .56);
+  background: rgba(232, 243, 255, .068);
+  box-shadow: 0 0 0 3px rgba(238, 190, 119, .10);
+}
+.ztv-explore-glass .ztv-only-available {
+  font-size: 11px;
+  min-height: 39px;
+  padding: 0 12px;
+  margin-left: 0;
+  border: 1px solid rgba(221, 232, 247, .12);
+  border-radius: 11px;
+  background: rgba(230, 241, 255, .045);
+}
+.ztv-explore-glass .ztv-only-available:first-of-type { margin-left: auto; }
+.ztv-explore-glass .ztv-only-available input { accent-color: #efc483; }
+.ztv-explore-glass .ztv-categories {
+  gap: 8px;
+  padding: 2px 0 14px;
+  scrollbar-color: rgba(237, 189, 118, .35) transparent;
+}
+.ztv-explore-glass .ztv-category {
+  border-radius: 11px;
+  border: 1px solid rgba(212, 232, 255, .12);
+  background: rgba(231, 239, 255, .036);
+  color: #b9c8d9;
+  padding: 10px 12px;
+  font-size: 11px;
+  transition: background .16s, border-color .16s, transform .16s;
+}
+.ztv-explore-glass .ztv-category:hover {
+  transform: translateY(-1px);
+  border-color: rgba(238, 190, 119, .26);
+  background: rgba(231, 241, 255, .065);
+}
+.ztv-explore-glass .ztv-category.is-active {
+  border-color: rgba(237, 189, 118, .43);
+  background: linear-gradient(135deg, rgba(237, 189, 118, .18), rgba(237, 189, 118, .075));
+  color: #f4d3a1;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
+}
+.ztv-explore-glass .ztv-results {
+  border-top: 1px solid rgba(235, 246, 255, .07);
+  padding-top: 14px;
+  margin: 3px 0 18px;
+}
+.ztv-explore-glass .ztv-results > span { font-weight: 720; color: #bdcde0; }
+.ztv-explore-glass .ztv-results small { font-size: 10px; color: #8298ae; }
+.ztv-explore-glass .ztv-channel-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 15px;
+}
+.ztv-explore-glass .ztv-card-glass {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  border: 1px solid rgba(213, 229, 246, .15);
+  border-radius: 19px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 95% 4%, rgba(228, 184, 118, .065), transparent 38%),
+    linear-gradient(150deg, rgba(45, 58, 79, .51), rgba(13, 23, 37, .82) 77%);
+  -webkit-backdrop-filter: blur(17px) saturate(145%);
+  backdrop-filter: blur(17px) saturate(145%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.085), 0 10px 28px rgba(0,0,0,.17);
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.ztv-explore-glass .ztv-card-glass::after {
+  content: "";
+  position: absolute;
+  inset: auto -50px -120px;
+  pointer-events: none;
+  height: 190px;
+  opacity: 0;
+  background: radial-gradient(ellipse, rgba(239, 188, 112, .14), transparent 72%);
+  transition: opacity .22s;
+}
+.ztv-explore-glass .ztv-card-glass:hover {
+  transform: translateY(-5px);
+  border-color: rgba(239, 190, 118, .46);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.095), 0 24px 47px rgba(0,0,0,.28);
+}
+.ztv-explore-glass .ztv-card-glass:hover::after { opacity: 1; }
+.ztv-explore-glass .ztv-card-glass.is-active {
+  border-color: rgba(245, 199, 126, .70);
+  box-shadow: 0 0 0 1px rgba(245, 199, 126, .14), 0 14px 36px rgba(0,0,0,.25);
+}
+.ztv-explore-glass .ztv-card-glass.is-unavailable { opacity: .74; }
+.ztv-explore-glass .ztv-card-glass.is-unavailable:hover { opacity: 1; }
+.ztv-explore-glass .ztv-card-glass .ztv-card-main {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  gap: 13px;
+  min-height: 321px;
+  padding: 17px 16px 15px;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+}
+.ztv-explore-glass .ztv-card-topline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 25px;
+  padding-right: 33px;
+}
+.ztv-explore-glass .ztv-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(235, 190, 118, .095);
+  border: 1px solid rgba(239, 195, 126, .20);
+  color: #f0c990;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .045em;
+}
+.ztv-type-pill svg { flex: 0 0 auto; }
+/* Content type accents — actual EPG category takes precedence. */
+.ztv-explore-glass .ztv-type-pill.is-movie {
+  color: #f7ce8f; background: rgba(238, 184, 106, .13);
+  border-color: rgba(239, 188, 115, .25);
+}
+.ztv-explore-glass .ztv-type-pill.is-series {
+  color: #a5c9fd; background: rgba(97, 156, 243, .12);
+  border-color: rgba(103, 157, 232, .25);
+}
+.ztv-explore-glass .ztv-type-pill.is-anime {
+  color: #dab9ff; background: rgba(174, 123, 238, .13);
+  border-color: rgba(188, 143, 246, .25);
+}
+.ztv-explore-glass .ztv-type-pill.is-sports {
+  color: #9de9c4; background: rgba(84, 201, 152, .11);
+  border-color: rgba(105, 217, 162, .24);
+}
+.ztv-explore-glass .ztv-type-pill.is-tv {
+  color: #c5d8ef; background: rgba(133, 171, 212, .085);
+  border-color: rgba(160, 188, 222, .18);
+}
+
+.ztv-explore-glass .ztv-card-active-pill,
+.ztv-explore-glass .ztv-card-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #a5e4c2;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .07em;
+  white-space: nowrap;
+}
+.ztv-explore-glass .ztv-card-active-pill { color: #f4ca8e; }
+.ztv-explore-glass .ztv-card-live-pill .ztv-pulse { height: 6px; width: 6px; }
+.ztv-explore-glass .ztv-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  width: 100%;
+}
+.ztv-explore-glass .ztv-card-glass .ztv-logo {
+  flex: 0 0 auto;
+  width: 67px;
+  height: 64px;
+  margin: 0;
+  padding: 11px;
+  border-radius: 15px;
+  background: linear-gradient(140deg, rgba(227, 240, 255, .10), rgba(20, 31, 45, .32));
+  border: 1px solid rgba(225, 237, 252, .10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+.ztv-explore-glass .ztv-card-body {
+  display: flex;
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
+}
+.ztv-explore-glass .ztv-card-body > strong {
+  font-size: 15px;
+  min-height: 0;
+  line-height: 1.24;
+  text-align: left;
+  font-weight: 825;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.ztv-explore-glass .ztv-card-category { font-size: 10px; color: #9badc1; }
+.ztv-explore-glass .ztv-card-program {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 121px;
+  gap: 7px;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid rgba(233, 242, 255, .09);
+  background: linear-gradient(145deg, rgba(11, 19, 31, .59), rgba(23, 34, 49, .62));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.ztv-explore-glass .ztv-card-program.has-guide { border-color: rgba(238, 194, 126, .18); }
+.ztv-explore-glass .ztv-card-program-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.ztv-explore-glass .ztv-card-program-kicker {
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .10em;
+  color: #edc389;
+}
+.ztv-explore-glass .ztv-card-program-time {
+  color: #91adc1;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ztv-explore-glass .ztv-card-program-title {
+  color: #f6f8fc;
+  font-size: 14px;
+  font-weight: 790;
+  line-height: 1.32;
+  letter-spacing: -.015em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-align: left;
+  white-space: normal;
+}
+.ztv-explore-glass .ztv-card-program-title.is-placeholder {
+  color: #9dadc0;
+  font-weight: 620;
+}
+.ztv-explore-glass .ztv-card-program-desc {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #8fa1b3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.ztv-explore-glass .ztv-card-next {
+  margin-top: auto;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #8397aa;
+  text-align: left;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.ztv-explore-glass .ztv-card-next b { color: #cbd7e6; font-weight: 650; }
+.ztv-explore-glass .ztv-card-next small { color: #edc389; }
+.ztv-explore-glass .ztv-card-bottom {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.ztv-explore-glass .ztv-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 10px;
+  color: #a4b8cb;
+}
+.ztv-explore-glass .ztv-card-watch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 850;
+  color: #161c23;
+  background: linear-gradient(135deg, #f4ce91, #e5b16a);
+  box-shadow: 0 6px 14px rgba(228, 178, 108, .12);
+}
+.ztv-explore-glass .ztv-card-star {
+  top: 13px;
+  right: 13px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+  padding: 6px;
+  border-radius: 9px;
+  background: rgba(220, 234, 254, .055);
+  border: 1px solid rgba(215, 231, 248, .11);
+  color: #859ab0;
+}
+.ztv-explore-glass .ztv-card-star:hover,
+.ztv-explore-glass .ztv-card-star.is-favorite {
+  color: #f3c986;
+  background: rgba(241, 197, 126, .13);
+  border-color: rgba(241, 197, 126, .24);
+}
+.ztv-explore-glass .ztv-card-skeleton {
+  min-height: 321px;
+  height: auto;
+  border-radius: 19px;
+  background: linear-gradient(105deg, rgba(25, 35, 50, .76) 25%, rgba(53, 68, 90, .69) 42%, rgba(25,35,50,.76) 64%);
+  background-size: 240% 100%;
+  animation: ztv-glass-shimmer 1.9s linear infinite;
+}
+@keyframes ztv-glass-shimmer { to { background-position-x: -240%; } }
+.ztv-explore-glass .ztv-channel-grid.is-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ztv-explore-glass .ztv-channel-grid.is-list .ztv-card-main {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 13px 15px;
+  min-height: 235px;
+}
+.ztv-explore-glass .ztv-channel-grid.is-list .ztv-logo { width: 50px; height: 47px; }
+.ztv-explore-glass .ztv-channel-grid.is-list .ztv-card-identity { gap: 10px; }
+.ztv-explore-glass .ztv-channel-grid.is-list .ztv-card-program {
+  min-height: 74px;
+  padding: 11px 12px;
+}
+.ztv-explore-glass .ztv-channel-grid.is-list .ztv-card-body { align-items: flex-start; }
+.ztv-explore-glass .ztv-empty {
+  background: rgba(12, 21, 36, .48);
+  border-color: rgba(231, 242, 255, .14);
+}
+.ztv-explore-glass .ztv-load-more button {
+  border-radius: 12px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+@media (max-width: 1360px) {
+  .ztv-explore-glass .ztv-channel-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 930px) {
+  .ztv-explore-glass .ztv-channel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ztv-explore-glass .ztv-channel-grid.is-list { grid-template-columns: 1fr; }
+  .ztv-explore-glass .ztv-only-available:first-of-type { margin-left: 0; }
+}
+@media (max-width: 600px) {
+  .ztv-explore-glass { border-radius: 18px; padding: 15px 12px; }
+  .ztv-explore-glass .ztv-explore-heading { gap: 15px; align-items: flex-start; }
+  .ztv-explore-glass .ztv-explore-heading h2 { font-size: 25px; }
+  .ztv-explore-subtitle { font-size: 11px; }
+  .ztv-explore-glass .ztv-channel-grid { grid-template-columns: 1fr; gap: 11px; }
+  .ztv-explore-glass .ztv-card-glass .ztv-card-main { min-height: 290px; padding: 15px; }
+  .ztv-explore-glass .ztv-card-program { min-height: 105px; }
+  .ztv-explore-glass .ztv-card-glass .ztv-logo { width: 58px; height: 56px; }
+  .ztv-explore-glass .ztv-card-body > strong { font-size: 15px; }
+  .ztv-explore-glass .ztv-search { min-width: 100%; }
+  .ztv-explore-glass .ztv-only-available { min-height: 35px; }
+  .ztv-explore-glass .ztv-results { flex-wrap: wrap; gap: 5px; }
+  .ztv-explore-glass .ztv-results small { display: block; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ztv-explore-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: #172233; }
+  .ztv-explore-glass .ztv-card-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: #1b2739; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ztv-explore-glass .ztv-card-skeleton { animation: none; }
+  .ztv-explore-glass .ztv-card-glass:hover { transform: none; }
+}

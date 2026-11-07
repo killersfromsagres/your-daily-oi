@@ -1,0 +1,27 @@
+name: Verify Zang Flix glass TV guide
+on:
+  push:
+    branches: [feat/tv-glass-program-guide]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  tv-glass:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Test TV, streaming, sports and EPG helpers
+        run: bun run test
+      - name: Check new TypeScript modules
+        run: bun scripts/typecheck-tv-glass.mjs
+      - name: Build Nitro Cloudflare production
+        run: bun run build
+      - name: Audit remaining third-party branding
+        run: bun scripts/scan-visible-branding.mjs
+      - name: Cloudflare and Chrome EPG + glass UI integration
+        run: bun scripts/smoke-tv-glass.mjs
