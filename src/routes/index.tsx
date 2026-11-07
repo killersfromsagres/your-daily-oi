@@ -35,6 +35,7 @@ function HomePage() {
   const [featuredHero, setFeaturedHero] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [catalogDegraded, setCatalogDegraded] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [continueWatching, setContinueWatching] = useState<WatchProgress[]>([]);
 
@@ -62,6 +63,7 @@ function HomePage() {
           highlights: HighlightRow[];
           genres: string[];
           featuredHero?: CatalogItem[];
+          sourceStatus?: { state: "remote" | "fallback" | "uninitialized"; checkedAt: string | null };
         }>;
       })
       .then((data) => {
@@ -69,6 +71,7 @@ function HomePage() {
         setItems(data.items);
         setHighlights(data.highlights);
         setGenres(data.genres);
+        setCatalogDegraded(data.sourceStatus?.state === "fallback");
         if (data.featuredHero && data.featuredHero.length > 0) {
           setFeaturedHero(data.featuredHero);
         }
@@ -166,6 +169,12 @@ function HomePage() {
 
   return (
     <main className="ydo-home">
+      {catalogDegraded && !loading && (
+        <div role="status" style={{ padding: "12px 20px", margin: "16px auto", maxWidth: 1200, borderRadius: 10, background: "rgba(245,158,11,0.12)", color: "inherit" }}>
+          O catálogo remoto de filmes e séries não respondeu. Exibindo o acervo local disponível.
+          {" "}<a href="/api/integrations/status" target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>Ver status das integrações</a>
+        </div>
+      )}
       {loading ? (
         <div className="ydo-hero-skeleton skeleton" aria-label="Carregando catálogo..." />
       ) : error ? (
