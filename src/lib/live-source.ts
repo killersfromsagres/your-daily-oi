@@ -64,3 +64,23 @@ export function nextLiveMode(source: LiveSourceLike, current: LiveAccessMode, al
   if (alternate === "direct" && !source.url.startsWith("https://")) return null;
   return alternate;
 }
+
+/**
+ * Compatibilidade de deploy: versões antigas do backend possuem /api/live-proxy,
+ * mas não /api/tv/stream. Ambos usam as mesmas fontes catalogadas.
+ */
+export function buildLiveProxyPath(
+  channelId: string,
+  sourceIndex: number,
+  source: LiveSourceLike,
+  catalogEndpointAvailable: boolean,
+): string {
+  if (catalogEndpointAvailable && sourceIndex >= 0 && /^[a-z0-9-]{1,120}$/.test(channelId)) {
+    const params = new URLSearchParams({ canal: channelId, fonte: String(sourceIndex) });
+    return "/api/tv/stream?" + params;
+  }
+  const params = new URLSearchParams({ url: source.url });
+  if (source.referer) params.set("referer", source.referer);
+  if (source.agente) params.set("ua", source.agente);
+  return "/api/live-proxy?" + params;
+}

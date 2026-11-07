@@ -138,7 +138,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [playerLoading, setPlayerLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [backendReady, setBackendReady] = useState<boolean | null>(null);
+  const [proxyBackend, setProxyBackend] = useState<"checking" | "catalog" | "legacy" | "unavailable">("checking");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideQuery, setGuideQuery] = useState("");
@@ -152,20 +152,36 @@ export function TvView({ initialCanalId }: TvViewProps) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 7000);
-    // A malformed ID must return a structured 400 from our Worker. Static-only
-    // Lovable deployments may otherwise send index.html for every /api/* route.
-    fetch("/api/tv/stream?canal=%21&fonte=0", { cache: "no-store", signal: controller.signal })
-      .then(async res => {
-        const type = res.headers.get("content-type") || "";
-        const body = type.includes("json") ? await res.json() as { error?: string } : null;
-        if (mounted) setBackendReady(res.status === 400 && typeof body?.error === "string");
-      })
-      .catch(() => { if (mounted) setBackendReady(false); })
-      .finally(() => window.clearTimeout(timeoutId));
-    return () => { mounted = false; window.clearTimeout(timeoutId); controller.abort(); };
+    let active = true;
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 7500);
+    const check = async () => {
+      // Vercel and Lovable can deploy newer frontend bundles before their
+      // functions. In that case prefer the old, still-working live proxy.
+      try {
+        const modern = await fetch("/api/tv/stream?canal=%21&fonte=0", {
+          signal: ctrl.signal, cache: "no-store",
+        });
+        const mime = modern.headers.get("content-type") || "";
+        if (modern.status === 400 && mime.includes("json")) {
+          const result = await modern.json() as { error?: string };
+          if (typeof result.error === "string") {
+            if (active) setProxyBackend("catalog");
+            return;
+          }
+        }
+      } catch { /* retry with legacy route */ }
+      try {
+        const legacy = await fetch("/api/live-proxy", {
+          signal: ctrl.signal, cache: "no-store",
+        });
+        if (active) setProxyBackend(legacy.status === 400 ? "legacy" : "unavailable");
+      } catch {
+        if (active) setProxyBackend("unavailable");
+      }
+    };
+    void check().finally(() => window.clearTimeout(timer));
+    return () => { active = false; ctrl.abort(); window.clearTimeout(timer); };
   }, []);
 
   const lastRefresh = useRef(0);
@@ -405,13 +421,16 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </div>
         )}
 
-        {backendReady === false && (
+        {proxyBackend === "legacy" && (
+          <div className="ztv-notice ztv-notice-backend" role="status">
+            <AlertCircle size={18} />
+            <span>A rota de TV atualizada ainda não está publicada neste servidor. Ativei o proxy de compatibilidade para os canais que precisam dele.</span>
+          </div>
+        )}
+        {proxyBackend === "unavailable" && (
           <div className="ztv-notice ztv-notice-backend" role="alert">
             <AlertCircle size={18} />
-            <span>
-              O backend de TV não respondeu corretamente. O site pode estar publicado apenas como frontend;
-              canais que exigem proxy precisam do servidor Cloudflare/Nitro ativo.
-            </span>
+            <span>O proxy de TV está indisponível neste deploy. A reprodução direta ainda pode funcionar, mas fontes protegidas por CORS exigem o backend.</span>
           </div>
         )}
 
@@ -427,6 +446,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                   onNextCanal={() => switchChannel(1)}
                   onToggleGuide={() => setGuideOpen(true)}
                   onLoadingChange={setPlayerLoading}
+                  proxyBackend={proxyBackend}
                 />
               ) : (
                 <div className="ztv-player-placeholder">

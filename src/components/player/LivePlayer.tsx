@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
-import { classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import {
   sortStreamsByHealth,
@@ -31,6 +31,8 @@ export interface LivePlayerProps {
   onPrevCanal?: () => void;
   onToggleGuide?: () => void;
   onLoadingChange?: (loading: boolean) => void;
+  /** Older deployments expose /api/live-proxy but not /api/tv/stream. */
+  proxyBackend?: "checking" | "catalog" | "legacy" | "unavailable";
 }
 
 declare global {
@@ -198,6 +200,7 @@ export function LivePlayer({
   onPrevCanal,
   onToggleGuide,
   onLoadingChange,
+  proxyBackend = "catalog",
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -231,6 +234,7 @@ export function LivePlayer({
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
   const [error, setError] = useState(false);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -252,6 +256,7 @@ export function LivePlayer({
     setSourceIndex(0);
     setAttemptMode(initialModeFor(validStreams[0]));
     setError(validStreams.length === 0);
+    setErrorDetail(null);
     setLoading(validStreams.length > 0);
     setAutoSwitchMsg(null);
     setPlayNonce((n) => n + 1);
@@ -259,21 +264,15 @@ export function LivePlayer({
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
 
-  // Resolve URL da fonte (direto ou retransmitido pelo live-proxy)
+  // Seleciona a rota de proxy efetivamente disponível no deploy.
+  // O catálogo remoto pode estar atualizado, enquanto o backend da Vercel
+  // ainda não possui a rota nova /api/tv/stream.
   const streamUrl = useMemo(() => {
     if (!rawFonte?.url) return "";
     if (attemptMode === "direct") return rawFonte.url;
     const index = canal.fontes.findIndex((candidate) => candidate.url === rawFonte.url);
-    if (index >= 0) {
-      // Backend resolves the URL and required headers from the trusted Saimo catalog.
-      return "/api/tv/stream?canal=" + encodeURIComponent(canal.id) + "&fonte=" + index;
-    }
-    // Compatibility for sources added by external integrations at runtime.
-    let proxy = "/api/live-proxy?url=" + encodeURIComponent(rawFonte.url);
-    if (rawFonte.referer) proxy += "&referer=" + encodeURIComponent(rawFonte.referer);
-    if (rawFonte.agente) proxy += "&ua=" + encodeURIComponent(rawFonte.agente);
-    return proxy;
-  }, [rawFonte, attemptMode, canal.id, canal.fontes]);
+    return buildLiveProxyPath(canal.id, index, rawFonte, proxyBackend === "catalog");
+  }, [rawFonte, attemptMode, canal.id, canal.fontes, proxyBackend]);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -344,6 +343,7 @@ export function LivePlayer({
       setAttemptMode(alternative);
       setLoading(true);
       setError(false);
+      setAutoSwitchMsg(alternative === "proxy" ? "Conectando via proxy…" : "Tentando conexão direta…");
       setPlayNonce((n) => n + 1);
       return;
     }
@@ -416,6 +416,7 @@ export function LivePlayer({
       clearTimeout(timeout);
       setLoading(false);
       setError(false);
+      setErrorDetail(null);
       setAutoSwitchMsg(null);
       if (video.muted) {
         setUnmuteNotice(true);
@@ -431,6 +432,9 @@ export function LivePlayer({
     const onError = () => {
       if (cancelled) return;
       clearTimeout(timeout);
+      if (video.error?.code === 4) {
+        setErrorDetail((existing) => existing || "O navegador não conseguiu abrir a fonte. A transmissão pode estar bloqueada ou usar um formato incompatível.");
+      }
       handleFatalError(attemptMode === "direct");
     };
 
@@ -565,6 +569,14 @@ export function LivePlayer({
               if (!data?.fatal || cancelled) return;
               const isNet = data?.type === "networkError";
               const isMedia = data?.type === "mediaError";
+              const responseCode = Number(data?.response?.code || data?.networkDetails?.status || 0);
+              if (responseCode === 403 || responseCode === 401) {
+                setErrorDetail("A origem recusou o acesso à transmissão (HTTP " + responseCode + "). Essa fonte exige autorização ou está bloqueada para esta conexão.");
+              } else if (responseCode === 404 || responseCode === 410) {
+                setErrorDetail("A playlist desta fonte não está mais disponível (HTTP " + responseCode + ").");
+              } else if (responseCode === 429) {
+                setErrorDetail("O servidor limitou as requisições (HTTP 429).");
+              }
               // One controlled recovery before switching to proxy or next CDN.
               if (recoveryCount < 1 && (isNet || isMedia)) {
                 recoveryCount++;
@@ -794,9 +806,10 @@ export function LivePlayer({
           <AlertCircle size={44} style={{ color: "#e8b44a" }} />
           <h3>{validStreams.length > 0 ? "Nenhum servidor disponível para este canal" : "Canal sem fonte ativa no catálogo"}</h3>
           <p>
-            {validStreams.length > 0
-              ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
-              : "O Saimo mantém este canal na lista, mas os links atuais estão temporariamente indisponíveis."}
+            {errorDetail ||
+              (validStreams.length > 0
+                ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
+                : "O Saimo mantém este canal na lista, mas os links atuais estão temporariamente indisponíveis.")}
           </p>
           <button
             className="ydo-btn-primary"
@@ -808,12 +821,18 @@ export function LivePlayer({
               setSourceIndex(0);
               setAttemptMode(initialModeFor(validStreams[0]));
               setError(false);
+              setErrorDetail(null);
               setLoading(true);
               setPlayNonce((n) => n + 1);
             }}
           >
             <RefreshCw size={15} /> Limpar Cache e Tentar Novamente
           </button>
+          {onNextCanal && (
+            <button className="ydo-btn-secondary" type="button" onClick={onNextCanal}>
+              Tentar próximo canal
+            </button>
+          )}
         </div>
       )}
 

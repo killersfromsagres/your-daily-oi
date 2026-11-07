@@ -1,0 +1,17 @@
+name: Diagnose Saimo live playback vs production
+on:
+  push:
+    branches: [fix/live-tv-production-playback]
+  workflow_dispatch:
+jobs:
+  diagnosis:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/diagnose-live-routing.mjs
+      - run: bun scripts/diagnose-live-playback.mjs
