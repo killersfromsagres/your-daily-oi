@@ -398,6 +398,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
             <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => void refresh()} disabled={refreshing} aria-label="Atualizar lista de canais">
               <RefreshCw size={16} className={refreshing ? "ztv-spinning" : ""} /> Atualizar
             </button>
+            <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => document.getElementById("ztv-jogos")?.scrollIntoView({ behavior:"smooth" })}>
+              <CalendarDays size={16} /> Jogos de hoje
+            </button>
             <button type="button" className="ztv-btn ztv-btn-primary" onClick={() => setGuideOpen(true)}>
               <CalendarDays size={16} /> Guia de programação
             </button>
@@ -509,6 +512,21 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </aside>
         </div>
 
+        <section className="ztv-sports" aria-label="Central de jogos e transmissões">
+          <JogosShelf
+            onSelectCanalId={id => {
+              const channel = channels.find(c => c.id === id);
+              if (channel) selectChannel(channel);
+            }}
+            onExploreChannels={() => {
+              setCategory("Esportes");
+              setOnlineOnly(true);
+              setQuery("");
+              window.setTimeout(() => document.getElementById("ztv-explore")?.scrollIntoView({ behavior: "smooth" }), 40);
+            }}
+          />
+        </section>
+
         {recentChannels.length > 0 && (
           <section className="ztv-recents" aria-label="Canais vistos recentemente">
             <div className="ztv-section-row"><div><span className="ztv-label-small">SEU HISTÓRICO</span><h2>Assistidos recentemente</h2></div></div>
@@ -585,11 +603,6 @@ export function TvView({ initialCanalId }: TvViewProps) {
             </div>
           )}
         </section>
-
-        <section className="ztv-sports" aria-label="Programação esportiva"><JogosShelf onSelectCanalId={id => {
-          const channel = channels.find(c => c.id === id);
-          if (channel) selectChannel(channel);
-        }} /></section>
 
         <footer className="ztv-footer">
           <span><span className="ztv-pulse" /> ZANG LIVE</span>

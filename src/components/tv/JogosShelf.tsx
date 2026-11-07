@@ -1,182 +1,307 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import type { JogoBrasileirao } from "@/lib/jogos";
-import { Trophy, Tv } from "lucide-react";
+// src/components/tv/JogosShelf.tsx — React 19, Zang Live sports match center.
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
+  Clock3, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
+} from "lucide-react";
+import {
+  addDaysUTC, dataBrasilia, fixturePriority,
+  type JogoBrasileirao,
+} from "@/lib/jogos-match";
+import "@/styles/jogos-center.css";
 
 interface JogosShelfProps {
-  onSelectCanalId: (canalId: string) => void;
+  onSelectCanalId: (id: string) => void;
+  onExploreChannels?: () => void;
 }
 
-function isJogoAoVivo(inicioIso: string): boolean {
-  if (!inicioIso) return false;
-  const start = new Date(inicioIso).getTime();
-  if (isNaN(start)) return false;
-  const now = Date.now();
-  // Partida de futebol tem ~105 minutos de duração (90 min + intervalo + acréscimos)
-  return now >= start && now < start + 105 * 60 * 1000;
+interface SportsApiResponse {
+  atualizadoEm: string;
+  dataLocal: string;
+  jogos: JogoBrasileirao[];
+  parcial?: boolean;
+  fontesConsultadas?: number;
+  ligasIndisponiveis?: string[];
+  erro?: string;
 }
 
-function EscudoTime({ src, nome }: { src?: string; nome: string }) {
-  const [failed, setFailed] = useState(false);
-  const initials = (nome || "TIM").slice(0, 3).toUpperCase();
+type GameTab = "destaques" | "todos" | "brasileirao" | "champions" | "copas" | "internacional";
+const TABS: Array<{ id: GameTab; label: string }> = [
+  { id: "destaques", label: "Destaques" },
+  { id: "todos", label: "Todos" },
+  { id: "brasileirao", label: "Brasileirão" },
+  { id: "champions", label: "Champions" },
+  { id: "copas", label: "Copas" },
+  { id: "internacional", label: "Europa" },
+];
+const humanDay = new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" });
+const longDay = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const shortDate = (date: string): Date => new Date(date + "T12:00:00Z");
+const dateLabel = (date: string) => humanDay.format(shortDate(date)).replace(/\.$/, "");
 
-  if (!src || failed) {
-    return (
-      <div className="ydo-jogos-escudo-fallback" aria-hidden="true">
-        <span>{initials}</span>
+function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
+  const [bad, setBad] = useState(false);
+  useEffect(() => setBad(false), [src]);
+  const initials = name.split(" ").filter(Boolean).slice(0, 2).map(x => x[0]).join("").toUpperCase().slice(0, 3);
+  return (
+    <span className="zgame-crest">
+      {src && !bad ? (
+        <img src={src} alt={"Escudo do " + name} loading="lazy" decoding="async" onError={() => setBad(true)} />
+      ) : <span className="zgame-monogram" aria-label={"Escudo indisponível: " + name}>{initials || "FC"}</span>}
+    </span>
+  );
+}
+function MatchCard({ game, onWatch, onExplore }: {
+  game: JogoBrasileirao;
+  onWatch: (id: string) => void;
+  onExplore?: (() => void) | undefined;
+}) {
+  const active = game.status === "ao-vivo";
+  const hasScore = game.placarCasa !== null && game.placarFora !== null;
+  const watchable = Boolean(game.canalId);
+  const time = game.status === "encerrado" ? "ENCERRADO" :
+    game.status === "adiado" ? "ADIADO" : active ? "AO VIVO" : game.horarioLocal;
+  return (
+    <article className={"zgame-card" + (active ? " is-live" : "") + (watchable ? " has-channel" : "")}>
+      <button
+        type="button"
+        className="zgame-card-main"
+        disabled={!watchable}
+        onClick={() => { if (game.canalId) onWatch(game.canalId); }}
+        aria-label={watchable
+          ? "Assistir " + game.casa + " contra " + game.fora + " no canal " + game.canalNome
+          : "Transmissão ainda não confirmada"}
+      >
+      <div className="zgame-card-header">
+        <span className="zgame-league"><Trophy size={13} /> {game.liga}</span>
+        <span className={"zgame-kickoff" + (active ? " is-live" : "")}>
+          {active ? <Radio size={12} /> : <Clock3 size={12} />} {time}
+        </span>
       </div>
-    );
-  }
-
-  return (
-    <img
-      src={src}
-      alt={nome}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="ydo-jogos-escudo-img"
-    />
+      {game.rodada && <span className="zgame-round">{game.rodada}</span>}
+      <div className="zgame-versus" aria-label={game.casa + " contra " + game.fora}>
+        <div className="zgame-team">
+          <TeamCrest src={game.escudoCasa} name={game.casa} />
+          <strong title={game.casa}>{game.casa}</strong>
+        </div>
+        <div className="zgame-score">
+          {hasScore ? (
+            <span className="zgame-score-numbers">{game.placarCasa}<small>:</small>{game.placarFora}</span>
+          ) : (
+            <span className="zgame-score-vs">X</span>
+          )}
+          <small>{hasScore ? (active ? "EM JOGO" : "PLACAR") : "VS"}</small>
+        </div>
+        <div className="zgame-team">
+          <TeamCrest src={game.escudoFora} name={game.fora} />
+          <strong title={game.fora}>{game.fora}</strong>
+        </div>
+      </div>
+      </button>
+      <div className="zgame-card-footer">
+        {watchable && game.canalId && game.canalNome ? (
+          <button className="zgame-watch" type="button" onClick={() => onWatch(game.canalId!)}>
+            <span className="zgame-watch-icon">{game.canalLogo
+              ? <img src={game.canalLogo} alt="" loading="lazy" />
+              : <Tv size={17} />}</span>
+            <span><small>TRANSMISSÃO IDENTIFICADA</small><strong>{game.canalNome}</strong></span>
+            <ArrowRight size={18} className="zgame-watch-arrow" />
+          </button>
+        ) : (
+          <div className="zgame-unconfirmed">
+            <span><ShieldQuestion size={17} /> Transmissão no Brasil não confirmada</span>
+            {onExplore && (
+              <button type="button" onClick={onExplore} title="Explorar canais esportivos disponíveis">
+                Explorar canais <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
   );
 }
 
-function CanalBadge({ logo, nome }: { logo?: string | null; nome?: string | null }) {
-  const [failed, setFailed] = useState(false);
-  const initials = (nome || "TV").slice(0, 2).toUpperCase();
-
-  return (
-    <div className="ydo-jogos-canal-info">
-      {logo && !failed ? (
-        <img
-          src={logo}
-          alt={nome || "Canal"}
-          loading="lazy"
-          onError={() => setFailed(true)}
-          className="ydo-jogos-canal-logo"
-        />
-      ) : (
-        <span className="ydo-jogos-canal-monogram">{initials}</span>
-      )}
-      <span className="ydo-jogos-canal-nome">{nome || "Ao Vivo"}</span>
-    </div>
-  );
-}
-
-export function JogosShelf({ onSelectCanalId }: JogosShelfProps) {
-  const navigate = useNavigate();
-  const [jogos, setJogos] = useState<JogoBrasileirao[]>([]);
+export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfProps) {
+  const [today, setToday] = useState(() => dataBrasilia(new Date()));
+  const [day, setDay] = useState(() => dataBrasilia(new Date()));
+  const [tab, setTab] = useState<GameTab>("destaques");
+  const [data, setData] = useState<SportsApiResponse | null>(null);
+  const [pending, setPending] = useState(true);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const previousRequest = useRef<AbortController | null>(null);
+  const days = useMemo(() => Array.from({length:7}, (_,i) => addDaysUTC(today,i)), [today]);
 
   useEffect(() => {
-    let active = true;
+    const timer = window.setInterval(() => {
+      const current = dataBrasilia(new Date());
+      if (current !== today) {
+        setToday(current);
+        setDay(current);
+        setRefreshKey(k => k + 1);
+      }
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [today]);
 
-    const fetchJogos = () => {
-      fetch("/api/jogos-hoje", { cache: "no-store" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: { jogos?: JogoBrasileirao[] } | null) => {
-          if (!active) return;
-          setJogos(data?.jogos || []);
-        })
-        .catch(() => {});
+  useEffect(() => {
+    const controller = new AbortController();
+    previousRequest.current?.abort();
+    previousRequest.current = controller;
+    // Keep the current game cards visible during background score refreshes.
+    if (data?.dataLocal !== day) setPending(true);
+    setFailure(null);
+    // Cache-busting not required: the server returns at most 2-minute-old fixtures.
+    fetch("/api/jogos-agenda?data=" + encodeURIComponent(day), {
+      cache: "no-store", signal: controller.signal,
+    }).then(async response => {
+      const json = await response.json() as SportsApiResponse;
+      if (!response.ok) throw new Error(json.erro || "Falha ao consultar a programação");
+      return json;
+    }).then(value => {
+      if (!controller.signal.aborted) setData(value);
+    }).catch(error => {
+      if (controller.signal.aborted) return;
+      setFailure(error instanceof Error ? error.message : "Falha ao obter jogos");
+      setData(null);
+    }).finally(() => {
+      if (!controller.signal.aborted) setPending(false);
+    });
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") setRefreshKey(k => k + 1);
     };
-
-    fetchJogos();
-    const interval = setInterval(fetchJogos, 30 * 60 * 1000);
+    document.addEventListener("visibilitychange", onVisibility);
+    const timer = window.setInterval(() => setRefreshKey(k => k + 1), 2 * 60_000);
     return () => {
-      active = false;
-      clearInterval(interval);
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [day, refreshKey]);
 
-  if (jogos.length === 0) return null;
+  const allGames = data?.dataLocal === day ? data.jogos : [];
+  const featured = useMemo(() => allGames.some(x => x.destaque), [allGames]);
+  const filtered = useMemo(() => {
+    const items = allGames.filter(game => {
+      if (tab === "todos") return true;
+      if (tab === "destaques") return featured ? game.destaque : true;
+      return game.grupo === tab;
+    });
+    if (tab === "destaques") return [...items].sort((a,b)=>
+      (b.status === "ao-vivo" ? 1 : 0) - (a.status === "ao-vivo" ? 1 : 0) ||
+      fixturePriority(b) - fixturePriority(a) ||
+      Date.parse(a.inicioIso) - Date.parse(b.inicioIso));
+    return [...items].sort((a,b)=>Date.parse(a.inicioIso)-Date.parse(b.inicioIso));
+  }, [allGames, featured, tab]);
 
-  const hasAoVivo = jogos.some((j) => isJogoAoVivo(j.inicioIso));
+  const live = allGames.filter(game=>game.status==="ao-vivo").length;
+  const linked = allGames.filter(game=>game.canalId).length;
+  const selectChannel = useCallback((id: string) => {
+    onSelectCanalId(id);
+    // Player is rendered above this match center in Zang Live.
+    window.setTimeout(() => document.querySelector(".ztv-featured")?.scrollIntoView({ behavior:"smooth", block:"center" }), 100);
+  }, [onSelectCanalId]);
 
-  const handleClick = (j: JogoBrasileirao) => {
-    if (j.canalId) {
-      onSelectCanalId(j.canalId);
-    } else {
-      void navigate({ to: "/tv", replace: true });
-    }
+  const jumpDays = (offset: number) => {
+    const current = days.indexOf(day);
+    const next = Math.min(6, Math.max(0,current + offset));
+    const selected = days[next];
+    if (selected) setDay(selected);
   };
 
   return (
-    <section className="ydo-jogos-shelf" aria-label="Jogos de Hoje">
-      <div className="ydo-jogos-header">
-        <div className="ydo-jogos-title-wrap">
-          <Trophy size={18} style={{ color: "#e8b44a" }} />
-          <h2 className="ydo-jogos-title">Jogos de Hoje</h2>
-          <span className="ydo-jogos-badge-liga">BRASILEIRÃO</span>
-          {hasAoVivo && (
-            <span className="ydo-jogos-badge-live">
-              <span className="ydo-live-dot" />
-              AO VIVO
-            </span>
-          )}
+    <section className="zgame-center" id="ztv-jogos" aria-label="Central de futebol com jogos do dia">
+      <div className="zgame-ambient" aria-hidden="true" />
+      <header className="zgame-header">
+        <div className="zgame-header-copy">
+          <div className="zgame-kicker"><Activity size={14} /><span>AGENDA ESPORTIVA</span><span className="zgame-kicker-line" /><span>FUTEBOL AO VIVO</span></div>
+          <h2>Hoje tem <em>jogo.</em></h2>
+          <p>Brasileirão, Champions League e grandes campeonatos. Acompanhe os confrontos no horário de Brasília.</p>
+        </div>
+        <div className="zgame-header-actions">
+          {live > 0 && <span className="zgame-live-flag"><span /> {live} EM ANDAMENTO</span>}
+          <span className="zgame-timezone"><Clock3 size={15} /> Horário de Brasília</span>
+          <button type="button" className="zgame-refresh" aria-label="Atualizar agenda" onClick={() => setRefreshKey(k => k + 1)} disabled={pending}>
+            <RefreshCw size={16} className={pending ? "zgame-spin" : ""} /> Atualizar
+          </button>
+        </div>
+      </header>
+
+      <div className="zgame-toolbar">
+        <div className="zgame-toolbar-label"><CalendarDays size={18} /><span>Selecione o dia</span></div>
+        <div className="zgame-days">
+          <button className="zgame-day-arrow" type="button" onClick={() => jumpDays(-1)} disabled={day === days[0]} aria-label="Dia anterior"><ChevronLeft size={18} /></button>
+          <div className="zgame-days-scroll">
+            {days.map((d,i) => (
+              <button key={d} type="button" className={"zgame-day" + (day === d ? " is-active" : "")}
+                onClick={() => setDay(d)} aria-pressed={day === d}>
+                <span>{i===0 ? "HOJE" : i===1 ? "AMANHÃ" : new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",weekday:"short"}).format(shortDate(d)).replace(".","").toUpperCase()}</span>
+                <strong>{new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",day:"2-digit"}).format(shortDate(d))}</strong>
+                <small>{new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",month:"short"}).format(shortDate(d)).replace(".","")}</small>
+              </button>
+            ))}
+          </div>
+          <button className="zgame-day-arrow" type="button" onClick={() => jumpDays(1)} disabled={day === days[6]} aria-label="Próximo dia"><ChevronRight size={18} /></button>
         </div>
       </div>
 
-      <div className="ydo-tv-shelf-track ydo-jogos-track">
-        {jogos.map((j) => {
-          const aoVivo = isJogoAoVivo(j.inicioIso);
-          return (
-            <div
-              key={j.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => handleClick(j)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleClick(j);
-                }
-              }}
-              className={`ydo-jogos-card ${aoVivo ? "is-live" : ""}`}
-              aria-label={`${j.casa} contra ${j.fora}, horário ${j.horarioLocal}${j.canalNome ? `, transmissão ${j.canalNome}` : ""}`}
-            >
-              {/* Topo do card: Rodada + Selo AO VIVO se em andamento */}
-              <div className="ydo-jogos-card-top">
-                <span className="ydo-jogos-card-round">{j.rodada || "Brasileirão"}</span>
-                {aoVivo ? (
-                  <span className="ydo-jogos-live-pill">
-                    <span className="ydo-live-dot" />
-                    AO VIVO
-                  </span>
-                ) : (
-                  <span className="ydo-jogos-time-badge">{j.horarioLocal}</span>
-                )}
-              </div>
-
-              {/* Confronto com Escudos e 'x' dourado */}
-              <div className="ydo-jogos-confronto">
-                <div className="ydo-jogos-time">
-                  <EscudoTime src={j.escudoCasa} nome={j.casa} />
-                  <span className="ydo-jogos-nome-time" title={j.casa}>
-                    {j.casa}
-                  </span>
-                </div>
-
-                <div className="ydo-jogos-versus">
-                  <span className="ydo-jogos-x">x</span>
-                </div>
-
-                <div className="ydo-jogos-time">
-                  <EscudoTime src={j.escudoFora} nome={j.fora} />
-                  <span className="ydo-jogos-nome-time" title={j.fora}>
-                    {j.fora}
-                  </span>
-                </div>
-              </div>
-
-              {/* Rodapé: Canal de Transmissão */}
-              <div className="ydo-jogos-card-footer">
-                <CanalBadge logo={j.canalLogo} nome={j.canalNome} />
-                <Tv size={14} className="ydo-jogos-tv-icon" />
-              </div>
-            </div>
-          );
-        })}
+      <div className="zgame-section-head">
+        <div>
+          <span className="zgame-section-kicker">{day === today ? "PROGRAMAÇÃO DE HOJE" : "AGENDA DO DIA"}</span>
+          <h3>{longDay.format(shortDate(day))}</h3>
+        </div>
+        <div className="zgame-summary">
+          <span><Trophy size={14} /> {allGames.length} {allGames.length === 1 ? "jogo" : "jogos"}</span>
+          {linked > 0 && <span><CheckCircle2 size={14} /> {linked} {linked === 1 ? "canal identificado" : "canais identificados"}</span>}
+        </div>
       </div>
+
+      <div className="zgame-tabs" role="group" aria-label="Filtrar campeonatos">
+        {TABS.map(item => (
+          <button key={item.id} type="button" className={"zgame-tab" + (tab===item.id?" is-active":"")}
+            onClick={() => setTab(item.id)} aria-pressed={tab===item.id}>{item.label}</button>
+        ))}
+      </div>
+
+      {data?.parcial && !pending && (
+        <p className="zgame-partial" role="status">Algumas ligas não responderam nesta atualização. A agenda pode estar incompleta.</p>
+      )}
+      {pending ? (
+        <div className="zgame-grid" aria-busy="true">
+          {[1,2,3,4].map(i=><div key={i} className="zgame-skeleton" aria-hidden="true"><span/><div/><span/></div>)}
+        </div>
+      ) : failure || data?.erro ? (
+        <div className="zgame-empty" role="alert">
+          <WifiOff size={26} />
+          <h4>Agenda temporariamente indisponível</h4>
+          <p>{failure || data?.erro}</p>
+          <button type="button" onClick={() => setRefreshKey(k => k + 1)}>Tentar novamente <RefreshCw size={15} /></button>
+        </div>
+      ) : filtered.length ? (
+        <div className="zgame-grid">
+          {filtered.map(game => <MatchCard key={game.id} game={game} onWatch={selectChannel} onExplore={onExploreChannels} />)}
+        </div>
+      ) : (
+        <div className="zgame-empty">
+          <CalendarDays size={28} />
+          <h4>{allGames.length ? "Nenhum confronto neste filtro" : "Sem partidas registradas para esta data"}</h4>
+          <p>{allGames.length
+            ? "Escolha outra competição para ver os jogos disponíveis."
+            : "Os jogos são atualizados automaticamente pela fonte de resultados. Selecione outro dia para consultar a próxima rodada."}</p>
+          {allGames.length ? (
+            <button type="button" onClick={() => setTab("todos")}>Ver todos os jogos <ArrowRight size={15} /></button>
+          ) : day !== days[6] ? (
+            <button type="button" onClick={() => jumpDays(1)}>Ver próximo dia <ArrowRight size={15}/></button>
+          ) : null}
+        </div>
+      )}
+      <footer className="zgame-footer">
+        <span><Sparkles size={15} /> Datas e placares de fonte esportiva; atualizações automáticas.</span>
+        <span>Os canais são vinculados apenas quando a transmissão específica é identificada. A disponibilidade pode variar.</span>
+      </footer>
     </section>
   );
 }

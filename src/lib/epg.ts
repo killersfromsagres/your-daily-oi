@@ -4,6 +4,7 @@
  */
 
 import { loadCanais } from "./canais";
+import { doesEpgDescribeFixture, type JogoBrasileirao } from "./jogos-match";
 
 export interface ProgramaEPG {
   titulo: string;
@@ -441,4 +442,49 @@ export async function getGradeAgora(): Promise<GradeItemAgora[]> {
     console.warn("[EPG] Erro ao gerar grade agora:", err);
     return [];
   }
+}
+
+
+/**
+ * Liga apenas partidas identificadas pelo confronto exato no EPG do Brasil.
+ * Não infere Premiere/SporTV/ESPN pela liga: os direitos variam por confronto.
+ * Uma partida deve mencionar AMBOS os clubes no título ou descrição e estar
+ * programada perto do início confirmado pelo feed de resultados.
+ */
+export async function localizarJogosNaGradeEPG(
+  jogos: JogoBrasileirao[],
+  canais: { id: string; nome: string; logo?: string; fontes: { url: string }[] }[],
+): Promise<Map<string, { id: string; nome: string; logo?: string }>> {
+  const found = new Map<string, { id: string; nome: string; logo?: string }>();
+  if (!jogos.length || !canais.length) return found;
+  const state = await getOrLoadEpgState();
+  if (!state) return found;
+
+  const channelsByNorm = new Map(
+    canais.filter(channel => channel.fontes.length > 0)
+      .map(channel => [normalizeNomeCanal(channel.nome), channel] as const),
+  );
+  const programmesById = [...state.programmesByChannel.entries()];
+  for (const [epgId, programmes] of programmesById) {
+    const epgChannel = state.channels.get(epgId);
+    if (!epgChannel) continue;
+    const catalogChannel = channelsByNorm.get(normalizeNomeCanal(epgChannel.name));
+    if (!catalogChannel) continue;
+    for (const match of jogos) {
+      if (found.has(match.id)) continue;
+      const start = Date.parse(match.inicioIso);
+      if (!Number.isFinite(start)) continue;
+      const near = programmes.find(programme =>
+        programme.start <= start + 45 * 60_000 &&
+        programme.stop >= start - 45 * 60_000 &&
+        doesEpgDescribeFixture(programme.title + " " + (programme.desc || ""), match.casa, match.fora)
+      );
+      if (near) {
+        found.set(match.id, {
+          id: catalogChannel.id, nome: catalogChannel.nome, ...(catalogChannel.logo ? { logo: catalogChannel.logo } : {}),
+        });
+      }
+    }
+  }
+  return found;
 }

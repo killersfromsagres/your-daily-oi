@@ -13,6 +13,15 @@ A seção de TV foi remodelada com interface responsiva, canais, busca, favorito
 
 **Publicação:** após sincronizar o GitHub com Lovable, publique uma implantação que inclua as funções de servidor. Uma versão apenas estática consegue listar canais públicos, mas não pode retransmitir as fontes que exigem proxy.
 
+## Zang Sports — Central de jogos
+
+A área de TV agora apresenta uma agenda esportiva responsiva com **Brasileirão, Champions League, Libertadores, Copa do Brasil e grandes ligas europeias**. O calendário permite consultar os sete dias seguintes, com horários convertidos para Brasília, escudos, confrontos, placares, status ao vivo, filtros e cards clicáveis para as transmissões identificadas no guia brasileiro.
+
+- **API:** `/api/jogos-agenda?data=YYYY-MM-DD` (a rota `/api/jogos-hoje` continua compatível).
+- **Fonte:** ESPN Soccer Scoreboard, com atualização automática a cada dois minutos.
+- **Transmissão correta:** correspondência específica por jogo e emissora via EPG brasileiro, metadados BR ou mapeamento editorial, sem escolher Premiere/SporTV arbitrariamente.
+- **Diagnóstico, configuração de canais e testes:** [Zang Sports](docs/ZANG-SPORTS.md).
+
 ## Build with Lovable
 
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/04b00ea6-c4b2-4756-b9f8-9a12ffa7c2d7).

@@ -2112,9 +2112,18 @@ export default {
         const data = await getCanalEPG(canal);
         return jsonResponse(data, 200, "public, max-age=900");
       }
-      if (url.pathname === "/api/jogos-hoje") {
-        const data = await getJogosHoje();
-        return jsonResponse(data, 200, "public, max-age=1800");
+      if (url.pathname === "/api/jogos-hoje" || url.pathname === "/api/jogos-agenda") {
+        if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
+        try {
+          const dataLocal = url.searchParams.get("data") || undefined;
+          const data = await getJogosHoje(dataLocal);
+          return jsonResponse(data, 200, "public, max-age=90, stale-while-revalidate=90");
+        } catch (error) {
+          if (error instanceof RangeError) {
+            return jsonResponse({ erro: "Data inválida ou fora do período disponível" }, 400);
+          }
+          throw error;
+        }
       }
       if (url.pathname === "/api/animes-sushi") {
         return await handleAnimesSushiApi(url);
