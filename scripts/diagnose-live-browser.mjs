@@ -7,6 +7,8 @@ import path from "node:path";
 const browser=["google-chrome","chromium","chromium-browser"].find(x=>spawnSync("which",[x]).status===0);
 if(!browser)throw new Error("Chrome unavailable");
 const WORKER_PORT=4176, CDP_PORT=9226, BASE="http://127.0.0.1:"+WORKER_PORT;
+const channel=process.env.LIVE_TEST_CHANNEL || "band";
+const blockModern=process.env.LIVE_BLOCK_CATALOG_PROXY === "1";
 const worker=spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(WORKER_PORT)],{stdio:["ignore","pipe","pipe"]});
 let workerLogs="";
 worker.stderr.on("data",chunk=>{workerLogs=(workerLogs+String(chunk)).slice(-1000);});
@@ -25,7 +27,7 @@ try{
   "--no-first-run","--no-default-browser-check","--disable-extensions",
   "--remote-allow-origins=*","--remote-debugging-port="+CDP_PORT,
   "--user-data-dir="+temp,"--autoplay-policy=no-user-gesture-required",
-  "--mute-audio",BASE+"/tv/canal/band"
+  "--mute-audio","about:blank"
  ],{stdio:"ignore"});
  let endpoint=null;
  for(let i=0;i<30;i++){
@@ -40,8 +42,14 @@ try{
  ws=new WebSocket(endpoint);
  await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
  const pending=new Map();let index=0;const failed=[],warnings=[];
+ let legacyRequests=0,catalogRequests=0;
  ws.addEventListener("message",event=>{
   let m;try{m=JSON.parse(String(event.data));}catch{return;}
+  if(m.method==="Network.requestWillBeSent"){
+   const url=String(m.params?.request?.url || "");
+   if(url.includes("/api/live-proxy?url=")) legacyRequests++;
+   if(url.includes("/api/tv/stream?")) catalogRequests++;
+  }
   if(typeof m.id==="number"){
    const p=pending.get(m.id);if(!p)return;pending.delete(m.id);
    if(m.error)p.reject(new Error(m.error.message));else p.resolve(m.result);
@@ -66,6 +74,8 @@ try{
   });
  }
  await send("Runtime.enable");await send("Network.enable");await send("Page.enable");
+ if(blockModern)await send("Network.setBlockedURLs",{urls:[BASE+"/api/tv/stream*"]});
+ await send("Page.navigate",{url:BASE+"/tv/canal/"+encodeURIComponent(channel)});
  const expression='(() => { const v=document.querySelector("video"); const src=v?.currentSrc||""; return JSON.stringify({channel:document.querySelector(".ztv-now-copy h2")?.textContent, errorText:document.querySelector(".ydo-live-error-overlay h3")?.textContent||null,loading:!!document.querySelector(".ydo-live-skeleton-overlay"),video:v&&{paused:v.paused,muted:v.muted,time:Math.round(v.currentTime*100)/100,ready:v.readyState,network:v.networkState,error:v.error?.code||null,srcHost:src?new URL(src).hostname:null}}); })()';
  async function snapshot(time){
   const r=await send("Runtime.evaluate",{expression,returnByValue:true});
@@ -75,7 +85,7 @@ try{
  await send("Runtime.evaluate",{expression:'(() => {const v=document.querySelector("video");if(v){v.muted=true;void v.play().catch(()=>{});}})()'});
  await sleep(9000);await snapshot(14);
  await sleep(9000);await snapshot(23);
- console.log(JSON.stringify({event:"browser-errors",failed,warnings}));
+ console.log(JSON.stringify({event:"browser-errors",channel,blockModern,legacyRequests,catalogRequests,failed,warnings}));
 } finally {
  try{ws?.close();}catch{}
  try{chrome?.kill("SIGTERM");}catch{}
