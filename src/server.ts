@@ -12,6 +12,7 @@ import { getJogosHoje } from "./lib/jogos";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { handleLiveFormatApi } from "./lib/live-probe";
+import { isLivePlaylistTarget } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -1340,7 +1341,10 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
 
   const customReferer = url.searchParams.get("referer") || undefined;
   const customUa = url.searchParams.get("ua") || url.searchParams.get("agente") || undefined;
-  const clientRange = request.headers.get("range");
+  // Playlists must be fetched in full so child and key URLs can be rewritten.
+  // A client Range on .m3u8 previously forced the segment code path and leaked
+  // relative paths like /api/tv/tracks-v1a1/mono.m3u8 into Hls.js.
+  const clientRange = isLivePlaylistTarget(targetUrl) ? null : request.headers.get("range");
   const clientAcceptEncoding = request.headers.get("accept-encoding");
 
   // Cache leve de manifesto ao vivo (10s)
