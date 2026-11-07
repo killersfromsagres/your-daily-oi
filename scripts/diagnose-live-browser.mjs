@@ -29,7 +29,7 @@ try{
   "--no-first-run","--no-default-browser-check","--disable-extensions",
   "--remote-allow-origins=*","--remote-debugging-port="+CDP_PORT,
   "--user-data-dir="+temp,"--autoplay-policy=no-user-gesture-required",
-  "--mute-audio",BASE+"/tv/canal/"+encodeURIComponent(channel)
+  "--mute-audio",BASE+"/"
  ],{stdio:"ignore"});
  let endpoint=null;
  for(let i=0;i<30;i++){
@@ -44,7 +44,7 @@ try{
  ws=new WebSocket(endpoint);
  await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
  const pending=new Map();let index=0;const failed=[],warnings=[];
- let legacyRequests=0,catalogRequests=0,legacyMediaOk=0;
+ let legacyRequests=0,catalogRequests=0,legacyMediaOk=0,blockedResponses=0;
  let lastSnapshot=null;
  ws.addEventListener("message",event=>{
   let m;try{m=JSON.parse(String(event.data));}catch{return;}
@@ -63,6 +63,8 @@ try{
    if(response?.status>=400&&failed.length<20){
      try{const u=new URL(response.url);failed.push({status:response.status,host:u.hostname,path:u.pathname.slice(0,72)});}catch{}
    }
+  }else if(m.method==="Network.loadingFailed"){
+   if(m.params?.blockedReason) blockedResponses++;
   }else if(m.method==="Runtime.consoleAPICalled"){
    const line=(m.params?.args||[]).map(x=>x.value||x.description||"").join(" ").slice(0,210);
    if(/LivePlayer|Hls|m3u8|403|failed/i.test(line)&&warnings.length<20)warnings.push(line);
@@ -98,7 +100,7 @@ try{
    await sleep(9000);await snapshot(32);
    await sleep(9000);await snapshot(41);
  }
- console.log(JSON.stringify({event:"browser-errors",channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,failed,warnings}));
+ console.log(JSON.stringify({event:"browser-errors",channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,blockedResponses,failed,warnings}));
  if(requireLegacyPlayback && (legacyMediaOk < 2 || (lastSnapshot?.video?.time ?? 0) < 5)) {
    throw new Error("HLS legacy proxy did not deliver media to Chrome (ok="+legacyMediaOk+
      ", time="+(lastSnapshot?.video?.time??0)+")");
