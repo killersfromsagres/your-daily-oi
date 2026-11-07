@@ -26,3 +26,5 @@ jobs:
         run: LIVE_TEST_CHANNEL=band bun scripts/diagnose-live-browser.mjs
       - name: Browser legacy-proxy fallback — SBT
         run: LIVE_TEST_CHANNEL=sbt LIVE_BLOCK_CATALOG_PROXY=1 bun scripts/diagnose-live-browser.mjs
+      - name: End-to-end legacy proxy video — Band
+        run: LIVE_TEST_CHANNEL=band LIVE_BLOCK_CATALOG_PROXY=1 LIVE_BLOCK_DIRECT_HOST=vipwaytvcdn.multtv.tv.br LIVE_REQUIRE_LEGACY_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
