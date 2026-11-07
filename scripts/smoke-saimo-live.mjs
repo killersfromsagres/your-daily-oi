@@ -103,6 +103,28 @@ try {
     }
   }
   if (!success) throw new Error("Nenhum canal amostrado entregou playlist e fragmento real via Worker");
+  // Rota legada é a que ainda está disponível no Vercel. Valida manifesto
+  // e fragmento reais pelo mesmo endpoint que o frontend de compatibilidade usa.
+  let legacySuccess = false;
+  for (const { ch, src } of candidates) {
+    const query = new URLSearchParams({ url: src.url });
+    if (src.referer) query.set("referer", src.referer);
+    if (src.agente) query.set("ua", src.agente);
+    try {
+      const response = await fetch(`${BASE}/api/live-proxy?${query}`, { signal: timeout(14000) });
+      const manifest = await response.text();
+      const ok = response.ok && manifest.trimStart().startsWith("#EXTM3U") &&
+        manifest.includes("/api/live-proxy?url=");
+      console.log(JSON.stringify({ event:"worker-legacy-manifest", channel:ch.nome, status:response.status, ok }));
+      if (ok && await probeMediaFragment(manifest)) {
+        legacySuccess = true;
+        break;
+      }
+    } catch (err) {
+      console.log(JSON.stringify({ event:"worker-legacy-manifest", channel:ch.nome, error:err instanceof Error?err.name:"network" }));
+    }
+  }
+  if (!legacySuccess) throw new Error("Proxy legado não entregou manifesto e fragmento reais");
 } finally {
   child.kill("SIGTERM");
 }
