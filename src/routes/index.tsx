@@ -1,3 +1,4 @@
+import { getClientCatalog } from "@/lib/catalog-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { HeroSection } from "@/components/catalog/HeroSection";
@@ -57,17 +58,7 @@ function HomePage() {
     setError("");
 
     // Carrega dados da rota de API do servidor (/api/catalogo) sem cache estático
-    fetch("/api/catalogo", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{
-          items: CatalogItem[];
-          highlights: HighlightRow[];
-          genres: string[];
-          featuredHero?: CatalogItem[];
-          sourceStatus?: { state: "remote" | "fallback" | "uninitialized"; checkedAt: string | null };
-        }>;
-      })
+    void getClientCatalog()
       .then((data) => {
         if (!active) return;
         setItems(data.items);
