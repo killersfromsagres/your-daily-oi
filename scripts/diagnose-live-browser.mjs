@@ -29,13 +29,13 @@ try{
   "--no-first-run","--no-default-browser-check","--disable-extensions",
   "--remote-allow-origins=*","--remote-debugging-port="+CDP_PORT,
   "--user-data-dir="+temp,"--autoplay-policy=no-user-gesture-required",
-  "--mute-audio","about:blank"
+  "--mute-audio",BASE+"/tv/canal/"+encodeURIComponent(channel)
  ],{stdio:"ignore"});
  let endpoint=null;
  for(let i=0;i<30;i++){
   try{
    const data=await (await fetch("http://127.0.0.1:"+CDP_PORT+"/json/list",{signal:AbortSignal.timeout(1500)})).json();
-   endpoint=data.find(item=>item.type==="page")?.webSocketDebuggerUrl||null;
+   endpoint=(data.find(item=>item.type==="page")||data.find(item=>item.webSocketDebuggerUrl))?.webSocketDebuggerUrl||null;
    if(endpoint)break;
   }catch{}
   await sleep(300);
