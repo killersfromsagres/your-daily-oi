@@ -1,3 +1,4 @@
+import { getClientCatalog } from "@/lib/catalog-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { Search } from "lucide-react";
@@ -27,11 +28,7 @@ function SearchPage() {
     let active = true;
     setLoading(true);
 
-    fetch("/api/catalogo", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro");
-        return res.json() as Promise<{ items: CatalogItem[] }>;
-      })
+    void getClientCatalog()
       .then((data) => {
         if (!active) return;
         setItems(data.items || []);
