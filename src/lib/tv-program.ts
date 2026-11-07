@@ -73,10 +73,16 @@ export function resolveChannelProgram(
   // client cache still includes it. The server normally sends exact intervals.
   const isCurrent = Boolean(current?.titulo) &&
     (start === null || start <= now) && (end === null || now < end);
-  const onAir = isCurrent ? current : null;
-  const future = isCurrent ? next : (
+  const nextStart = startMs(next);
+  const nextEnd = endMs(next);
+  // The next programme can become the current one while the browser keeps an
+  // EPG snapshot. Promote it locally at the exact start time between refreshes.
+  const nextIsCurrent = Boolean(next?.titulo) && nextStart !== null &&
+    nextStart <= now && (nextEnd === null || now < nextEnd);
+  const onAir = isCurrent ? current : nextIsCurrent ? next : null;
+  const future = isCurrent ? next : nextIsCurrent ? null : (
     current && start !== null && start > now ? current :
-    next && (endMs(next) === null || endMs(next)! > now) ? next : null
+    next && (nextStart === null || nextStart > now) ? next : null
   );
   const hasSchedule = Boolean(onAir?.titulo || future?.titulo);
   return {
