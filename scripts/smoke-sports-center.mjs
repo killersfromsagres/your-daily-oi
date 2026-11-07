@@ -1,6 +1,6 @@
 // scripts/smoke-sports-center.mjs — Bun, Vercel-compatible Cloudflare worker sports API smoke.
 import { spawn, spawnSync } from "node:child_process";
-import { dataBrasilia, horaBrasilia } from "../src/lib/jogos-match.ts";
+import { addDaysUTC, dataBrasilia, horaBrasilia } from "../src/lib/jogos-match.ts";
 const PORT=4180,BASE="http://127.0.0.1:"+PORT;
 const worker=spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(PORT)],{stdio:["ignore","pipe","pipe"]});
 let log="";
@@ -36,6 +36,19 @@ try{
   if(game.canalId&&!game.canalNome)throw Error("Unidentified broadcaster "+game.id);
   if(game.transmissao==="confirmada"&&!game.canalId)throw Error("Broadcast status without channel "+game.id);
  }
+ console.log(JSON.stringify({event:"sports-linked-broadcasts",games:games.filter(g=>g.canalId).slice(0,10).map(g=>({
+  league:g.liga,match:g.casa+" x "+g.fora,channel:g.canalNome,origin:g.origemTransmissao
+ }))}));
+ const alias=await req("/api/jogos-hoje?data="+date,8000);
+ if(alias.status!==200||alias.data?.jogos?.length!==games.length)throw Error("Legacy sports endpoint no longer compatible");
+ const nextDay=addDaysUTC(date,1);
+ const tomorrow=await req("/api/jogos-agenda?data="+nextDay,50000);
+ if(tomorrow.status!==200||tomorrow.data?.dataLocal!==nextDay||!Array.isArray(tomorrow.data?.jogos)){
+   throw Error("Date navigation API failed for tomorrow");
+ }
+ if(tomorrow.data.jogos.some(g=>g.dataLocal!==nextDay))throw Error("Wrong local date on next-day fixture");
+ console.log(JSON.stringify({event:"sports-date-navigation",today:date,tomorrow:nextDay,
+  gamesTomorrow:tomorrow.data.jogos.length,aliasStatus:alias.status}));
  const bad=await req("/api/jogos-agenda?data=2026-99-99",5000);
  if(bad.status!==400)throw Error("Invalid date should return 400, got "+bad.status);
  console.log(JSON.stringify({event:"sports-validation",invalidDateStatus:bad.status,pass:true}));
