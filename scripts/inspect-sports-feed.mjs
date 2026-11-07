@@ -2,6 +2,9 @@
 const DATE="20261107",DATEISO="2026-11-07";
 const leagues=["bra.1","uefa.champions","eng.1","esp.1","ita.1","ger.1","conmebol.libertadores"];
 const task=leagues.map(slug=>({slug,url:"https://site.api.espn.com/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates="+DATE+"&limit=100"}));
+for(const slug of ["bra.1","uefa.champions","eng.1","conmebol.libertadores"]){
+ task.push({slug:slug+":range",url:"https://site.api.espn.com/apis/site/v2/sports/soccer/"+slug+"/scoreboard?dates=20261107-20261116&limit=150"});
+}
 task.push({slug:"thesportsdb",url:"https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d="+DATEISO+"&s=Soccer"});
 for(const t of task){
  try{
