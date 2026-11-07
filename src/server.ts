@@ -10,6 +10,7 @@ import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje } from "./lib/jogos";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
+import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -1988,6 +1989,9 @@ export default {
       }
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
+      }
+      if (url.pathname === "/api/saimo-vod") {
+        return await handleSaimoVodProxy(request, url);
       }
       if (url.pathname === "/api/stream") {
         return await handleStreamApi(url);

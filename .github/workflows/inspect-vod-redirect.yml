@@ -1,0 +1,17 @@
+name: Inspect VOD redirect
+
+on:
+  push:
+    branches: [fix/vod-playback-saimo-parity]
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun scripts/inspect-vod-redirect.mjs

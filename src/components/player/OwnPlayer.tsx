@@ -16,6 +16,7 @@ import {
   setPreferredAudio,
 } from "@/lib/player-storage";
 import { APP_VERSION } from "@/lib/version";
+import { proxyUrlForSaimoRelay } from "@/lib/saimo-vod-url";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
 const stage0FailedRelays = new Set<string>();
@@ -36,6 +37,7 @@ interface OwnPlayerProps {
 // 4b: Ordem de tentativa por tipo de relay
 const getPreferredAttemptIsProxy = (url: string): boolean => {
   if (!url) return false;
+  if (url.startsWith("/api/saimo-vod")) return false;
   // Relay Saimo / local /api/stream: direto-first
   if (isRelaySource(url)) {
     return false;
@@ -68,12 +70,14 @@ const getStreamUrlForStage = (
   resolvedDirectUrl?: string
 ): string => {
   if (!rawUrl) return "";
+  if (rawUrl.startsWith("/api/saimo-vod")) return rawUrl;
   if (rawUrl.includes("/api/hls-proxy") || rawUrl.includes("/api/proxy-stream") || rawUrl.includes("/api/live-proxy")) return rawUrl;
 
-  // Relay oficial do Saimo / local: consumido direto pelo navegador do usuário em ambos os estágios
-  // (Estágio 0 = hls.js direto; Estágio 1 = video.src nativo)
+  // Mesmo endpoint do Saimo: primeiro acesso direto (MP4 nativo);
+  // na segunda tentativa, entrega pelo backend com Range e redirecionamentos.
   if (isRelaySource(rawUrl)) {
-    return rawUrl;
+    if (stage === 0) return resolvedDirectUrl || rawUrl;
+    return proxyUrlForSaimoRelay(rawUrl) || `/api/live-proxy?url=${encodeURIComponent(rawUrl)}`;
   }
 
   // HLS (.m3u8, .txt, embedplayer2):
@@ -140,6 +144,9 @@ export function pickBestSourceIndex(
     } else if (q.includes("HD") || q.includes("720")) {
       score += 100;
     }
+
+    // Saimo via servidor do Zang Flix tem prioridade: aceita MP4 Range/206 sem CORS.
+    if (s.url.startsWith("/api/saimo-vod")) score += 2800;
 
     // A1: Relay Saimo é a escolha primária (+2000) — mesma fonte FHD oficial do Saimo TV
     if (s.url.includes("saimo-tv.pages.dev/api/stream")) {
@@ -281,8 +288,8 @@ export function OwnPlayer({
     if (isRelay) {
       return {
         ...rawStream,
-        format: attemptStage === 0 ? "hls" : "mp4",
-        url: rawStream.url,
+        format: resolvedIsHls === true ? "hls" : "auto",
+        url: getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined),
       };
     }
     const finalUrl = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
@@ -359,21 +366,35 @@ export function OwnPlayer({
     };
   }, [rawStream?.url, attemptStage, resolvedDirectUrl, resolvedIsHls]);
 
+  // Detecta HLS de origem same-origin sem baixar vídeo; MP4 toca nativamente.
+  useEffect(() => {
+    if (!rawStream?.url.startsWith("/api/saimo-vod") || rawStream.format !== "auto") return;
+    let active = true;
+    const url = rawStream.url + (rawStream.url.includes("?") ? "&" : "?") + "probe=1";
+    fetch(url, { cache: "no-store" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data: { format?: string } | null) => {
+        if (active && data?.format === "hls") setResolvedIsHls(true);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [rawStream?.url, rawStream?.format]);
+
   // Chaveamento inteligente:
-  // 1. Relay: dual-probe (Estágio 0 = hls.js direto -> Estágio 1 = video.src nativo -> catálogo)
+  // 1. Relay: nativo MP4/Auto -> mesmo stream pelo proxy -> próxima fonte
   // 2. Catálogo: Estágio 0 (proxy/direto) -> Estágio 1 (inverso) -> próxima fonte
   useEffect(() => {
     if (engine.state === "error" && rawStream) {
       if (isRelaySource(rawStream.url)) {
         if (attemptStage === 0) {
-          console.warn(`[OwnPlayer] Relay HLS probe falhou para ${rawStream.url}. Tentando estágio 1 nativo (video.src)...`);
+          console.warn(`[OwnPlayer] Relay direto falhou para ${rawStream.url}. Tentando o proxy de mídia com Range...`);
           stage0FailedRelays.add(rawStream.url);
           setAttemptStage(1);
           return;
         }
 
-        // Estágio 1 falhou no relay: sem tentativa de proxy (datacenter 403). Registra falha e avança para catálogo.
-        console.warn(`[OwnPlayer] Relay nativo falhou para ${rawStream.url}. Avançando para fontes do catálogo...`);
+        // Após a segunda tentativa, passa para fontes de catálogo alternativas.
+        console.warn(`[OwnPlayer] Relay direto e proxy falharam para ${rawStream.url}. Próxima fonte...`);
         recordFailedSource(rawStream.url);
         autoSwitchCountRef.current++;
         if (autoSwitchCountRef.current > orderedStreams.length * 3) {

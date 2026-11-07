@@ -6,7 +6,14 @@ import { recordFailedSource } from "@/lib/player-storage";
 export type PlayerState = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 
 export const isRelaySource = (url?: string | null): boolean => {
-  return Boolean(url && (url.includes("saimo-tv.pages.dev/api/stream") || url.includes("/api/stream")));
+  if (!url) return false;
+  try {
+    const parsed = new URL(url, "https://zangflix.local.invalid");
+    return parsed.pathname === "/api/stream" &&
+      (parsed.hostname === "saimo-tv.pages.dev" || parsed.hostname === "zangflix.local.invalid");
+  } catch {
+    return false;
+  }
 };
 
 export interface UsePlayerEngineOptions {
@@ -118,20 +125,19 @@ export function usePlayerEngine(
     let playingSince: number | null = null;
 
     const isRelay = isRelaySource(stream.url);
-    const isStage0 = (options?.attemptStage ?? 0) === 0;
 
-    // Se for relay no stage 0, forçamos HLS (hls.js direto); no stage 1, forçamos nativo (video.src)
-    const isHls = isRelay
-      ? isStage0
-      : stream.format === "hls" ||
-        stream.url.includes(".m3u8") ||
-        stream.url.includes("/api/hls-proxy") ||
-        stream.url.includes("embedplayer2.xyz") ||
-        stream.url.includes("dadinhodetapioca.fun") ||
-        stream.url.split("?")[0].toLowerCase().endsWith(".txt");
+    // A origem Saimo pode redirecionar para MP4 com URL sem extensão.
+    // Não force HLS pelo nome do endpoint: utilize formato explícito/detectado.
+    const isHls =
+      stream.format === "hls" ||
+      stream.url.includes(".m3u8") ||
+      stream.url.includes("/api/hls-proxy") ||
+      stream.url.includes("embedplayer2.xyz") ||
+      stream.url.includes("dadinhodetapioca.fun") ||
+      stream.url.split("?")[0].toLowerCase().endsWith(".txt");
 
     // Timeout de metadata: 6s para relay HLS probe, 8s para as demais fontes
-    const timeoutDuration = isRelay && isHls ? 6000 : 8000;
+    const timeoutDuration = isRelay && isHls ? 9000 : 14000;
 
     let metadataLoaded = false;
     const metadataTimeout = setTimeout(() => {
