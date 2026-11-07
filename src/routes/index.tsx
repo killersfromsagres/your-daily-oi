@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
@@ -33,6 +33,8 @@ function HomePage() {
   const [highlights, setHighlights] = useState<HighlightRow[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
   const [featuredHero, setFeaturedHero] = useState<CatalogItem[]>([]);
+  const lastHeroRefresh = useRef(0);
+  const initialCatalogLoaded = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [catalogDegraded, setCatalogDegraded] = useState(false);
@@ -75,6 +77,8 @@ function HomePage() {
         if (data.featuredHero && data.featuredHero.length > 0) {
           setFeaturedHero(data.featuredHero);
         }
+        initialCatalogLoaded.current = true;
+        lastHeroRefresh.current = Date.now();
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -86,6 +90,43 @@ function HomePage() {
 
     return () => {
       active = false;
+    };
+  }, []);
+
+  // A página continua interativa durante a atualização. Apenas os oito
+  // destaques são buscados, sem transferir todo o catálogo novamente.
+  useEffect(() => {
+    const controller = new AbortController();
+    const refresh = async () => {
+      if (!initialCatalogLoaded.current || document.visibilityState !== "visible" ||
+        (typeof navigator.onLine === "boolean" && !navigator.onLine)) return;
+      const now = Date.now();
+      if (now - lastHeroRefresh.current < 8 * 60_000) return;
+      lastHeroRefresh.current = now;
+      try {
+        const response = await fetch("/api/destaques", { cache:"no-store", signal:controller.signal });
+        if (!response.ok) return;
+        const data = await response.json() as { featuredHero?: CatalogItem[] };
+        if (controller.signal.aborted || !Array.isArray(data.featuredHero) || !data.featuredHero.length) return;
+        setFeaturedHero(previous => {
+          const latest = data.featuredHero!;
+          return previous.length === latest.length &&
+            previous.every((item, index) => item.id === latest[index]?.id)
+            ? previous : latest;
+        });
+      } catch {
+        // A lista atual segue funcional se o provedor estiver indisponível.
+      }
+    };
+    const timer = window.setInterval(() => { void refresh(); }, 5 * 60_000);
+    const onVisible = () => { if (document.visibilityState === "visible") void refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onVisible);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onVisible);
     };
   }, []);
 
