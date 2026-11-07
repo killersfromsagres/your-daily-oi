@@ -11,6 +11,8 @@ const channel=process.env.LIVE_TEST_CHANNEL || "band";
 const blockModern=process.env.LIVE_BLOCK_CATALOG_PROXY === "1";
 const directBlock=process.env.LIVE_BLOCK_DIRECT_HOST || "";
 const requireLegacyPlayback=process.env.LIVE_REQUIRE_LEGACY_PLAYBACK === "1";
+const requirePlayback = process.env.LIVE_REQUIRE_PLAYBACK === "1";
+const expectProxy = process.env.LIVE_EXPECT_PROXY === "1";
 const worker=spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(WORKER_PORT)],{stdio:["ignore","pipe","pipe"]});
 let workerLogs="";
 worker.stderr.on("data",chunk=>{workerLogs=(workerLogs+String(chunk)).slice(-1000);});
@@ -101,6 +103,13 @@ try{
    await sleep(9000);await snapshot(41);
  }
  console.log(JSON.stringify({event:"browser-errors",channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,blockedResponses,failed,warnings}));
+ if(requirePlayback && ((lastSnapshot?.video?.time ?? 0)<7 ||
+    lastSnapshot?.video?.paused || lastSnapshot?.errorText)) {
+   throw new Error("No sustained playback for "+channel+": "+JSON.stringify(lastSnapshot));
+ }
+ if(expectProxy && catalogRequests < 2 && legacyRequests < 2) {
+   throw new Error("Expected catalog-backed proxy for "+channel+" but video never requested it");
+ }
  if(requireLegacyPlayback && (legacyMediaOk < 2 || (lastSnapshot?.video?.time ?? 0) < 5)) {
    throw new Error("HLS legacy proxy did not deliver media to Chrome (ok="+legacyMediaOk+
      ", time="+(lastSnapshot?.video?.time??0)+")");
