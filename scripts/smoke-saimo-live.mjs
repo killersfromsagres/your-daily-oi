@@ -126,6 +126,10 @@ try {
           ranged, status:response.status, type:response.headers.get("content-type"),
           contentRange:response.headers.get("content-range"), hasHeader:text.includes("#EXTM3U"),
           rewritten:text.includes("/api/live-proxy?url="), lines:stripped }));
+        if (response.status !== 200 || !text.includes("#EXTM3U") ||
+          !text.includes("/api/live-proxy?url=") || text.includes("\ntracks-v1a1/mono.m3u8")) {
+          throw new Error("HBO child HLS URI not rewritten (ranged=" + ranged + ")");
+        }
       }
     }
   }
