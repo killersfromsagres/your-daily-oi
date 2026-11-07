@@ -9,6 +9,7 @@ import type {
   EpisodeItem,
 } from "./types";
 import { getIndiceBases, expandBaseToken, isHlsUrl } from "./saimo-stream";
+import { fetchFirstText, sourceUrls } from "./saimo-source";
 
 // As URLs de catálogo:
 const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://filmes-saimo.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
@@ -76,7 +77,7 @@ export function detectQuality(url: string, title?: string): string {
   if (target.includes("480") || target.includes("480p") || target.includes("sd")) {
     return "480p";
   }
-  return "1080p";
+  return "Auto";
 }
 
 function parseStreams(raw: string, audio: AudioTrack, bases: string[] = []): StreamSource[] {
@@ -95,7 +96,7 @@ function parseStreams(raw: string, audio: AudioTrack, bases: string[] = []): Str
       return {
         url,
         format: detectFormat(url),
-        audio,
+        audio: /[?&]versao=leg(?:&|$)/i.test(url) ? "leg" : /[?&]versao=dub(?:&|$)/i.test(url) ? "dub" : audio,
         priority: i + 2,
         quality: detectQuality(url),
       };
@@ -105,44 +106,19 @@ function parseStreams(raw: string, audio: AudioTrack, bases: string[] = []): Str
 /**
  * Fetch com retry, exponential backoff e cabeçalhos de navegador
  */
-async function fetchWithRetry(url: string, maxRetries = 2): Promise<Response> {
-  let attempt = 0;
-  let delay = 500;
-
-  while (attempt <= maxRetries) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": BROWSER_USER_AGENT,
-          Accept: "text/plain, */*",
-          "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-        },
-        redirect: "follow",
-      });
-      if (res.ok) return res;
-      if (res.status === 404) {
-        throw new Error(`404 Not Found: ${url}`);
-      }
-    } catch (err) {
-      if (attempt === maxRetries) throw err;
-    }
-    attempt++;
-    await new Promise((r) => setTimeout(r, delay));
-    delay *= 2;
-  }
-  throw new Error(`Falha ao conectar em ${url}`);
+async function fetchWithRetry(url: string): Promise<Response> {
+  // Os arquivos de anime usam o mesmo timeout dos catálogos: sem loops de 404.
+  const response = await fetch(url, {
+    headers: { Accept: "text/plain, */*" },
+    signal: AbortSignal.timeout(6500),
+  });
+  if (!response.ok) throw new Error(`Fonte HTTP ${response.status}: ${url}`);
+  return response;
 }
 
 async function fetchText(urls: string[]): Promise<string> {
-  for (const url of urls) {
-    try {
-      const res = await fetchWithRetry(url);
-      if (res.ok) return await res.text();
-    } catch {
-      // Tenta próximo fallback
-    }
-  }
-  throw new Error(`Falha ao buscar catálogo em todas as fontes: ${urls[0]}`);
+  const { text } = await fetchFirstText(urls, "VOD", { timeoutMs: 6500 });
+  return text;
 }
 
 /**
@@ -157,7 +133,9 @@ function getCatalogUrls(fileName: string): string[] {
     urls.push(`${SNAPSHOT_URL}/${fileName}`);
   }
   // No Cloudflare Pages, a raiz JÁ É a pasta vod
-  urls.push(`${SAIMO_PAGES}/${fileName}`);
+  for (const mirror of sourceUrls(process.env.SAIMO_VOD_MIRRORS, [SAIMO_PAGES])) {
+    urls.push(`${mirror}/${fileName}`);
+  }
   // No GitHub Raw, os arquivos estão dentro da pasta vod/
   urls.push(`${SAIMO_RAW}/${fileName}`);
   return urls;
@@ -236,10 +214,7 @@ export function isAnimeItem(item: CatalogItem | { type: string; title: string; g
 }
 
 async function fetchAnimeText(fileName: string): Promise<string> {
-  if (fileName === "fichas.txt") return EMBEDDED_ANIMES_FICHAS;
-  if (EMBEDDED_ANIMES_EPISODES[fileName]) {
-    return EMBEDDED_ANIMES_EPISODES[fileName];
-  }
+  // Animes externos são prioritários; embutidos são contingência.
   if (ANIMES_PAGES) {
     try {
       const res = await fetchWithRetry(`${ANIMES_PAGES}/${fileName}`);
@@ -248,7 +223,8 @@ async function fetchAnimeText(fileName: string): Promise<string> {
       // fallback
     }
   }
-  return "";
+  if (fileName === "fichas.txt") return EMBEDDED_ANIMES_FICHAS;
+  return EMBEDDED_ANIMES_EPISODES[fileName] || "";
 }
 
 // Parse de fichas.txt: tipo\tTítulo\tTMDB_ID\tposter_path\tGênero1,Gênero2,...
@@ -360,6 +336,8 @@ function parseFilmesFile(text: string, bases: string[] = []): Map<string, Stream
 
 // Cache de streams e temporadas por arquivo já baixado
 const streamsCache = new Map<string, Map<string, StreamSource[]>>();
+const streamsCacheExpires = new Map<string, number>();
+const streamsInFlight = new Map<string, Promise<Map<string, StreamSource[]>>>();
 const seriesSeasonsCache = new Map<string, Map<string, SeasonItem[]>>();
 let isBackgroundSyncing = false;
 
@@ -459,11 +437,14 @@ function getLetterKey(title: string): string {
  */
 export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string): Promise<Map<string, StreamSource[]>> {
   const cacheKey = `${type}-${letter}`;
-  if (streamsCache.has(cacheKey)) {
+  if (streamsCache.has(cacheKey) && (streamsCacheExpires.get(cacheKey) ?? 0) > Date.now()) {
     return streamsCache.get(cacheKey)!;
   }
+  const pending = streamsInFlight.get(cacheKey);
+  if (pending) return pending;
 
-  const bases = await getIndiceBases().catch(() => []);
+  const task = (async () => {
+    const bases = await getIndiceBases().catch(() => []);
 
   if (type === "a") {
     try {
@@ -480,6 +461,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
       if (combinedText.trim()) {
         const { streams, seasons } = parseSeriesData(combinedText, bases);
         streamsCache.set(cacheKey, streams);
+        streamsCacheExpires.set(cacheKey, Date.now() + CACHE_TTL);
         seriesSeasonsCache.set(`a-${letter}`, seasons);
         return streams;
       }
@@ -488,6 +470,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
     }
     const empty = new Map<string, StreamSource[]>();
     streamsCache.set(cacheKey, empty);
+    streamsCacheExpires.set(cacheKey, Date.now() + 60_000);
     return empty;
   }
 
@@ -496,10 +479,12 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
       const text = await fetchText(getCatalogUrls(`filmes-${letter}.txt`));
       const parsed = parseFilmesFile(text, bases);
       streamsCache.set(cacheKey, parsed);
+        streamsCacheExpires.set(cacheKey, Date.now() + CACHE_TTL);
       return parsed;
     } catch {
       const empty = new Map<string, StreamSource[]>();
       streamsCache.set(cacheKey, empty);
+    streamsCacheExpires.set(cacheKey, Date.now() + 60_000);
       return empty;
     }
   }
@@ -519,6 +504,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
     if (combinedSeriesText.trim()) {
       const { streams, seasons } = parseSeriesData(combinedSeriesText, bases);
       streamsCache.set(cacheKey, streams);
+        streamsCacheExpires.set(cacheKey, Date.now() + CACHE_TTL);
       seriesSeasonsCache.set(letter, seasons);
       return streams;
     }
@@ -528,7 +514,15 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
 
   const empty = new Map<string, StreamSource[]>();
   streamsCache.set(cacheKey, empty);
+    streamsCacheExpires.set(cacheKey, Date.now() + 60_000);
   return empty;
+  })();
+  streamsInFlight.set(cacheKey, task);
+  try {
+    return await task;
+  } finally {
+    streamsInFlight.delete(cacheKey);
+  }
 }
 
 /**
@@ -593,11 +587,18 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
   }
 
   // Carrega fichas.txt, destaques.txt e animes em paralelo
-  const [fichasText, destaquesText, animesFichasText] = await Promise.all([
+  const [fichasResult, destaquesResult, animesResult] = await Promise.allSettled([
     fetchText(getCatalogUrls("fichas.txt")),
     fetchText(getCatalogUrls("destaques.txt")),
-    fetchAnimeText("fichas.txt").catch(() => ""),
+    fetchAnimeText("fichas.txt"),
   ]);
+  const fichasText = fichasResult.status === "fulfilled" ? fichasResult.value : "";
+  const destaquesText = destaquesResult.status === "fulfilled" ? destaquesResult.value : "";
+  const animesFichasText = animesResult.status === "fulfilled" ? animesResult.value : "";
+  if (!fichasText) {
+    console.warn("[Catalog] Catálogo principal inacessível; dados locais de animes serão usados.",
+      fichasResult.status === "rejected" ? String(fichasResult.reason) : "");
+  }
 
   const fichas = parseFichas(fichasText);
   const highlights = parseDestaques(destaquesText);
@@ -638,10 +639,10 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
 
   catalogCache = items;
   highlightCache = highlights;
-  cacheTime = now;
+  cacheTime = fichasText ? now : now - CACHE_TTL + 60_000;
 
-  // Dispara aquecimento de streams em segundo plano sem travar a resposta HTTP
-  syncAllStreamsInBackground();
+  // Reprodução é resolvida sob demanda: evita centenas de pedidos a fontes remotas.
+  // O prefetch massivo anterior provocava rate limits e lentidão em serverless.
 
   return { items, highlights };
 }
