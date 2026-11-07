@@ -6,6 +6,7 @@ import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
+import { getEpisodeProgress, saveEpisodeProgress, setEpisodeWatched } from "@/lib/episode-progress";
 
 export const Route = createFileRoute("/assistir/serie/$id/$temp/$ep")({
   component: WatchSeriesPage,
@@ -105,10 +106,13 @@ function WatchSeriesPage() {
     streams: [],
   };
 
+  const episodeKey = { type: "s" as const, contentId: effectiveSerie.id, season: Number(temp), episode: Number(ep) };
   const savedProgress = getProgressById(`${effectiveSerie.id}-t${temp}-e${ep}`);
+  const episodeSaved = getEpisodeProgress(episodeKey);
 
   const handleTimeUpdate = (currentTime: number, duration?: number) => {
     if (currentTime < 2) return;
+    saveEpisodeProgress(episodeKey, currentTime, duration || 0);
     saveProgress({
       id: `${effectiveSerie.id}-t${temp}-e${ep}`,
       contentId: effectiveSerie.id,
@@ -146,8 +150,9 @@ function WatchSeriesPage() {
           title={effectiveSerie.title}
           subtitle={`Série • Temporada ${temp} - Episódio ${ep}`}
           onBack={() => void navigate({ to: `/serie/${effectiveSerie.id}` })}
-          initialTime={savedProgress?.currentTime || 0}
+          initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
+          onEnded={() => setEpisodeWatched(episodeKey, true)}
           expectedRuntimeMin={effectiveSerie.tmdb?.runtime || 45}
         />
       </PlayerErrorBoundary>
