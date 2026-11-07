@@ -71,20 +71,20 @@ export function resolveChannelProgram(
   const end = endMs(current);
   // An expired programme must never be advertised as "AGORA", even if an old
   // client cache still includes it. The server normally sends exact intervals.
-  const isCurrent = Boolean(current?.titulo) &&
+  const isCurrent = Boolean(current?.titulo?.trim()) &&
     (start === null || start <= now) && (end === null || now < end);
   const nextStart = startMs(next);
   const nextEnd = endMs(next);
   // The next programme can become the current one while the browser keeps an
   // EPG snapshot. Promote it locally at the exact start time between refreshes.
-  const nextIsCurrent = Boolean(next?.titulo) && nextStart !== null &&
+  const nextIsCurrent = Boolean(next?.titulo?.trim()) && nextStart !== null &&
     nextStart <= now && (nextEnd === null || now < nextEnd);
   const onAir = isCurrent ? current : nextIsCurrent ? next : null;
   const future = isCurrent ? next : nextIsCurrent ? null : (
-    current && start !== null && start > now ? current :
-    next && (nextStart === null || nextStart > now) ? next : null
+    current?.titulo?.trim() && start !== null && start > now ? current :
+    next?.titulo?.trim() && (nextStart === null || nextStart > now) ? next : null
   );
-  const hasSchedule = Boolean(onAir?.titulo || future?.titulo);
+  const hasSchedule = Boolean(onAir?.titulo?.trim() || future?.titulo?.trim());
   return {
     title: onAir?.titulo?.trim() || null,
     description: onAir?.descricao?.trim() || null,
