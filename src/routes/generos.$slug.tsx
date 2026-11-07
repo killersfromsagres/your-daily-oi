@@ -5,6 +5,7 @@ import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
 import { normalizeTitle, isAnimeItem } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
+import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
 import { Film, Tv, Sparkles, Filter } from "lucide-react";
 
 interface GeneroSearch {
@@ -27,6 +28,8 @@ function GenrePage() {
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(CATALOG_PAGE_SIZE);
+  const [loadError, setLoadError] = useState(false);
 
   const decoded = decodeURIComponent(slug);
   const normSlug = normalizeTitle(decoded);
@@ -55,25 +58,19 @@ function GenrePage() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-
-    fetch("/api/catalogo", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro");
-        return res.json() as Promise<{ items: CatalogItem[] }>;
+    setLoadError(false);
+    void getClientCatalog()
+      .then(data => { if (active) setItems(data.items); })
+      .catch(error => {
+        console.error("Erro ao carregar catálogo:", error);
+        if (active) setLoadError(true);
       })
-      .then((data) => {
-        if (!active) return;
-        setItems(data.items || []);
-      })
-      .catch((err) => console.error("Erro ao carregar catálogo:", err))
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, []);
+
+  // Changing genre or content type must never inherit a huge DOM from a previous view.
+  useEffect(() => { setVisibleCount(CATALOG_PAGE_SIZE); }, [slug, selectedType]);
 
   // Filtra itens com separação estrita entre filmes, séries e animes
   const filtered = useMemo(() => {
@@ -99,6 +96,8 @@ function GenrePage() {
       })
     );
   }, [items, normSlug, isFilmes, isSeries, selectedType]);
+
+  const visibleItems = useMemo(() => catalogVisibleItems(filtered, visibleCount), [filtered, visibleCount]);
 
   const rawTitle = isFilmes ? "Filmes" : isSeries ? "Séries" : decoded.charAt(0).toUpperCase() + decoded.slice(1);
   const typeBadge =
@@ -210,7 +209,13 @@ function GenrePage() {
       )}
 
       {loading ? (
-        <SkeletonRow count={12} />
+        <SkeletonRow count={8} />
+      ) : loadError ? (
+        <div className="ydo-empty-state">
+          <h2>Não foi possível abrir o catálogo</h2>
+          <p>Confira sua conexão e tente novamente.</p>
+          <button className="ydo-btn-primary" type="button" onClick={() => window.location.reload()}>Tentar novamente</button>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="ydo-empty-state">
           <h2>Nenhum título encontrado</h2>
@@ -223,16 +228,23 @@ function GenrePage() {
           </p>
         </div>
       ) : (
-        <div className="ydo-search-grid">
-          {filtered.map((item) => (
-            <MediaCard
-              key={item.id}
-              item={item}
-              isSaved={savedIds.has(item.id)}
-              onToggleSaved={toggleSaved}
-            />
-          ))}
-        </div>
+        <>
+          <div className="ydo-search-grid">
+            {visibleItems.map(item => (
+              <MediaCard key={item.id} item={item}
+                isSaved={savedIds.has(item.id)} onToggleSaved={toggleSaved} />
+            ))}
+          </div>
+          <div className="zf-catalog-progress" aria-live="polite">
+            <span>Exibindo {visibleItems.length} de {filtered.length} títulos</span>
+            {visibleItems.length < filtered.length && (
+              <button type="button" className="zf-catalog-load-more"
+                onClick={() => setVisibleCount(current => nextCatalogPage(current, filtered.length))}>
+                Carregar mais títulos
+              </button>
+            )}
+          </div>
+        </>
       )}
     </main>
   );
