@@ -707,3 +707,213 @@ html:has(.ydo-live-player-container.is-theater) .ydo-header,
 html:has(.ydo-live-player-container.is-theater) .zf-mobile-dock {
   display: none !important;
 }
+
+
+/* CONTROL BAR REPAIR (all viewport sizes):
+   Keep controls within the actual video width and never allow server names,
+   quality labels, or the Cast button to overlap the adjacent actions. */
+.ztv-player-frame .ydo-live-player-container {
+  box-sizing: border-box;
+}
+.ztv-player-frame .ydo-live-controls-bar {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(4px, .8vw, 12px);
+  padding: 9px clamp(7px, 1.1vw, 16px) 10px;
+}
+.ztv-player-frame .ydo-live-controls-left,
+.ztv-player-frame .ydo-live-controls-right {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  flex-flow: row nowrap;
+  justify-content: flex-start;
+  flex: unset;
+  gap: clamp(3px, .5vw, 8px);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+.ztv-player-frame .ydo-live-controls-right {
+  justify-content: flex-end;
+  margin-left: 0;
+}
+.ztv-player-frame .ydo-live-controls-bar button {
+  position: relative;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+.ztv-player-frame .ydo-live-source-selector {
+  flex: 0 1 142px;
+  min-width: 0;
+  max-width: 142px;
+  width: auto;
+}
+.ztv-player-frame .ydo-live-source-pill {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 5px 8px;
+  gap: 5px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ztv-player-frame .ydo-live-source-pill > span {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ztv-player-frame .zang-cast-control {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+}
+.ztv-player-frame .ydo-live-controls-bar .zang-cast-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-width: 33px;
+  width: auto;
+  height: 32px;
+  min-height: 32px;
+  max-width: none;
+  margin: 0;
+  padding: 5px 7px;
+  gap: 5px;
+  border-radius: 8px;
+}
+.ztv-player-frame .ydo-live-controls-bar .zang-cast-trigger span {
+  font-size: 10px;
+  max-width: 74px;
+  line-height: 1;
+}
+.ztv-player-frame .ydo-live-ctrl-btn {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 5px;
+}
+.ztv-player-frame .ydo-live-controls-left .ydo-live-volume-wrap {
+  flex: 0 1 auto;
+  min-width: 32px;
+}
+.ztv-player-frame .ydo-live-volume-slider {
+  width: clamp(30px, 4vw, 60px);
+  max-width: 60px;
+  min-width: 0;
+}
+.ztv-player-frame .ydo-live-edge-btn,
+.ztv-player-frame .ydo-live-latency-btn {
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-height: 30px;
+  height: 31px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 5px 8px;
+}
+.ztv-player-frame .ydo-live-sources-menu {
+  z-index: 80;
+  right: 0;
+  left: auto;
+}
+
+/* The ResizeObserver switches layouts based on the video's measured width,
+   so embedded TV, split screen and desktop windows behave consistently. */
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-controls-bar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  padding-inline: 7px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-controls-left,
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-controls-right {
+  gap: 4px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-volume-slider {
+  width: 33px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-latency-btn,
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-latency-btn {
+  display: none;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-options-latency,
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-options-latency {
+  display: flex;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .zang-cast-trigger span,
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .zang-cast-trigger span {
+  display: none;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="compact"] .ydo-live-source-selector {
+  flex-basis: 88px;
+  max-width: 88px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-controls-bar {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px;
+  padding-inline: 5px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-controls-left,
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-controls-right {
+  gap: 3px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-volume-slider,
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-controls-right > .ydo-live-ctrl-btn[aria-label="Picture-in-Picture"] {
+  display: none;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-options-pip {
+  display: flex;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-source-selector {
+  flex: 0 0 32px;
+  max-width: 32px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-source-pill {
+  width: 32px;
+  min-width: 32px;
+  padding: 5px;
+}
+.ztv-player-frame .ydo-live-player-container[data-controls-density="minimal"] .ydo-live-source-pill span {
+  display: none;
+}
+@media (max-width: 740px), (pointer: coarse) and (max-width: 900px) {
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    justify-content: stretch;
+    gap: 3px;
+    padding: 5px 6px 6px !important;
+    min-height: 42px;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-right {
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-source-selector {
+    max-width: 32px;
+    flex: 0 0 32px;
+  }
+}

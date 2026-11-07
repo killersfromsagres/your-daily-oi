@@ -331,6 +331,7 @@ async function querySaimoOfficial(
         headers: { Accept: "application/json, video/*, application/vnd.apple.mpegurl, */*" },
       });
       let target: string | null = null;
+      let playableInlineResponse = false;
       if (response.status >= 300 && response.status < 400) {
         target = response.headers.get("location");
       } else if (response.ok) {
@@ -340,13 +341,17 @@ async function querySaimoOfficial(
           target = typeof data.url === "string" ? data.url : null;
         } else if (/^(video\/|audio\/|application\/(?:vnd\.apple\.mpegurl|x-mpegurl))/i.test(contentType)) {
           target = endpoint.toString();
+          playableInlineResponse = true;
           await response.body?.cancel();
         }
       }
       if (!target) return [];
       const finalUrl = new URL(target, endpoint);
       if (!["http:", "https:"].includes(finalUrl.protocol)) return [];
-      if (finalUrl.host === endpoint.host && finalUrl.pathname === endpoint.pathname) return [];
+      // Some Saimo mirrors send media with HTTP 200 instead of a 302;
+      // those are still playable through our same-origin Range proxy.
+      if (finalUrl.host === endpoint.host && finalUrl.pathname === endpoint.pathname &&
+          !playableInlineResponse) return [];
       if (/^(?:localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.)/i.test(finalUrl.hostname)) return [];
       // Mesmo caminho usado pela API pública, mas com entrega same-origin e Range/206.
       // URL direta fica disponível como fallback se o proxy não alcançar o CDN.
@@ -456,8 +461,10 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
     const fenixSources = await queryFenixFlix(isSerie, effectiveLookupId, season, episode);
     allSources.push(...fenixSources);
 
-    // Se não achou streams e o ID é numérico (TMDB), tenta resolver IMDb ID via TMDB API
-    if (allSources.length === 0 && /^\d+$/.test(effectiveLookupId)) {
+    // IMDB Fenix is an independent fallback even if another provider advertises
+    // a link that later fails in the browser. Do not let an unverified Saimo URL
+    // prevent alternative movies, series or anime episodes from being returned.
+    if (fenixSources.length === 0 && /^\d+$/.test(effectiveLookupId)) {
       try {
         const extRes = await fetch(
           `https://api.themoviedb.org/3/${isSerie ? "tv" : "movie"}/${effectiveLookupId}/external_ids?api_key=${TMDB_API_KEY}`,

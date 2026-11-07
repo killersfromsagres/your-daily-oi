@@ -235,6 +235,27 @@ export function LivePlayer({
   const [error, setError] = useState(false);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [controlsDensity, setControlsDensity] = useState<"roomy" | "compact" | "minimal">("roomy");
+
+  // Fit controls to the *actual player width*, not the browser viewport.
+  // TV sidebars, embedded pages and desktop split views can shrink the video.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const sync = () => {
+      const width = el.getBoundingClientRect().width;
+      const next = width < 440 ? "minimal" : width < 920 ? "compact" : "roomy";
+      setControlsDensity(previous => previous === next ? previous : next);
+    };
+    sync();
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(sync);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }
+    window.addEventListener("resize", sync, { passive:true });
+    return () => window.removeEventListener("resize", sync);
+  }, []);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [theaterFullscreen, setTheaterFullscreen] = useState(false);
   const [rotateLandscapeFallback, setRotateLandscapeFallback] = useState(false);
@@ -913,6 +934,7 @@ export function LivePlayer({
       ref={containerRef}
       className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "") + (rotateLandscapeFallback ? " is-landscape-fallback" : "")}
       data-controls-visible={controlsVisible}
+      data-controls-density={controlsDensity}
       onMouseMove={showControls}
       onTouchStart={showControls}
     >
