@@ -159,7 +159,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                 <Link to="/animes" onClick={navigateAndClose}><Sparkles size={20} /><span>Animes</span></Link>
                 <Link to="/tv" onClick={navigateAndClose}><Tv2 size={20} /><span>TV ao vivo</span></Link>
                 <Link to="/lancamentos" onClick={navigateAndClose}><Compass size={20} /><span>Lançamentos</span></Link>
-                <Link to="/minha-lista" className="zf-mobile-mylist" onClick={close}>
+                <Link to="/minha-lista" className="zf-mobile-mylist" onClick={navigateAndClose}>
                   <Heart size={20} /><span>Minha lista</span>
                   {savedCount > 0 && <b>{savedCount}</b>}
                 </Link>
