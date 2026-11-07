@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle } from "./lib/catalog";
+import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle, getCatalogSourceStatus } from "./lib/catalog";
 import { getTmdbData, getTmdbTvSeasons, getTmdbSeasonEpisodes, type TmdbEpisodeItem } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
@@ -194,6 +194,7 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       highlights,
       genres: getGenres(items),
       featuredHero: finalHero.length > 0 ? finalHero : enrichedHeroItems,
+      sourceStatus: getCatalogSourceStatus(),
     });
   } catch (error) {
     console.error("Erro na API /api/catalogo:", error);
@@ -2009,9 +2010,26 @@ export default {
       if (url.pathname === "/api/live-proxy") {
         return await handleLiveProxyApi(request, url);
       }
+      if (url.pathname === "/api/integrations/status") {
+        const [vod, tv] = await Promise.allSettled([loadCatalog(), loadCanais()]);
+        const catalogState = getCatalogSourceStatus();
+        const catalogCount = vod.status === "fulfilled"
+          ? Array.from(vod.value.items.values()).filter((item) => !item.alias).length
+          : 0;
+        const channelCount = tv.status === "fulfilled" ? tv.value.canais.length : 0;
+        return jsonResponse({
+          status: catalogState.state === "remote" && channelCount > 0 ? "operational" : "degraded",
+          checkedAt: new Date().toISOString(),
+          vod: { state: catalogState.state, items: catalogCount, checkedAt: catalogState.checkedAt },
+          tv: { state: channelCount > 0 ? "available" : "unavailable", channels: channelCount },
+          note: "Contagens de catálogo não comprovam que cada vídeo ou canal reproduz.",
+        }, 200, "no-store");
+      }
       if (url.pathname === "/api/canais") {
         const data = await loadCanais();
-        return jsonResponse(data, 200, "public, max-age=3600");
+        return data.canais.length > 0
+          ? jsonResponse(data, 200, "public, max-age=300")
+          : jsonResponse({ ...data, error: "Catálogo de TV remoto indisponível. Configure SAIMO_CANAIS_URLS para adicionar um espelho." }, 503);
       }
       if (url.pathname === "/api/radios") {
         const data = await loadRadios();
