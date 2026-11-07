@@ -1276,7 +1276,7 @@ const liveManifestCache = new Map<string, { body: string; expires: number }>();
 async function handleTvStreamApi(request: Request, url: URL): Promise<Response> {
   const id = url.searchParams.get("canal") || "";
   const source = url.searchParams.get("fonte") || "";
-  if (!/^[a-z0-9-]{1,120}$/.test(id) || !/^(0|[1-9]\\d{0,3})$/.test(source)) {
+  if (!/^[a-z0-9-]{1,120}$/.test(id) || !/^(0|[1-9]\d{0,3})$/.test(source)) {
     return jsonResponse({ error: "Canal ou fonte inválidos" }, 400);
   }
   if (request.method !== "GET" && request.method !== "HEAD" && request.method !== "OPTIONS") {
