@@ -411,7 +411,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </h1>
           <span className="ydo-tv-badge-live">
             <span className="ydo-live-dot" />
-            408 Canais
+            {canais.length} Canais
           </span>
         </div>
 
@@ -435,6 +435,21 @@ export function TvView({ initialCanalId }: TvViewProps) {
           </Link>
         </div>
       </div>
+
+      {error && canais.length === 0 && (
+        <div role="alert" style={{ padding: "16px 24px", margin: "12px 24px", border: "1px solid rgba(232,180,74,0.35)", borderRadius: 12 }}>
+          <strong>Não foi possível atualizar a lista de TV.</strong>
+          <p style={{ opacity: 0.8, marginTop: 6 }}>{error}</p>
+          <button className="ydo-btn-secondary" type="button" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {canais.length > 0 && (
+        <p role="status" style={{ fontSize: 12, opacity: 0.75, padding: "0 24px", marginTop: 6 }}>
+          {canais.filter((c) => c.fontes.length > 0).length} com fontes cadastradas · {canais.filter((c) => c.indisponivel).length} temporariamente sem fonte
+        </p>
+      )}
 
       {/* Prateleira Jogos de Hoje (Brasileirão) */}
       <JogosShelf onSelectCanalId={handleSelectCanalId} />
