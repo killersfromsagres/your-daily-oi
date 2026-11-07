@@ -53,7 +53,8 @@ try{
   htmlBytes:html.length,hasGlass:html.includes("ztv-explore-glass"),
   hasCards:html.includes("ztv-card-glass"),hasNowTitles:html.includes("ztv-card-program-title"),
   hasFilters:html.includes("Com programação identificada"),
-  hasProgramSearch:html.includes("Buscar canal, filme, série, anime ou programa"),
+  hasProgramSearch:html.includes("Busque seu canal ou programa favorito"),
+  hasTechnicalCounters:html.includes('class="ztv-statbar"') || html.includes('class="ydo-clock-pill"'),
   hasZangBrand:html.includes("ZANG FLIX"),
   visibleCards:(html.match(/class="ztv-card-main"/g)||[]).length,
   currentLabels:(html.match(/AGORA PASSANDO/g)||[]).length,
@@ -62,7 +63,7 @@ try{
  };
  console.log(JSON.stringify(metrics));
  if(result.status!==0 || !metrics.hasGlass || !metrics.hasCards || !metrics.hasNowTitles ||
-    !metrics.hasFilters || !metrics.hasProgramSearch || metrics.legacyVisible ||
+    !metrics.hasFilters || !metrics.hasProgramSearch || metrics.hasTechnicalCounters || metrics.legacyVisible ||
     metrics.visibleCards<10)throw Error("Zang Flix glass card DOM failed"+String(result.stderr).slice(0,400));
  // Confirm the programme API and page represent the same channel catalog, rather
  // than receiving randomly chosen titles from mismatched schedules.

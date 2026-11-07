@@ -102,12 +102,17 @@ export function MatchCard({ game, onWatch, onExplore }: {
             <span className="zgame-watch-icon">{game.canalLogo
               ? <img src={game.canalLogo} alt="" loading="lazy" />
               : <Tv size={17} />}</span>
-            <span><small>TRANSMISSÃO IDENTIFICADA</small><strong>{game.canalNome}</strong></span>
+            <span><small>ASSISTIR AQUI · TRANSMISSÃO IDENTIFICADA</small><strong>{game.canalNome}</strong>{game.canaisTransmissao && game.canaisTransmissao.length > 1 && <small>Outras opções: {game.canaisTransmissao.filter(name => name !== game.canalNome).join(" · ")}</small>}</span>
             <ArrowRight size={18} className="zgame-watch-arrow" />
           </button>
+        ) : game.canaisTransmissao?.length ? (
+          <div className="zgame-announced">
+            <span className="zgame-announced-icon"><Tv size={18} /></span>
+            <span><small>ONDE ASSISTIR · BRASIL</small><strong>{game.canaisTransmissao.join(" · ")}</strong><em>Canal identificado na programação, mas sem reprodução vinculada aqui.</em></span>
+          </div>
         ) : (
           <div className="zgame-unconfirmed">
-            <span><ShieldQuestion size={17} /> Transmissão no Brasil não confirmada</span>
+            <span><ShieldQuestion size={17} /> Canais ainda não divulgados para esta partida</span>
             {onExplore && (
               <button type="button" onClick={onExplore} title="Explorar canais esportivos disponíveis">
                 Explorar canais <ArrowRight size={14} />
@@ -204,7 +209,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
           <div className="zgame-kicker"><Activity size={14} /><span>AGENDA ESPORTIVA</span><span className="zgame-kicker-line" /><span>FUTEBOL AO VIVO</span></div>
           <h2>Hoje tem <em>jogo.</em></h2>
           <Link to="/futebol" className="zf-football-inline-link"><FootballIcon size={16}/> Central completa de futebol <ArrowRight size={14}/></Link>
-          <p>Brasileirão, Champions League e grandes campeonatos. Acompanhe os confrontos no horário de Brasília.</p>
+          <p>Jogos, placares e onde assistir. Brasileirão Série A em destaque, com atualização automática da agenda.</p>
         </div>
         <div className="zgame-header-actions">
           {live > 0 && <span className="zgame-live-flag"><span /> {live} EM ANDAMENTO</span>}

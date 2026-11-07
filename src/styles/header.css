@@ -427,3 +427,33 @@
   border-color:rgba(243,207,149,.42);background:rgba(242,190,112,.18);
 }
 .ydo-dropdown-header svg {color:#f3c585;filter:drop-shadow(0 2px 4px rgba(240,188,103,.22));}
+
+
+/* ZANG FLIX · Jogos do Dia — ação prioritária sem relógio no header */
+.ydo-header .ydo-nav-football {
+  min-height: 36px;
+  gap: 8px;
+  padding: 4px 12px 4px 7px;
+  border: 1px solid rgba(234, 188, 111, .46);
+  border-radius: 999px;
+  color: #ffe1a8;
+  background: linear-gradient(110deg, rgba(239, 194, 120, .17), rgba(238, 192, 108, .055));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 0 22px rgba(234,174,84,.055);
+  font-size: 12px;
+  font-weight: 800;
+}
+.ydo-header .ydo-nav-football:hover,
+.ydo-header .ydo-nav-football[data-status="active"] {
+  color: #141516;
+  background: linear-gradient(120deg, #ffe3b1, #e9b56b);
+  border-color: #ffe2aa;
+  box-shadow: 0 5px 23px rgba(232,174,79,.24);
+}
+.ydo-football-icon { width: 27px; height: 27px; border-radius: 50%; display:inline-flex; align-items:center; justify-content:center; color:#f6c986; background:rgba(244,192,110,.13); }
+.ydo-nav-football:hover .ydo-football-icon,
+.ydo-nav-football[data-status="active"] .ydo-football-icon { color:#141516; background:rgba(30,23,12,.10); }
+.ydo-football-today { font-size: 9px; line-height:1; letter-spacing:.085em; color:#eac891; border-left:1px solid rgba(242,202,141,.32); padding-left:8px; font-weight:900; }
+.ydo-nav-football:hover .ydo-football-today,
+.ydo-nav-football[data-status="active"] .ydo-football-today { color:#4b3216; border-left-color:rgba(42,29,10,.24); }
+@media (max-width: 1120px) { .ydo-football-today { display:none; } }
+@media (prefers-reduced-motion:reduce) { .ydo-nav-football { transition:none; } }

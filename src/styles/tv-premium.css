@@ -1,0 +1,73 @@
+/* ZANG LIVE · curated premium TV experience; scoped exclusively to /tv. */
+.ztv-studio {
+  --ztv-accent:#f1c481;
+  background: #080d15;
+}
+.ztv-studio .ztv-content { max-width: 1640px; margin-inline:auto; }
+.ztv-studio .ztv-header {
+  position:relative;
+  align-items:center;
+  padding: clamp(23px,3vw,42px) clamp(22px,3.3vw,50px);
+  margin: 0 0 29px;
+  border: 1px solid rgba(233,240,249,.12);
+  border-radius:25px;
+  background:
+    radial-gradient(ellipse 660px 330px at 90% -10%,rgba(232,176,93,.12),transparent 75%),
+    radial-gradient(ellipse 520px 320px at 1% 110%,rgba(65,106,173,.15),transparent 77%),
+    linear-gradient(125deg,#172335 0%,#111b29 58%,#101723 100%);
+  box-shadow: 0 25px 60px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.065);
+}
+.ztv-studio .ztv-intro { max-width:790px; }
+.ztv-studio .ztv-eyebrow { letter-spacing:.17em; color:#d8b77c; font-size:10px; font-weight:850; }
+.ztv-studio .ztv-intro h1 { max-width:780px; font-size:clamp(34px,3.9vw,61px); line-height:1.08; letter-spacing:-.06em; margin:14px 0 12px; }
+.ztv-title-emphasis { color:#f2c789; }
+.ztv-heading-dot { color:#f2c789; }
+.ztv-studio .ztv-intro p { color:#acbbd0; max-width:570px; font-size:clamp(13px,1.03vw,15px); line-height:1.65; }
+.ztv-studio .ztv-header-actions { gap:10px; padding:0; align-self:center; }
+.ztv-studio .ztv-header-actions .ztv-btn { min-height:43px; border-radius:12px; padding:0 16px; font-size:12px; font-weight:780; white-space:nowrap; transition:background .2s,border-color .2s,transform .2s,box-shadow .2s; }
+.ztv-studio .ztv-header-actions .ztv-btn:hover { transform:translateY(-1px); }
+.ztv-studio .ztv-header-actions .ztv-btn-sports { background:linear-gradient(125deg,rgba(239,192,110,.20),rgba(239,192,110,.07)); color:#fbe0b4; border:1px solid rgba(241,196,129,.48); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+.ztv-studio .ztv-header-actions .ztv-btn-sports:hover { border-color:#f4c989; background:rgba(239,192,110,.24); box-shadow:0 10px 25px rgba(201,142,65,.12); }
+.ztv-studio .ztv-header-actions .ztv-btn-primary { background:linear-gradient(135deg,#f7d49c,#e9b770); color:#1b1b1e; border:1px solid #f7d69f; box-shadow:0 12px 27px rgba(206,147,71,.16); }
+.ztv-studio .ztv-header-actions .ztv-btn-primary:hover { background:#ffdfab; }
+.ztv-studio .ztv-explore-glass {
+  border-radius:26px;
+  padding:clamp(22px,3vw,42px);
+  background:
+    radial-gradient(ellipse 530px 300px at 100% 0%,rgba(240,183,98,.12),transparent 78%),
+    linear-gradient(145deg,rgba(27,40,60,.94),rgba(11,20,34,.95) 60%,rgba(16,27,42,.94));
+}
+.ztv-studio .ztv-explore-glass .ztv-explore-heading { align-items:center; gap:24px; margin-bottom:22px; }
+.ztv-studio .ztv-explore-glass .ztv-explore-heading h2 { font-size:clamp(27px,3.2vw,43px); margin:12px 0 10px; max-width:680px; line-height:1.11; letter-spacing:-.055em; }
+.ztv-studio .ztv-explore-glass .ztv-explore-heading h2 span { color:#f3c787; }
+.ztv-studio .ztv-explore-subtitle { font-size:13px; max-width:630px; color:#b1c0d1; line-height:1.7; }
+.ztv-explore-eyebrow { display:inline-flex; align-items:center; letter-spacing:.15em; color:#f0c583; font-size:10px; font-weight:850; }
+.ztv-discover-shortcuts { display:flex; flex-wrap:wrap; gap:8px; margin-top:19px; }
+.ztv-discover-shortcuts button { display:inline-flex; justify-content:center; align-items:center; min-height:36px; padding:8px 13px; border:1px solid rgba(229,236,247,.15); border-radius:999px; color:#d7e1ed; background:rgba(255,255,255,.05); font-size:11px; font-weight:750; }
+.ztv-discover-shortcuts button:first-child { background:rgba(242,198,130,.15); color:#f6d49e; border-color:rgba(242,198,130,.38); }
+.ztv-discover-shortcuts button:hover { background:rgba(242,198,130,.16); border-color:rgba(242,198,130,.45); color:#f4ce94; }
+.ztv-studio .ztv-filterbox { padding:17px; border:1px solid rgba(222,234,246,.09); border-radius:17px; background:rgba(5,12,22,.28); margin-bottom:16px; }
+.ztv-studio .ztv-filterbox .ztv-search { max-width:none; flex:2 1 340px; }
+.ztv-studio .ztv-filterbox .ztv-only-available { min-height:41px; margin:0; }
+.ztv-studio .ztv-explore-glass .ztv-category { min-height:38px; }
+.ztv-studio .ztv-explore-glass .ztv-card-glass { border-radius:19px; }
+.ztv-studio #ztv-jogos { scroll-margin-top:110px; }
+@media(max-width:1150px) {
+  .ztv-studio .ztv-header { align-items:flex-start; }
+  .ztv-studio .ztv-header-actions { align-self:auto; }
+}
+@media(max-width:750px) {
+  .ztv-studio .ztv-header { padding:25px 21px; border-radius:19px; }
+  .ztv-studio .ztv-intro h1 { font-size:36px; }
+  .ztv-studio .ztv-header-actions { display:grid; grid-template-columns:1fr 1fr; width:100%; }
+  .ztv-studio .ztv-header-actions .ztv-btn { padding:0 10px; }
+  .ztv-studio .ztv-header-actions .ztv-btn-primary { grid-column:1/-1; }
+  .ztv-studio .ztv-explore-glass { padding:20px 16px; border-radius:18px; }
+  .ztv-studio .ztv-explore-glass .ztv-explore-heading { align-items:flex-start; }
+  .ztv-studio .ztv-discover-shortcuts { gap:6px; }
+  .ztv-studio .ztv-filterbox { padding:10px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .ztv-studio .ztv-btn, .ztv-studio .ztv-card-glass { transition:none; }
+  .ztv-studio .ztv-btn:hover { transform:none; }
+}
