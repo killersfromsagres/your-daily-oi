@@ -108,13 +108,22 @@ export async function handleSaimoVodProxy(request: Request, requestUrl = new URL
         Referer: "https://saimo-tv.pages.dev/",
       });
       if (range) headers.set("Range", range);
-      const res = await fetch(current, {
-        method: "GET",
-        headers,
-        redirect: "manual",
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-        cache: "no-store",
-      });
+      // Timeout apenas até receber os cabeçalhos. Abortar o signal após
+      // 12s cortaria um filme em reprodução mesmo com o fluxo funcionando.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      let res: Response;
+      try {
+        res = await fetch(current, {
+          method: "GET",
+          headers,
+          redirect: "manual",
+          signal: controller.signal,
+          cache: "no-store",
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (res.status >= 300 && res.status < 400) {
         const location = res.headers.get("location");
         await res.body?.cancel();
