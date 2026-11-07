@@ -1260,7 +1260,7 @@ async function handleTvStreamApi(request: Request, url: URL): Promise<Response> 
  * Route Handler /api/live-proxy (Proxy Saimo-Grade com redirects manuais, cookies, resgate 403/404 e MPD)
  */
 async function handleLiveProxyApi(request: Request, url: URL): Promise<Response> {
-  let targetUrl = url.searchParams.get("url");
+  let targetUrl: string = url.searchParams.get("url") || "";
   if (!targetUrl) {
     return new Response("URL ausente", { status: 400 });
   }
