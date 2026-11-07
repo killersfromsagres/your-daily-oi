@@ -145,6 +145,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [activeEpg, setActiveEpg] = useState<CanalEPG | null>(null);
 
   const lastRefresh = useRef(0);
+  const initialChannelRef = useRef(initialCanalId);
+  initialChannelRef.current = initialCanalId;
+  const requestRef = useRef<AbortController | null>(null);
   const refreshPending = useRef(false);
   const guideLastLoad = useRef(0);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -155,7 +158,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
     setUpdatedAt(data.atualizadoEm || new Date().toISOString());
     setCatalogError(null);
     setActiveId(previous => {
-      if (initialCanalId && data.canais.some(c => c.id === initialCanalId)) return initialCanalId;
+      const requested = initialChannelRef.current;
+      if (requested && data.canais.some(c => c.id === requested)) return requested;
       if (previous && data.canais.some(c => c.id === previous)) return previous;
       let saved = "";
       try { saved = localStorage.getItem(LAST_KEY) || ""; } catch {}
@@ -164,12 +168,13 @@ export function TvView({ initialCanalId }: TvViewProps) {
         data.canais.find(c => c.fontes.length) || data.canais[0];
       return first?.id || "";
     });
-  }, [initialCanalId]);
+  }, []);
 
   const refresh = useCallback(async (initial = false) => {
     if (refreshPending.current) return;
     refreshPending.current = true;
     const controller = new AbortController();
+    requestRef.current = controller;
     if (initial) setLoading(true);
     else setRefreshing(true);
     try {
@@ -183,10 +188,14 @@ export function TvView({ initialCanalId }: TvViewProps) {
       setLoading(false);
       setRefreshing(false);
       refreshPending.current = false;
+      if (requestRef.current === controller) requestRef.current = null;
     }
   }, [applyCatalog]);
 
-  useEffect(() => { void refresh(true); }, [refresh]);
+  useEffect(() => {
+    void refresh(true);
+    return () => { requestRef.current?.abort(); };
+  }, [refresh]);
   useEffect(() => {
     const check = () => {
       if (document.visibilityState === "visible" && Date.now() - lastRefresh.current > REFRESH_INTERVAL_MS) {
@@ -324,8 +333,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
 
   const guideChannels = useMemo(() => {
     const search = normalize(guideQuery);
-    return channels.filter(c => !search || normalize(c.nome + " " + c.categoria).includes(search))
-      .slice(0, 130);
+    return channels.filter(c => !search || normalize(c.nome + " " + c.categoria).includes(search));
   }, [channels, guideQuery]);
 
   const currentProgram = (active && guide[active.nome]?.atual) || activeEpg?.atual || null;
@@ -409,7 +417,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
                 </div>
               </div>
               <div className="ztv-now-actions">
-                <button type="button" className="ztv-round-action" onClick={() => active && toggleFavorite(active.id)} disabled={!active} title="Favoritar canal" aria-label="Favoritar canal">
+                <button type="button" className="ztv-round-action" onClick={() => active && toggleFavorite(active.id)} disabled={!active} title={active && favorites.includes(active.id) ? "Remover favorito" : "Favoritar canal"}
+                  aria-label={active && favorites.includes(active.id) ? "Remover favorito" : "Favoritar canal"}>
                   <Heart size={18} fill={active && favorites.includes(active.id) ? "currentColor" : "none"} />
                 </button>
                 <button type="button" className="ztv-round-action" onClick={() => switchChannel(-1)} title="Canal anterior" aria-label="Canal anterior"><ChevronLeft size={20} /></button>
