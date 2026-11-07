@@ -55,7 +55,7 @@ export async function getTmdbSeasonEpisodes(
       numero: ep.episode_number,
       nome: ep.name || `Episódio ${ep.episode_number}`,
       sinopse: ep.overview || "",
-      still: ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : null,
+      still: ep.still_path ? `https://image.tmdb.org/t/p/w780${ep.still_path}` : null,
       duracao: ep.runtime ? `${ep.runtime} min` : null,
     }));
   } catch {
