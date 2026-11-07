@@ -174,6 +174,65 @@ export function TvView({ initialCanalId }: TvViewProps) {
     };
   }, [initialCanalId]);
 
+  // Atualiza canais e fontes periodicamente, como o Saimo, sem reiniciar
+  // o player quando a lista não mudou.
+  const lastChannelRefreshRef = useRef(Date.now());
+  useEffect(() => {
+    let alive = true;
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      if (Date.now() - lastChannelRefreshRef.current < 9 * 60_000) return;
+      lastChannelRefreshRef.current = Date.now();
+      controller?.abort();
+      controller = new AbortController();
+      fetch("/api/canais", { cache: "no-store", signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) throw new Error(`Catálogo HTTP ${res.status}`);
+          return res.json() as Promise<{ canais: CanalTV[]; categorias: string[] }>;
+        })
+        .then((data) => {
+          if (!alive || !data.canais?.length) return;
+          setCanais((previous) => {
+            const same = previous.length === data.canais.length &&
+              previous.every((item, index) => {
+                const next = data.canais[index];
+                return !!next && item.id === next.id &&
+                  item.indisponivel === next.indisponivel &&
+                  item.fontes.length === next.fontes.length &&
+                  item.fontes.every((font, j) => {
+                    const other = next.fontes[j];
+                    return !!other && font.url === other.url &&
+                      font.referer === other.referer &&
+                      font.agente === other.agente &&
+                      font.chave === other.chave;
+                  });
+              });
+            return same ? previous : data.canais;
+          });
+          setCategorias(data.categorias);
+          setError(null);
+          setActiveId((previous) => {
+            if (data.canais.some((ch) => ch.id === previous)) return previous;
+            return data.canais.find((ch) => ch.fontes.length)?.id || data.canais[0]?.id || "";
+          });
+        })
+        .catch((err: unknown) => {
+          if (alive && !(err instanceof Error && err.name === "AbortError")) {
+            console.warn("[TvView] Atualização automática do catálogo falhou:", err);
+          }
+        });
+    };
+    const id = window.setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+      controller?.abort();
+    };
+  }, []);
+
   // Canal ativo atual
   const activeCanal = useMemo(() => {
     return canais.find((c) => c.id === activeId) || canais[0];
