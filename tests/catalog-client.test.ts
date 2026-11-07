@@ -1,6 +1,6 @@
 // tests/catalog-client.test.ts — prevent a large mobile route from mounting the entire catalog.
 import { describe, expect, test } from "bun:test";
-import { CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "../src/lib/catalog-client";
+import { CATALOG_PAGE_SIZE, catalogVisibleItems, getClientCatalog, nextCatalogPage } from "../src/lib/catalog-client";
 
 describe("mobile catalog incremental rendering", () => {
   const all = Array.from({ length: 12000 }, (_, id) => ({id}));
@@ -17,5 +17,30 @@ describe("mobile catalog incremental rendering", () => {
   test("handles empty and negative limits without constructing thousands of elements", () => {
     expect(catalogVisibleItems(all, -1)).toEqual([]);
     expect(catalogVisibleItems([], CATALOG_PAGE_SIZE)).toEqual([]);
+  });
+});
+
+
+describe("client catalog navigation cache", () => {
+  test("reuses an in-flight request and prevents duplicate JSON parsing during menu navigation", async () => {
+    const previous = globalThis.fetch;
+    let fetchCount = 0;
+    globalThis.fetch = (async (_input: RequestInfo | URL) => {
+      fetchCount++;
+      await new Promise(resolve => setTimeout(resolve, 10));
+      return new Response(JSON.stringify({
+        items:[{ id:"filme", title:"Teste", type:"f", genres:[], streams:[] }],
+        highlights:[], genres:[],
+      }), { status:200, headers:{"content-type":"application/json"} });
+    }) as typeof fetch;
+    try {
+      const [first, second] = await Promise.all([getClientCatalog(), getClientCatalog()]);
+      expect(fetchCount).toBe(1);
+      expect(first).toBe(second);
+      expect((await getClientCatalog()).items[0]?.id).toBe("filme");
+      expect(fetchCount).toBe(1);
+    } finally {
+      globalThis.fetch = previous;
+    }
   });
 });
