@@ -90,7 +90,7 @@ export function Header({ onSearch }: HeaderProps) {
         touchPoints: navigator.maxTouchPoints || 0,
       });
       setPlatform(device);
-      document.documentElement.dataset.zfPlatform = device;
+      document.documentElement.dataset["zfPlatform"] = device;
     };
     const request = () => {
       window.cancelAnimationFrame(animationFrame);
@@ -111,7 +111,7 @@ export function Header({ onSearch }: HeaderProps) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.zfWatch = isWatchRoute(pathname) ? "true" : "false";
+    document.documentElement.dataset["zfWatch"] = isWatchRoute(pathname) ? "true" : "false";
   }, [pathname]);
 
   useEffect(() => {
