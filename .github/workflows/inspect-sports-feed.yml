@@ -1,7 +1,5 @@
 name: Inspect football fixture feeds
 on:
-  push:
-    branches: [feat/sports-match-center]
   workflow_dispatch:
 jobs:
   diagnose:
