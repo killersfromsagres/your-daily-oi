@@ -1,34 +1,14 @@
-/* src/styles/football-center.css — premium football navigation and complete match center. */
+/* src/styles/football-center.css — styles for the match center.
+   The header's Jogos do Dia button is styled centrally in header.css;
+   avoid overriding it with green gradients, important declarations or glow. */
 .ydo-nav-football {
   position: relative;
-  display: inline-flex !important;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 14px !important;
-  border: 1px solid rgba(92,234,150,.46) !important;
-  border-radius: 999px !important;
-  background: linear-gradient(135deg,rgba(21,116,62,.32),rgba(14,72,44,.43)) !important;
-  color: #bcf9d3 !important;
-  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 0 0 rgba(55,230,124,0);
-  animation: zf-football-pulse 2.6s ease-in-out infinite;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-  letter-spacing: .015em;
-  transition: filter .2s, transform .2s;
 }
-.ydo-nav-football:hover,.ydo-nav-football[data-status="active"] {
-  transform: translateY(-1px);
-  filter: brightness(1.18);
-  background: linear-gradient(130deg,rgba(25,148,69,.47),rgba(16,96,49,.54)) !important;
-}
-.ydo-nav-football svg { flex: 0 0 auto; filter: drop-shadow(0 0 5px rgba(88,240,152,.28)); }
-.ydo-nav-football .zf-football-dot {
-  width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%;
-  background: #5ff0a0; box-shadow: 0 0 13px rgba(93,242,156,.93);
-}
-@keyframes zf-football-pulse {
-  0%,100% { border-color: rgba(99,238,156,.35); box-shadow: 0 0 0 0 rgba(65,229,126,0), inset 0 1px rgba(255,255,255,.08); }
-  50% { border-color: rgba(134,255,187,.8); box-shadow: 0 0 0 5px rgba(48,225,123,.08),0 0 25px rgba(54,219,119,.22); }
+.ydo-nav-football svg {
+  flex: 0 0 auto;
+  filter: none;
 }
 .zf-football-inline-link,.zf-football-view-all {
   display: inline-flex; align-items: center; gap: 7px;
