@@ -14,6 +14,7 @@ import { resolveChannelProgram, searchableProgramText, type ProgramSlot } from "
 import { LivePlayer } from "@/components/player/LivePlayer";
 import { JogosShelf } from "@/components/tv/JogosShelf";
 import "@/styles/tv-premium.css";
+import "@/styles/tv-mobile-player.css";
 
 const FAVORITES_KEY = "zangflix:tv-favorites";
 const RECENTS_KEY = "zangflix:tv-recents-v1";
@@ -404,8 +405,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
       <div className="ztv-content">
         <header className="ztv-header">
           <div className="ztv-intro">
-            <span className="ztv-eyebrow"><span className="ztv-pulse" /> ZANG LIVE <span className="ztv-eyebrow-divider">/</span> SUA TV, DO SEU JEITO</span>
-            <h1>O melhor da <span className="ztv-title-emphasis">TV ao vivo</span><span className="ztv-heading-dot">.</span></h1>
+            <span className="ztv-eyebrow"><span className="ztv-pulse" /> ZANG LIVE <span className="ztv-mobile-eyebrow-extra"><span className="ztv-eyebrow-divider">/</span> SUA TV, DO SEU JEITO</span></span>
+            <h1><span className="ztv-title-desktop">O melhor da <span className="ztv-title-emphasis">TV ao vivo</span><span className="ztv-heading-dot">.</span></span><span className="ztv-title-mobile">TV <span className="ztv-title-emphasis">ao vivo</span><span className="ztv-heading-dot">.</span></span></h1>
             <p>Escolha um canal, descubra o que está passando e assista em poucos cliques.</p>
           </div>
           <div className="ztv-header-actions">
@@ -413,10 +414,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
               <RefreshCw size={16} className={refreshing ? "ztv-spinning" : ""} /> Atualizar
             </button>
             <button type="button" className="ztv-btn ztv-btn-sports" onClick={() => document.getElementById("ztv-jogos")?.scrollIntoView({ behavior:"smooth", block:"start" })}>
-              <CalendarDays size={16} /> Jogos do Dia
+              <CalendarDays size={16} /><span className="ztv-btn-label-desktop">Jogos do Dia</span><span className="ztv-btn-label-mobile">Jogos</span>
             </button>
             <button type="button" className="ztv-btn ztv-btn-primary" onClick={() => setGuideOpen(true)}>
-              <CalendarDays size={16} /> Guia de programação
+              <CalendarDays size={16} /><span className="ztv-btn-label-desktop">Guia de programação</span><span className="ztv-btn-label-mobile">Guia</span>
             </button>
           </div>
         </header>
