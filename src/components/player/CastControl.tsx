@@ -61,7 +61,7 @@ function getCastMime(source?: FonteTV): string | null {
 
 export function CastControl({ videoRef, source, streamUrl, channelName }: {
   videoRef: RefObject<HTMLVideoElement | null>;
-  source?: FonteTV;
+  source: FonteTV | undefined;
   streamUrl: string;
   channelName: string;
 }) {
