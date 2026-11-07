@@ -21,6 +21,8 @@ export interface JogoBrasileirao {
   canalId: string | null;
   canalNome: string | null;
   canalLogo: string | null;
+  /** Brazilian event/EPG broadcasters, even when no matching player source exists. */
+  canaisTransmissao?: string[];
   transmissao: "confirmada" | "nao-confirmada";
   origemTransmissao?: "epg" | "grade-br" | "configuracao";
 }
