@@ -136,7 +136,7 @@ export function Header({ onSearch }: HeaderProps) {
 
   // Autohide is desktop-only. Touch interfaces and D-pad remotes need persistent navigation.
   useEffect(() => {
-    if (platform !== "web" || window.matchMedia("(pointer: coarse)").matches) {
+    if (platform !== "web" || (typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches)) {
       setVisible(true);
       return;
     }
