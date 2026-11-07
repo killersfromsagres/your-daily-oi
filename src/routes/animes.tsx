@@ -1,4 +1,4 @@
-import { getClientCatalog } from "@/lib/catalog-client";
+import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
@@ -93,6 +93,8 @@ function AnimesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [localVisibleCount, setLocalVisibleCount] = useState(CATALOG_PAGE_SIZE);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -109,6 +111,7 @@ function AnimesPage() {
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedQuery(value.trim());
       setCurrentPage(1);
+      setLocalVisibleCount(CATALOG_PAGE_SIZE);
     }, 350);
   };
 
@@ -116,6 +119,7 @@ function AnimesPage() {
     setSearchQuery("");
     setDebouncedQuery("");
     setCurrentPage(1);
+    setLocalVisibleCount(CATALOG_PAGE_SIZE);
   };
 
   // Carrega os animes clássicos do catálogo local (preservando o acervo anterior)
@@ -168,7 +172,7 @@ function AnimesPage() {
     return () => {
       active = false;
     };
-  }, [currentPage, debouncedQuery, selectedCategory]);
+  }, [currentPage, debouncedQuery, selectedCategory, retryNonce]);
 
   const toggleSaved = (id: string) => {
     toggleSavedStorage(id);
@@ -180,6 +184,7 @@ function AnimesPage() {
     setSearchQuery("");
     setDebouncedQuery("");
     setCurrentPage(1);
+    setLocalVisibleCount(CATALOG_PAGE_SIZE);
   };
 
   // Flag que indica se estamos usando o fallback dos animes locais (quando Sushi vier vazio)
@@ -206,6 +211,11 @@ function AnimesPage() {
     return list;
   }, [sushiItems, localItems, debouncedQuery, selectedCategory]);
 
+  const visibleDisplayItems = useMemo(() =>
+    sushiItems.length > 0 ? displayItems : catalogVisibleItems(displayItems, localVisibleCount),
+    [displayItems, sushiItems.length, localVisibleCount]
+  );
+  const classicItems = useMemo(() => catalogVisibleItems(localItems, 24), [localItems]);
   const showPagination = sushiItems.length > 0 && !debouncedQuery && totalPages > 1;
 
   return (
@@ -320,7 +330,7 @@ function AnimesPage() {
       {/* Conteúdo Principal */}
       {loading ? (
         <SkeletonRow count={12} />
-      ) : error ? (
+      ) : error && displayItems.length === 0 ? (
         <div className="ydo-empty-state" style={{ padding: "60px 20px", textAlign: "center" }}>
           <Tv size={52} style={{ color: "rgba(232, 180, 74, 0.5)", margin: "0 auto 16px" }} />
           <h2 style={{ fontSize: "1.4rem", fontWeight: "800", marginBottom: "8px" }}>Instabilidade temporária no catálogo de animes</h2>
@@ -328,7 +338,7 @@ function AnimesPage() {
             Não conseguimos conectar aos servidores de animes neste momento. Você pode tentar recarregar ou navegar pelos clássicos abaixo.
           </p>
           <button
-            onClick={() => setCurrentPage((p) => p)}
+            onClick={() => setRetryNonce(count => count + 1)}
             className="ydo-btn-primary"
             style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
           >
@@ -346,7 +356,7 @@ function AnimesPage() {
       ) : (
         <>
           <div className="ydo-search-grid">
-            {displayItems.map((item) => (
+            {visibleDisplayItems.map((item) => (
               <MediaCard
                 key={item.id}
                 item={item}
@@ -355,6 +365,16 @@ function AnimesPage() {
               />
             ))}
           </div>
+
+          {sushiItems.length === 0 && visibleDisplayItems.length < displayItems.length && (
+            <div className="zf-catalog-progress" aria-live="polite">
+              <span>Exibindo {visibleDisplayItems.length} de {displayItems.length} animes</span>
+              <button type="button" className="zf-catalog-load-more"
+                onClick={() => setLocalVisibleCount(current => nextCatalogPage(current, displayItems.length))}>
+                Carregar mais animes
+              </button>
+            </div>
+          )}
 
           {/* Paginação */}
           {showPagination && (
@@ -443,7 +463,7 @@ function AnimesPage() {
           </p>
 
           <div className="ydo-search-grid">
-            {localItems.map((item) => (
+            {classicItems.map((item) => (
               <MediaCard
                 key={item.id}
                 item={item}
