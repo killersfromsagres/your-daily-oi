@@ -1269,6 +1269,33 @@ function rewriteMpdXml(mpdText: string, baseUrl: string, referer?: string, ua?: 
 const liveManifestCache = new Map<string, { body: string; expires: number }>();
 
 /**
+ * Resolve a fonte pelo ID e pelo índice do catálogo servidor-side.
+ * O cliente não envia hosts, Referer ou User-Agent arbitrários.
+ * A entrega de mídia reutiliza o motor HLS/DASH/MPEGTS /api/live-proxy.
+ */
+async function handleTvStreamApi(request: Request, url: URL): Promise<Response> {
+  const id = url.searchParams.get("canal") || "";
+  const source = url.searchParams.get("fonte") || "";
+  if (!/^[a-z0-9-]{1,120}$/.test(id) || !/^(0|[1-9]\\d{0,3})$/.test(source)) {
+    return jsonResponse({ error: "Canal ou fonte inválidos" }, 400);
+  }
+  if (request.method !== "GET" && request.method !== "HEAD" && request.method !== "OPTIONS") {
+    return jsonResponse({ error: "Método não permitido" }, 405);
+  }
+  const data = await loadCanais();
+  const canal = data.canais.find((item) => item.id === id);
+  const fonte = canal?.fontes[Number(source)];
+  if (!fonte) {
+    return jsonResponse({ error: "Fonte não encontrada ou temporariamente indisponível" }, 404);
+  }
+  const internal = new URL("/api/live-proxy", url.origin);
+  internal.searchParams.set("url", fonte.url);
+  if (fonte.referer) internal.searchParams.set("referer", fonte.referer);
+  if (fonte.agente) internal.searchParams.set("ua", fonte.agente);
+  return handleLiveProxyApi(request, internal);
+}
+
+/**
  * Route Handler /api/live-proxy (Proxy Saimo-Grade com redirects manuais, cookies, resgate 403/404 e MPD)
  */
 async function handleLiveProxyApi(request: Request, url: URL): Promise<Response> {
@@ -2022,6 +2049,9 @@ export default {
         return request.method === "GET"
           ? await handleLiveFormatApi(url)
           : jsonResponse({ error: "Método inválido" }, 405);
+      }
+      if (url.pathname === "/api/tv/stream") {
+        return await handleTvStreamApi(request, url);
       }
       if (url.pathname === "/api/live-proxy") {
         return await handleLiveProxyApi(request, url);
