@@ -11,6 +11,7 @@ import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje } from "./lib/jogos";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
+import { handleLiveFormatApi } from "./lib/live-probe";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem } from "./lib/types";
 
@@ -2010,6 +2011,11 @@ export default {
       }
       if (url.pathname === "/api/hls-proxy") {
         return await handleHlsProxyApi(request, url);
+      }
+      if (url.pathname === "/api/live-format") {
+        return request.method === "GET"
+          ? await handleLiveFormatApi(url)
+          : jsonResponse({ error: "Método inválido" }, 405);
       }
       if (url.pathname === "/api/live-proxy") {
         return await handleLiveProxyApi(request, url);
