@@ -13,6 +13,7 @@ import { ChannelCard } from "@/components/tv/ChannelCard";
 import { resolveChannelProgram, searchableProgramText, type ProgramSlot } from "@/lib/tv-program";
 import { LivePlayer } from "@/components/player/LivePlayer";
 import { JogosShelf } from "@/components/tv/JogosShelf";
+import "@/styles/tv-premium.css";
 
 const FAVORITES_KEY = "zangflix:tv-favorites";
 const RECENTS_KEY = "zangflix:tv-recents-v1";
@@ -106,7 +107,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [playerLoading, setPlayerLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [proxyBackend, setProxyBackend] = useState<"checking" | "catalog" | "legacy" | "unavailable">("checking");
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [, setUpdatedAt] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideQuery, setGuideQuery] = useState("");
   const [guide, setGuide] = useState<Record<string, EpgSlot>>({});
@@ -342,8 +343,6 @@ export function TvView({ initialCanalId }: TvViewProps) {
     return () => document.removeEventListener("keydown", escape);
   }, [guideOpen]);
 
-  const availableCount = useMemo(() => channels.filter(c => c.fontes.length > 0).length, [channels]);
-  const sourceCount = useMemo(() => channels.reduce((sum, c) => sum + c.fontes.length, 0), [channels]);
 
   const filtered = useMemo(() => {
     const search = normalize(query);
@@ -396,14 +395,6 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const currentSlot = active ? guide[normalize(active.nome)] : undefined;
   const currentProgram = currentSlot?.atual || activeEpg?.atual || null;
   const currentNext = currentSlot?.proximo || activeEpg?.proximos?.[0] || null;
-  const programmedCount = useMemo(() =>
-    channels.filter(c => resolveChannelProgram(guide[normalize(c.nome)], c.categoria, epgNow).hasSchedule).length,
-    [channels, guide, epgNow]);
-  const fmtTime = (stamp: string | null) => {
-    if (!stamp) return "";
-    const d = new Date(stamp);
-    return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  };
 
   return (
     <main className="ztv-studio">
@@ -411,31 +402,22 @@ export function TvView({ initialCanalId }: TvViewProps) {
       <div className="ztv-content">
         <header className="ztv-header">
           <div className="ztv-intro">
-            <span className="ztv-eyebrow"><span className="ztv-pulse" /> CENTRAL DE TRANSMISSÃO <span className="ztv-eyebrow-divider">/</span> ZANG LIVE</span>
-            <h1>TV ao vivo<span className="ztv-heading-dot">.</span></h1>
-            <p>Seus canais em um só lugar, com fontes alternativas e troca automática de servidor.</p>
+            <span className="ztv-eyebrow"><span className="ztv-pulse" /> ZANG LIVE <span className="ztv-eyebrow-divider">/</span> SUA TV, DO SEU JEITO</span>
+            <h1>O melhor da <span className="ztv-title-emphasis">TV ao vivo</span><span className="ztv-heading-dot">.</span></h1>
+            <p>Escolha um canal, descubra o que está passando e assista em poucos cliques.</p>
           </div>
           <div className="ztv-header-actions">
             <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => void refresh()} disabled={refreshing} aria-label="Atualizar lista de canais">
               <RefreshCw size={16} className={refreshing ? "ztv-spinning" : ""} /> Atualizar
             </button>
-            <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => document.getElementById("ztv-jogos")?.scrollIntoView({ behavior:"smooth" })}>
-              <CalendarDays size={16} /> Jogos de hoje
+            <button type="button" className="ztv-btn ztv-btn-sports" onClick={() => document.getElementById("ztv-jogos")?.scrollIntoView({ behavior:"smooth", block:"start" })}>
+              <CalendarDays size={16} /> Jogos do Dia
             </button>
             <button type="button" className="ztv-btn ztv-btn-primary" onClick={() => setGuideOpen(true)}>
               <CalendarDays size={16} /> Guia de programação
             </button>
           </div>
         </header>
-
-        <div className="ztv-statbar" role="status" aria-live="polite">
-          <span><Tv2 size={16} /><strong>{channels.length || "—"}</strong> canais no catálogo</span>
-          <span className="ztv-stat-separator" aria-hidden="true" />
-          <span><Signal size={16} /><strong>{availableCount || "—"}</strong> com fontes</span>
-          <span className="ztv-stat-separator" aria-hidden="true" />
-          <span><span className="ztv-stat-source-dot" /><strong>{sourceCount || "—"}</strong> links de transmissão</span>
-          {updatedAt && <span className="ztv-stat-updated">Lista sincronizada {fmtTime(updatedAt)}</span>}
-        </div>
 
         {catalogError && (
           <div className="ztv-notice" role="alert">
@@ -565,9 +547,14 @@ export function TvView({ initialCanalId }: TvViewProps) {
         <section className="ztv-explore ztv-explore-glass" id="ztv-explore" aria-label="Catálogo Zang Flix de canais e programação">
           <div className="ztv-section-row ztv-explore-heading">
             <div>
-              <span className="ztv-label-small">ZANG FLIX <span className="ztv-explore-dot">·</span> DESCUBRA O QUE ESTÁ PASSANDO</span>
-              <h2>Explore a <span>programação.</span></h2>
-              <p className="ztv-explore-subtitle">Filmes, séries, animes, esportes e televisão. Saiba o conteúdo atual de cada canal antes de assistir.</p>
+              <span className="ztv-label-small ztv-explore-eyebrow">ZANG FLIX <span className="ztv-explore-dot">/</span> SEU GUIA DE CANAIS</span>
+              <h2>O que você quer <span>assistir hoje?</span></h2>
+              <p className="ztv-explore-subtitle">Encontre canais pelo nome, gênero ou pelo programa que está passando. Simples, rápido e do seu jeito.</p>
+              <div className="ztv-discover-shortcuts" aria-label="Acessos rápidos">
+                <button type="button" onClick={() => { setCategory("Todos"); setQuery(""); }}>Todos os canais</button>
+                <button type="button" onClick={() => { setCategory("Favoritos"); setQuery(""); }}>Meus favoritos</button>
+                <button type="button" onClick={() => document.getElementById("ztv-jogos")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Futebol ao vivo</button>
+              </div>
             </div>
             <div className="ztv-layout-switch" aria-label="Modo de visualização">
               <button type="button" aria-label="Visualização em grade" aria-pressed={layout === "grid"} className={layout === "grid" ? "is-active" : ""} onClick={() => setLayout("grid")}><Grid2X2 size={18} /></button>
@@ -577,7 +564,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
           <div className="ztv-filterbox">
             <label className="ztv-search">
               <Search size={19} />
-              <input type="search" value={query} placeholder="Buscar canal, filme, série, anime ou programa…" onChange={event => setQuery(event.target.value)} aria-label="Buscar canais" />
+              <input type="search" value={query} placeholder="Busque seu canal ou programa favorito…" onChange={event => setQuery(event.target.value)} aria-label="Buscar canais" />
               {query && <button type="button" aria-label="Limpar busca" onClick={() => setQuery("")}><X size={16} /></button>}
             </label>
             <label className="ztv-only-available">
@@ -611,7 +598,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
             <small aria-live="polite">{guideLoading
               ? "Consultando grade de programação…"
               : guideUpdatedAt
-              ? programmedCount + " canais com programação identificada · Atualização automática"
+              ? "Programação atualizada automaticamente"
               : "Programação ainda não disponível · Exibindo os canais cadastrados"}</small>
           </div>
           {loading && !channels.length ? (
