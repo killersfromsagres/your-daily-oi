@@ -165,7 +165,7 @@ async function loadBrazilBroadcastDetails(
       const detail = await response.json() as {
         header?: { competitions?: ESPNEvent["competitions"] };
       };
-      return brBroadcastsFromESPN({ competitions: detail.header?.competitions });
+      return brBroadcastsFromESPN(detail.header?.competitions ? { competitions: detail.header.competitions } : {});
     }));
     responses.forEach((response, index) => {
       const item = batch[index];
