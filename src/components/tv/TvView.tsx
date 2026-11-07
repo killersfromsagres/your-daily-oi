@@ -394,7 +394,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                 <LivePlayer
                   key={active.id}
                   canal={active}
-                  epgAtual={currentProgram || undefined}
+                  {...(currentProgram ? { epgAtual: currentProgram } : {})}
                   onPrevCanal={() => switchChannel(-1)}
                   onNextCanal={() => switchChannel(1)}
                   onToggleGuide={() => setGuideOpen(true)}
