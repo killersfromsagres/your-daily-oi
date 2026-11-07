@@ -9,9 +9,15 @@
  */
 
 import type { StreamSource, AudioTrack, StreamFormat } from "./types";
+import { fetchFirstText, sourceUrls } from "./saimo-source";
 
 const FENIX_BASE = "https://fenixflix.fenixhub.online";
-const CATALOG_BASE = "https://filmes-saimo.pages.dev";
+const CATALOG_BASE = process.env.SAIMO_VOD_PAGES || "https://filmes-saimo.pages.dev";
+const STREAM_API = process.env.SAIMO_STREAM_API || "https://saimo-tv.pages.dev/api/stream";
+function catalogUrls(fileName: string): string[] {
+  return sourceUrls(process.env.SAIMO_VOD_MIRRORS, [CATALOG_BASE])
+    .map((root) => `${root}/${fileName}`);
+}
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 const TMDB_API_KEY = "15d2ea6d0dc1d476efbca3eba2b9bbfb";
@@ -34,6 +40,7 @@ let redeflixSeriesCache: Map<string, RedeFlixSeriesEntry> | null = null;
 let redeflixSeriesCacheTime = 0;
 
 const streamResultsCache = new Map<string, { streams: StreamSource[]; expires: number }>();
+const saimoStreamCache = new Map<string, { streams: StreamSource[]; expires: number }>();
 
 export function isHlsUrl(url: string): boolean {
   if (!url) return false;
@@ -68,27 +75,26 @@ export async function getIndiceBases(): Promise<string[]> {
   }
 
   try {
-    const res = await fetch(`${CATALOG_BASE}/indice.txt`, {
-      headers: { "User-Agent": BROWSER_UA, Accept: "text/plain, */*" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (res.ok) {
-      const text = await res.text();
-      const bases: string[] = [];
-      for (const line of text.split("\n")) {
-        if (line.startsWith("base:")) {
-          const parts = line.slice(5).trim().split(/\s+/);
-          if (parts.length >= 2) {
-            bases[Number(parts[0])] = parts.slice(1).join(" ");
-          }
-        }
+    const candidates = [
+      ...catalogUrls("indice.txt"),
+      ...(process.env.SAIMO_VOD_RAW ? [`${process.env.SAIMO_VOD_RAW.replace(/\\/$/, "")}/indice.txt`] : []),
+    ];
+    const { text } = await fetchFirstText(candidates, "índice de bases", { timeoutMs: 5000 });
+    const bases: string[] = [];
+    for (const line of text.split("\n")) {
+      if (!line.startsWith("base:")) continue;
+      const parts = line.slice(5).trim().split(/\s+/);
+      const id = Number(parts[0]);
+      if (Number.isInteger(id) && id >= 0 && id <= 9999 && parts.length >= 2) {
+        bases[id] = parts.slice(1).join(" ");
       }
-      basesCache = bases;
-      basesCacheTime = now;
-      return bases;
     }
+    basesCache = bases;
+    basesCacheTime = now;
+    return bases;
   } catch (err) {
-    console.warn("[SaimoStream] Falha ao obter indice.txt:", err);
+    console.warn("[SaimoStream] Índice de bases indisponível:", String(err));
+    basesCacheTime = now - CACHE_TTL_MS + 60_000;
   }
 
   return basesCache || [];
@@ -291,6 +297,76 @@ async function queryFenixFlix(
   return sources;
 }
 
+/**
+ * Consulta o endpoint público de redirecionamento da Saimo para cada idioma.
+ * Nunca marca uma resposta HTML como vídeo ou assume qualidade sem metadados.
+ */
+async function querySaimoOfficial(
+  tipo: "movie" | "series",
+  id: string,
+  season: number,
+  episode: number,
+): Promise<StreamSource[]> {
+  if (!/^(?:tt\d+|\d+)$/.test(id)) return [];
+  const cacheKey = `${tipo}:${id}:${season}:${episode}`;
+  const now = Date.now();
+  const cached = saimoStreamCache.get(cacheKey);
+  if (cached && cached.expires > now) return cached.streams;
+
+  const sources = await Promise.all((["dub", "leg"] as const).map(async (audio) => {
+    try {
+      const endpoint = new URL(STREAM_API);
+      if (endpoint.protocol !== "https:") return null;
+      endpoint.searchParams.set("tipo", tipo);
+      endpoint.searchParams.set("id", id);
+      endpoint.searchParams.set("versao", audio);
+      if (tipo === "series") {
+        endpoint.searchParams.set("temp", String(season));
+        endpoint.searchParams.set("ep", String(episode));
+      }
+      const response = await fetch(endpoint, {
+        redirect: "manual",
+        signal: AbortSignal.timeout(5500),
+        headers: { Accept: "application/json, video/*, application/vnd.apple.mpegurl, */*" },
+      });
+      let target: string | null = null;
+      if (response.status >= 300 && response.status < 400) {
+        target = response.headers.get("location");
+      } else if (response.ok) {
+        const contentType = response.headers.get("content-type") || "";
+        if (/application\/json/i.test(contentType)) {
+          const data = (await response.json()) as { url?: unknown };
+          target = typeof data.url === "string" ? data.url : null;
+        } else if (/^(video\/|audio\/|application\/(?:vnd\.apple\.mpegurl|x-mpegurl))/i.test(contentType)) {
+          target = endpoint.toString();
+          await response.body?.cancel();
+        }
+      }
+      if (!target) return null;
+      const finalUrl = new URL(target, endpoint);
+      if (!["http:", "https:"].includes(finalUrl.protocol)) return null;
+      if (finalUrl.host === endpoint.host && finalUrl.pathname === endpoint.pathname) return null;
+      if (/^(?:localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|169\.254\.)/i.test(finalUrl.hostname)) return null;
+      return {
+        url: finalUrl.toString(),
+        audio,
+        name: `Saimo TV (${audio.toUpperCase()})`,
+        quality: "Auto",
+        format: isHlsUrl(finalUrl.toString()) ? "hls" as const : "mp4" as const,
+        priority: 0,
+      };
+    } catch {
+      return null;
+    }
+  }));
+  const streams = sources.filter((source): source is NonNullable<typeof source> => source !== null);
+  saimoStreamCache.set(cacheKey, {
+    streams,
+    expires: now + (streams.length ? STREAM_CACHE_TTL_MS : 60_000),
+  });
+  return streams;
+}
+
 export interface ResolveOptions {
   tipo: "movie" | "series";
   id?: string;
@@ -312,7 +388,7 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
   const cacheKey = `${tipo}:${cleanId || title}:${season}:${episode}`;
   const cached = streamResultsCache.get(cacheKey);
   const now = Date.now();
-  if (cached && cached.expires > now && cached.streams.length > 0) {
+  if (cached && cached.expires > now) {
     return cached.streams;
   }
 
@@ -337,6 +413,11 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
 
   const effectiveLookupId = resolvedTmdbId || cleanId;
   const allSources: StreamSource[] = [];
+
+  // 0. API pública Saimo TV (redirect/JSON), quando o ID é conhecido.
+  if (effectiveLookupId) {
+    allSources.push(...(await querySaimoOfficial(tipo, effectiveLookupId, season, episode)));
+  }
 
   // 1. RedeFlix Direct Streams (embedplayer2.xyz, koyeb.app)
   if (effectiveLookupId) {
@@ -438,12 +519,10 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
     deduped.push(s);
   }
 
-  if (deduped.length > 0) {
-    streamResultsCache.set(cacheKey, {
-      streams: deduped,
-      expires: now + STREAM_CACHE_TTL_MS,
-    });
-  }
+  streamResultsCache.set(cacheKey, {
+    streams: deduped,
+    expires: now + (deduped.length > 0 ? STREAM_CACHE_TTL_MS : 60_000),
+  });
 
   return deduped;
 }
