@@ -35,13 +35,13 @@ async function probe(name, url) {
       looksLikeHtml: /^\s*<(?:!doctype\s+html|html|head|body)\b/i.test(sample),
       looksLikeM3u: sample.trimStart().startsWith("#EXTM3U"),
       firstBytes: sample.length,
-      formatHints: sample.split("\\n").slice(0, 40).reduce((acc, line) => {
+      formatHints: sample.split("\n").slice(0, 40).reduce((acc, line) => {
         const kind = line.trim().startsWith("#EXTM3U") ? "m3u"
           : line.startsWith("base:") ? "base"
           : line.startsWith("canal:") ? "canal"
           : line.startsWith("fonte:") ? "fonte"
           : line.startsWith("@") ? "episode-header"
-          : line.includes("\\t") ? `tsv-${line.split("\\t").length}-cols`
+          : line.includes("\t") ? `tsv-${line.split("\t").length}-cols`
           : line.startsWith("#") ? "comment"
           : "other";
         acc[kind] = (acc[kind] || 0) + 1;
