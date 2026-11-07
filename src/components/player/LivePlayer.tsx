@@ -90,23 +90,29 @@ async function loadScript(src: string): Promise<void> {
   try { await promise; } catch (error) { scriptRequests.delete(src); throw error; }
 }
 
+// Bundled engines: these dependencies already belong to the app and do not
+// depend on a third-party CDN being reachable at playback time.
 async function ensureHls() {
   if (!window.Hls) {
-    await loadScript("https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js");
+    const module = await import("hls.js");
+    window.Hls = module.default as unknown as NonNullable<Window["Hls"]>;
   }
   return window.Hls;
 }
-
 async function ensureMpegts() {
   if (!window.mpegts) {
-    await loadScript("https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js");
+    const module = await import("mpegts.js");
+    window.mpegts = (module.default ?? module) as unknown as NonNullable<Window["mpegts"]>;
   }
   return window.mpegts;
 }
-
 async function ensureShaka() {
   if (!window.shaka) {
-    await loadScript("https://cdn.jsdelivr.net/npm/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    try {
+      await loadScript("https://cdn.jsdelivr.net/npm/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    } catch {
+      await loadScript("https://unpkg.com/shaka-player@4.11.2/dist/shaka-player.compiled.js");
+    }
     window.shaka?.polyfill?.installAll();
   }
   return window.shaka;
