@@ -756,6 +756,7 @@ function SeriesDetailPage() {
                     Nenhum episódio cadastrado para esta temporada.
                   </div>
                 ) : (
+                  <>
                   <div className="zf-episode-carousel-header">
                     <span>{itemsToRender.length} episódios da temporada</span>
                     <span>{countWatchedEpisodes("s", serie.id)} assistidos na série</span>
@@ -967,6 +968,7 @@ function SeriesDetailPage() {
                       );
                     })}
                   </div>
+                  </>
                 )}
               </>
             )}
