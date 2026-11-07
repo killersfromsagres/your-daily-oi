@@ -652,12 +652,6 @@ function isBlockedTargetUrl(target: string): boolean {
   }
 }
 
-interface HlsManifestCacheEntry {
-  body: string;
-  expires: number;
-}
-const hlsManifestCache = new Map<string, HlsManifestCacheEntry>();
-
 function rewriteTagUris(line: string, baseUrl: string): string {
   return line.replace(/URI=(["']?)([^"',\s]+)\1/g, (match, quote, u) => {
     if (u.includes("/api/hls-proxy")) return match;
@@ -880,22 +874,8 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
 
   const clientRange = request.headers.get("range");
 
-  // Cache leve em memória de manifestos (60s) — apenas para requisições GET sem Range
-  if (!clientRange && request.method === "GET") {
-    const cached = hlsManifestCache.get(targetUrl);
-    if (cached && cached.expires > Date.now()) {
-      return new Response(cached.body, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/vnd.apple.mpegurl",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          "Access-Control-Allow-Headers": "*",
-          "Cache-Control": "public, max-age=60",
-        },
-      });
-    }
-  }
+  // Para TV ao vivo, a playlist precisa refletir os segmentos mais recentes.
+  // Não servir manifestos do cache do processo ou do CDN.
 
   try {
     const upstreamHeaders: Record<string, string> = {
@@ -1054,18 +1034,6 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
         const finalBase = res.url || targetUrl;
         const rewritten = rewriteHlsManifest(text, finalBase);
 
-        if (hlsManifestCache.size > 200) {
-          const now = Date.now();
-          for (const [k, v] of hlsManifestCache) {
-            if (v.expires < now) hlsManifestCache.delete(k);
-          }
-          if (hlsManifestCache.size > 300) hlsManifestCache.clear();
-        }
-        hlsManifestCache.set(targetUrl, {
-          body: rewritten,
-          expires: Date.now() + 60000,
-        });
-
         return new Response(rewritten, {
           status: 200,
           headers: {
@@ -1073,7 +1041,7 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
             "Access-Control-Allow-Headers": "*",
-            "Cache-Control": "public, max-age=60",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
           },
         });
       }
@@ -1214,8 +1182,6 @@ function rewriteMpdXml(mpdText: string, baseUrl: string, referer?: string, ua?: 
   return result;
 }
 
-const liveManifestCache = new Map<string, { body: string; expires: number }>();
-
 /**
  * Resolve a fonte pelo ID e pelo índice do catálogo servidor-side.
  * O cliente não envia hosts, Referer ou User-Agent arbitrários.
@@ -1294,22 +1260,8 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
   const clientRange = isLivePlaylistTarget(targetUrl) ? null : request.headers.get("range");
   const clientAcceptEncoding = request.headers.get("accept-encoding");
 
-  // Cache leve de manifesto ao vivo (10s)
-  if (!clientRange && request.method === "GET") {
-    const cached = liveManifestCache.get(targetUrl);
-    if (cached && cached.expires > Date.now()) {
-      return new Response(cached.body, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/vnd.apple.mpegurl",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          "Access-Control-Allow-Headers": "*",
-          "Cache-Control": "public, max-age=10",
-        },
-      });
-    }
-  }
+  // Manifestos HLS variam a cada poucos segundos; servir uma versão antiga
+  // pode congelar permanentemente o player ao tentar novos segmentos.
 
   try {
     let cdnOrigin = "";
@@ -1558,18 +1510,6 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
         const finalBase = res.url || targetUrl;
         const rewritten = rewriteLiveHlsManifest(text, finalBase, customReferer, customUa);
 
-        if (liveManifestCache.size > 200) {
-          const now = Date.now();
-          for (const [k, v] of liveManifestCache) {
-            if (v.expires < now) liveManifestCache.delete(k);
-          }
-          if (liveManifestCache.size > 300) liveManifestCache.clear();
-        }
-        liveManifestCache.set(targetUrl, {
-          body: rewritten,
-          expires: Date.now() + 10000,
-        });
-
         return new Response(rewritten, {
           status: 200,
           headers: {
@@ -1577,7 +1517,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
             "Access-Control-Allow-Headers": "*",
-            "Cache-Control": "public, max-age=10",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
           },
         });
       }
@@ -1597,7 +1537,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
               "Access-Control-Allow-Origin": "*",
               "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
               "Access-Control-Allow-Headers": "*",
-              "Cache-Control": "public, max-age=10",
+              "Cache-Control": "no-store, no-cache, must-revalidate",
             },
           });
         }

@@ -88,3 +88,12 @@ export function classifyLivePlaybackStall(input: {
   if (elapsedWithoutProgressMs >= 35_000) return "frozen";
   return null;
 }
+
+/** Bounded retry schedule after every source and route has been exhausted.
+ * Retries are scoped to a channel and reset only after stable playback.
+ */
+export function nextLiveAutoRetryDelay(attempts: number, sourceCount: number): number | null {
+  const delays = [2000, 6000, 15000] as const;
+  if (!Number.isInteger(attempts) || attempts < 0 || sourceCount <= 0) return null;
+  return delays[attempts] ?? null;
+}

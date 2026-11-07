@@ -5,7 +5,7 @@ import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import { CastControl } from "./CastControl";
-import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, type LiveLatencyMode } from "@/lib/live-latency";
+import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, type LiveLatencyMode } from "@/lib/live-latency";
 import { isMobileLandscapeTarget, shouldRotateFullscreenFallback, tryLockLandscape, unlockLandscape, type OrientationLock } from "@/lib/fullscreen-orientation";
 import {
   sortStreamsByHealth,
@@ -213,6 +213,8 @@ export function LivePlayer({
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
   const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
   const handlingFailureRef = useRef(false);
+  const autoRetryCountRef = useRef(0);
+  const stablePlaybackSinceRef = useRef<number | null>(null);
 
   // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
@@ -282,6 +284,8 @@ export function LivePlayer({
     autoCleanPlayerCache();
     attemptedModesRef.current.clear();
     handlingFailureRef.current = false;
+    autoRetryCountRef.current = 0;
+    stablePlaybackSinceRef.current = null;
     setSourceIndex(0);
     setAttemptMode(initialModeFor(validStreams[0]));
     setError(validStreams.length === 0);
@@ -292,6 +296,7 @@ export function LivePlayer({
   }, [canal.id, validStreams]);
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
+  const autoRetryPending = error && nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length) !== null;
 
   // Seleciona a rota de proxy efetivamente disponível no deploy.
   // O catálogo remoto pode estar atualizado, enquanto o backend da Vercel
@@ -393,6 +398,7 @@ export function LivePlayer({
   const handleFatalError = useCallback((isNetworkError = false) => {
     if (!rawFonte || handlingFailureRef.current) return;
     handlingFailureRef.current = true;
+    stablePlaybackSinceRef.current = null;
     const key = `${canal.id}:${rawFonte.url}`;
     const attempted = attemptedModesRef.current.get(key) || new Set<LiveAccessMode>();
     attempted.add(attemptMode);
@@ -422,6 +428,53 @@ export function LivePlayer({
     setError(true);
     setAutoSwitchMsg(null);
   }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams]);
+
+  // Ao esgotar as rotas/fontes, refaz automaticamente a mesma limpeza do
+  // botão manual. Espera a aba ficar visível, com backoff e tentativas finitas.
+  useEffect(() => {
+    const delay = nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length);
+    if (!error || delay === null) return;
+
+    let retryTimer: number | null = null;
+    let disposed = false;
+    const restart = () => {
+      retryTimer = null;
+      if (disposed || document.visibilityState === "hidden") return;
+      autoRetryCountRef.current += 1;
+      clearAllPlayerCaches();
+      attemptedModesRef.current.clear();
+      handlingFailureRef.current = false;
+      stablePlaybackSinceRef.current = null;
+      setSourceIndex(0);
+      setAttemptMode(initialModeFor(validStreams[0]));
+      setErrorDetail(null);
+      setAutoSwitchMsg("Restabelecendo transmissão…");
+      setLoading(true);
+      setError(false);
+      setPlayNonce(n => n + 1);
+    };
+    const schedule = () => {
+      if (disposed || retryTimer !== null || document.visibilityState === "hidden") return;
+      retryTimer = window.setTimeout(restart, delay);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden" && retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+      } else {
+        schedule();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", schedule);
+    schedule();
+    return () => {
+      disposed = true;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", schedule);
+    };
+  }, [error, validStreams, canal.id]);
 
   // Detecta uma transmissão que perdeu os segmentos depois de começar a tocar.
   // Evita trocar o canal durante pausas normais, seek ou buffering curto.
@@ -472,12 +525,10 @@ export function LivePlayer({
     setError(false);
     setErrorDetail(null);
 
-    // Timeout máximo para conectar cada rota de reprodução
+    // Não considerar apenas readyState: o vídeo pode ter buffer e nunca iniciar.
+    let playbackConfirmed = false;
     const timeout = setTimeout(() => {
-      if (!cancelled) {
-        if (video.readyState >= 3) {
-          return;
-        }
+      if (!cancelled && !playbackConfirmed) {
         console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
         handleFatalError(false);
       }
@@ -485,6 +536,8 @@ export function LivePlayer({
 
     const onPlaying = () => {
       if (cancelled) return;
+      playbackConfirmed = true;
+      stablePlaybackSinceRef.current = Date.now();
       clearTimeout(timeout);
       setLoading(false);
       setError(false);
@@ -498,6 +551,11 @@ export function LivePlayer({
     const onTimeUpdate = () => {
       if (video.currentTime > 0.5) {
         setIsLiveEdge(true);
+        // Um canal estável volta a ter direito a novas recuperações futuras.
+        if (stablePlaybackSinceRef.current !== null && Date.now() - stablePlaybackSinceRef.current >= 45_000) {
+          autoRetryCountRef.current = 0;
+          stablePlaybackSinceRef.current = null;
+        }
       }
     };
 
@@ -1021,9 +1079,9 @@ export function LivePlayer({
       {error && (
         <div className="ydo-live-error-overlay">
           <AlertCircle size={44} style={{ color: "#e8b44a" }} />
-          <h3>{validStreams.length > 0 ? "Nenhum servidor disponível para este canal" : "Canal sem fonte ativa no catálogo"}</h3>
+          <h3>{autoRetryPending ? "Reconectando automaticamente…" : validStreams.length > 0 ? "Nenhum servidor disponível para este canal" : "Canal sem fonte ativa no catálogo"}</h3>
           <p>
-            {errorDetail ||
+            {autoRetryPending ? "A transmissão foi interrompida. Renovando a conexão e limpando o histórico temporário de falhas sem precisar clicar." : errorDetail ||
               (validStreams.length > 0
                 ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
                 : "O Zang Flix mantém este canal no catálogo, mas as fontes atuais estão temporariamente indisponíveis.")}
@@ -1032,8 +1090,10 @@ export function LivePlayer({
             className="ydo-btn-primary"
             onClick={() => {
               attemptedModesRef.current.clear();
-                handlingFailureRef.current = false;
-                clearAllPlayerCaches();
+              handlingFailureRef.current = false;
+              autoRetryCountRef.current = 0;
+              stablePlaybackSinceRef.current = null;
+              clearAllPlayerCaches();
               limparHostsSemCors();
               setSourceIndex(0);
               setAttemptMode(initialModeFor(validStreams[0]));
