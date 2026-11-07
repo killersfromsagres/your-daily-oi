@@ -22,3 +22,5 @@ jobs:
         run: bun run test
       - name: Build de produção
         run: bun run build
+      - name: Diagnóstico público das fontes (informativo)
+        run: bun scripts/probe-saimo.mjs
