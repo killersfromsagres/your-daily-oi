@@ -1,0 +1,15 @@
+name: Verify published Zang Flix glass TV guide
+on:
+  push:
+    branches: [verify/tv-glass-production]
+  workflow_dispatch:
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Production HTTP, EPG and glass UI verification
+        run: bun scripts/check-tv-glass-production.mjs
