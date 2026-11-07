@@ -481,7 +481,7 @@ export async function localizarJogosNaGradeEPG(
       );
       if (near) {
         found.set(match.id, {
-          id: catalogChannel.id, nome: catalogChannel.nome, logo: catalogChannel.logo,
+          id: catalogChannel.id, nome: catalogChannel.nome, ...(catalogChannel.logo ? { logo: catalogChannel.logo } : {}),
         });
       }
     }
