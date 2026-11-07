@@ -744,10 +744,11 @@ export function LivePlayer({
       {error && (
         <div className="ydo-live-error-overlay">
           <AlertCircle size={44} style={{ color: "#e8b44a" }} />
-          <h3>Nenhum servidor disponível para este canal</h3>
+          <h3>{validStreams.length > 0 ? "Nenhum servidor disponível para este canal" : "Canal sem fonte ativa no catálogo"}</h3>
           <p>
-            Tentamos todas as {validStreams.length} fontes deste canal no momento.
-            A disponibilidade pode retornar em breve.
+            {validStreams.length > 0
+              ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
+              : "O Saimo mantém este canal na lista, mas os links atuais estão temporariamente indisponíveis."}
           </p>
           <button
             className="ydo-btn-primary"
