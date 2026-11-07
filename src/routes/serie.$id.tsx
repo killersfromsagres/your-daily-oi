@@ -97,7 +97,7 @@ function SeriesDetailPage() {
         setSerie(found);
         setSaved(getSavedList().includes(found.id));
         if (found.seasons && found.seasons.length > 0) {
-          setSelectedSeason(found.seasons[0].seasonNumber);
+          setSelectedSeason(found.seasons[0]?.seasonNumber ?? 1);
         }
       })
       .catch(() => {
@@ -499,7 +499,7 @@ function SeriesDetailPage() {
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
                 {seasons.length > 0 ? (
                   <Link
-                    to={`/assistir/serie/${serie.id}/${selectedSeason}/1`}
+                    to="/assistir/serie/$id/$temp/$ep" params={{id:serie.id,temp:String(selectedSeason),ep:"1"}}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -781,7 +781,7 @@ function SeriesDetailPage() {
                         <div key={item.numero} className={"zf-episode-shell" + (progress?.watched ? " is-watched" : progress ? " is-started" : "")}
                           style={{width:"clamp(260px, 26vw, 310px)",flexShrink:0}}>
                         <Link
-                          to={`/assistir/serie/${serie.id}/${selectedSeason}/${item.numero}`}
+                          to="/assistir/serie/$id/$temp/$ep" params={{id:serie.id,temp:String(selectedSeason),ep:String(item.numero)}}
                           style={{
                             width: "100%",
                             flexShrink: 0,
