@@ -20,5 +20,7 @@ jobs:
         run: bun run test
       - name: Build de produção
         run: bun run build
+      - name: Smoke-test da rota no preview de produção
+        run: bun scripts/smoke-vod-preview.mjs
       - name: Diagnóstico de redirecionamento Saimo (sem baixar filmes)
         run: bun scripts/inspect-vod-redirect.mjs
