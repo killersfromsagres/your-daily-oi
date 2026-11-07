@@ -11,6 +11,9 @@ export interface ProgramaEPG {
   categoria?: string;
   horario?: string;
   fim?: string;
+  descricao?: string;
+  inicioEm?: string;
+  fimEm?: string;
 }
 
 export interface CanalEPG {
@@ -172,6 +175,7 @@ function parseXmltvContent(
 
     const start = parseXmltvTimestamp(startStr);
     const stop = parseXmltvTimestamp(stopStr);
+    if (!start || !stop || stop <= start) continue;
 
     let list = programmesByChannel.get(chanId);
     if (!list) {
@@ -334,36 +338,26 @@ export async function getCanalEPG(nomeCanal: string): Promise<CanalEPG> {
     }
 
     const now = Date.now();
-    let curIdx = progs.findIndex((p) => p.start <= now && now < p.stop);
-    if (curIdx === -1) {
-      curIdx = progs.findIndex((p) => p.stop > now);
-    }
+    const currentIndex = progs.findIndex(p => p.start <= now && now < p.stop);
+    const upcomingIndex = currentIndex >= 0
+      ? currentIndex + 1 : progs.findIndex(p => p.start > now);
+    const current = currentIndex >= 0 ? progs[currentIndex] : null;
+    const nextProgs = upcomingIndex >= 0 ? progs.slice(upcomingIndex, upcomingIndex + 8) : [];
 
-    if (curIdx === -1) {
-      return { canal: nomeCanal, indisponivel: true };
-    }
-
-    const cur = progs[curIdx];
-    const nextProgs = progs.slice(curIdx + 1, curIdx + 9);
-
-    const atual: ProgramaEPG = {
-      titulo: cur.title,
-      categoria: cur.category,
-      horario: formatTimeBR(cur.start),
-      fim: formatTimeBR(cur.stop),
-    };
-
-    const proximos: ProgramaEPG[] = nextProgs.map((p) => ({
+    const convert = (p: ParsedProgramme): ProgramaEPG => ({
       titulo: p.title,
-      categoria: p.category,
+      ...(p.category ? { categoria: p.category } : {}),
+      ...(p.desc ? { descricao: p.desc.slice(0, 240) } : {}),
       horario: formatTimeBR(p.start),
       fim: formatTimeBR(p.stop),
-    }));
+      inicioEm: new Date(p.start).toISOString(),
+      fimEm: new Date(p.stop).toISOString(),
+    });
 
     return {
       canal: nomeCanal,
-      atual,
-      proximos,
+      ...(current ? { atual: convert(current) } : {}),
+      proximos: nextProgs.map(convert),
     };
   } catch (err) {
     console.warn(`[EPG] Erro ao obter EPG para ${nomeCanal}:`, err);
@@ -404,29 +398,23 @@ export async function getGradeAgora(): Promise<GradeItemAgora[]> {
 
       if (channelId) {
         const progs = state.programmesByChannel.get(channelId);
-        if (progs && progs.length > 0) {
-          let curIdx = progs.findIndex((p) => p.start <= now && now < p.stop);
-          if (curIdx === -1) {
-            curIdx = progs.findIndex((p) => p.stop > now);
-          }
-          if (curIdx !== -1) {
-            const cur = progs[curIdx];
-            atual = {
-              titulo: cur.title,
-              categoria: cur.category,
-              horario: formatTimeBR(cur.start),
-              fim: formatTimeBR(cur.stop),
-            };
-            const nxt = progs[curIdx + 1];
-            if (nxt) {
-              proximo = {
-                titulo: nxt.title,
-                categoria: nxt.category,
-                horario: formatTimeBR(nxt.start),
-                fim: formatTimeBR(nxt.stop),
-              };
-            }
-          }
+        if (progs?.length) {
+          const currentIndex = progs.findIndex(p => p.start <= now && now < p.stop);
+          const upcomingIndex = currentIndex >= 0
+            ? currentIndex + 1 : progs.findIndex(p => p.start > now);
+          const cur = currentIndex >= 0 ? progs[currentIndex] : null;
+          const nxt = upcomingIndex >= 0 ? progs[upcomingIndex] : null;
+          const convert = (p: ParsedProgramme): ProgramaEPG => ({
+            titulo: p.title,
+            ...(p.category ? { categoria: p.category } : {}),
+            ...(p.desc ? { descricao: p.desc.slice(0, 240) } : {}),
+            horario: formatTimeBR(p.start),
+            fim: formatTimeBR(p.stop),
+            inicioEm: new Date(p.start).toISOString(),
+            fimEm: new Date(p.stop).toISOString(),
+          });
+          if (cur) atual = convert(cur);
+          if (nxt) proximo = convert(nxt);
         }
       }
 
