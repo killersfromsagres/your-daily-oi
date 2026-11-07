@@ -69,30 +69,33 @@ declare global {
   }
 }
 
-async function loadScript(src: string): Promise<void> {
-  if (document.querySelector(`script[src="${src}"]`)) return;
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
-    document.head.appendChild(s);
-  });
-}
+// The production VOD player uses locally bundled engines, like LivePlayer.
+// CDN script blockers and transient third-party outages must not prevent
+// movies, series or anime episodes from starting.
+let hlsPromise: Promise<NonNullable<Window["Hls"]>> | null = null;
+let mpegtsPromise: Promise<NonNullable<Window["mpegts"]>> | null = null;
 
 async function ensureHls() {
-  if (!window.Hls) {
-    await loadScript("https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js");
+  if (window.Hls) return window.Hls;
+  if (!hlsPromise) {
+    hlsPromise = import("hls.js").then(module => {
+      const engine = module.default as unknown as NonNullable<Window["Hls"]>;
+      window.Hls = engine;
+      return engine;
+    }).catch(error => { hlsPromise = null; throw error; });
   }
-  return window.Hls;
+  return hlsPromise;
 }
-
 async function ensureMpegts() {
-  if (!window.mpegts) {
-    await loadScript("https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js");
+  if (window.mpegts) return window.mpegts;
+  if (!mpegtsPromise) {
+    mpegtsPromise = import("mpegts.js").then(module => {
+      const engine = (module.default ?? module) as unknown as NonNullable<Window["mpegts"]>;
+      window.mpegts = engine;
+      return engine;
+    }).catch(error => { mpegtsPromise = null; throw error; });
   }
-  return window.mpegts;
+  return mpegtsPromise;
 }
 
 export function usePlayerEngine(
