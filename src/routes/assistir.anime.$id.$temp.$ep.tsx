@@ -124,7 +124,7 @@ function WatchAnimePage() {
       contentId: effectiveAnime.id,
       type: "a",
       title: `${effectiveAnime.title} (T${temp}:E${ep})`,
-      posterUrl: effectiveAnime.posterUrl,
+      ...(effectiveAnime.posterUrl ? {posterUrl:effectiveAnime.posterUrl} : {}),
       season: Number(temp),
       episode: Number(ep),
       currentTime,
@@ -151,13 +151,13 @@ function WatchAnimePage() {
       >
         <OwnPlayer
           streams={streams}
-          poster={effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl}
+          {...(effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl ? {poster: effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl} : {})}
           title={effectiveAnime.title || "Anime"}
           subtitle={`Temporada ${temp} - Episódio ${ep}`}
           onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
-          onEnded={() => setEpisodeWatched(episodeKey, true)}
+          onEnded={() => { setEpisodeWatched(episodeKey, true); }}
           expectedRuntimeMin={effectiveAnime.tmdb?.runtime || 24}
         />
       </PlayerErrorBoundary>
