@@ -472,3 +472,44 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
   .ztv-player-frame .ydo-live-topbar,
   .ztv-studio .ztv-btn { transition:none !important; }
 }
+
+
+/* Mobile Cast/AirPlay sheet is portaled to body: never clipped by 16:9 player. */
+.zang-cast-mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 12px calc(88px + env(safe-area-inset-bottom,0px));
+  background: rgba(2,7,14,.72);
+  overscroll-behavior: contain;
+}
+.zang-cast-mobile-overlay > div {
+  position: relative;
+  width: min(100%,430px);
+  max-height: calc(100dvh - 116px);
+}
+.zang-cast-mobile-overlay .zang-cast-menu {
+  position: relative;
+  inset: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  max-height: calc(100dvh - 116px);
+  overflow-y: auto;
+  padding: 15px;
+  border-radius: 17px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (max-height: 490px) {
+  .zang-cast-mobile-overlay {
+    align-items: center;
+    padding: 8px;
+  }
+  .zang-cast-mobile-overlay .zang-cast-menu {
+    max-height: calc(100dvh - 16px);
+  }
+}
