@@ -18,7 +18,7 @@ let workerLogs="";
 worker.stderr.on("data",chunk=>{workerLogs=(workerLogs+String(chunk)).slice(-1000);});
 const temp=mkdtempSync(path.join(os.tmpdir(),"live-chrome-"));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-let chrome=null,ws=null;
+let chrome=null,ws=null,chromeStderr="";
 try{
  let ready=false;
  for(let i=0;i<48;i++){
@@ -32,9 +32,10 @@ try{
   "--remote-allow-origins=*","--remote-debugging-port="+CDP_PORT,
   "--user-data-dir="+temp,"--autoplay-policy=no-user-gesture-required",
   "--mute-audio",BASE+"/"
- ],{stdio:"ignore"});
+ ],{stdio:["ignore","ignore","pipe"]});
+ chrome.stderr?.on("data",chunk=>{chromeStderr=(chromeStderr+String(chunk)).slice(-2400);});
  let endpoint=null;
- for(let i=0;i<30;i++){
+ for(let i=0;i<75;i++){
   try{
    const data=await (await fetch("http://127.0.0.1:"+CDP_PORT+"/json/list",{signal:AbortSignal.timeout(1500)})).json();
    endpoint=(data.find(item=>item.type==="page")||data.find(item=>item.webSocketDebuggerUrl))?.webSocketDebuggerUrl||null;
@@ -42,7 +43,7 @@ try{
   }catch{}
   await sleep(300);
  }
- if(!endpoint)throw new Error("Chrome debugging page not found");
+ if(!endpoint)throw new Error("Chrome debugging page not found; exit="+chrome.exitCode+"; stderr="+chromeStderr);
  ws=new WebSocket(endpoint);
  await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
  const pending=new Map();let index=0;const failed=[],warnings=[];
