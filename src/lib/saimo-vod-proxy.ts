@@ -134,7 +134,7 @@ export async function handleSaimoVodProxy(request: Request, requestUrl = new URL
 
       if (!res.ok) {
         await res.body?.cancel();
-        return errorResponse(`Fonte do Saimo indisponível (HTTP ${res.status})`, res.status === 404 ? 404 : 502);
+        return errorResponse(`Fonte de vídeo indisponível (HTTP ${res.status})`, res.status === 404 ? 404 : 502);
       }
 
       const rawType = (res.headers.get("content-type") || "").toLowerCase();
@@ -191,6 +191,6 @@ export async function handleSaimoVodProxy(request: Request, requestUrl = new URL
   } catch (error) {
     const kind = error instanceof Error ? error.name : "network";
     console.warn("[SaimoVod] Falha de comunicação upstream:", kind);
-    return errorResponse("Falha ao conectar à mídia do Saimo", 502);
+    return errorResponse("Falha ao conectar ao vídeo no Zang Flix", 502);
   }
 }
