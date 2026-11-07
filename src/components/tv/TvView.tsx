@@ -130,9 +130,11 @@ export function TvView({ initialCanalId }: TvViewProps) {
         if (lastSaved && data.canais.some((c) => c.id === lastSaved)) {
           setActiveId(lastSaved);
         } else if (data.canais.length > 0) {
-          // Primeiro canal da lista (ou prioritário Globo/SporTV)
+          // Prefere fonte HLS realmente acessível e não inicia em canal offline.
           const defaultCanal =
-            data.canais.find((c) => /globo|sportv/i.test(c.nome)) || data.canais[0];
+            data.canais.find((c) => c.fontes.length > 0 && /^(band|sbt)$/i.test(c.nome)) ||
+            data.canais.find((c) => c.fontes.length > 0) ||
+            data.canais[0];
           setActiveId(defaultCanal.id);
         }
       }
@@ -521,7 +523,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                   <div
                     key={c.id}
                     onClick={() => selectCanal(c)}
-                    className={`ydo-tv-channel-item ${isActive ? "active" : ""}`}
+                    className={`ydo-tv-channel-item ${isActive ? "active" : ""} ${c.indisponivel ? "is-offline" : ""}`}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
@@ -540,10 +542,13 @@ export function TvView({ initialCanalId }: TvViewProps) {
                     <div className="ydo-tv-channel-info">
                       <div className="ydo-tv-channel-name-row">
                         <span className="ydo-tv-channel-name">{c.nome}</span>
-                        {isActive && <span className="ydo-live-dot" />}
+                        {isActive && !c.indisponivel && <span className="ydo-live-dot" />}
+                        {c.indisponivel && <span title="Fontes temporariamente indisponíveis" style={{ fontSize: "0.67rem", opacity: 0.65 }}>SEM FONTE</span>}
                       </div>
                       <div className="ydo-tv-channel-epg-text">
-                        {isActive && playerLoading
+                        {c.indisponivel
+                          ? "Canal temporariamente indisponível"
+                          : isActive && playerLoading
                           ? "Sintonizando…"
                           : epg?.titulo
                           ? `${epg.horario ? `${epg.horario} · ` : ""}${epg.titulo}`
