@@ -4,12 +4,12 @@ export interface JogoBrasileirao {
   id: string;
   casa: string;
   fora: string;
-  escudoCasa?: string;
-  escudoFora?: string;
+  escudoCasa: string | undefined;
+  escudoFora: string | undefined;
   horarioLocal: string;
   inicioIso: string;
   dataLocal: string;
-  rodada?: string;
+  rodada: string | undefined;
   liga: string;
   ligaId: string;
   grupo: "brasileirao" | "champions" | "copas" | "internacional";
@@ -151,7 +151,7 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
     escudoFora: safeLogo(away.team.logo || away.team.logos?.[0]?.href),
     horarioLocal: horaBrasilia(start),
     inicioIso: start.toISOString(),
-    dataLocal: data, rodada: competition.notes?.[0]?.headline || undefined,
+    dataLocal: data, rodada: competition?.notes?.[0]?.headline || undefined,
     liga: liga.name, ligaId: liga.id, grupo: liga.grupo,
     status, placarCasa: parseScore(home.score), placarFora: parseScore(away.score),
     destaque: liga.id === "bra.1" || liga.id === "uefa.champions" || isFeaturedTeam(homeName) || isFeaturedTeam(awayName),
