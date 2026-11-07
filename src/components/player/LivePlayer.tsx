@@ -6,6 +6,7 @@ import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, 
 import type { ProgramaEPG } from "@/lib/epg";
 import { CastControl } from "./CastControl";
 import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, type LiveLatencyMode } from "@/lib/live-latency";
+import { isMobileLandscapeTarget, shouldRotateFullscreenFallback, tryLockLandscape, unlockLandscape, type OrientationLock } from "@/lib/fullscreen-orientation";
 import {
   sortStreamsByHealth,
   recordFailedSource,
@@ -236,6 +237,8 @@ export function LivePlayer({
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [theaterFullscreen, setTheaterFullscreen] = useState(false);
+  const [rotateLandscapeFallback, setRotateLandscapeFallback] = useState(false);
+  const orientationLockedRef = useRef(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(() => {
     if (typeof window === "undefined") return 1;
@@ -702,8 +705,52 @@ export function LivePlayer({
     localStorage.setItem(LIVE_VOL_KEY, String(newVol));
   }, []);
 
-  // Native fullscreen when supported, including the iPhone's video-only API.
-  // Last resort: fixed-position theater mode for embedded mobile browsers.
+  const isMobilePlayer = useCallback(() => {
+    const coarse = typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    return isMobileLandscapeTarget({
+      userAgent: navigator.userAgent,
+      viewportWidth: window.innerWidth,
+      coarsePointer: coarse,
+    });
+  }, []);
+
+  const isPortrait = useCallback(() => {
+    if (typeof window.matchMedia === "function") {
+      return window.matchMedia("(orientation: portrait)").matches;
+    }
+    return window.innerHeight > window.innerWidth;
+  }, []);
+
+  const getOrientation = useCallback((): OrientationLock | null => {
+    return typeof screen !== "undefined" ? (screen.orientation as OrientationLock | undefined) ?? null : null;
+  }, []);
+
+  const releaseOrientation = useCallback(() => {
+    if (orientationLockedRef.current) {
+      unlockLandscape(getOrientation());
+      orientationLockedRef.current = false;
+    }
+    setRotateLandscapeFallback(false);
+  }, [getOrientation]);
+
+  const applyMobileLandscape = useCallback(async () => {
+    if (!isMobilePlayer()) return;
+    const locked = await tryLockLandscape(getOrientation());
+    // A user may have closed fullscreen while the browser was deciding.
+    if (!document.fullscreenElement || document.fullscreenElement !== containerRef.current) {
+      if (locked) unlockLandscape(getOrientation());
+      return;
+    }
+    orientationLockedRef.current = locked;
+    setRotateLandscapeFallback(shouldRotateFullscreenFallback({
+      mobile: true, portrait: isPortrait(), orientationLocked: locked,
+    }));
+  }, [isMobilePlayer, isPortrait, getOrientation]);
+
+  // Fullscreen is a user gesture: enter first, then attempt Screen Orientation
+  // lock (Android Chrome). iPhone Safari doesn't expose this API, so in portrait
+  // we rotate the theater player instead of showing a tiny portrait video.
   const handleFullscreenToggle = useCallback(() => {
     const el = containerRef.current;
     const video = videoRef.current as (HTMLVideoElement & {
@@ -712,8 +759,10 @@ export function LivePlayer({
       webkitDisplayingFullscreen?: boolean;
     }) | null;
     if (!el) return;
+
     if (theaterFullscreen) {
       setTheaterFullscreen(false);
+      releaseOrientation();
       return;
     }
     if (document.fullscreenElement) {
@@ -724,34 +773,66 @@ export function LivePlayer({
       video.webkitExitFullscreen?.();
       return;
     }
-    const fallback = () => setTheaterFullscreen(true);
-    // iPhone Safari's inline video generally lacks element requestFullscreen.
-    if (/iPhone|iPod/i.test(navigator.userAgent) && video?.webkitEnterFullscreen) {
+
+    const mobile = isMobilePlayer();
+    const portrait = isPortrait();
+    const fallback = () => {
+      setTheaterFullscreen(true);
+      setRotateLandscapeFallback(shouldRotateFullscreenFallback({
+        mobile, portrait, orientationLocked: false,
+      }));
+    };
+
+    // Safari on iPhone: portrait inline theater simulates landscape. Native
+    // video fullscreen is still used when the device is already landscape.
+    if (mobile && /iPhone|iPod/i.test(navigator.userAgent) && portrait) {
+      fallback();
+      return;
+    }
+    if (mobile && /iPhone|iPod/i.test(navigator.userAgent) && video?.webkitEnterFullscreen) {
       try { video.webkitEnterFullscreen(); return; } catch { fallback(); return; }
     }
     if (typeof el.requestFullscreen === "function") {
-      void el.requestFullscreen().catch(fallback);
+      void el.requestFullscreen()
+        .then(() => { void applyMobileLandscape(); })
+        .catch(fallback);
       return;
     }
-    const webkitContainer = el as HTMLDivElement & { webkitRequestFullscreen?: () => void };
+    const webkitContainer = el as HTMLDivElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+    };
     if (webkitContainer.webkitRequestFullscreen) {
-      try { webkitContainer.webkitRequestFullscreen(); return; } catch { fallback(); return; }
+      try {
+        const result = webkitContainer.webkitRequestFullscreen();
+        void Promise.resolve(result).then(() => {
+          if (document.fullscreenElement) void applyMobileLandscape();
+          else if (mobile && portrait) fallback();
+        }).catch(fallback);
+        return;
+      } catch { fallback(); return; }
     }
     if (video?.webkitEnterFullscreen) {
       try { video.webkitEnterFullscreen(); return; } catch { fallback(); return; }
     }
     fallback();
-  }, [theaterFullscreen]);
+  }, [theaterFullscreen, isMobilePlayer, isPortrait, applyMobileLandscape, releaseOrientation]);
 
   useEffect(() => {
     const video = videoRef.current;
-    const onFullscreenChange = () =>
-      setIsFullscreen(Boolean(document.fullscreenElement || theaterFullscreen));
+    const onFullscreenChange = () => {
+      const native = Boolean(document.fullscreenElement);
+      setIsFullscreen(native || theaterFullscreen);
+      if (!native && !theaterFullscreen) releaseOrientation();
+    };
     const onNativeStart = () => setIsFullscreen(true);
-    const onNativeEnd = () => setIsFullscreen(false);
+    const onNativeEnd = () => {
+      setIsFullscreen(false);
+      releaseOrientation();
+    };
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && theaterFullscreen) {
         setTheaterFullscreen(false);
+        releaseOrientation();
         event.preventDefault();
       }
     };
@@ -768,7 +849,7 @@ export function LivePlayer({
       video?.removeEventListener("webkitendfullscreen", onNativeEnd);
       window.removeEventListener("keydown", onEscape);
     };
-  }, [theaterFullscreen]);
+  }, [theaterFullscreen, releaseOrientation]);
 
   useEffect(() => {
     if (!theaterFullscreen) return;
@@ -776,6 +857,13 @@ export function LivePlayer({
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previous; };
   }, [theaterFullscreen]);
+
+  useEffect(() => () => {
+    if (orientationLockedRef.current) {
+      unlockLandscape(typeof screen !== "undefined" ? screen.orientation as OrientationLock : null);
+      orientationLockedRef.current = false;
+    }
+  }, []);
 
   const handlePiPToggle = useCallback(() => {
     const video = videoRef.current;
@@ -823,7 +911,7 @@ export function LivePlayer({
   return (
     <div
       ref={containerRef}
-      className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "")}
+      className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "") + (rotateLandscapeFallback ? " is-landscape-fallback" : "")}
       data-controls-visible={controlsVisible}
       onMouseMove={showControls}
       onTouchStart={showControls}
