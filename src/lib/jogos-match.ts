@@ -161,9 +161,31 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
     canalId: null, canalNome: null, canalLogo: null, transmissao: "nao-confirmada",
   };
 }
+// Alternate spellings common in Brazilian XMLTV guides and ESPN fixture names.
+// These are identity aliases, never an inference about who owns broadcast rights.
+const TEAM_ALIASES: Record<string, string[]> = {
+  "atletico mineiro": ["atletico mg", "atl mineiro"],
+  "atletico mg": ["atletico mineiro", "atl mineiro"],
+  "athletico paranaense": ["athletico pr", "atletico pr"],
+  "athletico pr": ["athletico paranaense", "atletico pr"],
+  "atletico paranaense": ["athletico paranaense", "athletico pr"],
+  "gremio": ["gremio rs"],
+  "internacional": ["internacional rs", "inter rs"],
+  "sao paulo": ["sao paulo fc"],
+  "vasco da gama": ["vasco"],
+  "vasco": ["vasco da gama"],
+  "red bull bragantino": ["bragantino", "rb bragantino"],
+  "bragantino": ["red bull bragantino", "rb bragantino"],
+};
+function clubMentions(text: string, club: string): boolean {
+  const key = normalizeSoccerName(club);
+  if (key.length < 4) return false;
+  const variants = [key, ...(TEAM_ALIASES[key] || [])];
+  return variants.some(name => text.includes(" " + name + " "));
+}
 export function doesEpgDescribeFixture(description: string, casa: string, fora: string): boolean {
   const title = " " + normalizeSoccerName(description) + " ";
-  const a = normalizeSoccerName(casa), b = normalizeSoccerName(fora);
-  if (a.length < 4 || b.length < 4 || a === b) return false;
-  return title.includes(" " + a + " ") && title.includes(" " + b + " ");
+  const home = normalizeSoccerName(casa), away = normalizeSoccerName(fora);
+  if (home === away) return false;
+  return clubMentions(title, casa) && clubMentions(title, fora);
 }
