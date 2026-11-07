@@ -18,12 +18,14 @@ describe("Formatos Saimo", () => {
     expect(classifyLiveSource({ url: "https://x.example/live", chave: "a:b" })).toBe("dash");
   });
 
-  test("prioriza proxy com Referer/UA e HTTP, testa rota alternativa após falha", () => {
+  test("usa primeiro o navegador em HTTPS como Saimo, com proxy de fallback", () => {
     const source = { url: "https://cdn.example/live.m3u8", referer: "https://site.example/" };
-    expect(initialLiveMode(source)).toBe("proxy");
-    const attempts = new Set(["proxy"] as const);
-    expect(nextLiveMode(source, "proxy", attempts)).toBe("direct");
-    expect(nextLiveMode(source, "direct", new Set(["direct", "proxy"] as const))).toBeNull();
+    expect(initialLiveMode(source)).toBe("direct");
+    expect(nextLiveMode(source, "direct", new Set(["direct"] as const))).toBe("proxy");
+    expect(nextLiveMode(source, "proxy", new Set(["direct", "proxy"] as const))).toBeNull();
+    expect(initialLiveMode({ url: "https://d1.s25-cloudfront-net.lat/live/index.m3u8", agente: "UA" })).toBe("direct");
+    expect(initialLiveMode({ url: "https://cdn.example/playlist.txt" })).toBe("proxy");
+    expect(initialLiveMode({ url: "https://dadinhodetapioca.fun/live.m3u8" })).toBe("proxy");
     expect(initialLiveMode({ url: "http://cdn.example/stream.m3u8" })).toBe("proxy");
     expect(nextLiveMode({ url: "http://cdn.example/stream.m3u8" }, "proxy", new Set(["proxy"] as const))).toBeNull();
   });
