@@ -448,15 +448,18 @@ export async function localizarJogosNaGradeEPG(
   const state = await getOrLoadEpgState();
   if (!state) return found;
 
+  const normalizeGuideChannel = (value: string) => normalizeNomeCanal(value)
+    .replace(/\b(hd|fhd|uhd|4k)\b/g, "").trim();
   const channelsByNorm = new Map(
     canais.filter(channel => channel.fontes.length > 0)
-      .map(channel => [normalizeNomeCanal(channel.nome), channel] as const),
+      .map(channel => [normalizeGuideChannel(channel.nome), channel] as const),
   );
   const programmesById = [...state.programmesByChannel.entries()];
   for (const [epgId, programmes] of programmesById) {
     const epgChannel = state.channels.get(epgId);
     if (!epgChannel) continue;
-    const catalogChannel = channelsByNorm.get(normalizeNomeCanal(epgChannel.name));
+    const catalogChannel = channelsByNorm.get(normalizeGuideChannel(epgChannel.name)) ||
+      channelsByNorm.get(normalizeGuideChannel(epgId));
     if (!catalogChannel) continue;
     for (const match of jogos) {
       if (found.has(match.id)) continue;
