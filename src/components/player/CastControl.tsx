@@ -244,8 +244,10 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
       </button>
       {open && (compact && !document.fullscreenElement
         ? createPortal(
-            <div className="zang-cast-mobile-overlay" onClick={() => setOpen(false)}>
-              <div onClick={event => event.stopPropagation()}>{popup}</div>
+            <div className="zang-cast-mobile-overlay">
+              <button type="button" className="zang-cast-mobile-scrim"
+                aria-label="Fechar opções de transmissão" onClick={() => setOpen(false)} />
+              <div className="zang-cast-mobile-sheet">{popup}</div>
             </div>,
             document.body
           )
