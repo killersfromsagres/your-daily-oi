@@ -61,7 +61,8 @@ function FootballPage() {
 
   useEffect(()=>{
     const controller=new AbortController();
-    setLoading(true);setError(null);
+    if (data?.dataLocal !== day) setLoading(true);
+    setError(null);
     fetch("/api/jogos-agenda?data="+encodeURIComponent(day),{
       cache:"no-store",signal:controller.signal,headers:{Accept:"application/json"},
     }).then(async response=>{
@@ -73,7 +74,7 @@ function FootballPage() {
       .catch(reason=>{
         if(!controller.signal.aborted){
           setError(reason instanceof Error ? reason.message:"Agenda indisponível");
-          setData(null);
+          if (data?.dataLocal !== day) setData(null);
         }
       }).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
@@ -105,7 +106,7 @@ function FootballPage() {
           <div>
             <div className="zf-football-eyebrow"><FootballIcon size={17}/><span>FUTEBOL EM DESTAQUE</span><span className="zf-football-label-line" />HORÁRIO DE BRASÍLIA</div>
             <h1>Todos os <em>jogos do dia.</em></h1>
-            <p>Brasileirão Série A, Champions League e as principais competições. Os grandes confrontos aparecem primeiro, sem ocultar os demais.</p>
+            <p>Todos os confrontos, horários de Brasília e emissoras informadas para cada partida. A agenda e os placares se atualizam automaticamente.</p>
           </div>
           <div className="zf-football-hero-actions">
             {live>0&&<span className="zf-football-live"><span/> {live} EM ANDAMENTO</span>}
