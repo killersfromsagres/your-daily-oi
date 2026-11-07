@@ -20,4 +20,18 @@ for(const path of paths){
   }
  });
 }
-console.log(JSON.stringify({event:"branding-audit",filesScanned:paths.length,mentions:matches.length,items:matches.slice(0,160)}));
+console.log(JSON.stringify({event:"branding-audit",filesScanned:paths.length,mentions:matches.length,items:matches.slice(0,40)}));
+
+// Distinguish integration URLs, code comments and provider attribution from
+// strings displayed to viewers. All visible product labels must say Zang Flix.
+const checks = [
+  ["src/lib/saimo-stream.ts", /name:\s*`Saimo/i],
+  ["src/routes/assistir.filme.$id.tsx", /name:\s*`Saimo/i],
+  ["src/lib/saimo-vod-proxy.ts", /(?:Fonte do Saimo|mídia do Saimo)/i],
+  ["src/components/player/LivePlayer.tsx", /O Saimo mantém/i],
+  ["src/server.ts", /error:\s*"[^"]*Saimo TV/i],
+  ["src/routes/index.tsx", /catálogo oficial Saimo TV/i],
+];
+const visible = checks.filter(([path, pattern]) => pattern.test(readFileSync(path, "utf8"))).map(([path])=>path);
+console.log(JSON.stringify({event:"branding-visible",legacyLabels:visible,checked:checks.length}));
+if(visible.length)process.exit(1);
