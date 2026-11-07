@@ -1,6 +1,6 @@
 // tests/live-tv.test.ts — Bun; Saimo catalog, formats, fallback and media probes.
 import { describe, test, expect, afterEach } from "bun:test";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode } from "../src/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources } from "../src/lib/live-source";
 import { mergeCanaisCatalogs, parseCanais, filterCanaisAndExtractCategories } from "../src/lib/canais";
 import { handleLiveFormatApi } from "../src/lib/live-probe";
 
@@ -61,6 +61,51 @@ describe("Compatibilidade Vercel com proxy legado", () => {
   test("fontes externas sem índice também utilizam o proxy legado", () => {
     const path = buildLiveProxyPath("band", -1, fonte, true);
     expect(path.startsWith("/api/live-proxy?")).toBe(true);
+  });
+});
+
+
+describe("Priorização de espelhos em canais fechados", () => {
+  const degraded = { url: "https://d3-test.cdn13embed.xyz/hbo/index.m3u8", qualidade: "FHD" };
+  const alternate = { url: "http://138.204.86.4/HBO/index.m3u8", qualidade: "HD" };
+
+  test("prioriza fonte alternativa de HBO diante do CDN 403", () => {
+    const ordered = orderLiveSources([degraded, alternate]);
+    expect(ordered[0]).toBe(alternate);
+    expect(ordered[1]).toBe(degraded);
+    expect(initialLiveMode(ordered[0])).toBe("proxy");
+  });
+
+  test("mantém o CDN original como último recurso, mesmo quando bloqueado em outra região", () => {
+    const ordered = orderLiveSources([degraded]);
+    expect(ordered).toEqual([degraded]);
+  });
+
+  test("não altera a ordem de fontes sem CDN problemático", () => {
+    const first = { url: "https://cdn.example/stream.m3u8" };
+    const second = { url: "https://backup.example/stream.m3u8" };
+    expect(orderLiveSources([first, second])).toEqual([first, second]);
+  });
+
+  test("não reordena por caminho quando o host contém a palavra CDN em URL", () => {
+    const first = { url: "https://cdn.example/redirect/cdn13embed.xyz/master.m3u8" };
+    const second = { url: "https://backup.example/stream.m3u8" };
+    expect(orderLiveSources([first, second])[0]).toBe(first);
+  });
+});
+
+describe("Categorias IPTV e TXT normalizadas", () => {
+  test("junta ESPORTES, ESPN e filmes de listas M3U às categorias de origem", () => {
+    const m3u = parseCanais([
+      "#EXTM3U",
+      '#EXTINF:-1 group-title="ESPORTES",COMBATE (S46)',
+      "http://tv.example/combate.ts",
+      '#EXTINF:-1 group-title="ESPN",ESPN (S46)',
+      "http://tv.example/espn.ts",
+      '#EXTINF:-1 group-title="FILMES E SÉRIES",Telecine Action (S46)',
+      "http://tv.example/telecine.ts",
+    ].join("\n"));
+    expect(m3u.map(c => c.categoria)).toEqual(["Esportes", "Esportes", "Filmes e Séries"]);
   });
 });
 
