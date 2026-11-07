@@ -13,6 +13,12 @@ A seção de TV foi remodelada com interface responsiva, canais, busca, favorito
 
 **Publicação:** após sincronizar o GitHub com Lovable, publique uma implantação que inclua as funções de servidor. Uma versão apenas estática consegue listar canais públicos, mas não pode retransmitir as fontes que exigem proxy.
 
+## Zang Flix — TV com glassmorphism e programação
+
+O catálogo de canais de TV agora tem cartões translúcidos, busca por filmes, séries, animes e programas, filtro por canais com grade e informações **Agora passando / Em seguida** de uma única consulta EPG para toda a lista. Nomes específicos só aparecem quando identificados pela grade XMLTV. Favoritos, modo lista/grade, navegação e streaming continuam disponíveis.
+
+[Arquitetura, cobertura da grade e validação visual](docs/ZANG-TV-GLASS.md).
+
 ## Zang Sports — Central de jogos
 
 A área de TV agora apresenta uma agenda esportiva responsiva com **Brasileirão, Champions League, Libertadores, Copa do Brasil e grandes ligas europeias**. O calendário permite consultar os sete dias seguintes, com horários convertidos para Brasília, escudos, confrontos, placares, status ao vivo, filtros e cards clicáveis para as transmissões identificadas no guia brasileiro.
