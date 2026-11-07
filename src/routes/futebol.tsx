@@ -1,7 +1,7 @@
 "use client";
 // src/routes/futebol.tsx — complete daily football guide, Brazil timezone.
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRight,
   Clock3, RadioTower, RefreshCw, ShieldCheck } from "lucide-react";
 import { MatchCard } from "@/components/tv/JogosShelf";
@@ -37,6 +37,7 @@ function FootballPage() {
   const [today,setToday] = useState(()=>dataBrasilia());
   const [day,setDay] = useState(()=>dataBrasilia());
   const [data,setData] = useState<SportsAgendaResponse|null>(null);
+  const lastSuccessfulDay = useRef<string | null>(null);
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState<string|null>(null);
   const [revalidate,setRevalidate] = useState(0);
@@ -61,7 +62,7 @@ function FootballPage() {
 
   useEffect(()=>{
     const controller=new AbortController();
-    if (data?.dataLocal !== day) setLoading(true);
+    if (lastSuccessfulDay.current !== day) setLoading(true);
     setError(null);
     fetch("/api/jogos-agenda?data="+encodeURIComponent(day),{
       cache:"no-store",signal:controller.signal,headers:{Accept:"application/json"},
@@ -70,11 +71,11 @@ function FootballPage() {
       const payload=await response.json() as SportsAgendaResponse;
       if(payload.dataLocal!==day||!Array.isArray(payload.jogos))throw new Error("Resposta esportiva inválida");
       return payload;
-    }).then(payload=>{if(!controller.signal.aborted)setData(payload);})
+    }).then(payload=>{if(!controller.signal.aborted){lastSuccessfulDay.current=day;setData(payload);}})
       .catch(reason=>{
         if(!controller.signal.aborted){
           setError(reason instanceof Error ? reason.message:"Agenda indisponível");
-          if (data?.dataLocal !== day) setData(null);
+          if (lastSuccessfulDay.current !== day) setData(null);
         }
       }).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
