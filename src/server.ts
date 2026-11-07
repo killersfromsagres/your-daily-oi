@@ -14,7 +14,8 @@ import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { handleLiveFormatApi } from "./lib/live-probe";
 import { isLivePlaylistTarget } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
-import type { CatalogItem, SeasonItem } from "./lib/types";
+import type { CatalogItem, SeasonItem, HighlightRow } from "./lib/types";
+import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -79,67 +80,22 @@ const TOP_BLOCKBUSTERS = [
   "ponto sem retorno"
 ];
 
-/**
- * Route Handler /api/catalogo enriquecido com backdrops em alta resolução para os destaques
- */
-async function handleCatalogoApi(url: URL): Promise<Response> {
-  try {
-    const q = url.searchParams.get("q");
-    const { items, highlights } = await loadCatalog();
+function uniqueCatalogItems(items: Map<string, CatalogItem>): CatalogItem[] {
+  const seen = new Set<string>();
+  const result: CatalogItem[] = [];
+  for (const item of items.values()) {
+    if (item.alias) continue;
+    const key = item.type + ":" + (item.tmdbId ?? normalizeTitle(item.title));
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(item);
+  }
+  return result;
+}
 
-    if (q) {
-      const results = searchItems(items, q).slice(0, 50);
-      return jsonResponse({ items: results });
-    }
-
-    const rawAllItems = Array.from(items.values()).filter((i) => !i.alias);
-    const seenCatalogKeys = new Set<string>();
-    const allItems: CatalogItem[] = [];
-    for (const item of rawAllItems) {
-      const key = `${item.type}:${item.tmdbId ?? normalizeTitle(item.title)}`;
-      if (!seenCatalogKeys.has(key)) {
-        seenCatalogKeys.add(key);
-        allItems.push(item);
-      }
-    }
-
-    // Seleciona exclusivamente os filmes mais assistidos e populares do catálogo para o carrossel do banner
-    const selectedMostWatched: CatalogItem[] = [];
-    const usedIds = new Set<string>();
-
-    // 1. Procura pelos blockbusters mais assistidos conhecidos
-    for (const query of TOP_BLOCKBUSTERS) {
-      const found = allItems.find((it) => {
-        if (usedIds.has(it.id)) return false;
-        // Nunca incluir itens com # no banner de destaque
-        if (it.title.startsWith("#")) return false;
-        const norm = normalizeTitle(it.title);
-        return norm.includes(query);
-      });
-      if (found) {
-        selectedMostWatched.push(found);
-        usedIds.add(found.id);
-      }
-      if (selectedMostWatched.length >= 8) break;
-    }
-
-    // 2. Se faltar, completa com os primeiros itens de destaques.txt (excluindo qualquer item com #)
-    if (selectedMostWatched.length < 8 && highlights.length > 0) {
-      for (const hl of highlights) {
-        for (const item of hl.items) {
-          if (item.title.startsWith("#")) continue;
-          const found = allItems.find((it) => !usedIds.has(it.id) && normalizeTitle(it.title) === normalizeTitle(item.title));
-          if (found) {
-            selectedMostWatched.push(found);
-            usedIds.add(found.id);
-          }
-          if (selectedMostWatched.length >= 8) break;
-        }
-        if (selectedMostWatched.length >= 8) break;
-      }
-    }
-
-    // Hidrata em paralelo os itens do carrossel com metadados do TMDB (backdrop 4K / original)
+async function getFeaturedHero(items: CatalogItem[], highlights: HighlightRow[]): Promise<CatalogItem[]> {
+  const selectedMostWatched = selectRotatingHero(items, highlights, TOP_BLOCKBUSTERS, Date.now(), 8);
+    // Only enrich the eight selected movies; metadata remains cached for one day.
     const enrichedHeroItems = await Promise.all(
       selectedMostWatched.map(async (item) => {
         const cached = itemDetailsCache.get(item.id);
@@ -157,7 +113,7 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
           }
         }
 
-        // Garante que o backdropUrl seja 4K / original
+        // Prefer a genuine widescreen backdrop or a known media image.
         let backdropUrl = tmdbData?.backdropUrl || null;
         if (!backdropUrl) {
           const norm = normalizeTitle(item.title);
@@ -175,12 +131,12 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
             ? { ...tmdbData, backdropUrl }
             : {
                 overview: "Assista a este grande sucesso em alta definição no catálogo Zang Flix.",
-                voteAverage: 8.5,
+                voteAverage: 0,
                 backdropPath: null,
                 backdropUrl,
                 trailerId: null,
                 cast: [],
-                releaseYear: 2024,
+                releaseYear: null,
               },
         };
 
@@ -192,11 +148,42 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
     // Filtra para garantir que no banner SÓ passem títulos com backdrop widescreen de alta qualidade
     const finalHero = enrichedHeroItems.filter((it) => Boolean(it.tmdb?.backdropUrl));
 
+
+  return finalHero.length > 0 ? finalHero : enrichedHeroItems;
+}
+
+async function handleDestaquesApi(): Promise<Response> {
+  try {
+    const { items, highlights } = await loadCatalog();
+    const featuredHero = await getFeaturedHero(uniqueCatalogItems(items), highlights);
+    return jsonResponse({ featuredHero, refreshWindowMs: HERO_ROTATION_MS }, 200, "private, max-age=60");
+  } catch (error) {
+    console.error("[Hero] Falha ao renovar destaques:", error);
+    return jsonResponse({ error: "Destaques indisponíveis" }, 503);
+  }
+}
+
+/**
+ * Route Handler /api/catalogo enriquecido com backdrops em alta resolução para os destaques
+ */
+async function handleCatalogoApi(url: URL): Promise<Response> {
+  try {
+    const q = url.searchParams.get("q");
+    const { items, highlights } = await loadCatalog();
+
+    if (q) {
+      const results = searchItems(items, q).slice(0, 50);
+      return jsonResponse({ items: results });
+    }
+
+    const allItems = uniqueCatalogItems(items);
+    const finalHero = await getFeaturedHero(allItems, highlights);
+
     return jsonResponse({
       items: allItems,
       highlights,
       genres: getGenres(items),
-      featuredHero: finalHero.length > 0 ? finalHero : enrichedHeroItems,
+      featuredHero: finalHero,
       sourceStatus: getCatalogSourceStatus(),
     });
   } catch (error) {
@@ -1984,6 +1971,9 @@ export default {
 
       if (url.pathname === "/api/catalogo") {
         return await handleCatalogoApi(url);
+      }
+      if (url.pathname === "/api/destaques") {
+        return await handleDestaquesApi();
       }
       if (url.pathname === "/api/version") {
         return jsonResponse(APP_VERSION);
