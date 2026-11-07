@@ -1,3 +1,4 @@
+import { getClientCatalog } from "@/lib/catalog-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
@@ -120,9 +121,8 @@ function AnimesPage() {
   // Carrega os animes clássicos do catálogo local (preservando o acervo anterior)
   useEffect(() => {
     let active = true;
-    fetch("/api/catalogo", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { items: CatalogItem[] } | null) => {
+    void getClientCatalog()
+      .then((data) => {
         if (!active || !data?.items) return;
         const classics = data.items.filter((i) => i.type === "a" || isAnimeItem(i));
         setLocalItems(classics);
