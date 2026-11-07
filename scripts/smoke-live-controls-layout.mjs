@@ -92,7 +92,7 @@ const FIXTURE="\n<div class=\"ydo-live-player-container\" data-controls-visible=
  await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send("Page.navigate",{url:BASE+"/tv/canal/band"});
  await until("!!document.querySelector('.ztv-player-frame .zf-player-toolbar')","real LivePlayer toolbar");
- const live=await evaluate("({icons:document.querySelectorAll('.ztv-player-frame .zf-player-toolbar button').length,legacy:document.querySelectorAll('.ztv-player-frame .ydo-live-controls-bar').length,fullscreen:!!document.querySelector('.ztv-player-frame .zf-player-toolbar button[aria-label=\\"Assistir em tela cheia\\"]')})");
+ const live=await evaluate("({icons:document.querySelectorAll('.ztv-player-frame .zf-player-toolbar button').length,legacy:document.querySelectorAll('.ztv-player-frame .ydo-live-controls-bar').length,fullscreen:!!document.querySelector('.ztv-player-frame .zf-player-toolbar button[aria-label^=Assistir]')})");
  console.log(JSON.stringify({event:"real-live-player-toolbar",...live}));
  if(live.icons<4||live.legacy!==0||!live.fullscreen) throw Error("Real LivePlayer does not use isolated minimal toolbar");
 }finally{
