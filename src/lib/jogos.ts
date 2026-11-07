@@ -63,7 +63,7 @@ function matchChannel(
   return matched ? { id: matched.id, nome: matched.nome, ...(matched.logo ? { logo: matched.logo } : {}) } : null;
 }
 async function fetchFixturesForLeague(liga: LigaFutebol, date: string): Promise<{
-  liga: LigaFutebol; events: ESPNEvent[];
+  liga: LigaFutebol; events: ESPNEvent[]; leagueLogo: string | null;
 }> {
   // Scoreboard 'dates' supports a single YYYYMMDD for soccer, not date ranges.
   const url = ESPN_BASE + encodeURIComponent(liga.id) + "/scoreboard?dates=" +
@@ -75,15 +75,24 @@ async function fetchFixturesForLeague(liga: LigaFutebol, date: string): Promise<
   if (!res.ok) throw new Error(liga.id + ": HTTP " + res.status);
   const parsed: unknown = await res.json();
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Resposta ESPN inválida");
-  const events = (parsed as { events?: ESPNEvent[] }).events;
+  const feed = parsed as { events?: ESPNEvent[]; leagues?: Array<{logo?: string; logos?: Array<{href?:string}>}> };
+  const events = feed.events;
   if (events !== undefined && !Array.isArray(events)) throw new Error("Lista de eventos inválida");
-  return { liga, events: events || [] };
+  const candidate = feed.leagues?.[0]?.logos?.[0]?.href || feed.leagues?.[0]?.logo || null;
+  let leagueLogo: string | null = null;
+  if (candidate) {
+    try {
+      const u = new URL(candidate);
+      if (u.protocol === "https:") leagueLogo = u.href;
+    } catch {}
+  }
+  return { liga, events: events || [], leagueLogo };
 }
 async function fetchAllLeagues(date: string): Promise<{
-  items: { event: ESPNEvent; liga: LigaFutebol }[];
+  items: { event: ESPNEvent; liga: LigaFutebol; leagueLogo: string | null }[];
   successes: number; failed: string[];
 }> {
-  const items: { event: ESPNEvent; liga: LigaFutebol }[] = [];
+  const items: { event: ESPNEvent; liga: LigaFutebol; leagueLogo: string | null }[] = [];
   const failed: string[] = [];
   let successes = 0;
   // Bound concurrency to reduce provider overload and Cloudflare connection caps.
@@ -95,7 +104,7 @@ async function fetchAllLeagues(date: string): Promise<{
       if (!league) continue;
       if (result.status === "fulfilled") {
         successes++;
-        for (const event of result.value.events) items.push({ event, liga: result.value.liga });
+        for (const event of result.value.events) items.push({ event, liga: result.value.liga, leagueLogo: result.value.leagueLogo });
       } else {
         failed.push(league.id);
         console.warn("[Sports] Falha ESPN", league.id, String(result.reason).slice(0, 150));
@@ -160,9 +169,12 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
   const { items, successes, failed } = await fetchAllLeagues(date);
   if (successes === 0) throw new Error("Nenhum provedor de agenda respondeu");
   const deduped = new Map<string, { item: JogoBrasileirao; raw: ESPNEvent }>();
-  for (const { event, liga } of items) {
+  for (const { event, liga, leagueLogo } of items) {
     const item = parseESPNFixture(event, liga, date);
-    if (item && !deduped.has(item.id)) deduped.set(item.id, { item, raw: event });
+    if (item && !deduped.has(item.id)) {
+      item.ligaLogo = leagueLogo;
+      deduped.set(item.id, { item, raw: event });
+    }
   }
   const games = await annotateBroadcasts([...deduped.values()], date);
   games.sort((a,b) => {
