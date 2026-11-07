@@ -6,7 +6,7 @@ export const Route = createFileRoute("/tv/")({
   head: () => ({
     meta: [
       { title: "TV Ao Vivo — Zang Flix" },
-      { name: "description", content: "Assista a mais de 400 canais de TV ao vivo com alta definição e transmissão contínua." },
+      { name: "description", content: "Zang Live: catálogo atualizado, seleção de canais, EPG e reprodução por fontes alternativas." },
     ],
   }),
 });
