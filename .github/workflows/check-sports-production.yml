@@ -1,0 +1,14 @@
+name: Check public Zang Sports deployment
+on:
+  push:
+    branches: [verify/sports-public-deployment]
+  workflow_dispatch:
+jobs:
+  public-check:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun scripts/check-sports-production.mjs
