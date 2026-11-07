@@ -16,6 +16,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Unit and integration tests
         run: bun run test
+      - name: Sports TypeScript diagnostics
+        run: bun scripts/typecheck-sports.mjs
       - name: Build production
         run: bun run build
       - name: Sports API, Brazilian times and Chrome visual smoke
