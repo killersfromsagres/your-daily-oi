@@ -3,7 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { loadCatalog, getGenres, searchItems, getStreamsForItem, getSeasonsForSeries, cleanDisplayTitle, normalizeTitle, getCatalogSourceStatus } from "./lib/catalog";
-import { getTmdbData, getTmdbTvSeasons, getTmdbSeasonEpisodes, type TmdbEpisodeItem } from "./lib/tmdb";
+import { getTmdbData, getTmdbSeasonEpisodes, type TmdbEpisodeItem } from "./lib/tmdb";
 import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { loadCanais, loadRadios } from "./lib/canais";
@@ -264,15 +264,19 @@ async function handleItemApi(url: URL): Promise<Response> {
     }
   }
 
-  // Se for série ou anime, busca as temporadas e episódios completos
+  // Anime pode aparecer como "series" no acervo Saimo. Usar somente
+  // episódios com fontes reais; os números divulgados pelo TMDB não são links.
   if ((finalItem.type === "s" || finalItem.type === "a") && (!finalItem.seasons || finalItem.seasons.length === 0)) {
     try {
       const seasons = await getSeasonsForSeries(finalItem.title, finalItem.type === "a" ? "a" : "s");
-      if (seasons.length > 0) {
-        finalItem = { ...finalItem, seasons };
+      const saimoSeries = finalItem.type === "a" && seasons.length === 0
+        ? await getSeasonsForSeries(finalItem.title, "s")
+        : [];
+      if (seasons.length || saimoSeries.length) {
+        finalItem = { ...finalItem, seasons: seasons.length ? seasons : saimoSeries };
       }
     } catch {
-      // Ignora e continua
+      // Sem fontes verificáveis não são inventadas temporadas.
     }
   }
 
@@ -285,46 +289,6 @@ async function handleItemApi(url: URL): Promise<Response> {
       }
     } catch {
       // continua com os metadados existentes
-    }
-  }
-
-  // Se for anime e após getSeasonsForSeries o seasons continuar vazio, gera temporadas sintéticas via TMDB
-  if (finalItem.type === "a" && (!finalItem.seasons || finalItem.seasons.length === 0) && item.tmdbId) {
-    try {
-      const tmdbSeasons = await getTmdbTvSeasons(item.tmdbId);
-      if (tmdbSeasons && tmdbSeasons.length > 0) {
-        const syntheticSeasons: SeasonItem[] = tmdbSeasons
-          .filter((s) => s.season_number > 0 && s.episode_count > 0)
-          .map((s) => ({
-            seasonNumber: s.season_number,
-            episodes: Array.from({ length: s.episode_count }, (_, idx) => ({
-              seasonNumber: s.season_number,
-              episodeNumber: idx + 1,
-              title: `Episódio ${idx + 1}`,
-              streams: [],
-            })),
-          }));
-        if (syntheticSeasons.length > 0) {
-          finalItem = { ...finalItem, seasons: syntheticSeasons };
-        }
-      } else if (finalItem.tmdb?.seasonsCount && finalItem.tmdb.seasonsCount > 0) {
-        const count = finalItem.tmdb.seasonsCount;
-        const fallbackSeasons: SeasonItem[] = Array.from({ length: count }, (_, sIdx) => {
-          const sNum = sIdx + 1;
-          return {
-            seasonNumber: sNum,
-            episodes: Array.from({ length: 12 }, (_, eIdx) => ({
-              seasonNumber: sNum,
-              episodeNumber: eIdx + 1,
-              title: `Episódio ${eIdx + 1}`,
-              streams: [],
-            })),
-          };
-        });
-        finalItem = { ...finalItem, seasons: fallbackSeasons };
-      }
-    } catch {
-      // Ignora e continua
     }
   }
 
@@ -535,25 +499,6 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
       ? "movie"
       : "series";
 
-  // Se for anime e tiver suporte via SushiAnimes
-  if (typeKey === "a" || id.includes("-") || tipoParam === "anime") {
-    try {
-      const sushiSources = await resolveSushiEpisodeStream(id, temp, ep);
-      if (sushiSources && sushiSources.length > 0) {
-        return jsonResponse(
-          {
-            id,
-            title: item?.title || id,
-            tipo: "series",
-            sources: sushiSources,
-          },
-          200,
-          "no-store, no-cache, must-revalidate"
-        );
-      }
-    } catch {}
-  }
-
   // Resolve fontes reais híbridas (FenixFlix + RedeFlix + Catálogo Expandido)
   const effectiveTmdbId = item?.tmdbId || (isNumeric ? numId : undefined);
   const effectiveTitle = item?.title || (isNumeric ? "" : id);
@@ -581,13 +526,28 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     } else {
       try {
         const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
-        const foundSeason = seasons.find((s) => s.seasonNumber === temp);
+        const linked = item.type === "a" && !seasons.length
+          ? await getSeasonsForSeries(item.title, "s") : [];
+        const foundSeason = (seasons.length ? seasons : linked).find((s) => s.seasonNumber === temp);
         const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
         if (foundEp?.streams && foundEp.streams.length > 0) {
           orderedSources.push(...foundEp.streams);
         }
       } catch {}
     }
+  }
+
+  // Fonte Sushi por último; não substitui o episódio real encontrado no acervo
+  // nem impede o failover para o Saimo quando um player externo não responde.
+  if (typeKey === "a") {
+    try {
+      const sushiSources = await Promise.race([
+        resolveSushiEpisodeStream(id, temp, ep),
+        new Promise<Awaited<ReturnType<typeof resolveSushiEpisodeStream>>>(
+          resolve => setTimeout(() => resolve([]), 4500)),
+      ]);
+      orderedSources.push(...sushiSources);
+    } catch { /* A fonte principal continua acessível. */ }
   }
 
   // Resolução em paralelo de redirecionadores legados (dbonline, corruptx, etc.) para URLs finais https
@@ -1300,7 +1260,7 @@ async function handleTvStreamApi(request: Request, url: URL): Promise<Response> 
  * Route Handler /api/live-proxy (Proxy Saimo-Grade com redirects manuais, cookies, resgate 403/404 e MPD)
  */
 async function handleLiveProxyApi(request: Request, url: URL): Promise<Response> {
-  let targetUrl = url.searchParams.get("url");
+  let targetUrl: string = url.searchParams.get("url") || "";
   if (!targetUrl) {
     return new Response("URL ausente", { status: 400 });
   }

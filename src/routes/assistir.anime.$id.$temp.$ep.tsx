@@ -32,11 +32,10 @@ function WatchAnimePage() {
     setLoading(true);
 
     Promise.allSettled([
-      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=anime`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=anime&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`/api/anime-sushi/episodio?id=${encodeURIComponent(id)}&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
+      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=anime`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null),
+      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=anime&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null),
     ])
-      .then(([itemRes, resolveRes, sushiRes]) => {
+      .then(([itemRes, resolveRes]) => {
         if (!active) return;
         if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
           setAnime(itemRes.value as CatalogItem);
@@ -44,9 +43,6 @@ function WatchAnimePage() {
         const collectedSources: StreamSource[] = [];
         if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
           collectedSources.push(...(resolveRes.value.sources as StreamSource[]));
-        }
-        if (sushiRes.status === "fulfilled" && sushiRes.value?.sources) {
-          collectedSources.push(...(sushiRes.value.sources as StreamSource[]));
         }
         setExtraStreams(collectedSources);
       })
@@ -158,7 +154,7 @@ function WatchAnimePage() {
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}
-          expectedRuntimeMin={effectiveAnime.tmdb?.runtime || 24}
+          {...(effectiveAnime.tmdb?.runtime && effectiveAnime.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveAnime.tmdb.runtime } : {})}
         />
       </PlayerErrorBoundary>
     </main>

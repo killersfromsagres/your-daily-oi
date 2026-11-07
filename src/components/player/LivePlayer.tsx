@@ -5,6 +5,7 @@ import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import { CastControl } from "./CastControl";
+import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, type LiveLatencyMode } from "@/lib/live-latency";
 import {
   sortStreamsByHealth,
   recordFailedSource,
@@ -21,6 +22,7 @@ import {
   RefreshCw,
   SlidersHorizontal,
   PictureInPicture2,
+  Gauge,
   AlertCircle,
   Tv,
 } from "lucide-react";
@@ -52,7 +54,7 @@ declare global {
       DefaultConfig?: { loader: any };
     };
     mpegts?: {
-      createPlayer: (config: Record<string, unknown>) => {
+      createPlayer: (config: Record<string, unknown>, options?: Record<string, unknown>) => {
         attachMediaElement: (el: HTMLVideoElement) => void;
         load: () => void;
         play: () => Promise<void>;
@@ -240,6 +242,10 @@ export function LivePlayer({
     return saved !== null ? Number(saved) : 1;
   });
   const [isLiveEdge, setIsLiveEdge] = useState(true);
+  const [latencyMode, setLatencyMode] = useState<LiveLatencyMode>(() => {
+    if (typeof window === "undefined") return "fast";
+    return window.localStorage.getItem("zangflix:live-latency-mode") === "stable" ? "stable" : "fast";
+  });
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [unmuteNotice, setUnmuteNotice] = useState(false);
@@ -280,49 +286,77 @@ export function LivePlayer({
     }, 3500);
   }, [sourcesOpen]);
 
-  // Sincroniza borda ao vivo (Live Edge)
+  // O modo "Menor atraso" prefere o live edge, com margem de buffer
+  // suficiente para evitar reconexões constantes em redes instáveis.
   const syncToLiveEdge = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
     try {
-      if (hlsInstanceRef.current?.liveSyncPosition !== undefined) {
-        video.currentTime = hlsInstanceRef.current.liveSyncPosition;
+      const liveSync = hlsInstanceRef.current?.liveSyncPosition;
+      if (Number.isFinite(liveSync)) {
+        video.currentTime = liveSync!;
       } else if (video.seekable.length > 0) {
         const edge = video.seekable.end(video.seekable.length - 1);
-        video.currentTime = Math.max(0, edge - 0.5);
+        video.currentTime = Math.max(video.seekable.start(video.seekable.length - 1),
+          edge - (latencyMode === "fast" ? 2.5 : 5));
       }
+      video.playbackRate = 1;
       setIsLiveEdge(true);
-    } catch {
-      // continua
-    }
-  }, []);
+    } catch { /* Vídeo ainda não possui intervalo válido para seek. */ }
+  }, [latencyMode]);
 
-  // Monitora se o usuário está na borda ao vivo
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
     const checkEdge = () => {
-      if (video.seekable.length > 0) {
-        const edge = video.seekable.end(video.seekable.length - 1);
-        const delay = edge - video.currentTime;
-        setIsLiveEdge(delay < 15);
+      if (!video.seekable.length || video.seeking) return;
+      const last = video.seekable.length - 1;
+      const edge = video.seekable.end(last);
+      const safeStart = video.seekable.start(last);
+      const buffered = video.buffered;
+      let bufferAhead = 0;
+      for (let i = 0; i < buffered.length; i++) {
+        if (buffered.start(i) <= video.currentTime && buffered.end(i) >= video.currentTime) {
+          bufferAhead = buffered.end(i) - video.currentTime;
+          break;
+        }
+      }
+      const hlsManaged = Boolean(hlsInstanceRef.current?.liveSyncPosition !== undefined);
+      const decision = decideLiveCatchup({
+        edge, current:video.currentTime,
+        syncPosition:hlsInstanceRef.current?.liveSyncPosition,
+        bufferAhead, stalled:video.readyState < 3,
+        paused:video.paused, mode:latencyMode, hlsManaged,
+      });
+      setIsLiveEdge(decision.behind < (latencyMode === "fast" ? 12 : 20));
+      if (decision.action === "seek") {
+        const position = Math.max(safeStart + 0.05, Math.min(edge - 0.5, decision.position));
+        if (position > video.currentTime + 0.5) video.currentTime = position;
+      } else if (!hlsManaged) {
+        video.playbackRate = decision.action === "speed" ? decision.rate : 1;
       }
     };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") checkEdge();
+    };
+    const interval = window.setInterval(checkEdge, 2500);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (video.playbackRate !== 1) video.playbackRate = 1;
+    };
+  }, [latencyMode, streamUrl]);
 
-    const interval = setInterval(checkEdge, 3000);
-    return () => clearInterval(interval);
+  const toggleLatencyMode = useCallback(() => {
+    setLatencyMode(previous => {
+      const next = previous === "fast" ? "stable" : "fast";
+      try { window.localStorage.setItem("zangflix:live-latency-mode", next); } catch {}
+      return next;
+    });
+    // Reconfigure HLS/MPEG-TS engine with the chosen buffer profile.
+    setPlayNonce(value => value + 1);
   }, []);
-
-  // Sincronização periódica a cada 30s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (isLiveEdge) {
-        syncToLiveEdge();
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [isLiveEdge, syncToLiveEdge]);
 
   // Avança para a próxima fonte caso haja falha fatal (escada direto -> proxy -> próxima fonte)
   // Timeout e erro do motor de vídeo podem ocorrer juntos; alternar uma única vez.
@@ -524,7 +558,7 @@ export function LivePlayer({
               url: streamUrl,
               isLive: true,
               cors: true,
-            });
+            }, mpegtsLatencyOptions(latencyMode));
             player.attachMediaElement(video);
             player.load();
             void player.play().catch(() => {
@@ -545,12 +579,7 @@ export function LivePlayer({
           if (cancelled) return;
           if (Hls?.isSupported()) {
             const hasNested = attemptMode === "direct" && rawFonte?.url.includes("url=");
-            const hlsConfig: Record<string, unknown> = {
-              enableWorker: true,
-              lowLatencyMode: true,
-              liveSyncDurationCount: 3,
-              liveMaxLatencyDurationCount: 8,
-            };
+            const hlsConfig: Record<string, unknown> = hlsLatencyOptions(latencyMode);
 
             if (hasNested && (Hls as any).DefaultConfig?.loader) {
               hlsConfig["loader"] = makeNestedPathLoader(Hls, rawFonte?.url || streamUrl);
@@ -642,7 +671,7 @@ export function LivePlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [streamUrl, sourceIndex, attemptMode, playNonce, handleFatalError]);
+  }, [streamUrl, sourceIndex, attemptMode, playNonce, handleFatalError, latencyMode]);
 
   // Ao vivo não pausa: clique no vídeo muta ou desmuta o áudio
   const handleToggleMute = useCallback(() => {
@@ -867,6 +896,16 @@ export function LivePlayer({
           >
             <span className="ydo-live-dot-inner" />
             <span>AO VIVO</span>
+          </button>
+          <button
+            type="button"
+            className={"ydo-live-latency-btn" + (latencyMode === "fast" ? " is-fast" : "")}
+            onClick={toggleLatencyMode}
+            title={latencyMode === "fast" ? "Modo Menor atraso. Toque para priorizar estabilidade." : "Modo Estável. Toque para reduzir o atraso."}
+            aria-label={latencyMode === "fast" ? "Modo Menor atraso ativo. Alternar para Estável." : "Modo Estável ativo. Alternar para Menor atraso."}
+          >
+            <Gauge size={15} />
+            <span>{latencyMode === "fast" ? "Menor atraso" : "Estável"}</span>
           </button>
         </div>
 

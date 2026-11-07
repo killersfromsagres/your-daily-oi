@@ -165,11 +165,9 @@ export function usePlayerEngine(
     const validateStreamHealth = () => {
       if (cancelled || !video) return false;
 
-      // (b) Tiny banner resolution (ex.: banner de anúncio xbet 300x150)
-      if (video.videoWidth > 0 && video.videoWidth <= 320 && video.videoHeight <= 180) {
-        triggerGarbageDetected(`Resolução incompatível de anúncio (${video.videoWidth}x${video.videoHeight})`);
-        return true;
-      }
+      // Resolução baixa não prova que o vídeo é um anúncio:
+      // streams legítimos de anime podem ter apenas 240p/320x180.
+      // Só a duração incompatível com duração real conhecida é sinal forte.
 
       // (c) Duração incompatível com duração esperada do filme/série
       const expectedMin = options?.expectedRuntimeMin;
