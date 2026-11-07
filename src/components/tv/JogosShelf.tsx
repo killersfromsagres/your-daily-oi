@@ -65,6 +65,15 @@ function MatchCard({ game, onWatch, onExplore }: {
     game.status === "adiado" ? "ADIADO" : active ? "AO VIVO" : game.horarioLocal;
   return (
     <article className={"zgame-card" + (active ? " is-live" : "") + (watchable ? " has-channel" : "")}>
+      <button
+        type="button"
+        className="zgame-card-main"
+        disabled={!watchable}
+        onClick={() => { if (game.canalId) onWatch(game.canalId); }}
+        aria-label={watchable
+          ? "Assistir " + game.casa + " contra " + game.fora + " no canal " + game.canalNome
+          : "Transmissão ainda não confirmada"}
+      >
       <div className="zgame-card-header">
         <span className="zgame-league"><Trophy size={13} /> {game.liga}</span>
         <span className={"zgame-kickoff" + (active ? " is-live" : "")}>
@@ -90,6 +99,7 @@ function MatchCard({ game, onWatch, onExplore }: {
           <strong title={game.fora}>{game.fora}</strong>
         </div>
       </div>
+      </button>
       <div className="zgame-card-footer">
         {watchable && game.canalId && game.canalNome ? (
           <button className="zgame-watch" type="button" onClick={() => onWatch(game.canalId!)}>
