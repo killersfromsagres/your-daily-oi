@@ -3,6 +3,10 @@ const endpoints = [
   ["vod-fichas", "https://filmes-saimo.pages.dev/fichas.txt"],
   ["vod-indice", "https://filmes-saimo.pages.dev/indice.txt"],
   ["vod-destaques", "https://filmes-saimo.pages.dev/destaques.txt"],
+  ["vod-series-part", "https://filmes-saimo.pages.dev/series-A-0.txt"],
+  ["vod-filmes-letter", "https://filmes-saimo.pages.dev/filmes-A.txt"],
+  ["vod-redeflix-movie", "https://filmes-saimo.pages.dev/redeflix/links-filmes.txt"],
+  ["vod-animes", "https://filmes-saimo.pages.dev/animes-A-0.txt"],
   ["tv-catalogo", "https://canais-saimo.pages.dev/catalogo.txt"],
   ["tv-radios", "https://canais-saimo.pages.dev/radios.txt"],
   ["saimo-stream", "https://saimo-tv.pages.dev/api/stream?tipo=movie&id=550&versao=dub"],
@@ -20,7 +24,7 @@ async function probe(name, url) {
     let sample = "";
     if (reader) {
       const first = await reader.read();
-      if (first.value) sample = new TextDecoder().decode(first.value.slice(0, 256));
+      if (first.value) sample = new TextDecoder().decode(first.value.slice(0, 4096));
       await reader.cancel();
     }
     return {
@@ -31,6 +35,18 @@ async function probe(name, url) {
       looksLikeHtml: /^\s*<(?:!doctype\s+html|html|head|body)\b/i.test(sample),
       looksLikeM3u: sample.trimStart().startsWith("#EXTM3U"),
       firstBytes: sample.length,
+      formatHints: sample.split("\\n").slice(0, 40).reduce((acc, line) => {
+        const kind = line.trim().startsWith("#EXTM3U") ? "m3u"
+          : line.startsWith("base:") ? "base"
+          : line.startsWith("canal:") ? "canal"
+          : line.startsWith("fonte:") ? "fonte"
+          : line.startsWith("@") ? "episode-header"
+          : line.includes("\\t") ? `tsv-${line.split("\\t").length}-cols`
+          : line.startsWith("#") ? "comment"
+          : "other";
+        acc[kind] = (acc[kind] || 0) + 1;
+        return acc;
+      }, {}),
     };
   } catch (error) {
     return { name, error: error instanceof Error ? error.name : String(error) };
