@@ -27,5 +27,9 @@ jobs:
         run: LIVE_TEST_CHANNEL=hbo LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
       - name: ESPN, closed sports
         run: LIVE_TEST_CHANNEL=espn LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
-      - name: Telecine Action, closed films
-        run: LIVE_TEST_CHANNEL=telecine-action LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: TNT, closed movies
+        run: LIVE_TEST_CHANNEL=tnt LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: Discovery Channel, closed documentaries
+        run: LIVE_TEST_CHANNEL=discovery-channel LIVE_EXPECT_PROXY=1 LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
+      - name: Telecine Action, report source degradation without blocking app release
+        run: LIVE_TEST_CHANNEL=telecine-action LIVE_EXPECT_PROXY=1 bun scripts/diagnose-live-browser.mjs
