@@ -42,10 +42,22 @@ export function installTvRemoteNavigation(): () => void {
     const direction: RemoteDirection | null = event.key === "ArrowUp" ? "up"
       : event.key === "ArrowDown" ? "down" : event.key === "ArrowLeft" ? "left"
       : event.key === "ArrowRight" ? "right" : null;
-    if (!direction || document.fullscreenElement) return;
+    if (document.fullscreenElement) return;
+    if ((event.key === "Escape" || event.key === "BrowserBack" || event.key === "Backspace") &&
+      !(event.target as HTMLElement | null)?.closest("input,textarea,select,[contenteditable='true']")) {
+      const modal = [...document.querySelectorAll<HTMLElement>("[role='dialog'][aria-modal='true']")]
+        .filter(visibleElement).at(-1);
+      const close = modal?.querySelector<HTMLButtonElement>('button[aria-label^="Fechar"]');
+      if (close) { event.preventDefault(); close.click(); return; }
+    }
+    if (!direction) return;
     const target = event.target as HTMLElement | null;
     if (target?.closest("input,textarea,select,[contenteditable='true'],[role='slider'],[data-native-arrows]")) return;
-    const focusable = [...document.querySelectorAll<HTMLElement>(SELECTOR)]
+    // Modal dialogues (movie/series/anime, EPG etc.) own the D-pad while open.
+    const modal = [...document.querySelectorAll<HTMLElement>("[role='dialog'][aria-modal='true']")]
+      .filter(visibleElement).at(-1);
+    const focusRoot: Document | HTMLElement = modal ?? document;
+    const focusable = [...focusRoot.querySelectorAll<HTMLElement>(SELECTOR)]
       .filter(visibleElement);
     if (!focusable.length) return;
     const current = document.activeElement instanceof HTMLElement &&
