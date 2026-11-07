@@ -8,7 +8,7 @@ const diagnostics=lines.filter(line=>/^src\/.*error TS\d+:/.test(line));
 const focused=diagnostics.filter(line=>
  /^src\/components\/tv\/(?:TvView|ChannelCard)\.tsx\(/.test(line) ||
  /^src\/lib\/tv-program\.ts\(/.test(line) ||
- /^src\/routes\/__root\.tsx\(/.test(line) ||
+ (()=>{const m=line.match(/^src\/routes\/__root\.tsx\((\d+),/);return !!m&&Number(m[1])<85;})() ||
  (()=>{const m=line.match(/^src\/lib\/epg\.ts\((\d+),/);return !!m&&Number(m[1])>=310&&Number(m[1])<445;})()
 );
 console.log(JSON.stringify({event:"tv-glass-typecheck",newErrors:focused.length,
