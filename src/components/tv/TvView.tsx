@@ -112,11 +112,19 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [guide, setGuide] = useState<Record<string, EpgSlot>>({});
   const [guideLoading, setGuideLoading] = useState(false);
   const [guideUpdatedAt, setGuideUpdatedAt] = useState<number | null>(null);
+  const [epgNow, setEpgNow] = useState(0);
   const [activeEpg, setActiveEpg] = useState<CanalEPG | null>(null);
 
   useEffect(() => {
     setFavorites(readStoredArray(FAVORITES_KEY));
     setRecents(readStoredArray(RECENTS_KEY));
+  }, []);
+  useEffect(() => {
+    // Roll over to the next programme at its actual time, before a new EPG
+    // network refresh is necessary. Initial 0 avoids server/client clock drift.
+    setEpgNow(Date.now());
+    const timer = window.setInterval(() => setEpgNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -342,7 +350,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
     let items = channels.filter(c => {
       if (onlineOnly && c.fontes.length === 0) return false;
       const slot = guide[normalize(c.nome)];
-      if (programOnly && !resolveChannelProgram(slot, c.categoria).hasSchedule) return false;
+      if (programOnly && !resolveChannelProgram(slot, c.categoria, epgNow).hasSchedule) return false;
       if (category === "Favoritos" && !favorites.includes(c.id)) return false;
       if (category === "Recentes" && !recents.includes(c.id)) return false;
       if (category !== "Todos" && category !== "Favoritos" && category !== "Recentes" && c.categoria !== category) return false;
@@ -355,7 +363,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
         a.nome.localeCompare(b.nome, "pt-BR"));
     }
     return items;
-  }, [channels, guide, query, category, favorites, recents, onlineOnly, programOnly]);
+  }, [channels, guide, query, category, favorites, recents, onlineOnly, programOnly, epgNow]);
 
   useEffect(() => setVisible(48), [query, category, onlineOnly, programOnly, layout]);
   useEffect(() => {
@@ -389,8 +397,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const currentProgram = currentSlot?.atual || activeEpg?.atual || null;
   const currentNext = currentSlot?.proximo || activeEpg?.proximos?.[0] || null;
   const programmedCount = useMemo(() =>
-    channels.filter(c => resolveChannelProgram(guide[normalize(c.nome)], c.categoria).hasSchedule).length,
-    [channels, guide]);
+    channels.filter(c => resolveChannelProgram(guide[normalize(c.nome)], c.categoria, epgNow).hasSchedule).length,
+    [channels, guide, epgNow]);
   const fmtTime = (stamp: string | null) => {
     if (!stamp) return "";
     const d = new Date(stamp);
@@ -619,7 +627,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                     onSelect={() => selectChannel(channel)}
                     onFavorite={() => toggleFavorite(channel.id)}
                     slot={guide[normalize(channel.nome)]} guideLoading={guideLoading}
-                    listMode={layout === "list"} />
+                    nowMs={epgNow} listMode={layout === "list"} />
                 ))}
               </div>
               {visible < filtered.length && <div className="ztv-load-more" ref={loaderRef}><button type="button" onClick={() => setVisible(n => Math.min(n + 36, filtered.length))}>Carregar mais canais</button></div>}
