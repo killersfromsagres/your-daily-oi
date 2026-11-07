@@ -14,7 +14,7 @@ export function parseM3UCanais(texto: string): CanalTV[] {
       const comma = line.indexOf(",");
       const nome = (comma >= 0 ? line.slice(comma + 1) : attr("tvg-name"))?.trim() || attr("tvg-name") || "";
       meta = nome ? {
-        nome, logo: attr("tvg-logo"),
+        nome, ...(attr("tvg-logo") ? { logo: attr("tvg-logo") } : {}),
         categoria: normalizeCategoria(attr("group-title") || "", nome),
       } : null;
     } else if (meta && line.startsWith("#EXTVLCOPT:")) {
@@ -30,11 +30,11 @@ export function parseM3UCanais(texto: string): CanalTV[] {
       const key = slugifyCanal(meta.nome);
       let canal = channels.get(key);
       if (!canal) {
-        canal = { id: key, nome: meta.nome, logo: meta.logo, categoria: meta.categoria, fontes: [] };
+        canal = { id: key, nome: meta.nome, ...(meta.logo ? { logo: meta.logo } : {}), categoria: meta.categoria, fontes: [] };
         channels.set(key, canal);
       }
       if (!canal.fontes.some((fonte) => fonte.url === line)) {
-        canal.fontes.push({ url: line, referer: meta.referer, agente: meta.agente });
+        canal.fontes.push({ url: line, ...(meta.referer ? { referer: meta.referer } : {}), ...(meta.agente ? { agente: meta.agente } : {}) });
       }
       meta = null;
     }
