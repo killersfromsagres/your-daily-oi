@@ -1,0 +1,28 @@
+name: Verify live TV production fix
+on:
+  push:
+    branches: [fix/live-tv-production-playback]
+  pull_request:
+    branches: [main]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Unit tests
+        run: bun run test
+      - name: Type diagnostics scoped to TV
+        run: bun scripts/typecheck-tv.mjs
+      - name: Build
+        run: bun run build
+      - name: Cloudflare live media smoke
+        run: bun scripts/smoke-saimo-live.mjs
+      - name: Browser video playback — Band
+        run: LIVE_TEST_CHANNEL=band bun scripts/diagnose-live-browser.mjs
+      - name: Browser legacy-proxy fallback — SBT
+        run: LIVE_TEST_CHANNEL=sbt LIVE_BLOCK_CATALOG_PROXY=1 bun scripts/diagnose-live-browser.mjs
