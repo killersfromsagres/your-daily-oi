@@ -126,8 +126,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [channels, setChannels] = useState<CanalTV[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeId, setActiveId] = useState(initialCanalId || "");
-  const [favorites, setFavorites] = useState<string[]>(() => readStoredArray(FAVORITES_KEY));
-  const [recents, setRecents] = useState<string[]>(() => readStoredArray(RECENTS_KEY));
+  // Hydration-safe: load localStorage after mount, not during the SSR render.
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [recents, setRecents] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Todos");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
@@ -143,6 +144,11 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [guide, setGuide] = useState<Record<string, EpgSlot>>({});
   const [guideLoading, setGuideLoading] = useState(false);
   const [activeEpg, setActiveEpg] = useState<CanalEPG | null>(null);
+
+  useEffect(() => {
+    setFavorites(readStoredArray(FAVORITES_KEY));
+    setRecents(readStoredArray(RECENTS_KEY));
+  }, []);
 
   const lastRefresh = useRef(0);
   const initialChannelRef = useRef(initialCanalId);
