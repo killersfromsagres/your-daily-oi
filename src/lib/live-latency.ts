@@ -65,3 +65,26 @@ export function decideLiveCatchup(input: {
   }
   return { action:"none", behind };
 }
+
+
+/** Some channel streams report HAVE_ENOUGH_DATA without ever advancing time.
+ * Detect the silent failure and let the existing direct/proxy/source failover
+ * recover rather than showing a permanent frozen first frame.
+ */
+export type LivePlaybackStall = "startup" | "buffer" | "frozen" | null;
+export function classifyLivePlaybackStall(input: {
+  elapsedWithoutProgressMs: number;
+  currentTime: number;
+  readyState: number;
+  paused: boolean;
+  ended: boolean;
+  seeking: boolean;
+}): LivePlaybackStall {
+  const { elapsedWithoutProgressMs, currentTime, readyState, paused, ended, seeking } = input;
+  if (paused || ended || seeking || !Number.isFinite(elapsedWithoutProgressMs)) return null;
+  if (elapsedWithoutProgressMs < 0) return null;
+  if (currentTime < 1 && elapsedWithoutProgressMs >= 15_000) return "startup";
+  if (readyState < 3 && elapsedWithoutProgressMs >= 25_000) return "buffer";
+  if (elapsedWithoutProgressMs >= 35_000) return "frozen";
+  return null;
+}
