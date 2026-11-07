@@ -243,6 +243,12 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Hover Filmes com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
+          onFocus={() => {
+            setMoviesHover(true); setSeriesHover(false); setAnimesHover(false);
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setMoviesHover(false);
+          }}
           onMouseEnter={() => {
             if (moviesTimerRef.current) clearTimeout(moviesTimerRef.current);
             setMoviesHover(true);
@@ -293,6 +299,12 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Hover Séries com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
+          onFocus={() => {
+            setMoviesHover(false); setSeriesHover(true); setAnimesHover(false);
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setSeriesHover(false);
+          }}
           onMouseEnter={() => {
             if (seriesTimerRef.current) clearTimeout(seriesTimerRef.current);
             setSeriesHover(true);
@@ -343,6 +355,12 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Hover Animes com Ícones Minimalistas */}
         <div
           className="ydo-dropdown-container"
+          onFocus={() => {
+            setMoviesHover(false); setSeriesHover(false); setAnimesHover(true);
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setAnimesHover(false);
+          }}
           onMouseEnter={() => {
             if (animesTimerRef.current) clearTimeout(animesTimerRef.current);
             setAnimesHover(true);
