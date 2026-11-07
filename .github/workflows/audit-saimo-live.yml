@@ -4,6 +4,8 @@ on:
   push:
     branches: [fix/saimo-live-tv-complete]
   workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
 
 jobs:
   audit:
