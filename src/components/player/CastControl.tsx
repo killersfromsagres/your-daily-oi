@@ -61,13 +61,17 @@ function getCastMime(source?: FonteTV): string | null {
   }
 }
 
-export function CastControl({ videoRef, source, streamUrl, channelName }: {
+export function CastControl({ videoRef, source, streamUrl, channelName, onDialogChange, settingsOpen = false }: {
   videoRef: RefObject<HTMLVideoElement | null>;
   source: FonteTV | undefined;
   streamUrl: string;
   channelName: string;
+  onDialogChange?: (open: boolean) => void;
+  settingsOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => { onDialogChange?.(open); }, [open, onDialogChange]);
+  useEffect(() => { if (settingsOpen) setOpen(false); }, [settingsOpen]);
   const [compact, setCompact] = useState(false);
   useEffect(() => {
     const media = window.matchMedia("(max-width: 740px), (pointer: coarse) and (max-width: 900px)");
@@ -237,10 +241,10 @@ export function CastControl({ videoRef, source, streamUrl, channelName }: {
 
   return (
     <div className="zang-cast-control">
-      <button type="button" className={"ydo-live-ctrl-btn zang-cast-trigger" + (casting ? " is-casting" : "")}
+      <button type="button" className={"zf-player-action zang-cast-trigger" + (casting ? " is-casting" : "")}
         title="Transmitir para a TV" aria-label="Transmitir para a TV"
         aria-expanded={open} onClick={() => { setOpen(value => !value); setFeedback(""); }}>
-        <Cast size={19} /><span>Transmitir</span>
+        <Cast size={16} />
       </button>
       {open && (compact && !document.fullscreenElement
         ? createPortal(

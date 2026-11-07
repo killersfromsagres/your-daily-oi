@@ -9,10 +9,11 @@ const cast = source("components/player/CastControl.tsx");
 const css = source("styles/tv-mobile-player.css");
 
 describe("Zang Live mobile-first player", () => {
-  test("has a dedicated always-reachable fullscreen action", () => {
-    expect(player).toContain('className="ydo-live-mobile-fullscreen"');
+  test("fullscreen lives in the same minimal toolbar on desktop and mobile", () => {
+    expect(player).toContain('role="toolbar" aria-label="Controles da TV ao vivo"');
     expect(player).toContain('aria-label={isFullscreen ? "Sair da tela cheia" : "Assistir em tela cheia"}');
-    expect(css).toContain(".ydo-live-mobile-fullscreen {");
+    expect(player).not.toContain('className="ydo-live-mobile-fullscreen"');
+    expect(source("styles/live-controls-minimal.css")).toContain(".zf-player-toolbar");
   });
   test("uses native browser fullscreen and iPhone fullscreen before theater fallback", () => {
     expect(player).toContain("video.webkitEnterFullscreen()");
@@ -23,13 +24,14 @@ describe("Zang Live mobile-first player", () => {
     expect(css).toContain(".ydo-live-player-container.is-theater");
     expect(css).toContain("height: 100dvh !important");
   });
-  test("mobile player does not cram desktop volume, latency and PiP controls into video", () => {
-    expect(css).toContain(".ydo-live-volume-slider,");
-    expect(css).toContain(".ydo-live-latency-btn {");
-    expect(css).toContain('.ydo-live-ctrl-btn[aria-label="Picture-in-Picture"]');
-    expect(css).toContain(".ydo-live-options-latency");
-    expect(css).toContain(".ydo-live-options-pip");
-    expect(player).toContain("Transmissão e qualidade");
+  test("only icon controls remain in the toolbar; volume, latency and PiP live in settings", () => {
+    const minimalCss = source("styles/live-controls-minimal.css");
+    expect(player).toContain('className="zf-player-volume-control"');
+    expect(player).toContain('className="zf-player-menu-option"');
+    expect(player).toContain('role="dialog" aria-label="Qualidade e ajustes de reprodução"');
+    expect(player).not.toContain('className="ydo-live-controls-bar"');
+    expect(minimalCss).toContain(".zf-player-menu-option");
+    expect(minimalCss).toContain("--zf-toolbar-icon: 30px");
   });
   test("requests landscape on fullscreen, unlocks on exit and rotates portrait fallback", () => {
     expect(player).toContain("tryLockLandscape(getOrientation())");
@@ -40,12 +42,14 @@ describe("Zang Live mobile-first player", () => {
     expect(css).toContain("width: 100dvh !important");
     expect(css).toContain("height: 100dvw !important");
   });
-  test("desktop controls use smaller consistently aligned icons and source labels", () => {
-    expect(css).toContain("@media (min-width: 741px) and (pointer: fine)");
-    expect(css).toContain(".ztv-player-frame .ydo-live-ctrl-btn svg");
-    expect(css).toContain("width: 16px;");
-    expect(css).toContain("height: 32px;");
-    expect(css).toContain("text-overflow: ellipsis");
+  test("minimal controls isolate the toolbar from old desktop and mobile CSS rules", () => {
+    const minimalCss = source("styles/live-controls-minimal.css");
+    expect(minimalCss).toContain(".ydo-live-player-container .zf-player-tools-start");
+    expect(minimalCss).toContain(".ydo-live-player-container .zf-player-tools-end");
+    expect(minimalCss).toContain("flex: 0 0 var(--zf-toolbar-icon)");
+    expect(minimalCss).toContain("width: 16px;");
+    expect(minimalCss).toContain("text-overflow: ellipsis");
+    expect(cast).toContain('className={"zf-player-action zang-cast-trigger"');
   });
   test("keeps mobile cast dialog above the player and retains a responsive compact hero", () => {
     expect(cast).toContain('createPortal(');

@@ -101,7 +101,7 @@ try {
     compactTitle:tvDom.includes("ztv-title-mobile"),
     compactActions:tvDom.includes("ztv-btn-label-mobile"),
     fullscreenWhenActive:!tvDom.includes('class="ydo-live-player-container"') ||
-      tvDom.includes("ydo-live-mobile-fullscreen"),
+      (tvDom.includes("zf-player-toolbar") && tvDom.includes("Assistir em tela cheia")),
   };
   console.log(JSON.stringify(tvSummary));
   if(tvResult.status!==0||!tvSummary.mobile||!tvSummary.stage||!tvSummary.player||
