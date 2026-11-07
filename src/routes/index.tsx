@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
@@ -94,12 +94,13 @@ function HomePage() {
     setSavedIds(new Set(getSavedList()));
   }, []);
 
-  // Prepara exclusivamente os filmes mais assistidos para o carrossel HD / 4K
-  const heroSource = featuredHero.length > 0 ? featuredHero : items.filter((it) => Boolean(it.tmdb?.backdropUrl) && !it.title.startsWith("#"));
-
-  const heroItems = heroSource
-    .slice(0, 8)
-    .map((item) => ({
+  // Recalculate expensive catalog grouping only when the payload changes.
+  // Especially important for lower-memory mobile browsers and My List updates.
+  const heroItems = useMemo(() => {
+    const source = featuredHero.length > 0
+      ? featuredHero
+      : items.filter(it => Boolean(it.tmdb?.backdropUrl) && !it.title.startsWith("#"));
+    return source.slice(0, 8).map(item => ({
       id: item.id,
       type: item.type,
       title: cleanDisplayTitle(item.title),
@@ -109,63 +110,61 @@ function HomePage() {
       genres: item.genres,
       releaseYear: item.tmdb?.releaseYear,
       voteAverage: item.tmdb?.voteAverage,
-      hasDub: item.streams.some((s) => s.audio === "dub"),
-      hasLeg: item.streams.some((s) => s.audio === "leg"),
-      quality: item.streams.some((s) => s.quality?.includes("4K"))
+      hasDub: item.streams.some(stream => stream.audio === "dub"),
+      hasLeg: item.streams.some(stream => stream.audio === "leg"),
+      quality: item.streams.some(stream => stream.quality?.includes("4K"))
         ? "4K ULTRA HD"
-        : item.streams.some((s) => s.quality?.includes("2K"))
-        ? "2K QUAD HD"
-        : "FULL HD",
+        : item.streams.some(stream => stream.quality?.includes("2K"))
+          ? "2K QUAD HD" : "FULL HD",
     }));
+  }, [featuredHero, items]);
 
-  // Monta as fileiras da home
-  const rows: Array<{
-    title: string;
-    eyebrow: string;
-    items: CatalogItem[];
-    ranked?: boolean;
-  }> = [];
-
-  // Fileiras dos destaques.txt (Em alta, Séries em alta, etc) com deduplicação rigorosa
-  for (const hl of highlights) {
-    const seenInRow = new Set<string>();
-    const rowItems: CatalogItem[] = [];
-    for (const h of hl.items) {
-      const found =
-        items.find((item) => (h.type ? item.type === h.type : true) && item.title.toLowerCase() === h.title.toLowerCase()) ||
-        items.find((item) => item.title.toLowerCase() === h.title.toLowerCase());
-      if (found && !seenInRow.has(found.id)) {
-        seenInRow.add(found.id);
-        rowItems.push(found);
+  const rows = useMemo(() => {
+    const result: Array<{
+      title: string;
+      eyebrow: string;
+      items: CatalogItem[];
+      ranked?: boolean;
+    }> = [];
+    // Previous highlights used repeated items.find(), which caused O(N x M)
+    // work on every render with large catalog lists.
+    const byName = new Map<string, CatalogItem>();
+    const byTypedName = new Map<string, CatalogItem>();
+    for (const item of items) {
+      const name = item.title.toLowerCase();
+      if (!byName.has(name)) byName.set(name, item);
+      const key = item.type + ":" + name;
+      if (!byTypedName.has(key)) byTypedName.set(key, item);
+    }
+    for (const highlight of highlights) {
+      const seen = new Set<string>();
+      const matched: CatalogItem[] = [];
+      for (const entry of highlight.items) {
+        const name = entry.title.toLowerCase();
+        const match = (entry.type ? byTypedName.get(entry.type + ":" + name) : undefined)
+          || byName.get(name);
+        if (match && !seen.has(match.id)) {
+          seen.add(match.id);
+          matched.push(match);
+        }
+      }
+      if (matched.length) {
+        result.push({ title: highlight.rowName, eyebrow: "Em Destaque", items: matched });
       }
     }
-    if (rowItems.length > 0) {
-      rows.push({ title: hl.rowName, eyebrow: "Em Destaque", items: rowItems });
+    const topRated = [...items]
+      .filter(item => item.tmdb?.voteAverage)
+      .sort((a, b) => (b.tmdb?.voteAverage ?? 0) - (a.tmdb?.voteAverage ?? 0))
+      .slice(0, 18);
+    if (topRated.length) {
+      result.unshift({ title: "Mais Bem Avaliados", eyebrow: "Top 10 TMDB", items: topRated, ranked: true });
     }
-  }
-
-  // Melhores avaliados
-  const topRated = [...items]
-    .filter((i) => i.tmdb?.voteAverage)
-    .sort((a, b) => (b.tmdb?.voteAverage ?? 0) - (a.tmdb?.voteAverage ?? 0))
-    .slice(0, 18);
-
-  if (topRated.length > 0) {
-    rows.unshift({
-      title: "Mais Bem Avaliados",
-      eyebrow: "Top 10 TMDB",
-      items: topRated,
-      ranked: true,
-    });
-  }
-
-  // Fileiras por gêneros principais
-  for (const genre of genres.slice(0, 6)) {
-    const genreItems = items.filter((item) => item.genres.includes(genre)).slice(0, 18);
-    if (genreItems.length > 0) {
-      rows.push({ title: genre, eyebrow: "Gênero", items: genreItems });
+    for (const genre of genres.slice(0, 6)) {
+      const genreItems = items.filter(item => item.genres.includes(genre)).slice(0, 18);
+      if (genreItems.length) result.push({ title: genre, eyebrow: "Gênero", items: genreItems });
     }
-  }
+    return result;
+  }, [items, highlights, genres]);
 
   return (
     <main className="ydo-home">
