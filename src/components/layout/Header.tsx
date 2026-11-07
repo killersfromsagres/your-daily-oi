@@ -1,10 +1,6 @@
 "use client";
-import { useEffect, useRef, useState, type ComponentType } from "react";
-import {
-  Search, X, ChevronDown, Heart, Film, Tv, Sparkles, Flame, Ghost, Menu, Monitor,
-  Clapperboard, Laugh, Rocket, Compass, WandSparkles, BookOpenCheck, Trophy,
-  Swords, BrainCircuit, ScanEye, HandHeart, Layers3, Drama,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
@@ -18,42 +14,41 @@ interface HeaderProps {
 interface CategoryItem {
   name: string;
   slug: string;
-  Icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string; style?: React.CSSProperties }>;
 }
 
 const CATEGORIAS_FILMES: CategoryItem[] = [
-  { name: "Ação", slug: "acao", Icon: Flame },
-  { name: "Terror", slug: "terror", Icon: Ghost },
-  { name: "Comédia", slug: "comedia", Icon: Laugh },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: BrainCircuit },
-  { name: "Suspense", slug: "suspense", Icon: ScanEye },
-  { name: "Romance", slug: "romance", Icon: HandHeart },
-  { name: "Animação", slug: "animacao", Icon: Layers3 },
-  { name: "Aventura", slug: "aventura", Icon: Compass },
-  { name: "Fantasia", slug: "fantasia", Icon: WandSparkles },
-  { name: "Documentário", slug: "documentario", Icon: BookOpenCheck },
+  { name: "Ação", slug: "acao" },
+  { name: "Terror", slug: "terror" },
+  { name: "Comédia", slug: "comedia" },
+  { name: "Ficção Científica", slug: "ficcao-cientifica" },
+  { name: "Suspense", slug: "suspense" },
+  { name: "Romance", slug: "romance" },
+  { name: "Animação", slug: "animacao" },
+  { name: "Aventura", slug: "aventura" },
+  { name: "Fantasia", slug: "fantasia" },
+  { name: "Documentário", slug: "documentario" },
 ];
 
 const CATEGORIAS_SERIES: CategoryItem[] = [
-  { name: "Ação", slug: "acao", Icon: Flame },
-  { name: "Terror", slug: "terror", Icon: Ghost },
-  { name: "Comédia", slug: "comedia", Icon: Laugh },
-  { name: "Ficção Científica", slug: "ficcao-cientifica", Icon: BrainCircuit },
-  { name: "Suspense", slug: "suspense", Icon: ScanEye },
-  { name: "Romance", slug: "romance", Icon: HandHeart },
-  { name: "Animação", slug: "animacao", Icon: Layers3 },
-  { name: "Aventura", slug: "aventura", Icon: Compass },
-  { name: "Fantasia", slug: "fantasia", Icon: WandSparkles },
-  { name: "Documentário", slug: "documentario", Icon: BookOpenCheck },
+  { name: "Ação", slug: "acao" },
+  { name: "Terror", slug: "terror" },
+  { name: "Comédia", slug: "comedia" },
+  { name: "Ficção Científica", slug: "ficcao-cientifica" },
+  { name: "Suspense", slug: "suspense" },
+  { name: "Romance", slug: "romance" },
+  { name: "Animação", slug: "animacao" },
+  { name: "Aventura", slug: "aventura" },
+  { name: "Fantasia", slug: "fantasia" },
+  { name: "Documentário", slug: "documentario" },
 ];
 
 const CATEGORIAS_ANIMES: CategoryItem[] = [
-  { name: "Shounen", slug: "shounen", Icon: Swords },
-  { name: "Ação", slug: "acao", Icon: Flame },
-  { name: "Fantasia", slug: "fantasia", Icon: WandSparkles },
-  { name: "Animação", slug: "animacao", Icon: Sparkles },
-  { name: "Aventura", slug: "aventura", Icon: Compass },
-  { name: "Poderes & Ficção", slug: "ficcao-cientifica", Icon: BrainCircuit },
+  { name: "Shounen", slug: "shounen" },
+  { name: "Ação", slug: "acao" },
+  { name: "Fantasia", slug: "fantasia" },
+  { name: "Animação", slug: "animacao" },
+  { name: "Aventura", slug: "aventura" },
+  { name: "Poderes & Ficção", slug: "ficcao-cientifica" },
 ];
 
 export function Header({ onSearch }: HeaderProps) {
@@ -239,7 +234,7 @@ export function Header({ onSearch }: HeaderProps) {
           Início
         </Link>
 
-        {/* Hover Filmes com Ícones Minimalistas */}
+        {/* Submenu Filmes */}
         <div
           className="ydo-dropdown-container"
           onFocus={() => {
@@ -270,12 +265,10 @@ export function Header({ onSearch }: HeaderProps) {
           {moviesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <Clapperboard size={16} style={{ color: "#f3c786" }} />
                 <span>Gêneros de Filmes</span>
               </div>
               <div className="ydo-categories-grid">
                 {CATEGORIAS_FILMES.map((cat) => {
-                  const Icon = cat.Icon;
                   return (
                     <Link
                       key={cat.slug}
@@ -285,7 +278,6 @@ export function Header({ onSearch }: HeaderProps) {
                       className="ydo-category-item"
                       onClick={() => setMoviesHover(false)}
                     >
-                      <span className="ydo-genre-icon-shell"><Icon size={17} strokeWidth={2.1} className="ydo-category-icon" /></span>
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -295,7 +287,7 @@ export function Header({ onSearch }: HeaderProps) {
           )}
         </div>
 
-        {/* Hover Séries com Ícones Minimalistas */}
+        {/* Submenu Séries */}
         <div
           className="ydo-dropdown-container"
           onFocus={() => {
@@ -326,12 +318,10 @@ export function Header({ onSearch }: HeaderProps) {
           {seriesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <Drama size={16} style={{ color: "#f3c786" }} />
                 <span>Gêneros de Séries</span>
               </div>
               <div className="ydo-categories-grid">
                 {CATEGORIAS_SERIES.map((cat) => {
-                  const Icon = cat.Icon;
                   return (
                     <Link
                       key={cat.slug}
@@ -341,7 +331,6 @@ export function Header({ onSearch }: HeaderProps) {
                       className="ydo-category-item"
                       onClick={() => setSeriesHover(false)}
                     >
-                      <span className="ydo-genre-icon-shell"><Icon size={17} strokeWidth={2.1} className="ydo-category-icon" /></span>
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );
@@ -351,7 +340,7 @@ export function Header({ onSearch }: HeaderProps) {
           )}
         </div>
 
-        {/* Hover Animes com Ícones Minimalistas */}
+        {/* Submenu Animes */}
         <div
           className="ydo-dropdown-container"
           onFocus={() => {
@@ -381,12 +370,10 @@ export function Header({ onSearch }: HeaderProps) {
           {animesHover && (
             <div className="ydo-categories-dropdown animate-fade-in">
               <div className="ydo-dropdown-header">
-                <WandSparkles size={16} style={{ color: "#f3c786" }} />
                 <span>Gêneros de Animes</span>
               </div>
               <div className="ydo-categories-grid">
                 {CATEGORIAS_ANIMES.map((cat) => {
-                  const Icon = cat.Icon;
                   return (
                     <Link
                       key={cat.slug}
@@ -396,7 +383,6 @@ export function Header({ onSearch }: HeaderProps) {
                       className="ydo-category-item"
                       onClick={() => setAnimesHover(false)}
                     >
-                      <span className="ydo-genre-icon-shell"><Icon size={17} strokeWidth={2.1} className="ydo-category-icon" /></span>
                       <span className="ydo-category-name">{cat.name}</span>
                     </Link>
                   );

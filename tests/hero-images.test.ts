@@ -12,6 +12,10 @@ describe("hero image memory budget", () => {
     expect(getSizedHeroImage("https://image.tmdb.org/t/p/w342/s.jpg", null, "w780"))
       .toBe("https://image.tmdb.org/t/p/w780/s.jpg");
   });
+  test("can select original on large TV displays", () => {
+    expect(getSizedHeroImage("https://image.tmdb.org/t/p/w780/bg.jpg", null, "original"))
+      .toBe("https://image.tmdb.org/t/p/original/bg.jpg");
+  });
   test("preserves unrelated hosts and handles missing images", () => {
     expect(getSizedHeroImage("https://media.example.com/poster.jpg", null, "w780"))
       .toBe("https://media.example.com/poster.jpg");
