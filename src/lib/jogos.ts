@@ -135,9 +135,9 @@ async function loadBrazilBroadcastDetails(
   const result = new Map<string, string[]>();
   const missing = fixtures.filter(x => brBroadcastsFromESPN(x.raw).length === 0)
     .sort((a, b) => fixturePriority(b.item) - fixturePriority(a.item))
-    .slice(0, 18);
-  for (let i = 0; i < missing.length; i += 5) {
-    const batch = missing.slice(i, i + 5);
+    .slice(0, 16);
+  for (let i = 0; i < missing.length; i += 8) {
+    const batch = missing.slice(i, i + 8);
     const responses = await Promise.allSettled(batch.map(async ({ item }) => {
       const eventId = item.id.split(":").at(-1);
       if (!eventId || !/^[0-9]+$/.test(eventId)) return [] as string[];
@@ -165,25 +165,30 @@ async function loadBrazilBroadcastDetails(
 async function annotateBroadcasts(
   fixtures: { item: JogoBrasileirao; raw: ESPNEvent }[],
   date: string,
-  detailedBroadcasts: Map<string, string[]>,
+  detailedBroadcastsTask: Promise<Map<string, string[]>>,
 ): Promise<JogoBrasileirao[]> {
   const matches = fixtures.map(x => x.item);
   if (!matches.length) return matches;
   const config = getConfiguredBroadcasters();
   let available: Awaited<ReturnType<typeof loadCanais>>["canais"] = [];
   let epg = new Map<string, { id: string; nome: string; logo?: string }>();
-  try {
-    available = (await loadCanais()).canais;
-    epg = await Promise.race([
-      localizarJogosNaGradeEPG(matches, available).catch(() =>
-        new Map<string, { id: string; nome: string; logo?: string }>()),
-      new Promise<Map<string, { id: string; nome: string; logo?: string }>>(
-        resolve => setTimeout(() => resolve(new Map()), 10500)
-      ),
-    ]);
-  } catch (error) {
-    console.warn("[Sports] EPG ou catálogo indisponível", error);
-  }
+  // EPG and ESPN match summaries are independent and should not queue sequentially.
+  const epgTask = (async () => {
+    try {
+      available = (await loadCanais()).canais;
+      epg = await Promise.race([
+        localizarJogosNaGradeEPG(matches, available).catch(() =>
+          new Map<string, { id: string; nome: string; logo?: string }>()),
+        new Promise<Map<string, { id: string; nome: string; logo?: string }>>(
+          resolve => setTimeout(() => resolve(new Map()), 9500)
+        ),
+      ]);
+    } catch (error) {
+      console.warn("[Sports] EPG ou catálogo indisponível", error);
+    }
+  })();
+  const detailedBroadcasts = await detailedBroadcastsTask.catch(() => new Map<string, string[]>());
+  await epgTask;
 
   for (const fixture of fixtures) {
     const game = fixture.item;
@@ -239,7 +244,7 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
     }
   }
   const fixtures = [...deduped.values()];
-  const brazilianBroadcasters = await loadBrazilBroadcastDetails(fixtures);
+  const brazilianBroadcasters = loadBrazilBroadcastDetails(fixtures);
   const games = await annotateBroadcasts(fixtures, date, brazilianBroadcasters);
   games.sort((a,b) => {
     const timeA = Date.parse(a.inicioIso), timeB = Date.parse(b.inicioIso);

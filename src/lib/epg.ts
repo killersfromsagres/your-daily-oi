@@ -5,7 +5,7 @@
 
 import { loadCanais } from "./canais";
 import { doesEpgDescribeFixture, type JogoBrasileirao } from "./jogos-match";
-import { normalizeTvChannelIdentity } from "./broadcast-match";
+import { canonicalTvChannelIdentity } from "./broadcast-match";
 
 export interface ProgramaEPG {
   titulo: string;
@@ -444,7 +444,7 @@ export async function localizarJogosNaGradeEPG(
   const state = await getOrLoadEpgState();
   if (!state) return found;
 
-  const normalizeGuideChannel = normalizeTvChannelIdentity;
+  const normalizeGuideChannel = canonicalTvChannelIdentity;
   const channelsByNorm = new Map(
     canais.filter(channel => channel.fontes.length > 0)
       .map(channel => [normalizeGuideChannel(channel.nome), channel] as const),

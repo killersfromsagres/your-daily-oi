@@ -11,14 +11,14 @@ export function normalizeTvChannelIdentity(value:string):string {
 const aliases:Record<string,string> = {
   "espn brasil":"espn","pfc":"premiere","tv globo":"globo","prime video":"amazon prime video",
 };
-const canonical=(name:string):string=>{
+export const canonicalTvChannelIdentity=(name:string):string=>{
   const key=normalizeTvChannelIdentity(name);
   return aliases[key]||key;
 };
 export function matchBrazilianBroadcastChannel(name:string, channels:readonly TvChannelIdentity[]):{id:string;nome:string;logo?:string}|null {
-  const normalized=canonical(name);
+  const normalized=canonicalTvChannelIdentity(name);
   if(!normalized)return null;
-  const choices=channels.filter(ch=>ch.fontes?.length>0 && canonical(ch.nome)===normalized);
+  const choices=channels.filter(ch=>ch.fontes?.length>0 && canonicalTvChannelIdentity(ch.nome)===normalized);
   if(!choices.length)return null;
   const selected=choices.find(ch=>ch.nome.toLowerCase()===name.toLowerCase())||choices[0]!;
   return {id:selected.id,nome:selected.nome,...(selected.logo?{logo:selected.logo}:{})};

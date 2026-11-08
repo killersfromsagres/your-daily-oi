@@ -1,5 +1,5 @@
 import {describe,expect,test} from "bun:test";
-import {matchBrazilianBroadcastChannel,normalizeTvChannelIdentity} from "../src/lib/broadcast-match";
+import {matchBrazilianBroadcastChannel,normalizeTvChannelIdentity,canonicalTvChannelIdentity} from "../src/lib/broadcast-match";
 const channels=[
   {id:"premiere1",nome:"Premiere 1 HD",fontes:[{url:"https://tv.example/1"}]},
   {id:"premiereclubes",nome:"Premiere Clubes FHD",fontes:[{url:"https://tv.example/clubes"}]},
@@ -12,6 +12,7 @@ const channels=[
 describe("TV identity matching confirmed broadcasts",()=>{
  test("maps quality, sportv, ESPN Brasil and Globo aliases",()=>{
    expect(normalizeTvChannelIdentity("Sport TV 2 UHD")).toBe("sportv 2");
+   expect(canonicalTvChannelIdentity("TV Globo HD")).toBe("globo");
    expect(matchBrazilianBroadcastChannel("Sport TV 2",channels)?.id).toBe("sportv2");
    expect(matchBrazilianBroadcastChannel("ESPN Brasil",channels)?.id).toBe("espn");
    expect(matchBrazilianBroadcastChannel("Globo",channels)?.id).toBe("globo");

@@ -2,7 +2,7 @@
 import { LIGAS_FUTEBOL } from "./jogos-match";
 
 export const TABLE_LEAGUES = LIGAS_FUTEBOL.filter(liga => [
-  "bra.1","bra.2","eng.1","esp.1","ita.1","ger.1","fra.1","por.1",
+  "bra.1","bra.2","bra.copa_do_brazil","eng.1","esp.1","ita.1","ger.1","fra.1","por.1",
   "uefa.champions","conmebol.libertadores","conmebol.sudamericana","uefa.europa",
 ].includes(liga.id));
 export type StandingsRow = {
