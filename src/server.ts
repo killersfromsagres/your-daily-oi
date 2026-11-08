@@ -8,7 +8,7 @@ import { getAniListMetadata } from "./lib/anilist";
 import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeStream } from "./lib/sushianimes";
 import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG, getGradeAgora } from "./lib/epg";
-import { getJogosHoje } from "./lib/jogos";
+import { getJogosHoje, getJogosPlacares } from "./lib/jogos";
 import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
@@ -2003,12 +2003,27 @@ export default {
         const data = await getCanalEPG(canal);
         return jsonResponse(data, 200, "public, max-age=900");
       }
+      if (url.pathname === "/api/jogos-placares") {
+        if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
+        try {
+          const date = url.searchParams.get("data") || undefined;
+          const leagues = (url.searchParams.get("ligas") || "").split(",").filter(Boolean).slice(0, 20);
+          const scores = await getJogosPlacares(date, leagues);
+          return jsonResponse(scores, 200, "public, max-age=15, stale-while-revalidate=5");
+        } catch (error) {
+          if (error instanceof RangeError) {
+            return jsonResponse({ erro: "Data inválida ou fora do período disponível" }, 400);
+          }
+          console.warn("[Sports] Falha no placar ao vivo:", error);
+          return jsonResponse({ erro: "Placar temporariamente indisponível" }, 503, "no-store");
+        }
+      }
       if (url.pathname === "/api/jogos-hoje" || url.pathname === "/api/jogos-agenda") {
         if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
         try {
           const dataLocal = url.searchParams.get("data") || undefined;
           const data = await getJogosHoje(dataLocal);
-          return jsonResponse(data, 200, "public, max-age=90, stale-while-revalidate=90");
+          return jsonResponse(data, 200, "public, max-age=45, stale-while-revalidate=20");
         } catch (error) {
           if (error instanceof RangeError) {
             return jsonResponse({ erro: "Data inválida ou fora do período disponível" }, 400);
