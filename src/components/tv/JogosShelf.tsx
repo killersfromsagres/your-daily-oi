@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
+import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { featuredFootballMatches } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
@@ -290,6 +291,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
           ) : null}
         </div>
       )}
+      <div className="zgame-standings-entry"><LeagueStandings /></div>
       <footer className="zgame-footer">
         <span><Sparkles size={15} /> Datas e placares de fonte esportiva; atualizações automáticas.</span>
         <span>Os canais são vinculados apenas quando a transmissão específica é identificada. A disponibilidade pode variar.</span>

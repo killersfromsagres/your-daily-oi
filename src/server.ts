@@ -9,6 +9,7 @@ import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeS
 import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje } from "./lib/jogos";
+import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { handleLiveFormatApi } from "./lib/live-probe";
@@ -2013,6 +2014,17 @@ export default {
             return jsonResponse({ erro: "Data inválida ou fora do período disponível" }, 400);
           }
           throw error;
+        }
+      }
+      if (url.pathname === "/api/futebol/tabela") {
+        if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
+        try {
+          const league = url.searchParams.get("liga") || "bra.1";
+          return jsonResponse(await getLeagueStandings(league), 200, "public, max-age=300, stale-while-revalidate=300");
+        } catch (error) {
+          if (error instanceof RangeError) return jsonResponse({ erro: "Campeonato inválido" }, 400);
+          console.warn("[Sports] Tabela indisponível:", error);
+          return jsonResponse({ erro: "Tabela temporariamente indisponível. Tente novamente." }, 503);
         }
       }
       if (url.pathname === "/api/animes-sushi") {

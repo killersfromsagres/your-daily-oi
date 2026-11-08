@@ -6,6 +6,7 @@ import { Activity, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRigh
   Clock3, RadioTower, RefreshCw, ShieldCheck } from "lucide-react";
 import { MatchCard } from "@/components/tv/JogosShelf";
 import { FootballIcon } from "@/components/sports/FootballIcon";
+import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import { sortedFootballMatches, matchImportance } from "@/lib/football-ranking";
 import "@/styles/football-center.css";
@@ -177,6 +178,7 @@ function FootballPage() {
             </>
           )}
         </section>
+        <LeagueStandings compact={false} />
         <footer className="zf-football-footer"><Clock3 size={15}/> Horários no fuso de Brasília. Os botões de assistir aparecem apenas quando há identificação específica do canal brasileiro. Programação sujeita a alterações.</footer>
       </div>
     </main>
