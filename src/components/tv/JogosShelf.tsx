@@ -224,9 +224,10 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   },[day,today,baseGames.length,leagueParam]);
 
   const allGames=useMemo(()=>{
-    const valid=scores?.dataLocal===day &&
-      (!data?.atualizadoEm || Date.parse(scores.atualizadoEm)>=Date.parse(data.atualizadoEm));
-    return mergeFootballScores(baseGames,valid?scores.jogos:[],day);
+    const updates=scores?.dataLocal===day &&
+      (!data?.atualizadoEm || Date.parse(scores.atualizadoEm)>=Date.parse(data.atualizadoEm))
+      ? scores.jogos : [];
+    return mergeFootballScores(baseGames,updates,day);
   },[baseGames,scores,data,day]);
   const filtered = useMemo(() => featuredFootballMatches(allGames, 8), [allGames]);
 
