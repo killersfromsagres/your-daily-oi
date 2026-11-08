@@ -6,15 +6,15 @@
   --zg-highlight: #eec07f;
   --zg-red: #ff6b6b;
   --zg-green: #72d3af;
-  background: linear-gradient(150deg,#131b26 0%,#0c1119 58%,#101923 100%);
-  border: 1px solid rgba(191,208,230,.13);
+  background: radial-gradient(ellipse 850px 380px at 82% 0%, rgba(48,104,79,.20), transparent 75%), #0c121b;
+  border: 1px solid rgba(180,211,197,.21);
   border-radius: 22px;
   padding: clamp(16px,2.3vw,31px);
   color: #f5f7fb;
   position: relative;
   overflow: hidden;
   margin: 33px 0 37px;
-  box-shadow: 0 18px 58px rgba(0,0,0,.12);
+  box-shadow: 0 24px 70px rgba(0,0,0,.30), inset 0 1px rgba(255,255,255,.07);
   isolation: isolate;
 }
 .zgame-center * { box-sizing: border-box; }
@@ -28,7 +28,8 @@
 }
 .zgame-header {
   display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;
-  padding-bottom: 24px; border-bottom: 1px solid var(--zg-line); flex-wrap: wrap;
+  min-height: 215px; padding: 11px 0 28px;
+  border-bottom: 1px solid rgba(226,240,232,.18); flex-wrap: wrap;
 }
 .zgame-header-copy { max-width: 690px; }
 .zgame-kicker {
@@ -36,19 +37,29 @@
   color: var(--zg-highlight); font-weight: 850; font-size: 10px;
 }
 .zgame-kicker-line { height: 1px; width: 29px; background: rgba(238,192,127,.45); }
-.zgame-kicker span:last-child { color: #8798ae; }
+.zgame-kicker span:last-child { color: #c0d0cf; }
 .zgame-header h2 {
-  font-size: clamp(28px,3.2vw,44px); font-weight: 850; line-height: 1.12;
-  letter-spacing: -.065em; color: #fff; margin: 10px 0 7px;
+  font-size: clamp(33px,3.35vw,49px); font-weight: 850; line-height: 1.08;
+  letter-spacing: -.065em; color: #fff; margin: 13px 0 10px;
+  text-shadow: 0 4px 28px rgba(0,0,0,.46);
 }
 .zgame-header h2 em { font-style: normal; color: var(--zg-highlight); }
-.zgame-header p { margin: 0; color: #99a8ba; font-size: 13px; line-height: 1.7; }
+.zgame-header p { margin: 0; color: #d1d9dc; font-size: 13px; line-height: 1.7; text-shadow: 0 2px 14px rgba(0,0,0,.65); }
+.zgame-center .zf-football-inline-link {
+  background: rgba(12,40,33,.60);
+  border-color: rgba(141,210,168,.40);
+  color: #ecfff3;
+  box-shadow: 0 8px 25px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.06);
+}
+.zgame-center .zf-football-inline-link:hover {
+  background: rgba(23,78,56,.75); border-color: rgba(167,235,186,.64);
+}
 .zgame-header-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding-top: 5px; }
 .zgame-timezone,.zgame-refresh,.zgame-live-flag {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 37px; font-size: 11px; font-weight: 700; white-space: nowrap;
   padding: 9px 12px; border: 1px solid var(--zg-line); border-radius: 9px;
-  background: rgba(255,255,255,.04); color: #b8c6d5;
+  background: rgba(9,22,27,.58); color: #d4e0e2;
 }
 .zgame-live-flag { color: #ff858b; border-color: rgba(255,100,110,.22); background: rgba(255,100,110,.065); }
 .zgame-live-flag span { width: 6px; height: 6px; border-radius: 50%; background: var(--zg-red); box-shadow: 0 0 0 4px rgba(255,108,108,.14); }
@@ -278,16 +289,34 @@
 .zgame-announced em { font-size:10px; font-weight:500; font-style:normal; line-height:1.45; color:#9dacc0; }
 .zgame-watch small+small { font-size:10px; font-weight:500; color:#9aafc6; margin-top:3px; line-height:1.35; }
 
-/* Campo central: arte vetorial local, desfocada e leve para Smart TVs/mobile. */
+/* Fotografia solicitada para o campo esportivo; a arte local é fallback caso o host falhe. */
 .zgame-center::before {
-  content:""; position:absolute; pointer-events:none; z-index:-2;
-  inset:-28px -20px auto; height:min(560px, 72%);
-  background:url("/sports-midfield.svg") center 45%/cover no-repeat;
-  filter:blur(15px) saturate(.93); opacity:.50; transform:scale(1.06);
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -2;
+  inset: -18px -18px auto;
+  height: clamp(430px, 54vw, 760px);
+  background-image:
+    url("https://img.magnific.com/fotos-gratis/ambiente-desportivo-de-futebol-arquivado_23-2151891691.jpg?semt=ais_hybrid&w=740&q=80"),
+    url("/sports-midfield.svg");
+  background-position: center 42%, center 48%;
+  background-size: cover, cover;
+  background-repeat: no-repeat;
+  filter: blur(3px) saturate(1.08) contrast(1.06);
+  opacity: .90;
+  transform: scale(1.025);
+  transform-origin: center top;
 }
 .zgame-center::after {
-  content:""; position:absolute; pointer-events:none; z-index:-1; inset:0;
-  background:linear-gradient(180deg,rgba(7,13,21,.24) 0%,rgba(9,16,25,.84) 49%,rgba(8,14,23,.98) 100%);
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(90deg,rgba(6,17,19,.60) 0%,rgba(7,18,20,.36) 46%,rgba(7,16,21,.68) 100%),
+    linear-gradient(180deg,rgba(6,14,18,.17) 0%,rgba(8,16,23,.45) 24%,rgba(9,16,24,.90) 48%,#0c121b 73%);
 }
 .zgame-ambient {z-index:0;opacity:.40;}
 .zgame-header,.zgame-toolbar,.zgame-section-head,.zf-featured-summary,.zgame-grid,.zgame-empty,.zgame-partial,.zgame-footer,.zgame-standings-entry {position:relative;z-index:1;}
@@ -308,5 +337,27 @@
 .zgame-card.is-halftime .zgame-kickoff {color:#ffe0a8;border-color:rgba(239,193,127,.35);background:rgba(239,193,127,.14);}
 .zgame-watch {border-radius:11px;min-height:51px;}
 .zgame-watch strong {font-size:13px;}
-@media(max-width:580px){.zgame-center::before{height:420px;opacity:.32}.zgame-card{padding:15px;min-height:245px}.zgame-versus{padding:15px 0}.zgame-crest{width:64px;height:64px}}
-@media(prefers-reduced-motion:reduce){.zgame-center::before{filter:blur(12px)}.zgame-card{transform:none!important}}
+@media(max-width:850px){
+  .zgame-center::before { height: 545px; background-position: 54% 40%, center; }
+  .zgame-header { min-height: 225px; }
+}
+@media(max-width:580px){
+  .zgame-center::before {
+    height: 450px; opacity: .80; background-position: 58% 36%, center;
+    filter: blur(1.8px) saturate(1.06);
+  }
+  .zgame-center::after {
+    background:
+      linear-gradient(90deg,rgba(6,16,19,.73),rgba(6,17,20,.47) 55%,rgba(6,16,20,.65)),
+      linear-gradient(180deg,rgba(7,15,19,.16),rgba(8,16,23,.72) 39%,#0c121b 72%);
+  }
+  .zgame-header { min-height: 220px; padding-top: 9px; }
+  .zgame-header h2 { font-size: 34px; }
+  .zgame-card { padding: 15px; min-height: 245px; }
+  .zgame-versus { padding: 15px 0; }
+  .zgame-crest { width: 64px; height: 64px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .zgame-center::before { filter: blur(2px) saturate(1.06); }
+  .zgame-card { transform: none!important; }
+}
