@@ -57,9 +57,11 @@ export function mergeFootballScores(
       canalId: previous.canalId || update.canalId,
       canalNome: previous.canalNome || update.canalNome,
       canalLogo: previous.canalLogo || update.canalLogo,
-      canaisTransmissao: previous.canaisTransmissao?.length ? previous.canaisTransmissao : update.canaisTransmissao,
+      ...(previous.canaisTransmissao?.length ? {canaisTransmissao: previous.canaisTransmissao}
+        : update.canaisTransmissao?.length ? {canaisTransmissao: update.canaisTransmissao} : {}),
       transmissao: previous.canalId || update.canalId ? "confirmada" : previous.transmissao,
-      origemTransmissao: previous.origemTransmissao || update.origemTransmissao,
+      ...(previous.origemTransmissao || update.origemTransmissao
+        ? {origemTransmissao: previous.origemTransmissao || update.origemTransmissao} : {}),
     });
   }
   return [...byId.values()];
