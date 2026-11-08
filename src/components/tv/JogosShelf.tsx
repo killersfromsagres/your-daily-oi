@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
-import { featuredFootballMatches } from "@/lib/football-ranking";
+import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
   Clock3, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
@@ -143,6 +143,8 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   const [pending, setPending] = useState(true);
   const [failure, setFailure] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [scoreRefresh, setScoreRefresh] = useState(0);
+  const [scores, setScores] = useState<SportsApiResponse | null>(null);
   const previousRequest = useRef<AbortController | null>(null);
   const days = useMemo(() => Array.from({length:7}, (_,i) => addDaysUTC(today,i)), [today]);
 
@@ -193,7 +195,39 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
     };
   }, [day, refreshKey]);
 
-  const allGames = data?.dataLocal === day ? data.jogos : [];
+  const baseGames=useMemo(()=>data?.dataLocal===day?data.jogos:[],[data,day]);
+  const leagueIds=useMemo(()=>liveScoreLeagueIds(baseGames,Date.now()),[baseGames,scoreRefresh]);
+  const leagueParam=leagueIds.join(",");
+  useEffect(()=>{
+    if(day!==today || data?.dataLocal!==day)return;
+    const controller=new AbortController();
+    const params=new URLSearchParams({data:day});
+    if(leagueParam)params.set("ligas",leagueParam);
+    fetch("/api/jogos-placares?"+params.toString(),{cache:"no-store",signal:controller.signal})
+      .then(async response=>{
+        if(!response.ok)throw new Error("Placar indisponível");
+        const value=await response.json() as SportsApiResponse;
+        if(value.dataLocal!==day||!Array.isArray(value.jogos))throw new Error("Placar inválido");
+        return value;
+      })
+      .then(value=>{if(!controller.signal.aborted)setScores(value);})
+      .catch(()=>{/* Keep the complete agenda if the scoreboard source is down. */});
+    return ()=>controller.abort();
+  },[data,day,today,scoreRefresh,leagueParam]);
+
+  useEffect(()=>{
+    if(day!==today || !baseGames.length)return;
+    const timer=window.setInterval(()=>{
+      if(document.visibilityState==="visible")setScoreRefresh(x=>x+1);
+    },leagueParam?30_000:75_000);
+    return ()=>window.clearInterval(timer);
+  },[day,today,baseGames.length,leagueParam]);
+
+  const allGames=useMemo(()=>{
+    const valid=scores?.dataLocal===day &&
+      (!data?.atualizadoEm || Date.parse(scores.atualizadoEm)>=Date.parse(data.atualizadoEm));
+    return mergeFootballScores(baseGames,valid?scores.jogos:[],day);
+  },[baseGames,scores,data,day]);
   const filtered = useMemo(() => featuredFootballMatches(allGames, 8), [allGames]);
 
   const live = allGames.filter(game=>game.status==="ao-vivo").length;
