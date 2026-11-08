@@ -277,3 +277,36 @@
 .zgame-announced strong { color:#eaf0f7; font-size:12px; font-weight:850; line-height:1.4; overflow-wrap:anywhere; }
 .zgame-announced em { font-size:10px; font-weight:500; font-style:normal; line-height:1.45; color:#9dacc0; }
 .zgame-watch small+small { font-size:10px; font-weight:500; color:#9aafc6; margin-top:3px; line-height:1.35; }
+
+/* Campo central: arte vetorial local, desfocada e leve para Smart TVs/mobile. */
+.zgame-center::before {
+  content:""; position:absolute; pointer-events:none; z-index:-2;
+  inset:-28px -20px auto; height:min(560px, 72%);
+  background:url("/sports-midfield.svg") center 45%/cover no-repeat;
+  filter:blur(15px) saturate(.93); opacity:.50; transform:scale(1.06);
+}
+.zgame-center::after {
+  content:""; position:absolute; pointer-events:none; z-index:-1; inset:0;
+  background:linear-gradient(180deg,rgba(7,13,21,.24) 0%,rgba(9,16,25,.84) 49%,rgba(8,14,23,.98) 100%);
+}
+.zgame-ambient {z-index:0;opacity:.40;}
+.zgame-header,.zgame-toolbar,.zgame-section-head,.zf-featured-summary,.zgame-grid,.zgame-empty,.zgame-partial,.zgame-footer,.zgame-standings-entry {position:relative;z-index:1;}
+.zgame-card {border-radius:17px;background:linear-gradient(148deg,rgba(31,42,54,.97),rgba(15,23,34,.97));padding:17px 15px 13px;min-height:265px;box-shadow:inset 0 1px rgba(255,255,255,.035),0 12px 28px rgba(0,0,0,.13);}
+.zgame-card-header {align-items:center;}
+.zgame-league {font-size:10px;max-width:65%;overflow:hidden;}
+.zgame-round {letter-spacing:.02em;}
+.zgame-versus {grid-template-columns:minmax(0,1fr) minmax(70px,.73fr) minmax(0,1fr);gap:5px;padding:20px 0 18px;}
+.zgame-team {gap:11px;}
+.zgame-team strong {font-size:11px;min-height:30px;display:flex;align-items:flex-start;justify-content:center;}
+.zgame-crest {width:clamp(58px,5.3vw,72px);height:clamp(58px,5.3vw,72px);padding:10px;border-radius:22px;background:radial-gradient(circle at 32% 12%,rgba(132,168,189,.23),rgba(19,32,46,.9));box-shadow:inset 0 1px rgba(255,255,255,.075),0 9px 22px rgba(0,0,0,.20);}
+.zgame-score {gap:6px;}
+.zgame-score-numbers {font-size:clamp(25px,2.5vw,34px);letter-spacing:-.055em;}
+.zgame-score-vs {font-size:23px;font-weight:850;color:#e9c187;}
+.zgame-score>small {font-size:8px;letter-spacing:.14em;text-align:center;}
+.zgame-kickoff {font-size:9px;padding:6px 7px;border-radius:7px;}
+.zgame-card.is-halftime {border-color:rgba(237,190,108,.34);}
+.zgame-card.is-halftime .zgame-kickoff {color:#ffe0a8;border-color:rgba(239,193,127,.35);background:rgba(239,193,127,.14);}
+.zgame-watch {border-radius:11px;min-height:51px;}
+.zgame-watch strong {font-size:13px;}
+@media(max-width:580px){.zgame-center::before{height:420px;opacity:.32}.zgame-card{padding:15px;min-height:245px}.zgame-versus{padding:15px 0}.zgame-crest{width:64px;height:64px}}
+@media(prefers-reduced-motion:reduce){.zgame-center::before{filter:blur(12px)}.zgame-card{transform:none!important}}

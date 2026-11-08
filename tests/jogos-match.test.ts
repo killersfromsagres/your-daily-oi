@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   LIGAS_FUTEBOL, addDaysUTC, brBroadcastsFromESPN,
   dataBrasilia, doesEpgDescribeFixture, horaBrasilia,
-  isFeaturedTeam, isValidSportsDate, parseESPNFixture,
+  isFeaturedTeam, isValidSportsDate, parseESPNFixture, parseSoccerMatchPhase,
 } from "../src/lib/jogos-match";
 
 const sample = (iso: string, state="pre") => ({
@@ -92,5 +92,23 @@ describe("Confirmação de emissoras",()=>{
     expect(doesEpgDescribeFixture("Flamengo x Corinthians","Flamengo","Palmeiras")).toBe(false);
     expect(doesEpgDescribeFixture("ESPN - Futebol ao vivo","Flamengo","Palmeiras")).toBe(false);
     expect(doesEpgDescribeFixture("Sao Paulo x Santos","São Paulo","Santos")).toBe(true);
+  });
+});
+
+
+describe("Fases de uma partida a partir do feed", () => {
+  test("classifica primeiro tempo, intervalo e segundo tempo sem inventar minuto", () => {
+    expect(parseSoccerMatchPhase({ type: { state:"in", name:"STATUS_IN_PROGRESS" }, period:1, displayClock:"35:12" }))
+      .toEqual({ fase:"primeiro-tempo", rotulo:"1º tempo", minuto:"35′" });
+    expect(parseSoccerMatchPhase({ type: { state:"in", shortDetail:"HT" }, period:2 }))
+      .toEqual({ fase:"intervalo", rotulo:"Intervalo", minuto:null });
+    expect(parseSoccerMatchPhase({ type: { state:"in", name:"STATUS_IN_PROGRESS" }, period:2, displayClock:"68:00" }).fase)
+      .toBe("segundo-tempo");
+  });
+  test("não marca intervalo por tempo estimado e trata prorrogação, pênaltis e final", () => {
+    expect(parseSoccerMatchPhase({ type:{state:"pre"}, period:2 }).fase).toBe("agendado");
+    expect(parseSoccerMatchPhase({ type:{state:"in", shortDetail:"PSO"} }).fase).toBe("penaltis");
+    expect(parseSoccerMatchPhase({ type:{state:"in"}, period:3 }).fase).toBe("prorrogacao");
+    expect(parseSoccerMatchPhase({ type:{state:"post", completed:true} }).fase).toBe("encerrado");
   });
 });

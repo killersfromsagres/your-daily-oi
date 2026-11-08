@@ -15,6 +15,10 @@ export interface JogoBrasileirao {
   ligaLogo: string | null;
   grupo: "brasileirao" | "champions" | "copas" | "internacional";
   status: "agendado" | "ao-vivo" | "encerrado" | "adiado";
+  /** Specific match phase from provider; never estimated from kickoff time. */
+  fase?: SoccerMatchPhase;
+  faseRotulo?: string;
+  minuto?: string | null;
   placarCasa: number | null;
   placarFora: number | null;
   destaque: boolean;
@@ -103,10 +107,62 @@ type ESPNCompetition = {
   broadcasts?: { market?: string; names?: string[] }[];
   geoBroadcasts?: { region?: string; media?: { shortName?: string } }[];
 };
+/** Keep timing indicators tied to the official match status (ESPN), not the wall clock. */
+export type SoccerMatchPhase = "agendado" | "primeiro-tempo" | "intervalo" | "segundo-tempo" |
+  "prorrogacao" | "penaltis" | "ao-vivo" | "encerrado" | "adiado";
+export interface ESPNMatchStatus {
+  period?: number;
+  clock?: number;
+  displayClock?: string;
+  type?: {
+    state?: string;
+    name?: string;
+    completed?: boolean;
+    description?: string;
+    detail?: string;
+    shortDetail?: string;
+  };
+}
+export function parseSoccerMatchPhase(value?: ESPNMatchStatus): {
+  fase: SoccerMatchPhase; rotulo: string; minuto: string | null;
+} {
+  const type = value?.type;
+  const description = [type?.name, type?.description, type?.detail, type?.shortDetail]
+    .filter(Boolean).join(" ").toLowerCase();
+  const state = type?.state;
+  if (state === "post" || type?.completed || /status_final|full.?time|\\bft\\b|encerrado/.test(description)) {
+    return { fase: "encerrado", rotulo: "Encerrado", minuto: null };
+  }
+  if (/postpon|cancel|suspend|adiad|aband|status_delayed/.test(description)) {
+    return { fase: "adiado", rotulo: "Adiado / suspenso", minuto: null };
+  }
+  if (state !== "in") return { fase: "agendado", rotulo: "Agendado", minuto: null };
+  if (/half.?time|\\bht\\b|interval|status_halftime/.test(description)) {
+    return { fase: "intervalo", rotulo: "Intervalo", minuto: null };
+  }
+  const clockText = value?.displayClock?.trim() || "";
+  const minuteMatch = /^(\\d{1,3})(?:['’′]?\\+(\\d{1,2}))?/.exec(clockText);
+  const minute = minuteMatch
+    ? minuteMatch[1] + (minuteMatch[2] ? "+" + minuteMatch[2] : "") + "′"
+    : null;
+  if (/penalt|shoot.?out|\\bpso\\b|status_penalty/.test(description)) {
+    return { fase: "penaltis", rotulo: "Pênaltis", minuto: null };
+  }
+  if (/extra.?time|prorrog|\\bet\\b/.test(description) || (value?.period ?? 0) >= 3) {
+    return { fase: "prorrogacao", rotulo: "Prorrogação", minuto: minute };
+  }
+  if (/second.?half|2nd.?half|segundo.?tempo|\\b2t\\b/.test(description) || value?.period === 2) {
+    return { fase: "segundo-tempo", rotulo: "2º tempo", minuto: minute };
+  }
+  if (/first.?half|1st.?half|primeiro.?tempo|\\b1t\\b/.test(description) || value?.period === 1) {
+    return { fase: "primeiro-tempo", rotulo: "1º tempo", minuto: minute };
+  }
+  return { fase: "ao-vivo", rotulo: "Ao vivo", minuto: minute };
+}
 export type ESPNEvent = {
   id?: string;
   date?: string;
-  status?: { type?: { state?: string; name?: string; completed?: boolean } };
+  status?: ESPNMatchStatus;
   competitions?: ESPNCompetition[];
   season?: { type?: { name?: string } };
 };
@@ -136,11 +192,10 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
   const home = competition?.competitors?.find(x=>x.homeAway==="home");
   const away = competition?.competitors?.find(x=>x.homeAway==="away");
   if (!home?.team?.displayName || !away?.team?.displayName) return null;
-  const statusType = event.status?.type;
-  const state = statusType?.state;
-  const status = state === "in" ? "ao-vivo" :
-    state === "post" || statusType?.completed ? "encerrado" :
-    /postpon|cancel|suspend/i.test(statusType?.name || "") ? "adiado" : "agendado";
+  const phase = parseSoccerMatchPhase(event.status);
+  const status = phase.fase === "encerrado" ? "encerrado" :
+    phase.fase === "adiado" ? "adiado" :
+    phase.fase === "agendado" ? "agendado" : "ao-vivo";
   const parseScore = (value: string | number | undefined): number | null => {
     if (status === "agendado" || status === "adiado") return null;
     const x=Number(value);
@@ -156,7 +211,8 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
     inicioIso: start.toISOString(),
     dataLocal: data, rodada: competition?.notes?.[0]?.headline || undefined,
     liga: liga.name, ligaId: liga.id, ligaLogo: null, grupo: liga.grupo,
-    status, placarCasa: parseScore(home.score), placarFora: parseScore(away.score),
+    status, fase: phase.fase, faseRotulo: phase.rotulo, minuto: phase.minuto,
+    placarCasa: parseScore(home.score), placarFora: parseScore(away.score),
     destaque: liga.id === "bra.1" || liga.id === "uefa.champions" || isFeaturedTeam(homeName) || isFeaturedTeam(awayName),
     canalId: null, canalNome: null, canalLogo: null, transmissao: "nao-confirmada",
   };

@@ -53,9 +53,11 @@ export function MatchCard({ game, onWatch, onExplore }: {
   const hasScore = game.placarCasa !== null && game.placarFora !== null;
   const watchable = Boolean(game.canalId);
   const time = game.status === "encerrado" ? "ENCERRADO" :
-    game.status === "adiado" ? "ADIADO" : active ? "AO VIVO" : game.horarioLocal;
+    game.status === "adiado" ? "ADIADO" : active
+      ? (game.fase === "intervalo" ? "INTERVALO" : (game.faseRotulo || "AO VIVO").toUpperCase() + (game.minuto ? " · " + game.minuto : ""))
+      : game.horarioLocal;
   return (
-    <article className={"zgame-card" + (active ? " is-live" : "") + (watchable ? " has-channel" : "")}>
+    <article className={"zgame-card" + (active ? " is-live" : "") + (watchable ? " has-channel" : "") + (game.fase === "intervalo" ? " is-halftime" : "")}>
       <button
         type="button"
         className="zgame-card-main"
@@ -73,7 +75,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
           {game.liga}
         </span>
         <span className={"zgame-kickoff" + (active ? " is-live" : "")}>
-          {active ? <Radio size={12} /> : <Clock3 size={12} />} {time}
+          {active && game.fase !== "intervalo" ? <Radio size={12} /> : <Clock3 size={12} />} {time}
         </span>
       </div>
       {game.rodada && <span className="zgame-round">{game.rodada}</span>}
@@ -88,7 +90,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
           ) : (
             <span className="zgame-score-vs">X</span>
           )}
-          <small>{hasScore ? (active ? "EM JOGO" : "PLACAR") : "VS"}</small>
+          <small>{hasScore ? (game.fase === "intervalo" ? "INTERVALO" : active ? "AO VIVO" : "FINAL") : "CONFRONTO"}</small>
         </div>
         <div className="zgame-team">
           <TeamCrest src={game.escudoFora} name={game.fora} />
@@ -102,7 +104,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
             <span className="zgame-watch-icon">{game.canalLogo
               ? <img src={game.canalLogo} alt="" loading="lazy" />
               : <Tv size={17} />}</span>
-            <span><small>ASSISTIR AQUI · TRANSMISSÃO IDENTIFICADA</small><strong>{game.canalNome}</strong>{game.canaisTransmissao && game.canaisTransmissao.length > 1 && <small>Outras opções: {game.canaisTransmissao.filter(name => name !== game.canalNome).join(" · ")}</small>}</span>
+            <span><small>{game.status === "encerrado" ? "TRANSMISSÃO IDENTIFICADA" : "ASSISTIR · CANAL CONFIRMADO"}</small><strong>{game.canalNome}</strong>{game.canaisTransmissao && game.canaisTransmissao.length > 1 && <small>Outras opções: {game.canaisTransmissao.filter(name => name !== game.canalNome).join(" · ")}</small>}</span>
             <ArrowRight size={18} className="zgame-watch-arrow" />
           </button>
         ) : game.canaisTransmissao?.length ? (
@@ -112,7 +114,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
           </div>
         ) : (
           <div className="zgame-unconfirmed">
-            <span><ShieldQuestion size={17} /> Canais ainda não divulgados para esta partida</span>
+            <span><ShieldQuestion size={17} /> Transmissão brasileira não confirmada para este jogo</span>
             {onExplore && (
               <button type="button" onClick={onExplore} title="Explorar canais esportivos disponíveis">
                 Explorar canais <ArrowRight size={14} />

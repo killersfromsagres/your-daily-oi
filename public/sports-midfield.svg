@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760" role="img" aria-label="Campo de futebol com linha e círculo central">
+  <defs><linearGradient id="turf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#183d31"/><stop offset=".52" stop-color="#23533d"/><stop offset="1" stop-color="#102b2b"/></linearGradient>
+  <pattern id="stripe" width="180" height="760" patternUnits="userSpaceOnUse"><rect width="90" height="760" fill="#d7f3b4" opacity=".038"/></pattern>
+  <filter id="soft"><feGaussianBlur stdDeviation="4"/></filter></defs>
+  <rect width="1600" height="760" fill="url(#turf)"/><rect width="1600" height="760" fill="url(#stripe)"/>
+  <g stroke="#d5eadc" fill="none" stroke-width="5" opacity=".44" filter="url(#soft)"><rect x="82" y="56" width="1436" height="648" rx="2"/><path d="M800 56V704"/><circle cx="800" cy="380" r="143"/><circle cx="800" cy="380" r="4" fill="#d5eadc"/></g>
+</svg>
