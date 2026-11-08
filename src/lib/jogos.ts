@@ -23,7 +23,7 @@ export interface JogosHojeResponse {
 type CacheEntry = { expires: number; value: JogosHojeResponse };
 const fixtureCache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<JogosHojeResponse>>();
-const TTL_MS = 2 * 60_000;
+const TTL_MS = 90_000;
 const STALE_MS = 24 * 60 * 60_000;
 const REQUEST_TIMEOUT_MS = 6500;
 const ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer/";
@@ -98,7 +98,7 @@ async function fetchFixturesForLeague(liga: LigaFutebol, date: string): Promise<
   }
   return { liga,events:[...byId.values()],leagueLogo,followupFailed };
 }
-async function fetchAllLeagues(date: string): Promise<{
+async function fetchAllLeagues(date: string, leagues: readonly LigaFutebol[] = LIGAS_FUTEBOL): Promise<{
   items: { event: ESPNEvent; liga: LigaFutebol; leagueLogo: string | null }[];
   successes: number; failed: string[];
 }> {
@@ -106,8 +106,8 @@ async function fetchAllLeagues(date: string): Promise<{
   const failed: string[] = [];
   let successes = 0;
   // Bound concurrency to reduce provider overload and Cloudflare connection caps.
-  for (let i = 0; i < LIGAS_FUTEBOL.length; i += 5) {
-    const batch = LIGAS_FUTEBOL.slice(i, i + 5);
+  for (let i = 0; i < leagues.length; i += 5) {
+    const batch = leagues.slice(i, i + 5);
     const results = await Promise.allSettled(batch.map(liga => fetchFixturesForLeague(liga, date)));
     for (const [index, result] of results.entries()) {
       const league = batch[index];
@@ -290,5 +290,107 @@ export async function getJogosHoje(requestedDate?: string): Promise<JogosHojeRes
     };
   }).finally(() => { inflight.delete(date); });
   inflight.set(date, work);
+  return work;
+}
+
+
+/** Lightweight scoreboard refresh, separate from the slower channel/EPG enrichment.
+ * Browsers ask for leagues with live or near-kickoff matches every 25-30 seconds.
+ * The full agenda continues discovering new games in every covered competition.
+ */
+export interface PlacaresAoVivoResponse {
+  dataLocal: string;
+  atualizadoEm: string;
+  jogos: JogoBrasileirao[];
+  fontesConsultadas: number;
+  ligasIndisponiveis: string[];
+  parcial: boolean;
+}
+const scoreCache = new Map<string, { expires: number; value: PlacaresAoVivoResponse }>();
+const scoreInflight = new Map<string, Promise<PlacaresAoVivoResponse>>();
+export async function getJogosPlacares(
+  requestedDate?: string,
+  requestedLeagues?: readonly string[],
+): Promise<PlacaresAoVivoResponse> {
+  const today = dataBrasilia();
+  const date = requestedDate || today;
+  if (!isValidSportsDate(date) || date < addDaysUTC(today, -7) ||
+      date > addDaysUTC(today, 15)) {
+    throw new RangeError("Data fora do intervalo permitido");
+  }
+
+  const allowed = new Set(LIGAS_FUTEBOL.map(x => x.id));
+  const ids = [...new Set((requestedLeagues || []).filter(id => allowed.has(id)))].sort();
+  const selected = ids.length ? LIGAS_FUTEBOL.filter(l => ids.includes(l.id)) : LIGAS_FUTEBOL;
+  const key = date + "|" + (ids.join(",") || "all");
+  const current = scoreCache.get(key);
+  if (current && Date.now() < current.expires) return current.value;
+  const pending = scoreInflight.get(key);
+  if (pending) return pending;
+
+  const work = (async (): Promise<PlacaresAoVivoResponse> => {
+    const { items, successes, failed } = await fetchAllLeagues(date, selected);
+    if (!successes) throw new Error("Provedor de placares indisponível");
+
+    const previous = new Map((fixtureCache.get(date)?.value.jogos || []).map(g => [g.id, g]));
+    const byId = new Map<string, JogoBrasileirao>();
+    for (const { event, liga, leagueLogo } of items) {
+      const parsed = parseESPNFixture(event, liga, date);
+      if (!parsed) continue;
+      parsed.ligaLogo = leagueLogo;
+      const older = previous.get(parsed.id);
+      if (older?.canalId) {
+        parsed.canalId = older.canalId;
+        parsed.canalNome = older.canalNome;
+        parsed.canalLogo = older.canalLogo;
+        parsed.transmissao = older.transmissao;
+        parsed.origemTransmissao = older.origemTransmissao;
+      }
+      const announced = brBroadcastsFromESPN(event);
+      parsed.canaisTransmissao = older?.canaisTransmissao?.length ?
+        older.canaisTransmissao : announced;
+      byId.set(parsed.id, parsed);
+    }
+
+    // A fixture discovered on the fast feed can already carry BR-specific rights data.
+    // Resolve only that explicit metadata; never assign a channel by league alone.
+    const unresolved = [...byId.values()].filter(g =>
+      !g.canalId && g.canaisTransmissao && g.canaisTransmissao.length > 0
+    );
+    if (unresolved.length) {
+      try {
+        const channels = (await loadCanais()).canais;
+        for (const game of unresolved) {
+          for (const name of game.canaisTransmissao || []) {
+            const match = matchBrazilianBroadcastChannel(name, channels);
+            if (match) {
+              game.canalId = match.id;
+              game.canalNome = match.nome;
+              game.canalLogo = match.logo || null;
+              game.transmissao = "confirmada";
+              game.origemTransmissao = "grade-br";
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("[Sports] Catálogo de canais indisponível no placar", error);
+      }
+    }
+
+    return {
+      dataLocal: date,
+      atualizadoEm: new Date().toISOString(),
+      jogos: [...byId.values()],
+      fontesConsultadas: successes,
+      ligasIndisponiveis: failed,
+      parcial: failed.length > 0,
+    };
+  })().then(value => {
+    scoreCache.set(key, { value, expires: Date.now() + (date === today ? 20_000 : 90_000) });
+    if (scoreCache.size > 32) scoreCache.delete(scoreCache.keys().next().value!);
+    return value;
+  }).finally(() => scoreInflight.delete(key));
+  scoreInflight.set(key, work);
   return work;
 }
