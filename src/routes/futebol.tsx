@@ -8,7 +8,7 @@ import { MatchCard } from "@/components/tv/JogosShelf";
 import { FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
-import { sortedFootballMatches, matchImportance } from "@/lib/football-ranking";
+import { sortedFootballMatches, matchImportance, mergeFootballScores, liveScoreLeagueIds } from "@/lib/football-ranking";
 import "@/styles/football-center.css";
 
 export const Route = createFileRoute("/futebol")({
@@ -28,6 +28,13 @@ interface SportsAgendaResponse {
   erro?: string;
   fontesConsultadas: number;
 }
+interface LiveScoresResponse {
+  dataLocal: string;
+  atualizadoEm: string;
+  jogos: JogoBrasileirao[];
+  parcial: boolean;
+  fontesConsultadas: number;
+}
 function dateBR(date: string, opts: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",...opts}).format(new Date(date+"T12:00:00Z"));
 }
@@ -42,11 +49,27 @@ function FootballPage() {
   const [loading,setLoading] = useState(true);
   const [error,setError] = useState<string|null>(null);
   const [revalidate,setRevalidate] = useState(0);
+  const [scoreRefresh,setScoreRefresh] = useState(0);
+  const [scores,setScores] = useState<LiveScoresResponse|null>(null);
+  const [scoresUnavailable,setScoresUnavailable] = useState(false);
   const days=useMemo(()=>windows(today),[today]);
-  const games=useMemo(()=>sortedFootballMatches(data?.dataLocal===day?data.jogos:[]),[data,day]);
+  const agendaGames=useMemo(()=>data?.dataLocal===day?data.jogos:[],[data,day]);
+  const watchedLeagues=useMemo(()=>liveScoreLeagueIds(agendaGames,Date.now()),[agendaGames,scoreRefresh]);
+  const leagueParam=watchedLeagues.join(",");
+  const scoreGames=useMemo(()=>{
+    if(scores?.dataLocal!==day)return [];
+    // Never let an older scoreboard response overwrite a newer complete agenda.
+    if(data?.dataLocal===day && Date.parse(scores.atualizadoEm)<Date.parse(data.atualizadoEm))return [];
+    return scores.jogos;
+  },[scores,data,day]);
+  const games=useMemo(()=>sortedFootballMatches(mergeFootballScores(agendaGames,scoreGames,day)),[agendaGames,scoreGames,day]);
+  const liveGames=useMemo(()=>games.filter(g=>g.status==="ao-vivo"),[games]);
+  const remainingGames=useMemo(()=>games.filter(g=>g.status!=="ao-vivo"),[games]);
   const linked=games.filter(g=>Boolean(g.canalId)).length;
-  const live=games.filter(g=>g.status==="ao-vivo").length;
+  const live=liveGames.length;
   const availableLeagues=[...new Set(games.map(g=>g.ligaId))].length;
+  const scoresUpdated = scores?.dataLocal===day && Number.isFinite(Date.parse(scores.atualizadoEm)) ?
+    new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",hour:"2-digit",minute:"2-digit",second:"2-digit"}).format(new Date(scores.atualizadoEm)) : null;
 
   useEffect(()=>{
     const refreshDate=()=>{
@@ -74,20 +97,54 @@ function FootballPage() {
       return payload;
     }).then(payload=>{if(!controller.signal.aborted){lastSuccessfulDay.current=day;setData(payload);}})
       .catch(reason=>{
-        if(!controller.signal.aborted){
+        if(!controller.signal.aborted && lastSuccessfulDay.current!==day){
           setError(reason instanceof Error ? reason.message:"Agenda indisponível");
-          if (lastSuccessfulDay.current !== day) setData(null);
+          setData(null);
         }
       }).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
   },[day,revalidate]);
 
+  // Keep channel/EPG enrichment independent from the fast score refresh.
   useEffect(()=>{
-    const refresh=()=>{if(document.visibilityState==="visible")setRevalidate(x=>x+1);};
+    const controller=new AbortController();
+    if(day!==today || data?.dataLocal!==day) return;
+    const params=new URLSearchParams({data:day});
+    if(leagueParam)params.set("ligas",leagueParam);
+    fetch("/api/jogos-placares?"+params.toString(),{
+      cache:"no-store",signal:controller.signal,headers:{Accept:"application/json"},
+    }).then(async response=>{
+      if(!response.ok)throw new Error("Placar indisponível");
+      const result=await response.json() as LiveScoresResponse;
+      if(result.dataLocal!==day||!Array.isArray(result.jogos))throw new Error("Placar inválido");
+      return result;
+    }).then(result=>{
+      if(!controller.signal.aborted){setScores(result);setScoresUnavailable(false);}
+    }).catch(()=>{
+      if(!controller.signal.aborted)setScoresUnavailable(true);
+    });
+    return ()=>controller.abort();
+  },[day,today,data,scoreRefresh,leagueParam]);
+
+  useEffect(()=>{
+    const refresh=()=>{
+      if(document.visibilityState==="visible"){
+        setRevalidate(x=>x+1);
+        setScoreRefresh(x=>x+1);
+      }
+    };
     document.addEventListener("visibilitychange",refresh);
-    const timer=window.setInterval(refresh,120_000);
-    return ()=>{document.removeEventListener("visibilitychange",refresh);window.clearInterval(timer);};
+    const slow=window.setInterval(refresh,90_000);
+    return ()=>{document.removeEventListener("visibilitychange",refresh);window.clearInterval(slow);};
   },[]);
+
+  useEffect(()=>{
+    if(day!==today || !agendaGames.length)return;
+    const timer=window.setInterval(()=>{
+      if(document.visibilityState==="visible")setScoreRefresh(x=>x+1);
+    },leagueParam?30_000:75_000);
+    return ()=>window.clearInterval(timer);
+  },[day,today,agendaGames.length,leagueParam]);
 
   const onWatch=useCallback((id:string)=>{
     void navigate({to:"/tv/canal/$id",params:{id}});
@@ -142,16 +199,26 @@ function FootballPage() {
             </div>
             <div className="zf-football-metrics">
               <span><FootballIcon size={18}/>{games.length} jogos</span>
+              {live>0&&<span className="zf-football-live-count"><RadioTower size={17}/>{live} ao vivo</span>}
               <span><ShieldCheck size={17}/>{linked} canais identificados</span>
               <span><Activity size={17}/>{availableLeagues} competições</span>
             </div>
           </div>
           {data?.parcial&&!loading&&<p className="zf-football-partial">Algumas competições não responderam à atualização. A agenda pode estar incompleta.</p>}
-          {loading ? (
+          {day===today&&agendaGames.length>0&&(
+            <div className="zf-football-score-status" role="status">
+              <span className={scoresUnavailable?" is-delayed":""}>
+                <span className="zf-football-feed-dot"/>
+                {scoresUnavailable?"Atualização ao vivo temporariamente indisponível":scoresUpdated?"Placar sincronizado às "+scoresUpdated+" (Brasília)":"Sincronizando placares"}
+              </span>
+              <span>Consulta automática durante os jogos</span>
+            </div>
+          )}
+          {loading && !agendaGames.length ? (
             <div className="zf-football-grid" aria-busy="true">
               {Array.from({length:8},(_,i)=><div key={i} className="zgame-skeleton" aria-hidden="true"/>)}
             </div>
-          ) : error || data?.erro ? (
+          ) : (error || data?.erro) && !agendaGames.length ? (
             <div className="zf-football-empty" role="alert">
               <RadioTower size={30}/>
               <h3>Não foi possível consultar a programação</h3>
@@ -167,14 +234,34 @@ function FootballPage() {
             </div>
           ) : (
             <>
-              <div className="zf-football-guide-note"><FootballIcon size={17}/> Ordenados por relevância: Brasileirão Série A, Champions, confrontos de grandes clubes e outras ligas.</div>
-              <div className="zf-football-grid">
-                {games.map((game,index)=>(
-                  <div key={game.id} className={"zf-football-match"+(index<4&&matchImportance(game)>=400?" is-featured":"")}>
-                    <MatchCard game={game} onWatch={onWatch} onExplore={()=>void navigate({to:"/tv"})}/>
+              {liveGames.length>0&&(
+                <section className="zf-football-live-section" aria-label="Jogos em andamento">
+                  <div className="zf-football-live-head">
+                    <span className="zf-football-live-heading"><RadioTower size={17}/> AGORA AO VIVO <strong>{liveGames.length}</strong></span>
+                    <span>Gols, tempo de partida e transmissão disponível</span>
                   </div>
-                ))}
-              </div>
+                  <div className="zf-football-grid">
+                    {liveGames.map(game=>(
+                      <div key={game.id} className="zf-football-match is-live-featured">
+                        <MatchCard game={game} onWatch={onWatch} onExplore={()=>void navigate({to:"/tv"})}/>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {remainingGames.length>0&&(
+                <section className="zf-football-other-section" aria-label="Outras partidas">
+                  {liveGames.length>0&&<h3 className="zf-football-other-heading">Outras partidas do dia</h3>}
+                  <div className="zf-football-guide-note"><FootballIcon size={17}/> {liveGames.length>0?"Demais confrontos organizados por relevância.":"Brasileirão Série A, Champions e confrontos relevantes em destaque."}</div>
+                  <div className="zf-football-grid">
+                    {remainingGames.map((game,index)=>(
+                      <div key={game.id} className={"zf-football-match"+(index<4&&matchImportance(game)>=400?" is-featured":"")}>
+                        <MatchCard game={game} onWatch={onWatch} onExplore={()=>void navigate({to:"/tv"})}/>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </section>
