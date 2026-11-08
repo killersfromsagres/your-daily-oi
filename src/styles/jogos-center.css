@@ -171,6 +171,14 @@
 .zgame-score-numbers { font-size: 27px; font-variant-numeric:tabular-nums; font-weight:900; color:#fff; letter-spacing:-.045em; white-space:nowrap; }
 .zgame-score-numbers small { color:#a2adbc; padding:0 3px; font-size:16px; }
 .zgame-score > small { font-size:8px; color:#778ca2; letter-spacing:.12em; font-weight:800; }
+
+.zgame-score-numbers.is-live-score {color:#f8fffb;}
+.zgame-score > small.zgame-live-minute {
+  font-size:8px; color:#8aefb7; font-weight:900;
+  line-height:1.35; text-align:center; overflow-wrap:break-word;
+}
+.zgame-card.is-live .zgame-score {align-self:center;}
+
 .zgame-card-footer { margin-top:auto; border-top:1px solid rgba(219,232,248,.10); padding-top:12px; }
 .zgame-watch {
   display:flex; align-items:center; width:100%; min-height:45px; gap:10px;
