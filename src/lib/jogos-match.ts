@@ -130,31 +130,31 @@ export function parseSoccerMatchPhase(value?: ESPNMatchStatus): {
   const description = [type?.name, type?.description, type?.detail, type?.shortDetail]
     .filter(Boolean).join(" ").toLowerCase();
   const state = type?.state;
-  if (state === "post" || type?.completed || /status_final|full.?time|\\bft\\b|encerrado/.test(description)) {
+  if (state === "post" || type?.completed || /status_final|full.?time|\bft\b|encerrado/.test(description)) {
     return { fase: "encerrado", rotulo: "Encerrado", minuto: null };
   }
   if (/postpon|cancel|suspend|adiad|aband|status_delayed/.test(description)) {
     return { fase: "adiado", rotulo: "Adiado / suspenso", minuto: null };
   }
   if (state !== "in") return { fase: "agendado", rotulo: "Agendado", minuto: null };
-  if (/half.?time|\\bht\\b|interval|status_halftime/.test(description)) {
+  if (/half.?time|\bht\b|interval|status_halftime/.test(description)) {
     return { fase: "intervalo", rotulo: "Intervalo", minuto: null };
   }
   const clockText = value?.displayClock?.trim() || "";
-  const minuteMatch = /^(\\d{1,3})(?:['’′]?\\+(\\d{1,2}))?/.exec(clockText);
+  const minuteMatch = /^(\d{1,3})(?:['’′]?\+(\d{1,2}))?/.exec(clockText);
   const minute = minuteMatch
     ? minuteMatch[1] + (minuteMatch[2] ? "+" + minuteMatch[2] : "") + "′"
     : null;
-  if (/penalt|shoot.?out|\\bpso\\b|status_penalty/.test(description)) {
+  if (/penalt|shoot.?out|\bpso\b|status_penalty/.test(description)) {
     return { fase: "penaltis", rotulo: "Pênaltis", minuto: null };
   }
-  if (/extra.?time|prorrog|\\bet\\b/.test(description) || (value?.period ?? 0) >= 3) {
+  if (/extra.?time|prorrog|\bet\b/.test(description) || (value?.period ?? 0) >= 3) {
     return { fase: "prorrogacao", rotulo: "Prorrogação", minuto: minute };
   }
-  if (/second.?half|2nd.?half|segundo.?tempo|\\b2t\\b/.test(description) || value?.period === 2) {
+  if (/second.?half|2nd.?half|segundo.?tempo|\b2t\b/.test(description) || value?.period === 2) {
     return { fase: "segundo-tempo", rotulo: "2º tempo", minuto: minute };
   }
-  if (/first.?half|1st.?half|primeiro.?tempo|\\b1t\\b/.test(description) || value?.period === 1) {
+  if (/first.?half|1st.?half|primeiro.?tempo|\b1t\b/.test(description) || value?.period === 1) {
     return { fase: "primeiro-tempo", rotulo: "1º tempo", minuto: minute };
   }
   return { fase: "ao-vivo", rotulo: "Ao vivo", minuto: minute };
@@ -236,8 +236,7 @@ const TEAM_ALIASES: Record<string, string[]> = {
   "sporting cp": ["sporting lisboa", "sporting lisbon"],
   "racing club": ["racing de avellaneda"], "river plate": ["river"], "boca juniors": ["boca"],
   "atletico goianiense": ["atletico go", "atletico goias"],
-  "atletico mg": ["atletico mineiro", "galo"],
-  "atletico mg": ["atletico mineiro", "atl mineiro"],
+  "atletico mg": ["atletico mineiro", "atl mineiro", "galo"],
   "athletico paranaense": ["athletico pr", "atletico pr"],
   "athletico pr": ["athletico paranaense", "atletico pr"],
   "atletico paranaense": ["athletico paranaense", "athletico pr"],

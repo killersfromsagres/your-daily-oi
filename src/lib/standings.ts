@@ -58,8 +58,8 @@ export function parseSoccerStandings(raw:unknown,leagueId:string,now=new Date())
   if(!league)throw new RangeError("Campeonato não suportado");
   if(!raw||typeof raw!=="object")throw new Error("Classificação inválida");
   const data=raw as StandingsPayload;
-  const groups=(data.children?.length?data.children:[{name:"Classificação geral",standings:data.standings}])
-    .map((item,index)=>({
+  const sourceGroups:RawGroup[]=data.children?.length?data.children:[{name:"Classificação geral",standings:data.standings}];
+  const groups=sourceGroups.map((item,index)=>({
       id:item.id||String(index),name:item.name||item.abbreviation||"Classificação geral",
       rows:parseRows(Array.isArray(item.standings?.entries)?item.standings!.entries!:[]),
     })).filter(g=>g.rows.length>0);

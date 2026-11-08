@@ -6,9 +6,9 @@ const run = spawnSync("bunx",["tsc","--noEmit","--pretty","false"],{
 const lines=(run.stdout+"\n"+run.stderr).split(/\r?\n/);
 const diagnostics=lines.filter(line=>/^src\/.*error TS\d+:/.test(line));
 const relevant=diagnostics.filter(line=>
- /^src\/lib\/(?:jogos|jogos-match)\.ts\(/.test(line) ||
+ /^src\/lib\/(?:jogos|jogos-match|broadcast-match|standings)\.ts\(/.test(line) ||
  (() => { const epgLine=line.match(/^src\/lib\/epg\.ts\((\d+),/); return !!epgLine && Number(epgLine[1]) >= 449; })() ||
- /^src\/components\/tv\/JogosShelf\.tsx\(/.test(line) ||
+ /^src\/components\/(?:tv\/JogosShelf|sports\/LeagueStandings)\.tsx\(/.test(line) ||
  /^src\/server\.ts\(21(0[0-9]|1[0-9]|2[0-9]|3[0-9]),/.test(line)
 );
 console.log(JSON.stringify({event:"sports-typecheck",newModuleErrors:relevant.length,

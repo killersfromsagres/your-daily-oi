@@ -1,0 +1,22 @@
+name: Verify premium sports and live fixture links
+on:
+  push:
+    branches: [feat/agenda-futebol-premium-recovery, main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  sports-premium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Unit regressions
+        run: bun test tests/jogos-match.test.ts tests/jogos-broadcast.test.ts tests/standings.test.ts
+      - name: Build application
+        run: bun run build
+      - name: Sports TypeScript validation
+        run: bun scripts/typecheck-sports.mjs
