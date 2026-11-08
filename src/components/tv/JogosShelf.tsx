@@ -53,6 +53,10 @@ export function MatchCard({ game, onWatch, onExplore }: {
   const active = game.status === "ao-vivo";
   const hasScore = game.placarCasa !== null && game.placarFora !== null;
   const watchable = Boolean(game.canalId);
+  const livePhase = game.fase === "intervalo" ? "INTERVALO" :
+    [game.faseRotulo || "Ao vivo", game.minuto].filter(Boolean).join(" · ").toUpperCase();
+  const scoreLabel = active ? livePhase : game.status === "encerrado" ? "FINAL" :
+    game.status === "adiado" ? "ADIADO" : "CONFRONTO";
   const time = game.status === "encerrado" ? "ENCERRADO" :
     game.status === "adiado" ? "ADIADO" : active
       ? (game.fase === "intervalo" ? "INTERVALO" : (game.faseRotulo || "AO VIVO").toUpperCase() + (game.minuto ? " · " + game.minuto : ""))
@@ -87,11 +91,14 @@ export function MatchCard({ game, onWatch, onExplore }: {
         </div>
         <div className="zgame-score">
           {hasScore ? (
-            <span className="zgame-score-numbers">{game.placarCasa}<small>:</small>{game.placarFora}</span>
+            <span className={"zgame-score-numbers"+(active?" is-live-score":"")} aria-live="polite"
+              aria-label={game.casa+" "+game.placarCasa+" a "+game.placarFora+" "+game.fora}>
+              {game.placarCasa}<small>:</small>{game.placarFora}
+            </span>
           ) : (
-            <span className="zgame-score-vs">X</span>
+            <span className="zgame-score-vs">{active?"– : –":"X"}</span>
           )}
-          <small>{hasScore ? (game.fase === "intervalo" ? "INTERVALO" : active ? "AO VIVO" : "FINAL") : "CONFRONTO"}</small>
+          <small className={active?"zgame-live-minute":undefined}>{active||hasScore?scoreLabel:"CONFRONTO"}</small>
         </div>
         <div className="zgame-team">
           <TeamCrest src={game.escudoFora} name={game.fora} />
