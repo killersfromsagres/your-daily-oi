@@ -344,7 +344,7 @@ export async function getJogosPlacares(
         parsed.canalNome = older.canalNome;
         parsed.canalLogo = older.canalLogo;
         parsed.transmissao = older.transmissao;
-        parsed.origemTransmissao = older.origemTransmissao;
+        if (older.origemTransmissao) parsed.origemTransmissao = older.origemTransmissao;
       }
       const announced = brBroadcastsFromESPN(event);
       parsed.canaisTransmissao = older?.canaisTransmissao?.length ?
