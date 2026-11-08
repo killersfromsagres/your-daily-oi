@@ -44,6 +44,11 @@ export const LIGAS_FUTEBOL = [
   { id: "ger.1", name: "Bundesliga", grupo: "internacional" },
   { id: "fra.1", name: "Ligue 1", grupo: "internacional" },
   { id: "por.1", name: "Liga Portugal", grupo: "internacional" },
+  { id: "ned.1", name: "Eredivisie", grupo: "internacional" },
+  { id: "arg.1", name: "Campeonato Argentino", grupo: "internacional" },
+  { id: "usa.1", name: "MLS", grupo: "internacional" },
+  { id: "mex.1", name: "Liga MX", grupo: "internacional" },
+  { id: "sco.1", name: "Campeonato Escocês", grupo: "internacional" },
   { id: "uefa.europa", name: "UEFA Europa League", grupo: "copas" },
 ] as const;
 
@@ -136,7 +141,10 @@ export function parseSoccerMatchPhase(value?: ESPNMatchStatus): {
   if (/postpon|cancel|suspend|adiad|aband|status_delayed/.test(description)) {
     return { fase: "adiado", rotulo: "Adiado / suspenso", minuto: null };
   }
-  if (state !== "in") return { fase: "agendado", rotulo: "Agendado", minuto: null };
+  // ESPN may expose the same in-progress event via state or explicit status name.
+  const isLiveState = state === "in" || state === "inprogress" || state === "live" ||
+    /status_in_progress|in.?progress|status_live/i.test(type?.name || "");
+  if (!isLiveState) return { fase: "agendado", rotulo: "Agendado", minuto: null };
   if (/half.?time|\bht\b|interval|status_halftime/.test(description)) {
     return { fase: "intervalo", rotulo: "Intervalo", minuto: null };
   }
