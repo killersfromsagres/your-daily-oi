@@ -5,6 +5,7 @@
 
 import { loadCanais } from "./canais";
 import { doesEpgDescribeFixture, type JogoBrasileirao } from "./jogos-match";
+import { normalizeTvChannelIdentity } from "./broadcast-match";
 
 export interface ProgramaEPG {
   titulo: string;
@@ -46,7 +47,7 @@ interface EpgState {
 
 const CLARO_XML_URL = "https://raw.githubusercontent.com/limaalef/BrazilTVEPG/main/claro.xml";
 const EPG_XML_URL = "https://raw.githubusercontent.com/limaalef/BrazilTVEPG/main/epg.xml";
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora: grade esportiva variável
 
 let cachedState: EpgState | null = null;
 let loadPromise: Promise<EpgState | null> | null = null;
@@ -217,17 +218,12 @@ async function loadEpgData(): Promise<EpgState | null> {
   const channels = new Map<string, { id: string; name: string }>();
   const programmesByChannel = new Map<string, ParsedProgramme[]>();
 
-  // 1. Fonte primária: claro.xml
-  const claroXml = await fetchXmlWithTimeout(CLARO_XML_URL, 8000);
-  if (claroXml) {
-    parseXmltvContent(claroXml, channels, programmesByChannel, false);
-  }
-
-  // 2. Fonte complementar: epg.xml
-  const epgXml = await fetchXmlWithTimeout(EPG_XML_URL, 8000);
-  if (epgXml) {
-    parseXmltvContent(epgXml, channels, programmesByChannel, true);
-  }
+  // As duas fontes são buscadas em paralelo para evitar perder o timeout da agenda.
+  const [claroXml, epgXml] = await Promise.all([
+    fetchXmlWithTimeout(CLARO_XML_URL, 8000), fetchXmlWithTimeout(EPG_XML_URL, 8000),
+  ]);
+  if (claroXml) parseXmltvContent(claroXml, channels, programmesByChannel, false);
+  if (epgXml) parseXmltvContent(epgXml, channels, programmesByChannel, true);
 
   if (channels.size === 0) {
     return null;
@@ -448,8 +444,7 @@ export async function localizarJogosNaGradeEPG(
   const state = await getOrLoadEpgState();
   if (!state) return found;
 
-  const normalizeGuideChannel = (value: string) => normalizeNomeCanal(value)
-    .replace(/\b(hd|fhd|uhd|4k)\b/g, "").trim();
+  const normalizeGuideChannel = normalizeTvChannelIdentity;
   const channelsByNorm = new Map(
     canais.filter(channel => channel.fontes.length > 0)
       .map(channel => [normalizeGuideChannel(channel.nome), channel] as const),

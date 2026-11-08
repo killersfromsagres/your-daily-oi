@@ -1,6 +1,7 @@
 // src/lib/jogos.ts — server, ESPN scoreboard fixtures + verified Brazilian broadcasts.
 import { loadCanais } from "./canais";
 import { localizarJogosNaGradeEPG } from "./epg";
+import { matchBrazilianBroadcastChannel } from "./broadcast-match";
 import {
   LIGAS_FUTEBOL, addDaysUTC, brBroadcastsFromESPN, dataBrasilia, fixturePriority,
   isValidSportsDate, normalizeSoccerName, parseESPNFixture,
@@ -48,22 +49,6 @@ function getConfiguredBroadcasters(): Record<string, string | string[]> {
     console.warn("[Sports] Configuração de transmissões inválida", error);
     return {};
   }
-}
-function matchChannel(
-  name: string,
-  channels: { id: string; nome: string; logo?: string; fontes: { url: string }[] }[],
-): { id: string; nome: string; logo?: string } | null {
-  const canonical = (value: string) => normalizeSoccerName(value)
-    .replace(/\b(hd|fhd|4k|uhd|full hd)\b/g, "").replace(/\s+/g, " ").trim();
-  const normalized = canonical(name);
-  if (!normalized) return null;
-  // Strict channel identity: quality variants are equivalent, but ESPN+ ≠ ESPN.
-  const plus = /\+/.test(name);
-  const matched = channels.find(ch => ch.fontes.length > 0 && (
-    ch.id.toLowerCase() === name.toLowerCase() ||
-    (canonical(ch.nome) === normalized && /\+/.test(ch.nome) === plus)
-  ));
-  return matched ? { id: matched.id, nome: matched.nome, ...(matched.logo ? { logo: matched.logo } : {}) } : null;
 }
 // Fixtures that kick off after 21:00 Brasília may be assigned the following
 // UTC day by ESPN. Fetch that extra day for South American competitions only.
@@ -148,15 +133,15 @@ async function loadBrazilBroadcastDetails(
   fixtures: { item: JogoBrasileirao; raw: ESPNEvent }[],
 ): Promise<Map<string, string[]>> {
   const result = new Map<string, string[]>();
-  const missing = fixtures.filter(x =>
-    x.item.ligaId === "bra.1" && brBroadcastsFromESPN(x.raw).length === 0,
-  ).slice(0, 12);
+  const missing = fixtures.filter(x => brBroadcastsFromESPN(x.raw).length === 0)
+    .sort((a, b) => fixturePriority(b.item) - fixturePriority(a.item))
+    .slice(0, 18);
   for (let i = 0; i < missing.length; i += 5) {
     const batch = missing.slice(i, i + 5);
     const responses = await Promise.allSettled(batch.map(async ({ item }) => {
       const eventId = item.id.split(":").at(-1);
       if (!eventId || !/^[0-9]+$/.test(eventId)) return [] as string[];
-      const url = ESPN_BASE + "bra.1/summary?event=" + encodeURIComponent(eventId);
+      const url = ESPN_BASE + encodeURIComponent(item.ligaId) + "/summary?event=" + encodeURIComponent(eventId);
       const response = await fetch(url, {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(3200),
@@ -193,7 +178,7 @@ async function annotateBroadcasts(
       localizarJogosNaGradeEPG(matches, available).catch(() =>
         new Map<string, { id: string; nome: string; logo?: string }>()),
       new Promise<Map<string, { id: string; nome: string; logo?: string }>>(
-        resolve => setTimeout(() => resolve(new Map()), 3500)
+        resolve => setTimeout(() => resolve(new Map()), 10500)
       ),
     ]);
   } catch (error) {
@@ -221,7 +206,7 @@ async function annotateBroadcasts(
     let resolved: { id: string; nome: string; logo?: string } | null = null;
     let origin: JogoBrasileirao["origemTransmissao"];
     for (const name of manual) {
-      resolved = matchChannel(name, available);
+      resolved = matchBrazilianBroadcastChannel(name, available);
       if (resolved) { origin = "configuracao"; break; }
     }
     if (!resolved && epgChannel) {
@@ -229,7 +214,7 @@ async function annotateBroadcasts(
       origin = "epg";
     }
     if (!resolved) for (const name of sourceNames) {
-      resolved = matchChannel(name, available);
+      resolved = matchBrazilianBroadcastChannel(name, available);
       if (resolved) { origin = "grade-br"; break; }
     }
     if (resolved) {

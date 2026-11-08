@@ -77,7 +77,7 @@ export function isValidSportsDate(input: string): boolean {
 }
 export function normalizeSoccerName(name: string): string {
   return (name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ").replace(/\b(fc|sc|ac|cf|clube|club|futebol|football|esporte|sporting)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ").replace(/\b(fc|sc|ac|cf|clube|club|futebol|football|esporte)\b/g, " ")
     .replace(/\s+/g, " ").trim();
 }
 const FEATURED_CLUBS = [
@@ -220,7 +220,23 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
 // Alternate spellings common in Brazilian XMLTV guides and ESPN fixture names.
 // These are identity aliases, never an inference about who owns broadcast rights.
 const TEAM_ALIASES: Record<string, string[]> = {
-  "atletico mineiro": ["atletico mg", "atl mineiro"],
+  "atletico mineiro": ["atletico mg", "atl mineiro", "galo"],
+  "manchester city": ["man city"], "manchester united": ["man utd", "man united"],
+  "tottenham hotspur": ["tottenham", "spurs"],
+  "nottingham forest": ["nottm forest", "nott forest"],
+  "wolverhampton wanderers": ["wolves", "wolverhampton"],
+  "newcastle united": ["newcastle"], "west ham united": ["west ham"],
+  "brighton and hove albion": ["brighton"],
+  "paris saint germain": ["psg", "paris sg"],
+  "bayern munich": ["bayern munique", "bayern munchen", "fc bayern"],
+  "borussia dortmund": ["dortmund", "bvb"],
+  "inter milan": ["internazionale", "inter de milao"],
+  "atletico madrid": ["atl madrid", "atleti"],
+  "real betis": ["betis"], "athletic club": ["athletic bilbao"],
+  "sporting cp": ["sporting lisboa", "sporting lisbon"],
+  "racing club": ["racing de avellaneda"], "river plate": ["river"], "boca juniors": ["boca"],
+  "atletico goianiense": ["atletico go", "atletico goias"],
+  "atletico mg": ["atletico mineiro", "galo"],
   "atletico mg": ["atletico mineiro", "atl mineiro"],
   "athletico paranaense": ["athletico pr", "atletico pr"],
   "athletico pr": ["athletico paranaense", "atletico pr"],
@@ -235,7 +251,7 @@ const TEAM_ALIASES: Record<string, string[]> = {
 };
 function clubMentions(text: string, club: string): boolean {
   const key = normalizeSoccerName(club);
-  if (key.length < 4) return false;
+  if (key.length < 3) return false;
   const variants = [key, ...(TEAM_ALIASES[key] || [])];
   return variants.some(name => text.includes(" " + name + " "));
 }

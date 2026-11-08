@@ -112,3 +112,11 @@ describe("Fases de uma partida a partir do feed", () => {
     expect(parseSoccerMatchPhase({ type:{state:"post", completed:true} }).fase).toBe("encerrado");
   });
 });
+
+describe("Aliases adicionais no guia esportivo",()=>{
+  test("reconhece PSG, Tottenham e Man City sem confundir adversários",()=>{
+    expect(doesEpgDescribeFixture("PSG x Tottenham","Paris Saint-Germain","Tottenham Hotspur")).toBe(true);
+    expect(doesEpgDescribeFixture("Man City x Arsenal","Manchester City","Arsenal")).toBe(true);
+    expect(doesEpgDescribeFixture("Man City x Chelsea","Manchester City","Arsenal")).toBe(false);
+  });
+});
