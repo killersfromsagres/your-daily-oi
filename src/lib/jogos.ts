@@ -319,7 +319,7 @@ export async function getJogosPlacares(
     throw new RangeError("Data fora do intervalo permitido");
   }
 
-  const allowed = new Set(LIGAS_FUTEBOL.map(x => x.id));
+  const allowed = new Set<string>(LIGAS_FUTEBOL.map(x => x.id));
   const ids = [...new Set((requestedLeagues || []).filter(id => allowed.has(id)))].sort();
   const selected = ids.length ? LIGAS_FUTEBOL.filter(l => ids.includes(l.id)) : LIGAS_FUTEBOL;
   const key = date + "|" + (ids.join(",") || "all");
