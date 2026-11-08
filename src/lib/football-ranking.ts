@@ -46,22 +46,23 @@ export function mergeFootballScores(
     }
     // Do not regress an in-progress match to "scheduled" on an inconsistent feed.
     if (previous.status === "ao-vivo" && update.status === "agendado") continue;
+    const origin = previous.origemTransmissao ?? update.origemTransmissao;
+    const broadcasters = previous.canaisTransmissao?.length ?
+      previous.canaisTransmissao : update.canaisTransmissao;
     byId.set(update.id, {
       ...previous,
       status: update.status,
-      fase: update.fase,
-      faseRotulo: update.faseRotulo,
-      minuto: update.minuto,
+      ...(update.fase ? {fase: update.fase} : {}),
+      ...(update.faseRotulo ? {faseRotulo: update.faseRotulo} : {}),
+      ...(update.minuto !== undefined ? {minuto: update.minuto} : {}),
       placarCasa: update.placarCasa ?? previous.placarCasa,
       placarFora: update.placarFora ?? previous.placarFora,
       canalId: previous.canalId || update.canalId,
       canalNome: previous.canalNome || update.canalNome,
       canalLogo: previous.canalLogo || update.canalLogo,
-      ...(previous.canaisTransmissao?.length ? {canaisTransmissao: previous.canaisTransmissao}
-        : update.canaisTransmissao?.length ? {canaisTransmissao: update.canaisTransmissao} : {}),
+      ...(broadcasters?.length ? {canaisTransmissao: broadcasters} : {}),
       transmissao: previous.canalId || update.canalId ? "confirmada" : previous.transmissao,
-      ...(previous.origemTransmissao || update.origemTransmissao
-        ? {origemTransmissao: previous.origemTransmissao || update.origemTransmissao} : {}),
+      ...(origin ? {origemTransmissao: origin} : {}),
     });
   }
   return [...byId.values()];
