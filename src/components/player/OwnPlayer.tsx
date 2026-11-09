@@ -324,6 +324,7 @@ export function OwnPlayer({
   const engine = usePlayerEngine(videoRef, currentStream, handleEnded, {
     expectedRuntimeMin,
     attemptStage,
+    minContentSeconds: subtitle === "Animes" ? 25 : 45,
   });
 
   // Mantém currentTime atualizado para transferir caso haja chaveamento de rota ou fonte
