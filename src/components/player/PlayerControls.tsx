@@ -265,8 +265,8 @@ export function PlayerControls({
               {showServers && (
                 <div className="ydo-source-panel zf-server-panel">
                   <div className="zf-server-panel-heading">
-                    <span>Qualidade de reprodução</span>
-                    <small>Melhor fonte selecionada automaticamente</small>
+                    <span>Servidores de reprodução</span>
+                    <small>Seleção inteligente · dublado primeiro</small>
                   </div>
                   <div className="zf-server-list" role="listbox" aria-label="Servidores disponíveis">
                     {sources.map((s, i) => {
@@ -291,7 +291,7 @@ export function PlayerControls({
                             <small>{s.audio === "dub" ? "Português dublado" : "Legendado"}</small>
                           </span>
                           <span className="zf-server-resolution">
-                            {quality && quality !== "Auto" ? quality : "Auto"}
+                            {quality && quality !== "Auto" ? quality : "A verificar"}
                           </span>
                           {isActive && <Check size={16} aria-hidden="true" className="zf-server-current-icon" />}
                         </button>
@@ -299,7 +299,7 @@ export function PlayerControls({
                     })}
                   </div>
                   <div className="zf-server-panel-footer">
-                    <span>{sources.length} servidores disponíveis</span>
+                    <span>{sources.length} alternativas selecionadas</span>
                     <span>Troca automática em caso de falha</span>
                   </div>
                 </div>
