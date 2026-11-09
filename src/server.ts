@@ -1998,7 +1998,7 @@ export default {
         };
         return withSources > 0
           ? jsonResponse({ ...data, summary }, 200, "public, max-age=120")
-          : jsonResponse({ ...data, summary, error: "Catálogo de TV remoto indisponível. Configure SAIMO_CANAIS_URLS para espelhos." }, 503);
+          : jsonResponse({ ...data, summary, error: "Catálogo de TV temporariamente indisponível." }, 503);
       }
       if (url.pathname === "/api/radios") {
         const data = await loadRadios();
