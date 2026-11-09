@@ -7,6 +7,9 @@ import {
   Heart, Home, Menu, Search, Sparkles, Tv2, Trophy, X,
 } from "lucide-react";
 import { mobileTabActive, isWatchRoute } from "@/lib/device-profile";
+import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
+import { SearchSuggestionList } from "@/components/search/SearchSuggestionList";
+import { searchSuggestionPath, type SearchSuggestion } from "@/lib/search-suggestions";
 
 type Section = "filmes" | "series" | "animes";
 type MobileNavigationProps = {
@@ -43,6 +46,9 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
   const navigatingRef = useRef(false);
   const [expanded, setExpanded] = useState<Section | null>(null);
   const [search, setSearch] = useState("");
+  const [activeSearchSuggestion, setActiveSearchSuggestion] = useState(-1);
+  const searchSuggestionsId = useId();
+  const { suggestions, status: suggestionStatus } = useLiveSuggestions(search, open);
 
   useEffect(() => { onOpenChange(false); }, [pathname, onOpenChange]);
 
@@ -85,13 +91,37 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
     navigatingRef.current = true;
     onOpenChange(false);
   };
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const chooseSuggestion = (item: SearchSuggestion) => {
+    navigatingRef.current = true;
+    void navigate({ to: searchSuggestionPath(item) });
+    setSearch("");
+    setActiveSearchSuggestion(-1);
+    close();
+  };
+  const viewAllResults = () => {
     if (!search.trim()) return;
     navigatingRef.current = true;
     void navigate({ to:"/busca", search:{ q:search.trim() } });
     setSearch("");
+    setActiveSearchSuggestion(-1);
     close();
+  };
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (activeSearchSuggestion >= 0 && suggestions[activeSearchSuggestion]) {
+      chooseSuggestion(suggestions[activeSearchSuggestion]);
+    } else {
+      viewAllResults();
+    }
+  };
+  const onSearchKeys = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown" && suggestions.length) {
+      event.preventDefault();
+      setActiveSearchSuggestion(prev => prev >= suggestions.length - 1 ? 0 : prev + 1);
+    } else if (event.key === "ArrowUp" && suggestions.length) {
+      event.preventDefault();
+      setActiveSearchSuggestion(prev => prev <= 0 ? suggestions.length - 1 : prev - 1);
+    }
   };
 
   if (isWatchRoute(pathname)) return null;
@@ -139,10 +169,32 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
             <div className="zf-mobile-menu-scroll">
               <form className="zf-mobile-menu-search" role="search" onSubmit={submitSearch}>
                 <Search size={19} aria-hidden="true" />
-                <input type="search" placeholder="Qual é o seu próximo play?" value={search}
-                  onChange={e => setSearch(e.target.value)} aria-label="Pesquisar no Zang Flix" />
+                <input type="search" placeholder="Filmes, séries e animes…" value={search}
+                  onChange={e => { setSearch(e.target.value); setActiveSearchSuggestion(-1); }}
+                  onKeyDown={onSearchKeys}
+                  aria-label="Pesquisar títulos e ver sugestões"
+                  aria-autocomplete="list"
+                  aria-controls={search.trim() ? searchSuggestionsId : undefined}
+                  aria-expanded={Boolean(search.trim())}
+                  aria-activedescendant={activeSearchSuggestion >= 0 && suggestions[activeSearchSuggestion] ?
+                    searchSuggestionsId + "-option-" + activeSearchSuggestion : undefined}
+                  autoComplete="off" />
                 <button type="submit" aria-label="Pesquisar" disabled={!search.trim()}><ArrowRight size={18} /></button>
               </form>
+              {Boolean(search.trim()) && (
+                <div className="zf-mobile-search-results">
+                  <SearchSuggestionList
+                    id={searchSuggestionsId}
+                    query={search}
+                    items={suggestions}
+                    status={suggestionStatus}
+                    activeIndex={activeSearchSuggestion}
+                    onActiveChange={setActiveSearchSuggestion}
+                    onChoose={chooseSuggestion}
+                    onViewAll={viewAllResults}
+                  />
+                </div>
+              )}
 
               <Link to="/futebol" className="zf-mobile-feature" onClick={navigateAndClose}>
                 <span className="zf-mobile-feature-symbol"><Trophy size={27} strokeWidth={2} /></span>
