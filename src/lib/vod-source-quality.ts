@@ -24,7 +24,7 @@ export function rejectedVodSourceReason(source: Pick<StreamSource,"url"|"name"|"
   return null;
 }
 
-export function advertisedVodResolution(source: Pick<StreamSource,"quality"|"name"|"url">): number | null {
+export function advertisedVodResolution(source: {url:string; quality?:string | undefined; name?:string | undefined}): number | null {
   // A URL or source label can claim quality; real height is only available
   // from loaded video metadata and is kept separate from advertised quality.
   const value = [source.quality, source.name, source.url.split("?")[0]].filter(Boolean).join(" ").toLowerCase();
@@ -85,7 +85,9 @@ export function playableVodSources<T extends StreamSource>(streams: readonly T[]
 export function bestVodSourceIndex(streams: readonly StreamSource[], options: VodSourceSelection = {}): number {
   let best = -1, score = -Infinity;
   for (let i = 0; i < streams.length; i++) {
-    const current = vodSourceScore(streams[i], options);
+    const source = streams[i];
+    if (!source) continue;
+    const current = vodSourceScore(source, options);
     if (current > score) { score = current; best = i; }
   }
   return best;
@@ -98,11 +100,12 @@ export function nextVodSourceIndex(
   excludedUrls: ReadonlySet<string>,
   options: VodSourceSelection = {},
 ): number {
+  const currentUrl = streams[current]?.url;
   return bestVodSourceIndex(streams, {
     ...options,
     excludedUrls: new Set([
       ...excludedUrls,
-      ...(streams[current]?.url ? [streams[current].url] : []),
+      ...(currentUrl ? [currentUrl] : []),
     ]),
   });
 }
