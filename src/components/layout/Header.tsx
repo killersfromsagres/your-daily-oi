@@ -8,7 +8,7 @@ import { detectDeviceProfile, isWatchRoute, type DeviceProfile } from "@/lib/dev
 import { installTvRemoteNavigation } from "@/lib/tv-remote";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { SearchSuggestionList } from "@/components/search/SearchSuggestionList";
-import { searchSuggestionPath, type SearchSuggestion } from "@/lib/search-suggestions";
+import type { SearchSuggestion } from "@/lib/search-suggestions";
 
 interface HeaderProps {
   onSearch?: (q: string) => void;
@@ -211,7 +211,9 @@ export function Header({ onSearch }: HeaderProps) {
     setActiveSuggestion(-1);
     setQuery("");
     onSearch?.("");
-    void navigate({ to: searchSuggestionPath(item) });
+    if (item.type === "f") void navigate({ to: "/filme/$id", params: { id: item.id } });
+    else if (item.type === "a") void navigate({ to: "/anime/$id", params: { id: item.id } });
+    else void navigate({ to: "/serie/$id", params: { id: item.id } });
   };
 
   const handleSearchSubmit = (event: React.FormEvent) => {
