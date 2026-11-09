@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StreamSource } from "@/lib/types";
 import { recordFailedSource } from "@/lib/player-storage";
+import { playbackFailureKind } from "@/lib/playback-start";
 
 export type PlayerState = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 
@@ -27,6 +28,7 @@ export interface UsePlayerEngineOptions {
 interface PlayerEngine {
   state: PlayerState;
   error: string | null;
+  needsUserGesture: boolean;
   currentTime: number;
   duration: number;
   buffered: number;
@@ -108,6 +110,7 @@ export function usePlayerEngine(
 ): PlayerEngine {
   const [state, setState] = useState<PlayerState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [needsUserGesture, setNeedsUserGesture] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
@@ -123,6 +126,7 @@ export function usePlayerEngine(
 
     setState("loading");
     setError(null);
+    setNeedsUserGesture(false);
 
     let cancelled = false;
     let garbageTimer: ReturnType<typeof setTimeout> | null = null;
@@ -211,6 +215,7 @@ export function usePlayerEngine(
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
       if (!cancelled) setState("playing");
+      setNeedsUserGesture(false);
       setError(null);
 
       if (!playingSince) {
@@ -251,9 +256,9 @@ export function usePlayerEngine(
     const onCanPlay = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
-      if (!cancelled && video.paused && state !== "playing" && state !== "loading") {
-        setState("ready");
-      }
+      // Ready is only emitted after an actual autoplay policy failure.
+      // A source that has loaded metadata but cannot play must remain monitored
+      // and automatically fail over instead of showing an inert Play button.
     };
     const onVolumeChange = () => { setVolumeState(video.volume); setMutedState(video.muted); };
     const onRateChange = () => setPlaybackRateState(video.playbackRate);
@@ -327,13 +332,31 @@ export function usePlayerEngine(
         if (!cancelled) {
           try {
             await video.play();
-          } catch {
-            // Autoplay bloqueado pelo navegador com som: inicia mutado para que o vídeo rode imediatamente
-            try {
-              video.muted = true;
-              await video.play();
-            } catch {
-              if (!cancelled) setState("ready");
+          } catch (playError) {
+            if (cancelled) return;
+            const kind = playbackFailureKind(playError);
+            if (kind === "gesture") {
+              // Try the browser-permitted muted playback. If that too is
+              // blocked, keep the Play button ready for a genuine user tap.
+              try {
+                video.muted = true;
+                await video.play();
+              } catch (mutedError) {
+                if (cancelled) return;
+                const mutedKind = playbackFailureKind(mutedError);
+                if (mutedKind === "gesture") {
+                  setNeedsUserGesture(true);
+                  setState("ready");
+                  setError(null);
+                } else if (mutedKind === "source") {
+                  setState("error");
+                  setError("Servidor recusou a reprodução. Buscando outra fonte…");
+                }
+                // AbortError is often caused by a concurrent source change.
+              }
+            } else if (kind === "source") {
+              setState("error");
+              setError("Fonte não conseguiu iniciar. Buscando outro servidor…");
             }
           }
         }
@@ -373,20 +396,36 @@ export function usePlayerEngine(
   const play = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
+    setNeedsUserGesture(false);
+    setError(null);
     try {
       await video.play();
       setState("playing");
-      setError(null);
-    } catch {
-      // Se o navegador bloqueou com áudio (política de autoplay), tenta tocar mutado
-      try {
-        video.muted = true;
-        await video.play();
-        setState("playing");
-        setError(null);
-      } catch (err2) {
-        setError("Toque na tela para iniciar o vídeo");
+    } catch (firstError) {
+      const kind = playbackFailureKind(firstError);
+      if (kind === "interrupted") return;
+      if (kind === "gesture") {
+        try {
+          video.muted = true;
+          await video.play();
+          setState("playing");
+          return;
+        } catch (mutedError) {
+          const nextKind = playbackFailureKind(mutedError);
+          if (nextKind === "interrupted") return;
+          if (nextKind === "gesture") {
+            setNeedsUserGesture(true);
+            setState("ready");
+            setError("Toque em reproduzir para iniciar o vídeo");
+            return;
+          }
+        }
       }
+      // A real decoding, transport or unsupported-format failure is not an
+      // autoplay permission error: move to the next ranked server.
+      setNeedsUserGesture(false);
+      setState("error");
+      setError("Falha ao iniciar a mídia. Tentando outro servidor…");
     }
   }, []);
 
