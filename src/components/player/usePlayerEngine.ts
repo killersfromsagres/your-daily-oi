@@ -572,6 +572,7 @@ export function usePlayerEngine(
   return {
     state,
     error,
+    needsUserGesture,
     currentTime,
     duration,
     buffered,
