@@ -573,7 +573,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     if (!s?.url || seen.has(s.url)) return false;
     seen.add(s.url);
     return true;
-  }), 10);
+  }), 6);
 
   return jsonResponse(
     {
