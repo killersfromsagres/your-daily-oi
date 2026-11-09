@@ -577,7 +577,7 @@ export async function resolveSushiEpisodeStream(
       return extractSushiMediaUrls(text).map((url): StreamSource => ({
         url, audio: audioTrack,
         format: url.toLowerCase().includes(".m3u8") ? "hls" : "mp4",
-        quality: /fullhd|hls/i.test(btn.name) ? "FHD" : "HD",
+        quality: /fullhd|fhd|1080/i.test(btn.name) ? "1080p" : /720/i.test(btn.name) ? "720p" : "Auto",
         priority: index,
       }));
     }));
