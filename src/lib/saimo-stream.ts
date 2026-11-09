@@ -193,7 +193,7 @@ async function getRedeflixSeries(): Promise<Map<string, RedeFlixSeriesEntry>> {
   try {
     const res = await fetch(`${CATALOG_BASE}/redeflix/links-series.txt`, {
       headers: { "User-Agent": BROWSER_UA, Accept: "text/plain, */*" },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const text = await res.text();
