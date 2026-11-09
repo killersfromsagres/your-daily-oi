@@ -18,6 +18,8 @@ export const isRelaySource = (url?: string | null): boolean => {
 
 export interface UsePlayerEngineOptions {
   expectedRuntimeMin?: number;
+  /** Reject short advertisement-only files, not regular short-form content. */
+  minContentSeconds?: number;
   attemptStage?: 0 | 1;
   onFatalError?: (reason: string) => void;
 }
@@ -177,6 +179,11 @@ export function usePlayerEngine(
       // Only an extremely short clip on a feature-length title is suspicious.
       const expectedMin = options?.expectedRuntimeMin;
       const d = video.duration;
+      if (options?.minContentSeconds && Number.isFinite(d) && d > 0 &&
+          d < options.minContentSeconds) {
+        triggerGarbageDetected(`Possível anúncio isolado (${Math.round(d)}s)`);
+        return true;
+      }
       if (expectedMin && expectedMin >= 40 && Number.isFinite(d) && d > 0 && d < 65) {
         triggerGarbageDetected(`Clip incompatível com filme completo (${Math.round(d)}s)`);
         return true;
@@ -361,7 +368,7 @@ export function usePlayerEngine(
       video.removeAttribute("src");
       video.load();
     };
-  }, [stream, options?.attemptStage, options?.expectedRuntimeMin]);
+  }, [stream, options?.attemptStage, options?.expectedRuntimeMin, options?.minContentSeconds]);
 
   const play = useCallback(async () => {
     const video = videoRef.current;
