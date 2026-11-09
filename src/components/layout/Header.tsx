@@ -1,11 +1,14 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
 import { detectDeviceProfile, isWatchRoute, type DeviceProfile } from "@/lib/device-profile";
 import { installTvRemoteNavigation } from "@/lib/tv-remote";
+import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
+import { SearchSuggestionList } from "@/components/search/SearchSuggestionList";
+import { searchSuggestionPath, type SearchSuggestion } from "@/lib/search-suggestions";
 
 interface HeaderProps {
   onSearch?: (q: string) => void;
@@ -58,6 +61,9 @@ export function Header({ onSearch }: HeaderProps) {
   const [seriesHover, setSeriesHover] = useState(false);
   const [animesHover, setAnimesHover] = useState(false);
   const [query, setQuery] = useState("");
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const suggestionsId = useId();
+  const { suggestions, status: suggestionStatus } = useLiveSuggestions(query, searchOpen);
   const [savedCount, setSavedCount] = useState(0);
   const [platform, setPlatform] = useState<DeviceProfile>("web");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -170,6 +176,7 @@ export function Header({ onSearch }: HeaderProps) {
       }
       if (e.key === "Escape") {
         setSearchOpen(false);
+        setActiveSuggestion(-1);
         setMoviesHover(false);
         setSeriesHover(false);
         setAnimesHover(false);
@@ -183,26 +190,57 @@ export function Header({ onSearch }: HeaderProps) {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        if (searchOpen && !query) {
-          setSearchOpen(false);
-        }
+        setSearchOpen(false);
+        setActiveSuggestion(-1);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchOpen, query]);
+  }, []);
 
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (query.trim()) {
-      void navigate({ to: "/busca", search: { q: query.trim() } });
+  const submitSearch = () => {
+    const term = query.trim();
+    if (!term) return;
+    setSearchOpen(false);
+    setActiveSuggestion(-1);
+    void navigate({ to: "/busca", search: { q: term } });
+  };
+
+  const chooseSuggestion = (item: SearchSuggestion) => {
+    setSearchOpen(false);
+    setActiveSuggestion(-1);
+    setQuery("");
+    onSearch?.("");
+    void navigate({ to: searchSuggestionPath(item) });
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (activeSuggestion >= 0 && suggestions[activeSuggestion]) {
+      chooseSuggestion(suggestions[activeSuggestion]);
+    } else {
+      submitSearch();
+    }
+  };
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown" && suggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion(prev => prev >= suggestions.length - 1 ? 0 : prev + 1);
+    } else if (event.key === "ArrowUp" && suggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion(prev => prev <= 0 ? suggestions.length - 1 : prev - 1);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setActiveSuggestion(-1);
       setSearchOpen(false);
     }
   };
 
-  const handleSearchChange = (q: string) => {
-    setQuery(q);
-    onSearch?.(q);
+  const handleSearchChange = (value: string) => {
+    setQuery(value);
+    setActiveSuggestion(-1);
+    onSearch?.(value);
   };
 
   return (
@@ -423,15 +461,21 @@ export function Header({ onSearch }: HeaderProps) {
       <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Sistema de Busca Minimalista e Profissional */}
         {searchOpen ? (
-          <form onSubmit={handleSearchSubmit} className="ydo-search-expand animate-scale-in">
+          <form onSubmit={handleSearchSubmit} className="ydo-search-expand" role="search">
             <Search size={15} className="ydo-search-icon" aria-hidden />
             <input
               ref={searchRef}
               type="search"
               value={query}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar filmes, séries, animes…"
-              aria-label="Buscar títulos"
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Filmes, séries e animes…"
+              aria-label="Buscar títulos e ver sugestões"
+              aria-autocomplete="list"
+              aria-controls={query.trim() ? suggestionsId : undefined}
+              aria-expanded={Boolean(query.trim())}
+              aria-activedescendant={activeSuggestion >= 0 && suggestions[activeSuggestion] ?
+                suggestionsId + "-option-" + activeSuggestion : undefined}
               autoComplete="off"
               className="ydo-search-input"
             />
@@ -440,6 +484,7 @@ export function Header({ onSearch }: HeaderProps) {
                 type="button"
                 onClick={() => {
                   setQuery("");
+                  setActiveSuggestion(-1);
                   onSearch?.("");
                   searchRef.current?.focus();
                 }}
@@ -454,6 +499,7 @@ export function Header({ onSearch }: HeaderProps) {
               onClick={() => {
                 setSearchOpen(false);
                 setQuery("");
+                setActiveSuggestion(-1);
                 onSearch?.("");
               }}
               className="ydo-search-close"
@@ -474,6 +520,18 @@ export function Header({ onSearch }: HeaderProps) {
           >
             <Search size={16} />
           </button>
+        )}
+        {searchOpen && Boolean(query.trim()) && (
+          <SearchSuggestionList
+            id={suggestionsId}
+            query={query}
+            items={suggestions}
+            status={suggestionStatus}
+            activeIndex={activeSuggestion}
+            onActiveChange={setActiveSuggestion}
+            onChoose={chooseSuggestion}
+            onViewAll={submitSearch}
+          />
         )}
       </div>
       <button type="button" className="ydo-mobile-menu-trigger"
