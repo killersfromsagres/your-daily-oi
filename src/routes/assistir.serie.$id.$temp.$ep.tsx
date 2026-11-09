@@ -175,6 +175,7 @@ function WatchSeriesPage() {
         onBack={() => void navigate({ to: `/serie/${effectiveSerie.id}` })}
       >
         <OwnPlayer
+          contentType="series"
           streams={streams}
           {...(effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl ? {poster: effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl} : {})}
           title={effectiveSerie.title}
