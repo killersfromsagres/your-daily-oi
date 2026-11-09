@@ -9,7 +9,7 @@ import {
 import { mobileTabActive, isWatchRoute } from "@/lib/device-profile";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { SearchSuggestionList } from "@/components/search/SearchSuggestionList";
-import { searchSuggestionPath, type SearchSuggestion } from "@/lib/search-suggestions";
+import type { SearchSuggestion } from "@/lib/search-suggestions";
 
 type Section = "filmes" | "series" | "animes";
 type MobileNavigationProps = {
@@ -93,7 +93,9 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
   };
   const chooseSuggestion = (item: SearchSuggestion) => {
     navigatingRef.current = true;
-    void navigate({ to: searchSuggestionPath(item) });
+    if (item.type === "f") void navigate({ to: "/filme/$id", params: { id: item.id } });
+    else if (item.type === "a") void navigate({ to: "/anime/$id", params: { id: item.id } });
+    else void navigate({ to: "/serie/$id", params: { id: item.id } });
     setSearch("");
     setActiveSearchSuggestion(-1);
     close();
