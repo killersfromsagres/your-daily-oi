@@ -179,6 +179,7 @@ function WatchMoviePage() {
         onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
       >
         <OwnPlayer
+          contentType="movie"
           streams={streams}
           poster={effectiveMovie.tmdb?.backdropUrl || effectiveMovie.posterUrl}
           title={effectiveMovie.title}
