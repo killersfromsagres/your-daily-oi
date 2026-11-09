@@ -17,12 +17,16 @@ export const Route = createFileRoute("/busca")({
 function SearchPage() {
   const { q } = Route.useSearch();
   const [items, setItems] = useState<CatalogItem[]>([]);
+  const [typedQuery, setTypedQuery] = useState(q);
   const [loading, setLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setSavedIds(new Set(getSavedList()));
   }, []);
+
+  // Header navigation and browser history can change the URL after mount.
+  useEffect(() => { setTypedQuery(q); }, [q]);
 
   useEffect(() => {
     let active = true;
@@ -44,10 +48,10 @@ function SearchPage() {
   }, []);
 
   const results = useMemo(() => {
-    if (!q.trim()) return items.slice(0, 60);
-    const norm = normalizeTitle(q);
+    if (!typedQuery.trim()) return items.slice(0, 60);
+    const norm = normalizeTitle(typedQuery);
     return items.filter((item) => normalizeTitle(item.title).includes(norm)).slice(0, 60);
-  }, [items, q]);
+  }, [items, typedQuery]);
 
   const toggleSaved = (id: string) => {
     toggleSavedStorage(id);
@@ -58,8 +62,17 @@ function SearchPage() {
     <main className="ydo-search-page">
       <div className="ydo-search-header">
         <Search size={20} aria-hidden />
-        <h1>{q ? `Resultados para "${q}"` : "Explorar catálogo"}</h1>
+        <h1>{typedQuery.trim() ? `Resultados para "${typedQuery.trim()}"` : "Explorar catálogo"}</h1>
         {!loading && <span className="ydo-search-count">{results.length} títulos</span>}
+      </div>
+      <div className="zf-search-page-field">
+        <Search size={19} aria-hidden="true" />
+        <input type="search" value={typedQuery}
+          onChange={event => setTypedQuery(event.target.value)}
+          placeholder="Pesquise por filmes, séries ou animes…"
+          aria-label="Pesquisar no catálogo em tempo real"
+          autoComplete="off" />
+        <span>Resultados atualizados ao digitar</span>
       </div>
 
       {loading ? (
