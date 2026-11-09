@@ -11,6 +11,7 @@
 import type { StreamSource, AudioTrack, StreamFormat } from "./types";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
 import { buildSaimoVodProxyUrl } from "./saimo-vod-url";
+import { advertisedVodResolution, playableVodSources, rejectedVodSourceReason } from "./vod-source-quality";
 
 const FENIX_BASE = "https://fenixflix.fenixhub.online";
 const CATALOG_BASE = process.env.SAIMO_VOD_PAGES || "https://filmes-saimo.pages.dev";
@@ -57,13 +58,11 @@ export function isHlsUrl(url: string): boolean {
 }
 
 export function detectVodQuality(url: string, name?: string): string {
-  const t = `${url} ${name || ""}`.toLowerCase();
-  if (t.includes("4k") || t.includes("2160") || t.includes("uhd")) return "4K";
-  if (t.includes("2k") || t.includes("1440") || t.includes("qhd")) return "2K";
-  if (t.includes("1080") || t.includes("fhd") || t.includes("fullhd")) return "1080p";
-  if (t.includes("720") || t.includes("hd")) return "720p";
-  if (t.includes("480") || t.includes("sd")) return "480p";
-  return "1080p";
+  const height = advertisedVodResolution({url,name});
+  if (!height) return "Auto";
+  if (height >= 2160) return "4K";
+  if (height >= 1440) return "2K";
+  return `${height}p`;
 }
 
 /**
@@ -154,7 +153,7 @@ async function getRedeflixFilmes(): Promise<Map<string, { title: string; streams
               streams.push({
                 url,
                 audio,
-                quality: "1080p",
+                quality: detectVodQuality(url),
                 format: isHlsUrl(url) ? "hls" : "mp4",
                 name: `Servidor Principal (${audio.toUpperCase()})`,
                 priority: 0,
@@ -225,7 +224,7 @@ async function getRedeflixSeries(): Promise<Map<string, RedeFlixSeriesEntry>> {
             current.episodes.get(key)!.push({
               url,
               audio,
-              quality: "1080p",
+              quality: detectVodQuality(url),
               format: isHlsUrl(url) ? "hls" : "mp4",
               name: `Servidor Principal (${audio.toUpperCase()})`,
               priority: 0,
@@ -274,20 +273,19 @@ async function queryFenixFlix(
           // Ignora redirects de domínios que estão temporariamente offline
           if (rawUrl.includes("fenixflix.fenixhub.online/r/")) continue;
 
-          const texto = `${String(st.name || "")} ${String(st.title || "")}`.toLowerCase();
-          const isLeg = texto.includes("leg") || texto.includes("sub") || texto.includes("legendado");
-          const audio: AudioTrack = isLeg ? "leg" : "dub";
+          const language = [st.audio, st.language, st.lang, st.name, st.title]
+            .filter(value => typeof value === "string").join(" ").toLowerCase();
+          const isDub = /(?:^|[^a-z0-9])(?:dub|dublado|dublagem|pt-br|pt_br|brasil|brazilian)(?:$|[^a-z0-9])/i.test(language);
+          const isLeg = /(?:^|[^a-z0-9])(?:leg|legendado|subtitle|subbed|original|english)(?:$|[^a-z0-9])/i.test(language);
+          const audioDeclared = isDub !== isLeg;
+          const audio: AudioTrack = isDub && !isLeg ? "dub" : "leg";
           const quality = detectVodQuality(rawUrl, String(st.name || ""));
           const format: StreamFormat = isHlsUrl(rawUrl) ? "hls" : "mp4";
-
-          sources.push({
-            name: String(st.name || `FenixFlix ${quality}`),
-            url: rawUrl,
-            audio,
-            quality,
-            format,
-            priority: 1,
-          });
+          const source: StreamSource = {
+            name: String(st.name || "FenixFlix"),
+            url: rawUrl, audio, audioDeclared, quality, format, priority: 1,
+          };
+          if (!rejectedVodSourceReason(source)) sources.push(source);
         }
       }
     }
@@ -501,7 +499,7 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
   const seen = new Set<string>();
   for (const outcome of settled) {
     if (outcome.status !== "fulfilled") continue;
-    for (const source of outcome.value) {
+    for (const source of playableVodSources(outcome.value)) {
       if (!source?.url || seen.has(source.url)) continue;
       seen.add(source.url);
       ordered.push(source);
