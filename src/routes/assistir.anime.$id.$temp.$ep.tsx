@@ -98,7 +98,10 @@ function WatchAnimePage() {
   // no navegador, então o arquivo correto do episódio precisa ser tentado primeiro.
   const seenUrls = new Set<string>();
   const streams: StreamSource[] = [
-    ...(foundEp?.streams || []),
+    ...(foundEp?.streams || []).map(source => ({
+      ...source, priority: -250,
+      name: source.name || `Temporada ${temp} · Episódio ${ep}`,
+    })),
     ...extraStreams,
   ].filter((s) => {
     if (!s?.url || seenUrls.has(s.url)) return false;
