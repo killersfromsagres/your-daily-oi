@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { getIndiceBases, expandBaseToken, isHlsUrl } from "./saimo-stream";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
+import { advertisedVodResolution } from "./vod-source-quality";
 
 // As URLs de catálogo:
 const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://filmes-saimo.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
@@ -67,23 +68,11 @@ function isValidUrl(url: string): boolean {
  * Detecta a qualidade/resolução real de um stream a partir da URL e/ou metadados
  */
 export function detectQuality(url: string, title?: string): string {
-  const target = `${url} ${title || ""}`.toLowerCase();
-  if (target.includes("4k") || target.includes("2160") || target.includes("uhd")) {
-    return "4K";
-  }
-  if (target.includes("2k") || target.includes("1440") || target.includes("qhd")) {
-    return "2K";
-  }
-  if (target.includes("1080") || target.includes("fhd") || target.includes("fullhd") || target.includes("1080p")) {
-    return "1080p";
-  }
-  if (target.includes("720") || target.includes("720p") || target.includes("hd")) {
-    return "720p";
-  }
-  if (target.includes("480") || target.includes("480p") || target.includes("sd")) {
-    return "480p";
-  }
-  return "Auto";
+  const height = advertisedVodResolution({url, name:title});
+  if (!height) return "Auto";
+  if (height >= 2160) return "4K";
+  if (height >= 1440) return "2K";
+  return `${height}p`;
 }
 
 function parseStreams(raw: string, audio: AudioTrack, bases: string[] = []): StreamSource[] {
