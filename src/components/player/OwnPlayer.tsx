@@ -211,6 +211,29 @@ export function OwnPlayer({
   }, [orderedStreams, preferredAudio]);
 
 
+  // Subtitle fallback can start before the verified Portuguese-dubbed source
+  // appears. Switch automatically when the dubbed result arrives, preserving
+  // the saved playback time, unless the viewer manually chose subtitles.
+  useEffect(() => {
+    if (preferredAudio !== "dub" || manualSelectionRef.current) return;
+    const active = orderedStreams[sourceIndex];
+    if (!active || active.audio === "dub") return;
+    const best = bestVodSourceIndex(orderedStreams, {
+      preferredAudio:"dub",
+      failedUrls:getFailedUrls(),
+      observedHeights:measuredHeightsRef.current,
+      excludedUrls:rejectedDuringPlaybackRef.current,
+    });
+    const candidate = best >= 0 ? orderedStreams[best] : null;
+    if (!candidate || candidate.audio !== "dub" || candidate.audioDeclared === false) return;
+    setSourceIndex(best);
+    setAttemptStage(0);
+    setResolvedDirectUrl(null);
+    setResolvedIsHls(null);
+    setDetectedQuality(null);
+    setAutoSwitchMsg("Selecionando áudio dublado…");
+  }, [orderedStreams, preferredAudio]);
+
   // B1/B2: Upscaling HQ via WebGL2 shaders
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hqEnabled, setHqEnabled] = useState(() => {
@@ -646,6 +669,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     const candidate = orderedStreams[next];
     if (!candidate) return;
     const claimedHeight = advertisedVodResolution(candidate);
+    if (source.audio === "dub" && candidate.audio !== "dub") return;
     // Try a declared HD alternative, or an unverified one if the actual
     // current video is clearly soft. Never switch to known lower resolution.
     if (claimedHeight !== null && claimedHeight <= height) return;
@@ -672,6 +696,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     });
     const candidate = next < 0 ? null : orderedStreams[next];
     if (!candidate || (advertisedVodResolution(candidate) || 720) <= actualHeight) return;
+    if (active.audio === "dub" && candidate.audio !== "dub") return;
     qualitySwitchesRef.current += 1;
     rejectedDuringPlaybackRef.current.add(active.url);
     setSourceIndex(next);
