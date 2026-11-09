@@ -146,7 +146,7 @@ export function PlayerControls({
         </div>
       </div>
 
-      {/* Linha de Controles Inferiores (Estilo Cinema Saimo / Netflix) */}
+      {/* Controles inferiores minimalistas do ZANG FLIX */}
       <div className="ydo-controls-row">
         {/* Esquerda: Play/Pause, 10s back/forward, Volume, Time, 2K/HD */}
         <div className="ydo-controls-left">
