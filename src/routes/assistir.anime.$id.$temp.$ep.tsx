@@ -174,6 +174,7 @@ function WatchAnimePage() {
         onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
       >
         <OwnPlayer
+          contentType="anime"
           streams={streams}
           {...(effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl ? {poster: effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl} : {})}
           title={effectiveAnime.title || "Anime"}
