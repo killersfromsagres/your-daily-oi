@@ -44,6 +44,7 @@ export function cleanDisplayTitle(title: string): string {
   }
   return decoded
     .replace(/^[#\s]+/, "")
+    .replace(/\+(?=[\p{L}\p{N}])/gu, " ")
     // Catalogues sometimes encode word separators as plus signs rather than spaces.
     // Do not rewrite literal C++ or an isolated "+" symbol.
     .replace(/(^|\s)\+(?=[\p{L}\p{N}])/gu, "$1")
@@ -271,7 +272,7 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     const itemObj = {
       id,
       type: tipo as "f" | "s" | "a",
-      title: cleanDisplayTitle(title),
+      title: tmdbId === 385687 && tipo === "f" ? "Velozes & Furiosos 10" : cleanDisplayTitle(title),
       tmdbId,
       posterPath: cleanPoster,
       posterUrl,
@@ -309,7 +310,7 @@ function parseDestaques(text: string): HighlightRow[] {
       if (lastRow) {
         rows.get(lastRow)!.push({
           type: tipo as "f" | "s",
-          title: title.trim(),
+          title: cleanDisplayTitle(title),
           letter: letter?.trim() ?? "",
           year: year?.trim() ?? "",
           posterPath: posterPath?.trim() ?? "",
