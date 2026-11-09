@@ -6,7 +6,7 @@ import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { saveProgress, getProgressById } from "@/lib/storage";
-import { buildSaimoVodProxyUrl } from "@/lib/saimo-vod-url";
+import { buildSaimoVodProxyUrl, buildSaimoVodPublicUrl } from "@/lib/saimo-vod-url";
 
 export const Route = createFileRoute("/assistir/filme/$id")({
   component: WatchMoviePage,
@@ -85,14 +85,20 @@ function WatchMoviePage() {
   const primaryStreams = useMemo<StreamSource[]>(() => {
     if (!movie?.tmdbId) return [];
     const movieId = String(movie.tmdbId);
-    return (["dub", "leg"] as const).map((audio) => ({
-      url: buildSaimoVodProxyUrl({ tipo: "movie", id: movieId, versao: audio }),
-      name: `Zang Flix · ${audio === "dub" ? "Dublado" : "Legendado"}`,
-      audio,
-      quality: "Auto",
-      format: "auto",
-      priority: -20,
-    }));
+    return (["dub", "leg"] as const).flatMap((audio): StreamSource[] => [
+      {
+        url: buildSaimoVodProxyUrl({ tipo: "movie", id: movieId, versao: audio }),
+        name: `Zang Flix · ${audio === "dub" ? "Dublado" : "Legendado"}`,
+        audio, quality: "Auto", format: "auto", priority: -20,
+      },
+      {
+        // If a Worker IP is blocked, the viewer's browser may still reach the
+        // original HTTPS media URL. The player keeps the proxy as a backup.
+        url: buildSaimoVodPublicUrl({ tipo: "movie", id: movieId, versao: audio }),
+        name: `Saimo · acesso direto (${audio.toUpperCase()})`,
+        audio, quality: "Auto", format: "auto", priority: 4,
+      },
+    ]);
   }, [movie?.tmdbId]);
 
   // Fontes estáveis: adicionar alternativas não reinicializa o vídeo que já toca.
