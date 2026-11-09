@@ -12,11 +12,11 @@ import {
   clearAllPlayerCaches,
   autoCleanPlayerCache,
   getFailedUrls,
-  getPreferredAudio,
   setPreferredAudio,
 } from "@/lib/player-storage";
 import { APP_VERSION } from "@/lib/version";
 import { proxyUrlForSaimoRelay } from "@/lib/saimo-vod-url";
+import { bestVodSourceIndex, playableVodSources, nextVodSourceIndex, advertisedVodResolution } from "@/lib/vod-source-quality";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
 const stage0FailedRelays = new Map<string, number>();
@@ -113,76 +113,10 @@ const getStreamUrlForStage = (
   return resolvedDirectUrl || rawUrl;
 };
 
-export function pickBestSourceIndex(
-  streams: StreamSource[],
-  preferredAudio: "dub" | "leg" = "dub"
-): number {
-  if (!streams || streams.length === 0) return 0;
-  const failedUrls = getFailedUrls();
-
-  const scoreStream = (s: StreamSource): number => {
-    let score = 0;
-
-    // +1000 se audio for o áudio preferido
-    if (s.audio === preferredAudio) {
-      score += 1000;
-    }
-
-    // +200 se formato for mp4 (reprodução garantida)
-    const fmt = s.format?.toLowerCase() || (s.url.includes(".mp4") ? "mp4" : s.url.includes(".m3u8") ? "hls" : "");
-    if (fmt === "mp4") {
-      score += 200;
-    }
-
-    // +100 x qualidade (4K=400, 2K=300, FHD/1080p=200, HD/720p=100)
-    const q = (s.quality || "").toUpperCase();
-    if (q.includes("4K")) {
-      score += 400;
-    } else if (q.includes("2K")) {
-      score += 300;
-    } else if (q.includes("FHD") || q.includes("1080")) {
-      score += 200;
-    } else if (q.includes("HD") || q.includes("720")) {
-      score += 100;
-    }
-
-    // Saimo via servidor do Zang Flix tem prioridade: aceita MP4 Range/206 sem CORS.
-    if (s.url.startsWith("/api/saimo-vod")) score += 2800;
-
-    // A1: Relay Saimo é a escolha primária (+2000) — mesma fonte FHD oficial do Saimo TV
-    if (s.url.includes("saimo-tv.pages.dev/api/stream")) {
-      score += 2000;
-    }
-
-    // A4: -300 se URL for http:// (incompatível com HTTPS direto no navegador, frequentemente bloqueia datacenter)
-    if (s.url.startsWith("http://")) {
-      score -= 300;
-    }
-
-    // -10 x priority (campo priority do servidor, 0 = principal, default 5)
-    const prio = typeof s.priority === "number" ? s.priority : 5;
-    score -= 10 * prio;
-
-    // -10000 se URL estiver no cache de fontes falhadas
-    if (failedUrls.has(s.url)) {
-      score -= 10000;
-    }
-
-    return score;
-  };
-
-  let bestIndex = 0;
-  let bestScore = -Infinity;
-
-  for (let i = 0; i < streams.length; i++) {
-    const sc = scoreStream(streams[i]);
-    if (sc > bestScore) {
-      bestScore = sc;
-      bestIndex = i;
-    }
-  }
-
-  return bestIndex;
+/** Backward compatible selector for existing UI and tests. */
+export function pickBestSourceIndex(streams: StreamSource[], preferredAudio: "dub" | "leg" = "dub"): number {
+  const index = bestVodSourceIndex(streams, {preferredAudio, failedUrls: getFailedUrls()});
+  return Math.max(0, index);
 }
 
 export function OwnPlayer({
@@ -206,7 +140,7 @@ export function OwnPlayer({
   // URL under the video element and caused unexpected playback restarts.
   const stableSourcesRef = useRef<StreamSource[]>([]);
   const orderedStreams = useMemo(() => {
-    const candidates = sortStreamsByHealth(streams);
+    const candidates = sortStreamsByHealth(playableVodSources(streams));
     const urls = new Set(candidates.map(item => item.url));
     const retained = stableSourcesRef.current.filter(item => urls.has(item.url));
     const existing = new Set(retained.map(item => item.url));
@@ -216,10 +150,9 @@ export function OwnPlayer({
     return result;
   }, [streams]);
 
-  const [sourceIndex, setSourceIndex] = useState(() => {
-    const audio = typeof window !== "undefined" ? getPreferredAudio() : preferredAudio;
-    return pickBestSourceIndex(orderedStreams, audio);
-  });
+  // A new title starts with Portuguese dubbing even if subtitles were chosen
+  // manually on a previous film. Explicit manual changes still work here.
+  const [sourceIndex, setSourceIndex] = useState(() => pickBestSourceIndex(orderedStreams, preferredAudio));
   const [attemptStage, setAttemptStage] = useState<0 | 1>(0);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -227,6 +160,11 @@ export function OwnPlayer({
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [detectedQuality, setDetectedQuality] = useState<string | null>(null);
   const autoSwitchCountRef = useRef(0);
+  const rejectedDuringPlaybackRef = useRef(new Set<string>());
+  const measuredHeightsRef = useRef(new Map<string,number>());
+  const manualSelectionRef = useRef(false);
+  const qualitySwitchesRef = useRef(0);
+  const hasEverPlayedRef = useRef(false);
   const pendingPlayRef = useRef<{ clickedAt: number } | null>(null);
   const lastProgressRef = useRef<{ time: number; at: number } | null>(null);
   const resolvedRelaysRef = useRef<Map<string, { finalUrl: string; isHls: boolean }>>(new Map());
@@ -234,8 +172,44 @@ export function OwnPlayer({
   const [resolvedDirectUrl, setResolvedDirectUrl] = useState<string | null>(null);
   const [resolvedIsHls, setResolvedIsHls] = useState<boolean | null>(null);
 
-  // A4: Rastreia se o vídeo já tocou alguma vez (para chaveamento silencioso no carregamento inicial)
-  const hasEverPlayedRef = useRef(false);
+  const chooseNextApprovedSource = useCallback((): boolean => {
+    const current = orderedStreams[sourceIndex];
+    if (current) rejectedDuringPlaybackRef.current.add(current.url);
+    const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
+      preferredAudio,
+      failedUrls: getFailedUrls(),
+      observedHeights: measuredHeightsRef.current,
+    });
+    if (next < 0) return false;
+    setSourceIndex(next);
+    setAttemptStage(0);
+    setResolvedDirectUrl(null);
+    setResolvedIsHls(null);
+    setDetectedQuality(null);
+    setAutoSwitchMsg(null);
+    return true;
+  }, [orderedStreams, sourceIndex, preferredAudio]);
+
+  // A newly discovered high-quality dub can win while the first source is
+  // still loading, but a film that already plays is never restarted merely
+  // because an unrelated provider finished its request.
+  useEffect(() => {
+    if (hasEverPlayedRef.current || manualSelectionRef.current || orderedStreams.length === 0) return;
+    const best = bestVodSourceIndex(orderedStreams, {
+      preferredAudio, failedUrls: getFailedUrls(),
+      observedHeights: measuredHeightsRef.current,
+      excludedUrls: rejectedDuringPlaybackRef.current,
+    });
+    if (best < 0) return;
+    setSourceIndex(previous => {
+      if (previous === best) return previous;
+      setAttemptStage(0);
+      setResolvedDirectUrl(null);
+      setResolvedIsHls(null);
+      return best;
+    });
+  }, [orderedStreams, preferredAudio]);
+
 
   // B1/B2: Upscaling HQ via WebGL2 shaders
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -423,11 +397,8 @@ export function OwnPlayer({
           setAutoSwitchMsg("Trocando de servidor…");
         }
         const timer = setTimeout(() => {
-          setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
-          setAttemptStage(0);
-          setResolvedDirectUrl(null);
-          setResolvedIsHls(null);
-          setAutoSwitchMsg(null);
+          chooseNextApprovedSource();
+
         }, 800);
         return () => clearTimeout(timer);
       }
@@ -449,11 +420,8 @@ export function OwnPlayer({
             setAutoSwitchMsg("Trocando de servidor…");
           }
           const timer = setTimeout(() => {
-            setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
-            setAttemptStage(0);
-            setResolvedDirectUrl(null);
-            setResolvedIsHls(null);
-            setAutoSwitchMsg(null);
+            chooseNextApprovedSource();
+
           }, 800);
           return () => clearTimeout(timer);
         }
@@ -480,15 +448,12 @@ export function OwnPlayer({
         setAutoSwitchMsg("Trocando de servidor…");
       }
       const timer = setTimeout(() => {
-        setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
-        setAttemptStage(0);
-        setResolvedDirectUrl(null);
-        setResolvedIsHls(null);
-        setAutoSwitchMsg(null);
+        chooseNextApprovedSource();
+
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [engine.state, rawStream, attemptStage, orderedStreams.length]);
+  }, [engine.state, rawStream, attemptStage, orderedStreams.length, chooseNextApprovedSource]);
 
   // O selo de troca automática some assim que qualquer fonte entra em reprodução
   useEffect(() => {
@@ -523,11 +488,8 @@ export function OwnPlayer({
               autoSwitchCountRef.current++;
               if (autoSwitchCountRef.current <= orderedStreams.length * 2) {
                 setAutoSwitchMsg("Trocando de servidor…");
-                setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
-                setAttemptStage(0);
-                setResolvedDirectUrl(null);
-                setResolvedIsHls(null);
-                setTimeout(() => setAutoSwitchMsg(null), 1200);
+                chooseNextApprovedSource();
+setTimeout(() => setAutoSwitchMsg(null), 1200);
               }
             }
             return;
@@ -561,17 +523,14 @@ export function OwnPlayer({
           autoSwitchCountRef.current++;
           if (autoSwitchCountRef.current <= orderedStreams.length * 2) {
             setAutoSwitchMsg("Trocando de servidor…");
-            setSourceIndex((prev) => (prev + 1) % orderedStreams.length);
-            setAttemptStage(0);
-            setResolvedDirectUrl(null);
-            setResolvedIsHls(null);
-            setTimeout(() => setAutoSwitchMsg(null), 1200);
+            chooseNextApprovedSource();
+setTimeout(() => setAutoSwitchMsg(null), 1200);
           }
         }
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [engine.state, engine.currentTime, engine.buffered, rawStream, orderedStreams.length]);
+  }, [engine.state, engine.currentTime, engine.buffered, rawStream, orderedStreams.length, chooseNextApprovedSource]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
@@ -668,6 +627,59 @@ export function OwnPlayer({
     return () => document.removeEventListener("keydown", handler);
   }, [engine, handlePlay]);
 
+  const measureAndImproveQuality = useCallback(() => {
+    updateVideoResolution();
+    const video = videoRef.current;
+    const source = orderedStreams[sourceIndex];
+    if (!video || !source || video.videoHeight <= 0) return;
+    const height = video.videoHeight;
+    measuredHeightsRef.current.set(source.url, height);
+
+    if (manualSelectionRef.current || height >= 700 || qualitySwitchesRef.current >= 3) return;
+    if (rejectedDuringPlaybackRef.current.has(source.url)) return;
+
+    const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
+      preferredAudio, observedHeights: measuredHeightsRef.current,
+      failedUrls: getFailedUrls(),
+    });
+    if (next < 0) return;
+    const candidate = orderedStreams[next];
+    const claimedHeight = advertisedVodResolution(candidate);
+    // Try a declared HD alternative, or an unverified one if the actual
+    // current video is clearly soft. Never switch to known lower resolution.
+    if (claimedHeight !== null && claimedHeight <= height) return;
+    qualitySwitchesRef.current += 1;
+    rejectedDuringPlaybackRef.current.add(source.url);
+    setAutoSwitchMsg("Buscando imagem de melhor qualidade…");
+    setSourceIndex(next);
+    setAttemptStage(0);
+    setResolvedDirectUrl(null);
+    setResolvedIsHls(null);
+    setDetectedQuality(null);
+  }, [orderedStreams, sourceIndex, preferredAudio, updateVideoResolution]);
+
+  // Also reconsider the choice if a verified HD alternative arrives after a
+  // low-resolution stream was already accepted from the initial catalogue.
+  useEffect(() => {
+    const active = orderedStreams[sourceIndex];
+    if (!active || manualSelectionRef.current || qualitySwitchesRef.current >= 3) return;
+    const actualHeight = measuredHeightsRef.current.get(active.url);
+    if (!actualHeight || actualHeight >= 700) return;
+    const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
+      preferredAudio, observedHeights: measuredHeightsRef.current,
+      failedUrls: getFailedUrls(),
+    });
+    if (next < 0 || (advertisedVodResolution(orderedStreams[next]) || 720) <= actualHeight) return;
+    qualitySwitchesRef.current += 1;
+    rejectedDuringPlaybackRef.current.add(active.url);
+    setSourceIndex(next);
+    setAttemptStage(0);
+    setResolvedDirectUrl(null);
+    setResolvedIsHls(null);
+    setDetectedQuality(null);
+    setAutoSwitchMsg("Buscando imagem de melhor qualidade…");
+  }, [orderedStreams, sourceIndex, preferredAudio]);
+
   const sources = orderedStreams.map((s, i) => {
     let cleanName = (s.name || `Servidor ${i + 1}`).replace(/\s*\((?:dub|leg)[a-z]*\)$/i, "").trim();
     if (!cleanName) cleanName = `Servidor ${i + 1}`;
@@ -685,6 +697,9 @@ export function OwnPlayer({
     pendingPlayRef.current = null;
     lastProgressRef.current = null;
     autoSwitchCountRef.current = 0;
+    manualSelectionRef.current = true;
+    rejectedDuringPlaybackRef.current.clear();
+    qualitySwitchesRef.current = 0;
     setSourceIndex(i);
     setAttemptStage(0);
     setResolvedDirectUrl(null);
@@ -734,8 +749,8 @@ export function OwnPlayer({
         preload="metadata"
         aria-label={title ?? "Vídeo"}
         onClick={handleOverlayClick}
-        onLoadedMetadata={updateVideoResolution}
-        onCanPlay={updateVideoResolution}
+        onLoadedMetadata={measureAndImproveQuality}
+        onCanPlay={measureAndImproveQuality}
         style={{
           opacity: enhancer.active ? 0 : 1,
           transition: "opacity 0.25s ease-in-out",
@@ -890,6 +905,15 @@ export function OwnPlayer({
         </div>
       </div>
 
+      {/* Never play a source positively identified as cinema capture or betting-ad media. */}
+      {orderedStreams.length === 0 && (
+        <div className="ydo-player-overlay ydo-player-error-overlay">
+          <AlertCircle size={38} aria-hidden style={{color:"#e8b44a"}} />
+          <h3>Sem servidor de qualidade verificada disponível</h3>
+          <p>Não encontramos fontes adequadas para esta reprodução agora.</p>
+          {onBack && <button className="ydo-btn-secondary" onClick={onBack}>Voltar</button>}
+        </div>
+      )}
       {/* Loading */}
       {engine.state === "loading" && (
         <div className="ydo-player-overlay" aria-live="polite">
@@ -917,9 +941,11 @@ export function OwnPlayer({
                 pendingPlayRef.current = null;
                 lastProgressRef.current = null;
                 autoSwitchCountRef.current = 0;
-                const audio = getPreferredAudio();
-                const bestIdx = pickBestSourceIndex(orderedStreams, audio);
-                setSourceIndex(bestIdx);
+                manualSelectionRef.current = false;
+                rejectedDuringPlaybackRef.current.clear();
+                measuredHeightsRef.current.clear();
+                qualitySwitchesRef.current = 0;
+                setSourceIndex(pickBestSourceIndex(orderedStreams, "dub"));
                 setAttemptStage(0);
                 setResolvedDirectUrl(null);
                 setResolvedIsHls(null);
@@ -954,7 +980,7 @@ export function OwnPlayer({
           isFullscreen={isFullscreen}
           sources={sources}
           currentSourceIndex={sourceIndex}
-          detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "1080p"}
+          detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "Auto"}
           onPlay={handlePlay}
           onPause={engine.pause}
           onSeek={engine.seek}
