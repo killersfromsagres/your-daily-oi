@@ -172,15 +172,14 @@ export function usePlayerEngine(
       // streams legítimos de anime podem ter apenas 240p/320x180.
       // Só a duração incompatível com duração real conhecida é sinal forte.
 
-      // (c) Duração incompatível com duração esperada do filme/série
+      // A runtime estimate is not proof of corrupt content. OVAs, shorts,
+      // specials and split episodes can legitimately be far shorter than TMDB.
+      // Only an extremely short clip on a feature-length title is suspicious.
       const expectedMin = options?.expectedRuntimeMin;
       const d = video.duration;
-      if (expectedMin && Number.isFinite(d) && d > 0) {
-        const minAcceptableSec = Math.min(expectedMin * 60 * 0.5, 600);
-        if (d < minAcceptableSec) {
-          triggerGarbageDetected(`Duração de anúncio/curto (${Math.round(d)}s < ${Math.round(minAcceptableSec)}s esperado)`);
-          return true;
-        }
+      if (expectedMin && expectedMin >= 40 && Number.isFinite(d) && d > 0 && d < 65) {
+        triggerGarbageDetected(`Clip incompatível com filme completo (${Math.round(d)}s)`);
+        return true;
       }
 
       return false;
