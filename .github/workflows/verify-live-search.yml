@@ -1,0 +1,36 @@
+name: Verify live catalog search
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/components/search/**"
+      - "src/components/layout/Header.tsx"
+      - "src/components/layout/MobileNavigation.tsx"
+      - "src/lib/search-suggestions.ts"
+      - "src/routes/busca.tsx"
+      - "src/routes/__root.tsx"
+      - "src/styles/search-autocomplete.css"
+      - "src/server.ts"
+      - "tests/search-autocomplete.test.ts"
+      - "scripts/typecheck-search.mjs"
+      - ".github/workflows/verify-live-search.yml"
+  pull_request:
+    branches: [main]
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Suggestions ranking, accent handling and routes
+        run: bun test tests/search-autocomplete.test.ts
+      - name: Search typecheck
+        run: bun scripts/typecheck-search.mjs
+      - name: Production build
+        run: bun run build
