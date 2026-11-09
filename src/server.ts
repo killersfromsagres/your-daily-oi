@@ -491,7 +491,9 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   const effectiveTmdbId = item?.tmdbId || (isNumeric ? numId : undefined);
   const effectiveTitle = item?.title || (isNumeric ? "" : id);
 
-  const resolvedSources = await resolveVodStreams({
+  // Resolve providers, exact catalog episode and anime backup independently.
+  // A slow CDN must never block the Saimo episode catalog or the other sources.
+  const providersTask = resolveVodStreams({
     tipo,
     id,
     tmdbId: effectiveTmdbId,
@@ -500,43 +502,40 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     episode: ep,
   });
 
-  const orderedSources: any[] = [...resolvedSources];
-
-  // Adiciona fontes do catálogo local com expansão
-  if (item) {
+  const catalogTask = (async (): Promise<StreamSource[]> => {
+    if (!item) return [];
     if (item.type === "f") {
-      try {
-        const directStreams = await getStreamsForItem("f", item.title);
-        if (directStreams && directStreams.length > 0) {
-          orderedSources.push(...directStreams);
-        }
-      } catch {}
-    } else {
-      try {
-        const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
-        const linked = item.type === "a" && !seasons.length
-          ? await getSeasonsForSeries(item.title, "s") : [];
-        const foundSeason = (seasons.length ? seasons : linked).find((s) => s.seasonNumber === temp);
-        const foundEp = foundSeason?.episodes.find((e) => e.episodeNumber === ep);
-        if (foundEp?.streams && foundEp.streams.length > 0) {
-          orderedSources.push(...foundEp.streams);
-        }
-      } catch {}
+      return getStreamsForItem("f", item.title);
     }
-  }
+    const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
+    const fallback = item.type === "a" && !seasons.length
+      ? await getSeasonsForSeries(item.title, "s") : [];
+    const epData = (seasons.length ? seasons : fallback)
+      .find(season => season.seasonNumber === temp)
+      ?.episodes.find(part => part.episodeNumber === ep);
+    return (epData?.streams || []).map(source => ({
+      ...source,
+      // Explicit season/episode records outrank generic series redirects.
+      priority: -250,
+      name: source.name || `Episódio T${temp} E${ep}`,
+    }));
+  })();
 
-  // Fonte Sushi por último; não substitui o episódio real encontrado no acervo
-  // nem impede o failover para o Saimo quando um player externo não responde.
-  if (typeKey === "a") {
-    try {
-      const sushiSources = await Promise.race([
+  const sushiTask: Promise<StreamSource[]> = typeKey === "a"
+    ? Promise.race([
         resolveSushiEpisodeStream(id, temp, ep),
-        new Promise<Awaited<ReturnType<typeof resolveSushiEpisodeStream>>>(
-          resolve => setTimeout(() => resolve([]), 4500)),
-      ]);
-      orderedSources.push(...sushiSources);
-    } catch { /* A fonte principal continua acessível. */ }
-  }
+        new Promise<StreamSource[]>(resolve => setTimeout(() => resolve([]), 7500)),
+      ])
+    : Promise.resolve([]);
+
+  const [catalogResult, providerResult, sushiResult] = await Promise.allSettled([
+    catalogTask, providersTask, sushiTask,
+  ]);
+  const orderedSources: StreamSource[] = [
+    ...(catalogResult.status === "fulfilled" ? catalogResult.value : []),
+    ...(providerResult.status === "fulfilled" ? providerResult.value : []),
+    ...(sushiResult.status === "fulfilled" ? sushiResult.value : []),
+  ];
 
   // Resolução em paralelo de redirecionadores legados (dbonline, corruptx, etc.) para URLs finais https
   const finalSources = await Promise.all(
