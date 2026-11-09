@@ -52,7 +52,7 @@ export function vodSourceScore(source: StreamSource, options: VodSourceSelection
 
   const preferred = options.preferredAudio || "dub";
   // Prioritize Brazilian Portuguese dubbing over a high resolution subtitle-only version.
-  let score = source.audio === preferred ? 7000 : 0;
+  let score = source.audio === preferred ? (source.audioDeclared === false ? 1600 : 7000) : 0;
   const observedHeight = options.observedHeights?.get(source.url);
   const advertised = advertisedVodResolution(source);
   const resolution = observedHeight && observedHeight > 0 ? observedHeight : advertised;
