@@ -132,6 +132,7 @@ export function usePlayerEngine(
     let garbageTimer: ReturnType<typeof setTimeout> | null = null;
     let frozenCheckInterval: ReturnType<typeof setInterval> | null = null;
     let playingSince: number | null = null;
+    let hasStartedPlaying = false;
 
     const isRelay = isRelaySource(stream.url);
 
@@ -214,6 +215,7 @@ export function usePlayerEngine(
     const onPlaying = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
+      hasStartedPlaying = true;
       if (!cancelled) setState("playing");
       setNeedsUserGesture(false);
       setError(null);
@@ -251,7 +253,11 @@ export function usePlayerEngine(
       }
     }, 1000);
 
-    const onPause = () => { if (!cancelled && !video.ended) setState("paused"); };
+    const onPause = () => {
+      // Pause events during source replacement or a rejected autoplay are
+      // not intentional user pauses and must not disable startup recovery.
+      if (!cancelled && hasStartedPlaying && !video.ended) setState("paused");
+    };
     const onEnded_ = () => { if (!cancelled) { setState("paused"); onEnded?.(); } };
     const onCanPlay = () => {
       metadataLoaded = true;
