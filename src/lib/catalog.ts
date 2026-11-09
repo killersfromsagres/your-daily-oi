@@ -272,7 +272,7 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     const itemObj = {
       id,
       type: tipo as "f" | "s" | "a",
-      title: tmdbId === 385687 && tipo === "f" ? "Velozes & Furiosos 10" : cleanDisplayTitle(title),
+      title: cleanDisplayTitle(title),
       tmdbId,
       posterPath: cleanPoster,
       posterUrl,
