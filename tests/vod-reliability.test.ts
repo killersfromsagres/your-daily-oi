@@ -1,6 +1,6 @@
 // tests/vod-reliability.test.ts — Bun; film, series, anime and provider failover regressions.
 import { describe, expect, test, afterEach } from "bun:test";
-import { parseSushiEpisodeSeasons } from "../src/lib/sushianimes";
+import { parseSushiEpisodeSeasons, extractSushiMediaUrls } from "../src/lib/sushianimes";
 import { buildSaimoVodPublicUrl, buildSaimoVodProxyUrl } from "../src/lib/saimo-vod-url";
 import { resolveVodStreams } from "../src/lib/saimo-stream";
 
@@ -31,6 +31,21 @@ describe("Anime: season and episode parsing", () => {
     ].join("");
     expect(parseSushiEpisodeSeasons(html)[0]?.episodes).toHaveLength(1);
     expect(parseSushiEpisodeSeasons('<p>No episodes</p>')).toEqual([]);
+  });
+});
+
+describe("Anime: embedded source formats", () => {
+  test("extracts a playable source from HTML and JSON-escaped media strings", () => {
+    const html = '<script>playerEmbed="https://cdn.example.com/a.m3u8?token=abc";</script>';
+    expect(extractSushiMediaUrls(html)).toEqual(["https://cdn.example.com/a.m3u8?token=abc"]);
+    const json = JSON.stringify({html:"<video src=\"https://cdn.example.com/b.mp4\" />"});
+    expect(extractSushiMediaUrls(json)).toContain("https://cdn.example.com/b.mp4");
+    const escaped = '{"url":"https:\\/\\/cdn.example.com\\/c.m3u8"}';
+    expect(extractSushiMediaUrls(escaped)).toContain("https://cdn.example.com/c.m3u8");
+  });
+  test("does not report an HTML iframe page as a direct video", () => {
+    expect(extractSushiMediaUrls('<iframe src="https://player.example/embed/123"></iframe>')).toEqual([]);
+    expect(extractSushiMediaUrls('http://cdn.example.com/movie.mp4')).toEqual([]);
   });
 });
 
