@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Play, Plus, Check, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
-import { cleanDisplayTitle, isAnimeItem } from "@/lib/catalog";
+import { catalogDisplayTitle, isAnimeItem } from "@/lib/catalog";
 
 interface MediaCardProps {
   item: CatalogItem;
@@ -130,7 +130,7 @@ export function MediaCard({
 
       <div className="ydo-card-info">
         <Link to={detailPath} className="ydo-card-title">
-          {cleanDisplayTitle(item.title)}
+          {catalogDisplayTitle(item)}
         </Link>
         <div className="ydo-card-meta">
           {item.tmdb?.releaseYear && <span>{item.tmdb.releaseYear}</span>}
