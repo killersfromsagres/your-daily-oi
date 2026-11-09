@@ -935,7 +935,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         </button>
       )}
 
-      {/* Barra de Topo do Player (Estilo Netflix / Saimo TV) */}
+      {/* Barra superior do player ZANG FLIX */}
       <div className={`ydo-player-topbar${controlsVisible ? " visible" : ""}`}>
         {onBack && (
           <button
