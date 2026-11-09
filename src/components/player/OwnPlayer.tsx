@@ -19,7 +19,8 @@ import { APP_VERSION } from "@/lib/version";
 import { proxyUrlForSaimoRelay } from "@/lib/saimo-vod-url";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
-const stage0FailedRelays = new Set<string>();
+const stage0FailedRelays = new Map<string, number>();
+const RELAY_FAILURE_TTL_MS = 90_000;
 
 interface OwnPlayerProps {
   streams: StreamSource[];
@@ -289,8 +290,11 @@ export function OwnPlayer({
   // Pula estágio 0 (HLS probe) se este relay já falhou HLS na sessão
   useEffect(() => {
     if (rawStream?.url && isRelaySource(rawStream.url)) {
-      if (stage0FailedRelays.has(rawStream.url)) {
+      const failedAt = stage0FailedRelays.get(rawStream.url);
+      if (failedAt && Date.now() - failedAt < RELAY_FAILURE_TTL_MS) {
         setAttemptStage(1);
+      } else {
+        stage0FailedRelays.delete(rawStream.url);
       }
     }
   }, [rawStream?.url]);
@@ -401,7 +405,7 @@ export function OwnPlayer({
       if (isRelaySource(rawStream.url)) {
         if (attemptStage === 0) {
           console.warn(`[OwnPlayer] Relay direto falhou para ${rawStream.url}. Tentando o proxy de mídia com Range...`);
-          stage0FailedRelays.add(rawStream.url);
+          stage0FailedRelays.set(rawStream.url, Date.now());
           setAttemptStage(1);
           return;
         }
