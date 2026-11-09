@@ -185,3 +185,29 @@ html[data-zf-platform="tv"] .zf-search-result-meta strong {font-size:18px;}
   .zf-search-spinner {animation:none;}
   .zf-search-result,.zf-search-view-all {transition:none;}
 }
+
+/* The dedicated results page also filters the loaded catalog on every keypress. */
+.zf-search-page-field {
+  display:flex;align-items:center;gap:12px;
+  width:min(100%,790px);min-height:52px;
+  margin:18px 0 25px;padding:0 16px;
+  border:1px solid rgba(240,194,127,.34);border-radius:14px;
+  background:#151d2b;color:#f0c890;
+  box-shadow:inset 0 1px rgba(255,255,255,.055);
+}
+.zf-search-page-field:focus-within {border-color:#f4cc8f;}
+.zf-search-page-field input {
+  flex:1;min-width:0;min-height:50px;
+  border:0;outline:0;background:transparent;
+  color:#f9fafc;font-size:15px;font-weight:500;
+}
+.zf-search-page-field input::placeholder {color:#8899b0;}
+.zf-search-page-field span {
+  flex:0 0 auto;font-size:10px;font-weight:750;color:#b9a17c;
+  white-space:nowrap;
+}
+@media(max-width:660px) {
+  .zf-search-page-field {min-height:48px;margin:13px 0 18px;gap:9px;padding:0 12px;}
+  .zf-search-page-field input {min-height:46px;font-size:16px;}
+  .zf-search-page-field span {display:none;}
+}
