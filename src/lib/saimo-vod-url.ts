@@ -38,6 +38,19 @@ export function buildSaimoVodProxyUrl(params: SaimoVodParams): string {
   return `/api/saimo-vod?${query.toString()}`;
 }
 
+/** Public browser-side fallback when the datacenter cannot reach a media CDN. */
+export function buildSaimoVodPublicUrl(params: SaimoVodParams): string {
+  const upstream = new URL("https://saimo-tv.pages.dev/api/stream");
+  upstream.searchParams.set("tipo", params.tipo);
+  upstream.searchParams.set("id", params.id);
+  upstream.searchParams.set("versao", params.versao);
+  if (params.tipo === "series") {
+    upstream.searchParams.set("temp", String(params.temp ?? 1));
+    upstream.searchParams.set("ep", String(params.ep ?? 1));
+  }
+  return upstream.toString();
+}
+
 export function proxyUrlForSaimoRelay(raw: string): string | null {
   try {
     const url = new URL(raw);
