@@ -15,7 +15,7 @@ import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { handleLiveFormatApi } from "./lib/live-probe";
 import { isLivePlaylistTarget } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
-import type { CatalogItem, SeasonItem, HighlightRow } from "./lib/types";
+import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
 
 type ServerEntry = {
