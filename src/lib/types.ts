@@ -10,6 +10,8 @@ export interface StreamSource {
   audio: AudioTrack;
   priority?: number;
   quality?: string;
+  /** Whether a provider actually labelled the language, rather than our best guess. */
+  audioDeclared?: boolean;
 }
 
 export interface CastMember {
