@@ -663,7 +663,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     }
     // HLS starts at a lower adaptive bitrate on purpose. Allow its ABR engine
     // to ramp up before deciding the actual delivered image is low quality.
-    const adaptive = source.format === "hls" || /\\.m3u8(?:$|\\?)/i.test(source.url);
+    const adaptive = isHlsStream(source.url, source.format);
     const firstSeen = metadataFirstSeenRef.current.get(source.url) || Date.now();
     if (adaptive && Date.now() - firstSeen < 9000) return;
 
@@ -953,7 +953,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       {orderedStreams.length === 0 && (
         <div className="ydo-player-overlay ydo-player-error-overlay">
           <AlertCircle size={38} aria-hidden style={{color:"#e8b44a"}} />
-          <h3>Sem servidor de qualidade verificada disponível</h3>
+          <h3>Sem servidor adequado disponível</h3>
           <p>Não encontramos fontes adequadas para esta reprodução agora.</p>
           {onBack && <button className="ydo-btn-secondary" onClick={onBack}>Voltar</button>}
         </div>
