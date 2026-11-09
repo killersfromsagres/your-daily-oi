@@ -5,6 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
+import { shortlistVodSources } from "@/lib/vod-source-quality";
 import { saveProgress, getProgressById } from "@/lib/storage";
 import { getEpisodeProgress, saveEpisodeProgress, setEpisodeWatched } from "@/lib/episode-progress";
 
@@ -97,7 +98,7 @@ function WatchSeriesPage() {
   // do Saimo: o relay de séries já foi observado servindo o episódio 1 da temporada 1
   // no navegador, então o arquivo correto do episódio precisa ser tentado primeiro.
   const seenUrls = new Set<string>();
-  const streams: StreamSource[] = [
+  const streams: StreamSource[] = shortlistVodSources([
     ...(foundEp?.streams || []).map(source => ({
       ...source, priority: -250,
       name: source.name || `Temporada ${temp} · Episódio ${ep}`,
@@ -107,7 +108,7 @@ function WatchSeriesPage() {
     if (!s?.url || seenUrls.has(s.url)) return false;
     seenUrls.add(s.url);
     return true;
-  });
+  }), 6);
 
   if (streams.length === 0) {
     return (
