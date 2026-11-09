@@ -18,6 +18,7 @@ import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
+import { playableVodSources } from "./lib/vod-source-quality";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -565,7 +566,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
 
   // Deduplicação estrita de URLs
   const seen = new Set<string>();
-  const dedupedSources = finalSources.filter((s) => {
+  const dedupedSources = playableVodSources(finalSources).filter((s) => {
     if (!s?.url || seen.has(s.url)) return false;
     seen.add(s.url);
     return true;
