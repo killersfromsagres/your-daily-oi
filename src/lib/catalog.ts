@@ -33,24 +33,33 @@ export function getCatalogSourceStatus() {
 const CACHE_TTL = 30 * 60 * 1000;
 const STREAM_TTL = 15 * 60 * 1000;
 
+/** Converts URL-encoded catalogue titles into readable Portuguese labels.
+ * The catalogue ID remains unchanged; only title matching and display use it.
+ */
+export function cleanDisplayTitle(title: string): string {
+  if (!title) return "";
+  let decoded = title.trim();
+  if (/%[a-f0-9]{2}/i.test(decoded)) {
+    try { decoded = decodeURIComponent(decoded); } catch { /* Keep original text. */ }
+  }
+  return decoded
+    .replace(/^[#\s]+/, "")
+    // Catalogues sometimes encode word separators as plus signs rather than spaces.
+    // Do not rewrite literal C++ or an isolated "+" symbol.
+    .replace(/(^|\s)\+(?=[\p{L}\p{N}])/gu, "$1")
+    .replace(/(?<=[\p{L}\p{N}])\+(?=[\p{L}\p{N}])/gu, " ")
+    .replace(/\s*\(\d{4}\)$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function normalizeTitle(title: string): string {
-  return title
+  return cleanDisplayTitle(title)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Remove formatações indesejadas como # no início e ano repetido no final (ex: '#Alive (2020)' -> 'Alive')
- */
-export function cleanDisplayTitle(title: string): string {
-  if (!title) return "";
-  return title
-    .replace(/^#+/, "")
-    .replace(/\s*\(\d{4}\)$/, "")
     .trim();
 }
 
