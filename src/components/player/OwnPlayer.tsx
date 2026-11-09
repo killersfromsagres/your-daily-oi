@@ -171,6 +171,7 @@ export function OwnPlayer({
   const qualitySwitchesRef = useRef(0);
   const hasEverPlayedRef = useRef(false);
   const pendingPlayRef = useRef<{ clickedAt: number } | null>(null);
+  const pausedByUserRef = useRef(false);
   const startupRef = useRef<{ url: string; stage: number; startedAt: number }>({url:"",stage:0,startedAt:0});
   const lastProgressRef = useRef<{ time: number; at: number } | null>(null);
   const resolvedRelaysRef = useRef<Map<string, { finalUrl: string; isHls: boolean }>>(new Map());
@@ -191,6 +192,7 @@ export function OwnPlayer({
       return false;
     }
     setExhaustedSources(false);
+    pausedByUserRef.current = false;
     setSourceIndex(next);
     setAttemptStage(0);
     setResolvedDirectUrl(null);
@@ -526,11 +528,13 @@ export function OwnPlayer({
   }, [engine.state, autoSwitchMsg]);
 
   const handlePlay = useCallback(() => {
+    pausedByUserRef.current = false;
     pendingPlayRef.current = { clickedAt: Date.now() };
     void engine.play();
   }, [engine]);
 
   const handlePause = useCallback(() => {
+    pausedByUserRef.current = true;
     pendingPlayRef.current = null;
     engine.pause();
   }, [engine]);
@@ -546,8 +550,7 @@ export function OwnPlayer({
         const elapsed = Date.now() - attempt.startedAt;
         const playing = engine.state === "playing" && !videoRef.current?.paused;
         if (attempt.url === rawStream.url && attempt.stage === attemptStage &&
-            engine.state !== "paused" &&
-            shouldChangeServerOnStartup(elapsed, playing, engine.needsUserGesture, false, 11_000)) {
+            shouldChangeServerOnStartup(elapsed, playing, engine.needsUserGesture, pausedByUserRef.current, 11_000)) {
           // Avoid duplicate recovery from a running interval before React
           // applies the next source/stage.
           startupRef.current.startedAt = Date.now();
@@ -589,7 +592,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       // Watchdog de "play travado": se o usuário clicou em play mas o vídeo nunca iniciou (fonte travada sem dados)
       const pending = pendingPlayRef.current;
       if (!pending) return;
-      if (engine.needsUserGesture) { pendingPlayRef.current = null; return; }
+      if (engine.needsUserGesture || pausedByUserRef.current) { pendingPlayRef.current = null; return; }
 
       // Caso 1: o play funcionou — vídeo tocando ou avançando o tempo → limpa o registro
       if (engine.state === "playing" && engine.currentTime > 0.5) {
@@ -802,6 +805,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     lastProgressRef.current = null;
     autoSwitchCountRef.current = 0;
     manualSelectionRef.current = true;
+    pausedByUserRef.current = false;
     rejectedDuringPlaybackRef.current.clear();
     qualitySwitchesRef.current = 0;
     setSourceIndex(i);
@@ -1055,6 +1059,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
                 lastProgressRef.current = null;
                 autoSwitchCountRef.current = 0;
                 manualSelectionRef.current = false;
+                pausedByUserRef.current = false;
                 rejectedDuringPlaybackRef.current.clear();
                 measuredHeightsRef.current.clear();
                 qualitySwitchesRef.current = 0;
