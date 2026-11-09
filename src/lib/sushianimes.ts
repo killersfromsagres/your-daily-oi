@@ -35,7 +35,7 @@ const DEFAULT_HEADERS: Record<string, string> = {
 // Catálogo e detalhes de animes: 6 horas (21600000 ms)
 const CATALOG_TTL = 6 * 60 * 60 * 1000;
 // Streams de episódios: 1 hora (3600000 ms)
-const STREAM_TTL = 60 * 60 * 1000;
+const STREAM_TTL = 8 * 60 * 1000;
 
 interface CacheEntry<T> {
   data: T;
@@ -51,7 +51,7 @@ const episodeStreamCache = new Map<string, CacheEntry<StreamSource[]>>();
  */
 async function fetchSushi(url: string, init?: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000);
+  const timer = setTimeout(() => ctrl.abort(), 7000);
   try {
     const res = await fetch(url, {
       ...init,
@@ -451,6 +451,30 @@ export async function getSushiAnime(slugOrUrl: string): Promise<CatalogItem | nu
 }
 
 /**
+ * Accept a direct media URL from plain HTML, quoted JavaScript or JSON embed
+ * responses. HTML embed pages themselves are NOT playable video sources.
+ */
+export function extractSushiMediaUrls(payload: string): string[] {
+  const decoded = payload
+    .replace(/\\\\\//g, "/")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/\\u0026/gi, "&");
+  const candidates = decoded.match(/https?:\/\/[^\s"'<>\\]+/gi) || [];
+  const found = new Set<string>();
+  for (const raw of candidates) {
+    const clean = raw.replace(/[),;]+$/, "");
+    try {
+      const url = new URL(clean);
+      if (url.protocol !== "https:" || url.username || url.password) continue;
+      if (!/\.(?:m3u8|mp4)(?:$|\?)/i.test(url.toString())) continue;
+      found.add(url.toString());
+    } catch { /* Invalid embed URLs must not break other choices. */ }
+  }
+  return [...found];
+}
+
+/**
  * Resolve o stream real (.m3u8 ou .mp4) de um episódio específico do Sushi Animes
  */
 export async function resolveSushiEpisodeStream(
@@ -533,50 +557,38 @@ export async function resolveSushiEpisodeStream(
       normSlug.toLowerCase().includes("dublado") || epSlug.toLowerCase().includes("dublado");
     const audioTrack: AudioTrack = isDub ? "dub" : "leg";
 
+    // Independent embed servers are fetched in parallel. A dead option cannot
+    // hold the other working sources hostage for multiple sequential timeouts.
+    const results = await Promise.allSettled(buttons.slice(0, 5).map(async (btn, index) => {
+      const postHeaders: Record<string, string> = {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        Referer: epUrl, Origin: SUSHI_BASE,
+      };
+      if (epCookie) postHeaders["Cookie"] = epCookie;
+      if (token) postHeaders["X-CSRF-TOKEN"] = token;
+      const response = await fetchSushi(`${SUSHI_BASE}/ajax/embed`, {
+        method: "POST",
+        headers: postHeaders,
+        body: new URLSearchParams({ id: btn.embedId, _token: token }),
+      });
+      if (!response.ok) return [] as StreamSource[];
+      const text = await response.text();
+      return extractSushiMediaUrls(text).map((url): StreamSource => ({
+        url, audio: audioTrack,
+        format: url.toLowerCase().includes(".m3u8") ? "hls" : "mp4",
+        quality: /fullhd|hls/i.test(btn.name) ? "FHD" : "HD",
+        priority: index,
+      }));
+    }));
+    const urls = new Set<string>();
     const sources: StreamSource[] = [];
-
-    for (const btn of buttons) {
-      try {
-        const postHeaders: Record<string, string> = {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-Requested-With": "XMLHttpRequest",
-          Referer: epUrl,
-          Origin: SUSHI_BASE,
-        };
-        if (epCookie) postHeaders["Cookie"] = epCookie;
-        if (token) postHeaders["X-CSRF-TOKEN"] = token;
-
-        const embedRes = await fetchSushi(`${SUSHI_BASE}/ajax/embed`, {
-          method: "POST",
-          headers: postHeaders,
-          body: new URLSearchParams({ id: btn.embedId, _token: token }),
-        });
-
-        if (!embedRes.ok) continue;
-
-        const embedText = await embedRes.text();
-
-        // 1. Procura playerEmbed="https://..." (comum em HLS e MP4 direto)
-        const embedMatch =
-          embedText.match(/playerEmbed\s*=\s*(?:&quot;|["'])(https?:\/\/[^"&]+)(?:&quot;|["'])/i) ||
-          embedText.match(/src=["'](https?:\/\/[^"']+\.(?:m3u8|mp4)[^"']*)["']/i);
-
-        if (embedMatch) {
-          const streamUrl = embedMatch[1];
-          const isHls = streamUrl.includes(".m3u8");
-          const format = isHls ? "hls" : "mp4";
-          const quality = btn.name.toLowerCase().includes("fullhd") ? "FHD" : "HD";
-
-          sources.push({
-            url: streamUrl,
-            format,
-            audio: audioTrack,
-            quality,
-            priority: sources.length,
-          });
-        }
-      } catch (err) {
-        console.warn(`[SushiEp] Erro no embed ${btn.embedId}:`, err);
+    for (const result of results) {
+      if (result.status !== "fulfilled") continue;
+      for (const source of result.value) {
+        if (urls.has(source.url)) continue;
+        urls.add(source.url);
+        sources.push(source);
       }
     }
 
