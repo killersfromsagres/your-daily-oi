@@ -17,6 +17,7 @@ import { isLivePlaylistTarget } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
+import { rankSearchSuggestions } from "./lib/search-suggestions";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -170,6 +171,12 @@ async function handleDestaquesApi(): Promise<Response> {
 async function handleCatalogoApi(url: URL): Promise<Response> {
   try {
     const q = url.searchParams.get("q");
+    if (url.searchParams.get("suggest") === "1") {
+      if (!q?.trim()) return jsonResponse({ items: [] }, 200, "private, max-age=15");
+      const { items } = await loadCatalog();
+      const suggestions = rankSearchSuggestions([...items.values()], q.slice(0, 80), 8);
+      return jsonResponse({ items: suggestions }, 200, "private, max-age=15");
+    }
     const { items, highlights } = await loadCatalog();
 
     if (q) {
