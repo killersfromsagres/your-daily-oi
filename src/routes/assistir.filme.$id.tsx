@@ -6,6 +6,7 @@ import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { shortlistVodSources } from "@/lib/vod-source-quality";
+import { catalogDisplayTitle } from "@/lib/catalog";
 import { saveProgress, getProgressById } from "@/lib/storage";
 import { buildSaimoVodProxyUrl } from "@/lib/saimo-vod-url";
 
@@ -173,7 +174,7 @@ function WatchMoviePage() {
           contentType="movie"
           streams={streams}
           poster={effectiveMovie.tmdb?.backdropUrl || effectiveMovie.posterUrl}
-          title={effectiveMovie.title}
+          title={catalogDisplayTitle(effectiveMovie)}
           subtitle="Filmes"
           onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
           initialTime={savedProgress?.currentTime || 0}
