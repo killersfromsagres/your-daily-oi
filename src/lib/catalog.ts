@@ -29,7 +29,8 @@ let metadataSourceCheckedAt = 0;
 export function getCatalogSourceStatus() {
   return { state: metadataSourceStatus, checkedAt: metadataSourceCheckedAt ? new Date(metadataSourceCheckedAt).toISOString() : null };
 }
-const CACHE_TTL = 6 * 60 * 60 * 1000;
+const CACHE_TTL = 30 * 60 * 1000;
+const STREAM_TTL = 15 * 60 * 1000;
 
 export function normalizeTitle(title: string): string {
   return title
@@ -483,7 +484,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
       if (combinedText.trim()) {
         const { streams, seasons } = parseSeriesData(combinedText, bases);
         streamsCache.set(cacheKey, streams);
-        streamsCacheExpires.set(cacheKey, Date.now() + CACHE_TTL);
+        streamsCacheExpires.set(cacheKey, Date.now() + STREAM_TTL);
         seriesSeasonsCache.set(`a-${letter}`, seasons);
         return streams;
       }
@@ -501,7 +502,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
       const text = await fetchText(getCatalogUrls(`filmes-${letter}.txt`));
       const parsed = parseFilmesFile(text, bases);
       streamsCache.set(cacheKey, parsed);
-        streamsCacheExpires.set(cacheKey, Date.now() + CACHE_TTL);
+        streamsCacheExpires.set(cacheKey, Date.now() + STREAM_TTL);
       return parsed;
     } catch {
       const empty = new Map<string, StreamSource[]>();
@@ -519,7 +520,7 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
     if (combinedSeriesText.trim()) {
       const { streams, seasons } = parseSeriesData(combinedSeriesText, bases);
       streamsCache.set(cacheKey, streams);
-        streamsCacheExpires.set(cacheKey, Date.now() + CACHE_TTL);
+        streamsCacheExpires.set(cacheKey, Date.now() + STREAM_TTL);
       seriesSeasonsCache.set(letter, seasons);
       return streams;
     }
