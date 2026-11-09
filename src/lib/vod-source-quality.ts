@@ -74,6 +74,9 @@ export function vodSourceScore(source: StreamSource, options: VodSourceSelection
   // Source identity alone is not proof of better image quality.
   if (source.url.startsWith("https://") || source.url.startsWith("/api/")) score += 60;
   if (source.format === "hls") score += 50; // adaptive bitrate when present
+  // The direct catalogue entry is an actual media URL, unlike speculative relays.
+  // Prefer it to untested providers of the same audio/quality tier.
+  if (/^Cat[aá]logo\b/i.test(source.name || "")) score += 950;
   if (source.priority !== undefined) {
     const prio = Math.max(-25, Math.min(25, source.priority));
     score -= prio * 6;
@@ -135,8 +138,8 @@ export function vodSourceIdentity(source: Pick<StreamSource,"url">): string {
   }
 }
 
-export function shortlistVodSources(sources: readonly StreamSource[], maxCount = 10): StreamSource[] {
-  const limit = Math.min(16,Math.max(0,Math.floor(maxCount)));
+export function shortlistVodSources(sources: readonly StreamSource[], maxCount = 6): StreamSource[] {
+  const limit = Math.min(8,Math.max(0,Math.floor(maxCount)));
   if (!limit) return [];
   // Preserve only one entry per actual video source and per relay variant.
   // A different CDN/encoding is kept because it can be the only working fallback.
