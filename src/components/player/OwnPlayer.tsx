@@ -162,6 +162,7 @@ export function OwnPlayer({
   const autoSwitchCountRef = useRef(0);
   const rejectedDuringPlaybackRef = useRef(new Set<string>());
   const measuredHeightsRef = useRef(new Map<string,number>());
+  const metadataFirstSeenRef = useRef(new Map<string,number>());
   const manualSelectionRef = useRef(false);
   const qualitySwitchesRef = useRef(0);
   const hasEverPlayedRef = useRef(false);
@@ -657,6 +658,14 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     if (!video || !source || video.videoHeight <= 0) return;
     const height = video.videoHeight;
     measuredHeightsRef.current.set(source.url, height);
+    if (!metadataFirstSeenRef.current.has(source.url)) {
+      metadataFirstSeenRef.current.set(source.url, Date.now());
+    }
+    // HLS starts at a lower adaptive bitrate on purpose. Allow its ABR engine
+    // to ramp up before deciding the actual delivered image is low quality.
+    const adaptive = source.format === "hls" || /\\.m3u8(?:$|\\?)/i.test(source.url);
+    const firstSeen = metadataFirstSeenRef.current.get(source.url) || Date.now();
+    if (adaptive && Date.now() - firstSeen < 9000) return;
 
     if (manualSelectionRef.current || height >= 700 || qualitySwitchesRef.current >= 3) return;
     if (rejectedDuringPlaybackRef.current.has(source.url)) return;
@@ -682,6 +691,14 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     setResolvedIsHls(null);
     setDetectedQuality(null);
   }, [orderedStreams, sourceIndex, preferredAudio, updateVideoResolution]);
+
+  useEffect(() => {
+    if (engine.state !== "playing") return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") measureAndImproveQuality();
+    }, 5500);
+    return () => window.clearInterval(timer);
+  }, [engine.state, measureAndImproveQuality]);
 
   // Also reconsider the choice if a verified HD alternative arrives after a
   // low-resolution stream was already accepted from the initial catalogue.
