@@ -530,6 +530,11 @@ export function OwnPlayer({
     void engine.play();
   }, [engine]);
 
+  const handlePause = useCallback(() => {
+    pendingPlayRef.current = null;
+    engine.pause();
+  }, [engine]);
+
   // When the first source never starts, automatically attempt its alternate
   // transport and then the best remaining dubbed server. This is independent
   // of user input; browser autoplay policy blocks are handled separately.
@@ -592,13 +597,9 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         return;
       }
 
-      // Caso 2: usuário pausou deliberadamente
-      if (engine.state === "paused") {
-        pendingPlayRef.current = null;
-        return;
-      }
-
-      // Caso 3: timeout de 6 segundos sem sair do lugar → fonte ruim, troca de servidor (A3 circular)
+      // An explicit Play click can be pending while the previous state is
+      // still "paused". The pending intent must not be discarded here.
+      // Caso 2: timeout sem progresso -> próxima fonte.
       if (Date.now() - pending.clickedAt > 6000 && engine.state !== "playing") {
         pendingPlayRef.current = null;
         if (rawStream) {
@@ -620,7 +621,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       engine.setMuted(false);
     }
     if (engine.state === "playing") {
-      engine.pause();
+      handlePause();
     } else {
       handlePlay();
     }
@@ -699,7 +700,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!containerRef.current?.contains(document.activeElement) && document.activeElement?.tagName !== "BODY") return;
-      if (e.key === " " || e.key === "k") { e.preventDefault(); engine.state === "playing" ? engine.pause() : handlePlay(); }
+      if (e.key === " " || e.key === "k") { e.preventDefault(); engine.state === "playing" ? handlePause() : handlePlay(); }
       if (e.key === "ArrowRight") { e.preventDefault(); engine.seek(engine.currentTime + 10); }
       if (e.key === "ArrowLeft") { e.preventDefault(); engine.seek(engine.currentTime - 10); }
       if (e.key === "m") engine.setMuted(!engine.muted);
@@ -708,7 +709,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [engine, handlePlay]);
+  }, [engine, handlePlay, handlePause]);
 
   const measureAndImproveQuality = useCallback(() => {
     updateVideoResolution();
@@ -1095,7 +1096,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           currentSourceIndex={sourceIndex}
           detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "Auto"}
           onPlay={handlePlay}
-          onPause={engine.pause}
+          onPause={handlePause}
           onSeek={engine.seek}
           onVolume={engine.setVolume}
           onMute={() => engine.setMuted(!engine.muted)}
