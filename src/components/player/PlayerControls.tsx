@@ -243,166 +243,65 @@ export function PlayerControls({
 
         {/* Direita: Fontes / Servidores, Velocidade, PiP, Fullscreen */}
         <div className="ydo-controls-right">
-          {/* Seletor de Fontes / Servidores (Estilo Moderno Flutuante) */}
+          {/* Seleção automática: mostrar somente as fontes utilizáveis e únicas. */}
           {sources.length > 1 && (
-            <div className="ydo-source-wrap" ref={serversRef} style={{ position: "relative" }}>
+            <div className="ydo-source-wrap zf-server-selector" ref={serversRef}>
               <button
                 type="button"
-                className="ydo-source-trigger"
+                className="ydo-source-trigger zf-server-trigger"
                 onClick={() => {
-                  setShowServers((v) => !v);
+                  setShowServers(previous => !previous);
                   if (showSettings) setShowSettings(false);
                 }}
                 aria-expanded={showServers}
                 aria-haspopup="listbox"
-                aria-label="Selecionar servidor"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  backgroundColor: "rgba(20, 22, 34, 0.85)",
-                  color: "#fff",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  borderRadius: "20px",
-                  padding: "5px 12px",
-                  fontSize: "0.8rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  maxWidth: "180px",
-                }}
+                aria-label="Selecionar servidor de reprodução"
               >
-                <Server size={15} style={{ color: "#e8b44a", flexShrink: 0 }} />
-                <span
-                  style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    maxWidth: "110px",
-                  }}
-                >
-                  {sources[currentSourceIndex]?.name || "Servidor"}
-                </span>
-                {showServers ? <ChevronUp size={14} style={{ flexShrink: 0 }} /> : <ChevronDown size={14} style={{ flexShrink: 0 }} />}
+                <Server size={15} aria-hidden="true" />
+                <span className="zf-server-trigger-name">Servidor {String(currentSourceIndex + 1).padStart(2,"0")}</span>
+                <span className="zf-server-trigger-audio">{sources[currentSourceIndex]?.audio === "dub" ? "DUB" : "LEG"}</span>
+                {showServers ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
               </button>
-
               {showServers && (
-                <div
-                  className="ydo-source-panel"
-                  role="listbox"
-                  aria-label="Servidores disponíveis"
-                  style={{
-                    position: "absolute",
-                    bottom: "52px",
-                    right: 0,
-                    backgroundColor: "#161826",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    borderRadius: "14px",
-                    padding: "10px",
-                    width: "min(320px, calc(100vw - 32px))",
-                    maxHeight: "280px",
-                    overflowY: "auto",
-                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
-                    zIndex: 50,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "rgba(255, 255, 255, 0.6)",
-                      padding: "4px 8px 6px",
-                      fontWeight: "700",
-                      letterSpacing: "0.05em",
-                      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    SERVIDORES ({sources.length})
+                <div className="ydo-source-panel zf-server-panel">
+                  <div className="zf-server-panel-heading">
+                    <span>Qualidade de reprodução</span>
+                    <small>Melhor fonte selecionada automaticamente</small>
                   </div>
-
-                  {sources.map((s, i) => {
-                    const isActive = i === currentSourceIndex;
-                    const audioBadge = (s.audio || "dub").toUpperCase();
-                    const isDub = audioBadge === "DUB";
-                    return (
-                      <button
-                        key={i}
-                        role="option"
-                        aria-selected={isActive}
-                        onClick={() => {
-                          onSourceChange(i);
-                          setShowServers(false);
-                        }}
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "8px 10px",
-                          borderRadius: "8px",
-                          border: isActive ? "1px solid #e8b44a" : "1px solid transparent",
-                          backgroundColor: isActive ? "rgba(232, 180, 74, 0.15)" : "rgba(255, 255, 255, 0.03)",
-                          color: isActive ? "#e8b44a" : "#fff",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          transition: "background 0.15s ease",
-                          gap: "8px",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flex: 1 }}>
-                          {isActive ? (
-                            <Check size={16} style={{ color: "#e8b44a", flexShrink: 0 }} />
-                          ) : (
-                            <Server size={16} style={{ opacity: 0.5, flexShrink: 0 }} />
-                          )}
-                          <span
-                            style={{
-                              fontSize: "0.85rem",
-                              fontWeight: isActive ? "700" : "500",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {s.name}
+                  <div className="zf-server-list" role="listbox" aria-label="Servidores disponíveis">
+                    {sources.map((s, i) => {
+                      const isActive = i === currentSourceIndex;
+                      const quality = isActive && detectedQuality && detectedQuality !== "Auto"
+                        ? detectedQuality : s.quality;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          role="option"
+                          aria-selected={isActive}
+                          className={"zf-server-option" + (isActive ? " is-current" : "")}
+                          onClick={() => {
+                            onSourceChange(i);
+                            setShowServers(false);
+                          }}
+                        >
+                          <span className="zf-server-number">{String(i + 1).padStart(2,"0")}</span>
+                          <span className="zf-server-information">
+                            <strong>{isActive ? "Em reprodução" : "Servidor " + String(i + 1).padStart(2,"0")}</strong>
+                            <small>{s.audio === "dub" ? "Português dublado" : "Legendado"}</small>
                           </span>
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", flexShrink: 0 }}>
-                          <span
-                            style={{
-                              fontSize: "0.68rem",
-                              fontWeight: "800",
-                              padding: "2px 6px",
-                              borderRadius: "4px",
-                              backgroundColor: isDub ? "rgba(232, 180, 74, 0.25)" : "rgba(255, 255, 255, 0.12)",
-                              color: isDub ? "#e8b44a" : "#fff",
-                              border: isDub ? "1px solid rgba(232, 180, 74, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
-                            }}
-                          >
-                            {audioBadge}
+                          <span className="zf-server-resolution">
+                            {quality && quality !== "Auto" ? quality : "Auto"}
                           </span>
-                          {s.quality && (
-                            <span
-                              style={{
-                                fontSize: "0.68rem",
-                                fontWeight: "700",
-                                padding: "2px 5px",
-                                borderRadius: "4px",
-                                backgroundColor: "rgba(255, 255, 255, 0.08)",
-                                color: "rgba(255, 255, 255, 0.8)",
-                              }}
-                            >
-                              {s.quality.toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                          {isActive && <Check size={16} aria-hidden="true" className="zf-server-current-icon" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="zf-server-panel-footer">
+                    <span>{sources.length} servidores disponíveis</span>
+                    <span>Troca automática em caso de falha</span>
+                  </div>
                 </div>
               )}
             </div>
