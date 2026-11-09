@@ -1,7 +1,7 @@
 // src/lib/vod-source-quality.ts — ranked VOD source selection, shared by player and providers.
 import type { StreamSource } from "./types";
 
-const BAD_CAPTURE = /(?:^|[^a-z0-9])(?:hdcam|camrip|cam|telesync|hdts|telecine|tc-rip|ts-rip|cinema\s*(?:audio|rip|dub|dublagem|captur)|gravado\s*(?:no|em)\s*cinema|audio\s*(?:de|do)\s*cinema|mic\s*audio|line\s*audio|screener|dvdscr)(?:$|[^a-z0-9])/i;
+const BAD_CAPTURE = /(?:^|[^a-z0-9])(?:hdcam|camrip|cam|telesync|hdts|telecine|tc-rip|ts-rip|dublagem\\s*(?:de|do)\\s*cinema|som\\s*(?:de|do)\\s*cinema|cinema\s*(?:audio|rip|dub|dublagem|captur)|gravado\s*(?:no|em)\s*cinema|audio\s*(?:de|do)\s*cinema|mic\s*audio|line\s*audio|screener|dvdscr)(?:$|[^a-z0-9])/i;
 const AD_MARKERS = /(?:^|[^a-z0-9])(?:1xbet|xbet|22bet|bet365|stake\s*casino|betwinner|sportingbet|betano|pixbet|betfair|blaze\s*bet|casino\s*ads?|ad[-\s]?watermark|watermarked|marca\s*d.?agua\s*(?:xbet|bet|casino)|ads?\s*(?:inserted|embed|overlay)|propaganda\s*(?:de\s*)?apostas?)(?:$|[^a-z0-9])/i;
 
 /** Only block strong evidence in source metadata; do not infer CAM from file format MPEG-TS. */
@@ -15,6 +15,11 @@ export function rejectedVodSourceReason(source: Pick<StreamSource,"url"|"name"|"
     // tokens are not metadata and often contain false matches.
     const host = url.hostname.toLowerCase();
     pathname += " " + host;
+    for (const [key, value] of url.searchParams) {
+      if (/^(?:wm|watermark|brand|ad|ads|promo|advert|label)$/i.test(key)) {
+        pathname += " " + value;
+      }
+    }
   } catch {
     pathname = source.url.split("?")[0].toLowerCase();
   }
