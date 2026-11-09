@@ -7,6 +7,7 @@ import {
   playableVodSources, rejectedVodSourceReason, vodSourceScore, shortlistVodSources,
 } from "../src/lib/vod-source-quality";
 import { detectVodQuality } from "../src/lib/saimo-stream";
+import { cleanDisplayTitle, catalogDisplayTitle } from "../src/lib/catalog";
 
 const source = (url: string, audio: "dub"|"leg", quality: string, name = "", priority = 1,
   audioDeclared = true): StreamSource => ({url,audio,quality,name,priority,audioDeclared,format:"mp4"});
@@ -104,6 +105,18 @@ describe("Seleção automática do melhor servidor", () => {
     expect(detectVodQuality("https://cdn.test/movie.mp4","Server")).toBe("Auto");
     expect(detectVodQuality("https://cdn.test/a-720p.mp4","Server")).toBe("720p");
     expect(advertisedVodResolution(source("https://cdn.test/movie.mp4","dub","Auto"))).toBeNull();
+  });
+});
+
+describe("Títulos legíveis do catálogo", () => {
+  test("corrige sinais de mais codificados e nomes dos destaques", () => {
+    expect(cleanDisplayTitle("+velozes +furiosos")).toBe("velozes furiosos");
+    expect(cleanDisplayTitle("Velozes+e+Furiosos")).toBe("Velozes e Furiosos");
+    expect(cleanDisplayTitle("%2BVelozes%20%2BFuriosos")).toBe("Velozes Furiosos");
+  });
+  test("TMDB 385687 é exibido como Velozes & Furiosos 10", () => {
+    expect(catalogDisplayTitle({title:"+velozes +furiosos",tmdbId:385687,tmdb:null}))
+      .toBe("Velozes & Furiosos 10");
   });
 });
 
