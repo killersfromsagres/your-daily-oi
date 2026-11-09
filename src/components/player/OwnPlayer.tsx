@@ -17,6 +17,7 @@ import {
 import { APP_VERSION } from "@/lib/version";
 import { proxyUrlForSaimoRelay } from "@/lib/saimo-vod-url";
 import { bestVodSourceIndex, playableVodSources, nextVodSourceIndex, advertisedVodResolution } from "@/lib/vod-source-quality";
+import { shouldChangeServerOnStartup } from "@/lib/playback-start";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
 const stage0FailedRelays = new Map<string, number>();
@@ -160,6 +161,7 @@ export function OwnPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
+  const [exhaustedSources, setExhaustedSources] = useState(false);
   const [detectedQuality, setDetectedQuality] = useState<string | null>(null);
   const autoSwitchCountRef = useRef(0);
   const rejectedDuringPlaybackRef = useRef(new Set<string>());
@@ -169,6 +171,7 @@ export function OwnPlayer({
   const qualitySwitchesRef = useRef(0);
   const hasEverPlayedRef = useRef(false);
   const pendingPlayRef = useRef<{ clickedAt: number } | null>(null);
+  const startupRef = useRef<{ url: string; stage: number; startedAt: number }>({url:"",stage:0,startedAt:0});
   const lastProgressRef = useRef<{ time: number; at: number } | null>(null);
   const resolvedRelaysRef = useRef<Map<string, { finalUrl: string; isHls: boolean }>>(new Map());
 
@@ -183,7 +186,11 @@ export function OwnPlayer({
       failedUrls: getFailedUrls(),
       observedHeights: measuredHeightsRef.current,
     });
-    if (next < 0) return false;
+    if (next < 0) {
+      setExhaustedSources(true);
+      return false;
+    }
+    setExhaustedSources(false);
     setSourceIndex(next);
     setAttemptStage(0);
     setResolvedDirectUrl(null);
@@ -286,6 +293,32 @@ export function OwnPlayer({
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
   const isRelay = isRelaySource(rawStream?.url);
+
+  // Track every attempt from the moment the browser receives the source,
+  // including autoplay before anyone presses Play.
+  useEffect(() => {
+    if (!rawStream) return;
+    startupRef.current = {url:rawStream.url,stage:attemptStage,startedAt:Date.now()};
+    pendingPlayRef.current = null;
+    lastProgressRef.current = null;
+    setExhaustedSources(false);
+  }, [rawStream?.url, attemptStage]);
+
+  const recoverUnstartedSource = useCallback((): boolean => {
+    if (!rawStream) return false;
+    const first = getStreamUrlForStage(rawStream.url,0,rawStream.format);
+    const alternate = getStreamUrlForStage(rawStream.url,1,rawStream.format);
+    if (attemptStage === 0 && alternate !== first) {
+      setAutoSwitchMsg("Tentando uma conexão alternativa…");
+      setResolvedDirectUrl(null);
+      setResolvedIsHls(null);
+      setAttemptStage(1);
+      return true;
+    }
+    recordFailedSource(rawStream.url);
+    setAutoSwitchMsg("Conectando ao próximo servidor dublado…");
+    return chooseNextApprovedSource();
+  }, [rawStream, attemptStage, chooseNextApprovedSource]);
 
   // Pula estágio 0 (HLS probe) se este relay já falhou HLS na sessão
   useEffect(() => {
@@ -497,9 +530,31 @@ export function OwnPlayer({
     void engine.play();
   }, [engine]);
 
+  // When the first source never starts, automatically attempt its alternate
+  // transport and then the best remaining dubbed server. This is independent
+  // of user input; browser autoplay policy blocks are handled separately.
   // Watchdog de "play travado" e "congelamento mid-play" (A5)
   useEffect(() => {
     const id = setInterval(() => {
+      if (rawStream && !exhaustedSources && engine.state !== "error") {
+        const attempt = startupRef.current;
+        const elapsed = Date.now() - attempt.startedAt;
+        const playing = engine.state === "playing" && !videoRef.current?.paused;
+        if (attempt.url === rawStream.url && attempt.stage === attemptStage &&
+            engine.state !== "paused" &&
+            shouldChangeServerOnStartup(elapsed, playing, engine.needsUserGesture, false, 11_000)) {
+          // Avoid duplicate recovery from a running interval before React
+          // applies the next source/stage.
+          startupRef.current.startedAt = Date.now();
+          autoSwitchCountRef.current++;
+          if (autoSwitchCountRef.current <= Math.max(2, orderedStreams.length * 3)) {
+            recoverUnstartedSource();
+          } else {
+            setExhaustedSources(true);
+          }
+          return;
+        }
+      }
       // A5: Watchdog de congelamento mid-play
       if (engine.state === "playing") {
         const now = Date.now();
@@ -529,6 +584,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       // Watchdog de "play travado": se o usuário clicou em play mas o vídeo nunca iniciou (fonte travada sem dados)
       const pending = pendingPlayRef.current;
       if (!pending) return;
+      if (engine.needsUserGesture) { pendingPlayRef.current = null; return; }
 
       // Caso 1: o play funcionou — vídeo tocando ou avançando o tempo → limpa o registro
       if (engine.state === "playing" && engine.currentTime > 0.5) {
@@ -557,7 +613,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [engine.state, engine.currentTime, engine.buffered, rawStream, orderedStreams.length, chooseNextApprovedSource]);
+  }, [engine.state, engine.currentTime, engine.buffered, engine.needsUserGesture, rawStream, orderedStreams.length, attemptStage, chooseNextApprovedSource, exhaustedSources, recoverUnstartedSource]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
@@ -748,6 +804,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     rejectedDuringPlaybackRef.current.clear();
     qualitySwitchesRef.current = 0;
     setSourceIndex(i);
+    setExhaustedSources(false);
     setAttemptStage(0);
     setResolvedDirectUrl(null);
     setResolvedIsHls(null);
@@ -969,8 +1026,16 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         </div>
       )}
 
-      {/* Erro após esgotar todas as fontes */}
-      {engine.state === "error" && (
+      {/* Falhas durante o failover não mostram um Play inerte. */}
+      {engine.state === "error" && !exhaustedSources && rawStream && (
+        <div className="ydo-player-overlay" role="status" aria-live="polite">
+          <div className="ydo-player-spinner" />
+          <span>Buscando outro servidor para iniciar o vídeo…</span>
+        </div>
+      )}
+
+      {/* Erro somente quando não restam servidores utilizáveis. */}
+      {exhaustedSources && (
         <div className="ydo-player-overlay ydo-player-error-overlay">
           <AlertCircle size={44} aria-hidden style={{ color: "#e8b44a" }} />
           <h3 style={{ fontSize: "1.2rem", fontWeight: "800", margin: "12px 0 6px", color: "#fff" }}>
@@ -992,6 +1057,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
                 rejectedDuringPlaybackRef.current.clear();
                 measuredHeightsRef.current.clear();
                 qualitySwitchesRef.current = 0;
+                setExhaustedSources(false);
                 setSourceIndex(pickBestSourceIndex(orderedStreams, "dub"));
                 setAttemptStage(0);
                 setResolvedDirectUrl(null);
