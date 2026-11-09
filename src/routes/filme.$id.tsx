@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem, StreamSource } from "@/lib/types";
-import { cleanDisplayTitle, detectQuality } from "@/lib/catalog";
+import { catalogDisplayTitle, detectQuality } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/filme/$id")({
@@ -137,7 +137,7 @@ function MovieDetailPage() {
   // Banner de altíssima definição (original do TMDB ou poster original widescreen)
   const backdrop = movie.tmdb?.backdropUrl || movie.posterUrl?.replace("/w342", "/original") || "";
   const poster = movie.posterUrl?.replace("/w342", "/w500") || "";
-  const titleDisplay = cleanDisplayTitle(movie.title);
+  const titleDisplay = catalogDisplayTitle(movie);
   const runtimeDisplay = formatRuntime(movie.tmdb?.runtime);
 
   const movieQuality = (() => {
