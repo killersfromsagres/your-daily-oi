@@ -29,28 +29,55 @@ function WatchSeriesPage() {
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+    // Bound external provider waits. The first playable response renders the
+    // player immediately; late alternatives are merged without restarting it.
+    const timer = window.setTimeout(() => controller.abort(), 14_000);
+    let pending = 2;
+    setSerie(null);
+    setExtraStreams([]);
     setLoading(true);
 
-    Promise.allSettled([
-      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=series`, { cache: "no-store" }).then((r) => r.json()),
-      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=series&temp=${temp}&ep=${ep}`, { cache: "no-store" }).then((r) => r.json()),
-    ])
-      .then(([itemRes, resolveRes]) => {
-        if (!active) return;
-        if (itemRes.status === "fulfilled" && itemRes.value && !itemRes.value.error) {
-          setSerie(itemRes.value as CatalogItem);
-        }
-        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
-          setExtraStreams(resolveRes.value.sources as StreamSource[]);
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
+    const finished = () => {
+      pending -= 1;
+      if (pending === 0) {
+        window.clearTimeout(timer);
         if (active) setLoading(false);
-      });
+      }
+    };
+
+    fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=series`, {
+      cache: "no-store", signal: controller.signal,
+    }).then(async response => {
+      if (!response.ok) throw new Error(`Ficha indisponível (HTTP ${response.status})`);
+      return response.json() as Promise<CatalogItem>;
+    }).then(item => {
+      if (!active || !item?.id) return;
+      setSerie(item);
+      const exact = item.seasons?.find(s => s.seasonNumber === Number(temp))
+        ?.episodes.find(e => e.episodeNumber === Number(ep));
+      if (exact?.streams?.length) setLoading(false);
+    }).catch(error => {
+      if (active && !controller.signal.aborted) console.warn("[WatchSerie] Ficha:", error);
+    }).finally(finished);
+
+    fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=series&temp=${encodeURIComponent(temp)}&ep=${encodeURIComponent(ep)}`, {
+      cache: "no-store", signal: controller.signal,
+    }).then(async response => {
+      if (!response.ok) throw new Error(`Fontes indisponíveis (HTTP ${response.status})`);
+      return response.json() as Promise<{ sources?: StreamSource[] }>;
+    }).then(data => {
+      if (!active || !Array.isArray(data.sources)) return;
+      setExtraStreams(data.sources);
+      if (data.sources.length) setLoading(false);
+    }).catch(error => {
+      if (active && !controller.signal.aborted) console.warn("[WatchSerie] Fontes:", error);
+    }).finally(finished);
 
     return () => {
       active = false;
+      controller.abort();
+      window.clearTimeout(timer);
     };
   }, [id, temp, ep]);
 
