@@ -402,149 +402,119 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
   const isSerie = tipo === "series";
   const rawId = String(opts.tmdbId || opts.id || "").trim();
   const cleanId = rawId.replace(/^(tmdb:|imdb:)/i, "");
-
   const cacheKey = `${tipo}:${cleanId || title}:${season}:${episode}`;
   const cached = streamResultsCache.get(cacheKey);
   const now = Date.now();
-  if (cached && cached.expires > now) {
-    return cached.streams;
-  }
+  if (cached && cached.expires > now) return cached.streams;
 
   let resolvedTmdbId = /^\d+$/.test(cleanId) ? cleanId : "";
   if (!resolvedTmdbId && title) {
     try {
       const cleanTitle = title.replace(/^#+/, "").replace(/\s*\(\d{4}\)$/, "").trim();
       const searchRes = await fetch(
-        `https://api.themoviedb.org/3/search/${isSerie ? "tv" : "movie"}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
-          cleanTitle
-        )}&language=pt-BR`,
-        { headers: { "User-Agent": BROWSER_UA, Accept: "application/json" }, signal: AbortSignal.timeout(3500) }
+        `https://api.themoviedb.org/3/search/${isSerie ? "tv" : "movie"}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}&language=pt-BR`,
+        { headers: { "User-Agent": BROWSER_UA, Accept: "application/json" }, signal: AbortSignal.timeout(2800) }
       );
       if (searchRes.ok) {
-        const sData = (await searchRes.json()) as { results?: Array<{ id: number }> };
-        if (sData?.results?.[0]?.id) {
-          resolvedTmdbId = String(sData.results[0].id);
-        }
+        const data = await searchRes.json() as { results?: Array<{ id: number }> };
+        if (data.results?.[0]?.id) resolvedTmdbId = String(data.results[0].id);
       }
-    } catch {}
+    } catch { /* A catalog title can still resolve independently. */ }
   }
 
-  const effectiveLookupId = resolvedTmdbId || cleanId;
-  const allSources: StreamSource[] = [];
+  const lookup = resolvedTmdbId || cleanId;
+  const jobs: Array<Promise<StreamSource[]>> = [];
 
-  // 0. API pública Saimo TV (redirect/JSON), quando o ID é conhecido.
-  if (effectiveLookupId) {
-    allSources.push(...(await querySaimoOfficial(tipo, effectiveLookupId, season, episode)));
-  }
+  if (/^(?:[1-9]\d{0,11}|tt\d{4,12})$/.test(lookup)) {
+    // Providers are independent. Never serially block a playable file while
+    // waiting for an unavailable Redeflix, Fenix or Saimo endpoint.
+    jobs.push(querySaimoOfficial(tipo, lookup, season, episode));
 
-  // 1. RedeFlix Direct Streams (embedplayer2.xyz, koyeb.app)
-  if (effectiveLookupId) {
-    if (isSerie) {
-      const rfSeriesMap = await getRedeflixSeries();
-      const rf = rfSeriesMap.get(effectiveLookupId);
-      if (rf) {
-        const epKey = `${season}:${episode}`;
-        const streams = rf.episodes.get(epKey) || [];
-        allSources.push(...streams);
-      }
-    } else {
-      const rfFilmesMap = await getRedeflixFilmes();
-      const rf = rfFilmesMap.get(effectiveLookupId);
-      if (rf?.streams) {
-        allSources.push(...rf.streams);
-      }
-    }
-  }
+    jobs.push((async () => {
+      const record = isSerie
+        ? (await getRedeflixSeries()).get(lookup)?.episodes.get(`${season}:${episode}`)
+        : (await getRedeflixFilmes()).get(lookup)?.streams;
+      return record || [];
+    })());
 
-  // 2. FenixFlix
-  if (effectiveLookupId) {
-    const fenixSources = await queryFenixFlix(isSerie, effectiveLookupId, season, episode);
-    allSources.push(...fenixSources);
-
-    // IMDB Fenix is an independent fallback even if another provider advertises
-    // a link that later fails in the browser. Do not let an unverified Saimo URL
-    // prevent alternative movies, series or anime episodes from being returned.
-    if (fenixSources.length === 0 && /^\d+$/.test(effectiveLookupId)) {
+    jobs.push((async () => {
+      const direct = await queryFenixFlix(isSerie, lookup, season, episode);
+      if (direct.length || !/^\d+$/.test(lookup)) return direct;
       try {
-        const extRes = await fetch(
-          `https://api.themoviedb.org/3/${isSerie ? "tv" : "movie"}/${effectiveLookupId}/external_ids?api_key=${TMDB_API_KEY}`,
-          { headers: { "User-Agent": BROWSER_UA, Accept: "application/json" }, signal: AbortSignal.timeout(4000) }
+        const response = await fetch(
+          `https://api.themoviedb.org/3/${isSerie ? "tv" : "movie"}/${lookup}/external_ids?api_key=${TMDB_API_KEY}`,
+          { headers: { "User-Agent": BROWSER_UA, Accept: "application/json" }, signal: AbortSignal.timeout(2800) },
         );
-        if (extRes.ok) {
-          const extData = (await extRes.json()) as { imdb_id?: string };
-          if (extData?.imdb_id) {
-            const fallbackSources = await queryFenixFlix(isSerie, extData.imdb_id, season, episode);
-            allSources.push(...fallbackSources);
+        if (response.ok) {
+          const data = await response.json() as { imdb_id?: string };
+          if (data.imdb_id && /^tt\d+$/.test(data.imdb_id)) {
+            return queryFenixFlix(isSerie, data.imdb_id, season, episode);
           }
         }
-      } catch {}
+      } catch { /* Keep whatever other providers returned. */ }
+      return [];
+    })());
+  }
+
+  if (!isSerie && title) {
+    jobs.push((async () => {
+      const norm = title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim();
+      const first = norm[0]?.toUpperCase() || "#";
+      const letter = /^[A-Z]$/.test(first) ? first : "%23";
+      const [bases, catalog] = await Promise.all([
+        getIndiceBases().catch(() => [] as string[]),
+        fetchFirstText(catalogUrls(`filmes-${letter}.txt`), "filmes", { timeoutMs: 4800 })
+          .then(result => result.text).catch(() => ""),
+      ]);
+      if (!catalog) return [];
+      const comparable = (value: string) =>
+        value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/^#+/, "").replace(/\s*\(\d{4}\)$/, "")
+          .replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const wanted = comparable(title);
+      const direct: StreamSource[] = [];
+      for (const line of catalog.split("\n")) {
+        const cols = line.split("\t");
+        if (!cols[0] || comparable(cols[0]) !== wanted) continue;
+        for (const field of cols.slice(1)) {
+          const found = /^(dub|leg)=(.*)$/.exec(field.trim());
+          if (!found) continue;
+          const audio: AudioTrack = found[1] === "leg" ? "leg" : "dub";
+          for (const token of (found[2] || "").split(",")) {
+            const resolved = expandBaseToken(token.trim(), bases);
+            if (!/^https?:\/\//i.test(resolved)) continue;
+            direct.push({
+              url: resolved, audio, format: isHlsUrl(resolved) ? "hls" : "auto",
+              quality: detectVodQuality(resolved), priority: 2,
+              name: `Catálogo (${audio.toUpperCase()})`,
+            });
+          }
+        }
+        break;
+      }
+      return direct;
+    })());
+  }
+
+  const settled = await Promise.allSettled(jobs);
+  const ordered: StreamSource[] = [];
+  const seen = new Set<string>();
+  for (const outcome of settled) {
+    if (outcome.status !== "fulfilled") continue;
+    for (const source of outcome.value) {
+      if (!source?.url || seen.has(source.url)) continue;
+      seen.add(source.url);
+      ordered.push(source);
     }
   }
-
-  // 3. Fallback no Catálogo com expansão de bases do indice.txt
-  if (title) {
-    const bases = await getIndiceBases();
-    const norm = title
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim();
-    const inicial = norm.charAt(0).toUpperCase();
-    const letra = inicial >= "A" && inicial <= "Z" ? inicial : "#";
-
-    try {
-      if (!isSerie) {
-        const fRes = await fetch(`${CATALOG_BASE}/filmes-${letra}.txt`, {
-          headers: { "User-Agent": BROWSER_UA },
-          signal: AbortSignal.timeout(5000),
-        });
-        if (fRes.ok) {
-          const fTxt = await fRes.text();
-          for (const line of fTxt.split("\n")) {
-            const parts = line.split("\t");
-            if (parts.length >= 2 && (parts[0] === title || parts[0].startsWith(title.split(" (")[0]))) {
-              for (const p of parts.slice(1)) {
-                const eq = p.indexOf("=");
-                if (eq <= 0) continue;
-                const audioKey = p.slice(0, eq).toLowerCase() === "leg" ? "leg" : "dub";
-                const rawTokens = p.slice(eq + 1).split(",").filter(Boolean);
-                for (const tok of rawTokens) {
-                  if (tok.includes("api/stream")) continue;
-                  const expanded = expandBaseToken(tok, bases);
-                  if (expanded && expanded.startsWith("http")) {
-                    allSources.push({
-                      name: `Servidor Alternativo (${audioKey.toUpperCase()})`,
-                      url: expanded,
-                      audio: audioKey,
-                      quality: "1080p",
-                      format: isHlsUrl(expanded) ? "hls" : "mp4",
-                      priority: 2,
-                    });
-                  }
-                }
-              }
-              break;
-            }
-          }
-        }
-      }
-    } catch {}
-  }
-
-  // Deduplicação estrita por URL preservando a prioridade
-  const seenUrls = new Set<string>();
-  const deduped: StreamSource[] = [];
-  for (const s of allSources) {
-    if (!s?.url || seenUrls.has(s.url)) continue;
-    seenUrls.add(s.url);
-    deduped.push(s);
-  }
-
+  // Missing sources are never cached for hours. Retrying after a brief CDN
+  // outage must not require the visitor to clear browser caches.
   streamResultsCache.set(cacheKey, {
-    streams: deduped,
-    expires: now + (deduped.length > 0 ? STREAM_CACHE_TTL_MS : 60_000),
+    streams: ordered,
+    expires: Date.now() + (ordered.length ? STREAM_CACHE_TTL_MS : 45_000),
   });
-
-  return deduped;
+  if (streamResultsCache.size > 1500) streamResultsCache.clear();
+  return ordered;
 }
 
 /**
