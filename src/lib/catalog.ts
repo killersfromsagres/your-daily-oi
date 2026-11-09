@@ -265,7 +265,7 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     const itemObj = {
       id,
       type: tipo as "f" | "s" | "a",
-      title: title.trim(),
+      title: cleanDisplayTitle(title),
       tmdbId,
       posterPath: cleanPoster,
       posterUrl,
