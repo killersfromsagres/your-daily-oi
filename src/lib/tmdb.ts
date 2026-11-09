@@ -110,6 +110,10 @@ export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<Tmdb
     const seasonsCount = typeof d["number_of_seasons"] === "number" ? d["number_of_seasons"] : null;
 
     return {
+      ...(typeof d["title"] === "string" && d["title"].trim()
+        ? {title: d["title"].trim() as string}
+        : typeof d["name"] === "string" && d["name"].trim()
+          ? {title: d["name"].trim() as string} : {}),
       overview: String(d["overview"] ?? ""),
       voteAverage: Number(d["vote_average"] ?? 0),
       backdropPath,
