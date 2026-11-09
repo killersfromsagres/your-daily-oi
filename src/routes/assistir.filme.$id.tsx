@@ -5,8 +5,9 @@ import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
+import { shortlistVodSources } from "@/lib/vod-source-quality";
 import { saveProgress, getProgressById } from "@/lib/storage";
-import { buildSaimoVodProxyUrl, buildSaimoVodPublicUrl } from "@/lib/saimo-vod-url";
+import { buildSaimoVodProxyUrl } from "@/lib/saimo-vod-url";
 
 export const Route = createFileRoute("/assistir/filme/$id")({
   component: WatchMoviePage,
@@ -52,7 +53,7 @@ function WatchMoviePage() {
       .then((item) => {
         if (!active || !item?.id) return;
         setMovie(item);
-        if (item.tmdbId || item.streams?.length) setLoading(false);
+        if (item.streams?.length) setLoading(false);
       })
       .catch((err: unknown) => {
         if (active) console.warn("[WatchMovie] Falha ao obter ficha:", err);
@@ -82,34 +83,24 @@ function WatchMoviePage() {
     };
   }, [id]);
 
-  const primaryStreams = useMemo<StreamSource[]>(() => {
-    if (!movie?.tmdbId) return [];
-    const movieId = String(movie.tmdbId);
-    return (["dub", "leg"] as const).flatMap((audio): StreamSource[] => [
-      {
-        url: buildSaimoVodProxyUrl({ tipo: "movie", id: movieId, versao: audio }),
-        name: `Zang Flix · ${audio === "dub" ? "Dublado" : "Legendado"}`,
-        audio, quality: "Auto", format: "auto", priority: -20,
-      },
-      {
-        // If a Worker IP is blocked, the viewer's browser may still reach the
-        // original HTTPS media URL. The player keeps the proxy as a backup.
-        url: buildSaimoVodPublicUrl({ tipo: "movie", id: movieId, versao: audio }),
-        name: `Saimo · acesso direto (${audio.toUpperCase()})`,
-        audio, quality: "Auto", format: "auto", priority: 4,
-      },
-    ]);
-  }, [movie?.tmdbId]);
-
-  // Fontes estáveis: adicionar alternativas não reinicializa o vídeo que já toca.
+  // Resolved catalogue sources (especially verified episode/movie links)
+  // are tried first. Do not create four unconditional pseudo-servers that
+  // fail before the working "Catálogo" source can start.
   const streams = useMemo<StreamSource[]>(() => {
-    const seen = new Set<string>();
-    return [...primaryStreams, ...(movie?.streams || []), ...extraStreams].filter((s) => {
-      if (!s?.url || seen.has(s.url)) return false;
-      seen.add(s.url);
-      return true;
-    });
-  }, [primaryStreams, movie?.streams, extraStreams]);
+    const candidates = [...(movie?.streams || []), ...extraStreams];
+    const preferred = shortlistVodSources(candidates, 10);
+    if (preferred.length) return preferred;
+    // Last resort for browser-only playback when the datacenter cannot resolve
+    // any provider; one dubbed relay is sufficient, without duplicating audio
+    // and direct/proxy entries in the server menu.
+    if (!movie?.tmdbId) return [];
+    return [{
+      url: buildSaimoVodProxyUrl({tipo:"movie",id:String(movie.tmdbId),versao:"dub"}),
+      name:"Servidor de contingência",
+      audio:"dub", audioDeclared:false,
+      quality:"Auto", format:"auto", priority:30,
+    }];
+  }, [movie?.streams, movie?.tmdbId, extraStreams]);
 
   if (loading) {
     return (
