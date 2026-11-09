@@ -33,6 +33,7 @@ interface OwnPlayerProps {
   onEnded?: () => void;
   preferredAudio?: "dub" | "leg";
   expectedRuntimeMin?: number;
+  contentType?: "movie" | "series" | "anime";
 }
 
 // 4b: Ordem de tentativa por tipo de relay
@@ -130,6 +131,7 @@ export function OwnPlayer({
   onEnded,
   preferredAudio = "dub",
   expectedRuntimeMin,
+  contentType = "movie",
 }: OwnPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -324,7 +326,7 @@ export function OwnPlayer({
   const engine = usePlayerEngine(videoRef, currentStream, handleEnded, {
     expectedRuntimeMin,
     attemptStage,
-    minContentSeconds: subtitle === "Animes" ? 25 : 45,
+    minContentSeconds: contentType === "anime" ? 25 : 45,
   });
 
   // Mantém currentTime atualizado para transferir caso haja chaveamento de rota ou fonte
