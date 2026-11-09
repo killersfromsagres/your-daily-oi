@@ -200,7 +200,20 @@ export function OwnPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const orderedStreams = useMemo(() => sortStreamsByHealth(streams), [streams]);
+  // Keep the active source at the same index while asynchronous provider
+  // results arrive. Reordering an in-use index previously swapped the playing
+  // URL under the video element and caused unexpected playback restarts.
+  const stableSourcesRef = useRef<StreamSource[]>([]);
+  const orderedStreams = useMemo(() => {
+    const candidates = sortStreamsByHealth(streams);
+    const urls = new Set(candidates.map(item => item.url));
+    const retained = stableSourcesRef.current.filter(item => urls.has(item.url));
+    const existing = new Set(retained.map(item => item.url));
+    const additions = candidates.filter(item => !existing.has(item.url));
+    const result = [...retained, ...additions];
+    stableSourcesRef.current = result;
+    return result;
+  }, [streams]);
 
   const [sourceIndex, setSourceIndex] = useState(() => {
     const audio = typeof window !== "undefined" ? getPreferredAudio() : preferredAudio;
