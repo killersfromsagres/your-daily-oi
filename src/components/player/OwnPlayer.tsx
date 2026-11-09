@@ -644,6 +644,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     });
     if (next < 0) return;
     const candidate = orderedStreams[next];
+    if (!candidate) return;
     const claimedHeight = advertisedVodResolution(candidate);
     // Try a declared HD alternative, or an unverified one if the actual
     // current video is clearly soft. Never switch to known lower resolution.
@@ -669,7 +670,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       preferredAudio, observedHeights: measuredHeightsRef.current,
       failedUrls: getFailedUrls(),
     });
-    if (next < 0 || (advertisedVodResolution(orderedStreams[next]) || 720) <= actualHeight) return;
+    const candidate = next < 0 ? null : orderedStreams[next];
+    if (!candidate || (advertisedVodResolution(candidate) || 720) <= actualHeight) return;
     qualitySwitchesRef.current += 1;
     rejectedDuringPlaybackRef.current.add(active.url);
     setSourceIndex(next);
