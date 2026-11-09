@@ -80,7 +80,7 @@ export function vodSourceScore(source: StreamSource, options: VodSourceSelection
   if (source.priority !== undefined) {
     const prio = Math.max(-25, Math.min(25, source.priority));
     score -= prio * 6;
-    if (source.priority <= -200) score += 210; // confirmed episode in catalogue
+    if (source.priority <= -200) score += 2400; // exact episode must beat speculative provider results
   }
   if (options.failedUrls?.has(source.url)) score -= 4500;
   return score;
