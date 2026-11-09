@@ -18,7 +18,7 @@ import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
-import { playableVodSources } from "./lib/vod-source-quality";
+import { playableVodSources, shortlistVodSources } from "./lib/vod-source-quality";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -546,8 +546,11 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   ];
 
   // Resolução em paralelo de redirecionadores legados (dbonline, corruptx, etc.) para URLs finais https
+  // Limit parallel redirect resolution to the highest-ranked independent
+  // candidates, rather than probing dozens of duplicate/broken mirrors.
+  const candidates = shortlistVodSources(orderedSources, 16);
   const finalSources = await Promise.all(
-    orderedSources.map(async (s) => {
+    candidates.map(async (s) => {
       if (!s?.url) return s;
       if (precisaResolver302(s.url)) {
         const finalUrl = await resolverLegado(s.url);
@@ -566,11 +569,11 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
 
   // Deduplicação estrita de URLs
   const seen = new Set<string>();
-  const dedupedSources = playableVodSources(finalSources).filter((s) => {
+  const dedupedSources = shortlistVodSources(playableVodSources(finalSources).filter((s) => {
     if (!s?.url || seen.has(s.url)) return false;
     seen.add(s.url);
     return true;
-  });
+  }), 10);
 
   return jsonResponse(
     {
