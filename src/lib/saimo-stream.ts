@@ -456,7 +456,7 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
 
   if (!isSerie && title) {
     jobs.push((async () => {
-      const norm = title.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim();
+      const norm = title.replace(/^\s*[#+]+/, "").replace(/\+/g, " ").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim();
       const first = norm[0]?.toUpperCase() || "#";
       const letter = /^[A-Z]$/.test(first) ? first : "%23";
       const [bases, catalog] = await Promise.all([
