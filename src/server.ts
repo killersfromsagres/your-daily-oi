@@ -281,7 +281,7 @@ async function handleItemApi(url: URL): Promise<Response> {
       const tmdbType = item.type === "a" ? "s" : item.type;
       const tmdb = await getTmdbData(item.tmdbId, tmdbType);
       if (tmdb) {
-        finalItem = { ...finalItem, tmdb };
+        finalItem = { ...finalItem, title: tmdb.title || finalItem.title, tmdb };
       }
     } catch {
       // continua com os metadados existentes
