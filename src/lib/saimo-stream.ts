@@ -131,7 +131,7 @@ async function getRedeflixFilmes(): Promise<Map<string, { title: string; streams
   try {
     const res = await fetch(`${CATALOG_BASE}/redeflix/links-filmes.txt`, {
       headers: { "User-Agent": BROWSER_UA, Accept: "text/plain, */*" },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const text = await res.text();
