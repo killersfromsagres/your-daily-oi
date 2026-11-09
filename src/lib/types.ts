@@ -22,6 +22,7 @@ export interface CastMember {
 }
 
 export interface TmdbData {
+  title?: string;
   overview: string;
   voteAverage: number;
   backdropPath: string | null;
