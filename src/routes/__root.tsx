@@ -21,6 +21,7 @@ import footballCss from "../styles/football-center.css?url";
 import adaptiveCss from "../styles/adaptive-navigation.css?url";
 import searchAutocompleteCss from "../styles/search-autocomplete.css?url";
 import minimalLiveControlsCss from "../styles/live-controls-minimal.css?url";
+import serverSelectorCss from "../styles/server-selector.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout";
 
@@ -84,6 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: adaptiveCss },
       { rel: "stylesheet", href: searchAutocompleteCss },
       { rel: "stylesheet", href: minimalLiveControlsCss },
+      { rel: "stylesheet", href: serverSelectorCss },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/favicon.png" },
