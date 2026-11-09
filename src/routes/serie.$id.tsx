@@ -731,7 +731,7 @@ function SeriesDetailPage() {
                   })}
                 </div>
 
-                {/* Trilha horizontal de cards 16:9 estilo Saimo TV */}
+                {/* Trilha horizontal de episódios 16:9 do ZANG FLIX */}
                 {loadingEpisodes && itemsToRender.length === 0 ? (
                   <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "12px" }}>
                     {[1, 2, 3, 4].map((n) => (
