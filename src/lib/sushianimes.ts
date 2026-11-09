@@ -456,7 +456,7 @@ export async function getSushiAnime(slugOrUrl: string): Promise<CatalogItem | nu
  */
 export function extractSushiMediaUrls(payload: string): string[] {
   const decoded = payload
-    .replace(/\\\\\//g, "/")
+    .replaceAll(String.fromCharCode(92) + "/", "/")
     .replace(/&quot;/gi, '"')
     .replace(/&amp;/gi, "&")
     .replace(/\\u0026/gi, "&");
