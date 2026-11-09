@@ -307,6 +307,60 @@ export async function searchSushiAnimes(query: string): Promise<SushiAnimeCard[]
 }
 
 /**
+ * Extract episode identity from links, regardless of absolute/relative URLs
+ * or the order of HTML attributes. Never derive season/episode numbers from
+ * the visible label ("1º episódio" may repeat on every season).
+ */
+export function parseSushiEpisodeSeasons(html: string): SeasonItem[] {
+  const bySeason = new Map<number, Map<number, EpisodeItem>>();
+  const cards = html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi);
+  for (const card of cards) {
+    const attrs = card[1] || "";
+    const href = attrs.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1];
+    if (!href) continue;
+    let url: URL;
+    try { url = new URL(href.replace(/&amp;/g, "&"), SUSHI_BASE); } catch { continue; }
+    if (url.origin !== SUSHI_BASE) continue;
+    const parts = url.pathname.match(/^\/anime\/([^/?#]*?)-(\d+)-season-(\d+)-episode\/?$/i);
+    if (!parts) continue;
+    const season = Number(parts[2]), episode = Number(parts[3]);
+    if (!Number.isSafeInteger(season) || !Number.isSafeInteger(episode) ||
+        season < 1 || episode < 1) continue;
+
+    const body = card[2] || "";
+    const strip = (value: string) => value.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/g, "&").trim();
+    const label = body.match(/<[^>]*class=["'][^"']*\bepx-title\b[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/i);
+    const description = body.match(/<[^>]*class=["'][^"']*\bepx-desc\b[^"']*["'][^>]*>([\s\S]*?)<\/[^>]+>/i);
+    const image = body.match(/\b(?:data-src|data-original|src)=["']([^"']+)["']/i);
+    const name = description?.[1] ? strip(description[1]) : "";
+    const heading = label?.[1] ? strip(label[1]) : `Episódio ${episode}`;
+    let thumbUrl: string | undefined;
+    if (image?.[1]) {
+      try {
+        const src = new URL(image[1].replace(/&amp;/g, "&"), SUSHI_BASE);
+        if (src.protocol === "https:") thumbUrl = src.toString();
+      } catch { /* Missing art must not hide the episode. */ }
+    }
+    if (!bySeason.has(season)) bySeason.set(season, new Map());
+    const episodes = bySeason.get(season)!;
+    if (!episodes.has(episode)) {
+      episodes.set(episode, {
+        seasonNumber: season, episodeNumber: episode,
+        title: name ? `${heading}: ${name}` : heading,
+        ...(name ? {name} : {}), episodeSlug: url.pathname.replace(/^\/anime\//, "").replace(/\/$/, ""),
+        ...(thumbUrl ? {thumbUrl} : {}), streams: [],
+      });
+    }
+  }
+  return [...bySeason.entries()].sort(([a],[b]) => a-b)
+    .map(([seasonNumber, entries]) => ({
+      seasonNumber,
+      episodes: [...entries.values()].sort((a,b) => a.episodeNumber-b.episodeNumber),
+    }));
+}
+
+/**
  * Busca ficha completa de um anime (/anime/{slug}) e retorna como CatalogItem
  */
 export async function getSushiAnime(slugOrUrl: string): Promise<CatalogItem | null> {
@@ -363,64 +417,8 @@ export async function getSushiAnime(slugOrUrl: string): Promise<CatalogItem | nu
       genres.push("Anime");
     }
 
-    // 5. Temporadas e Episódios
-    // No Sushi, cada card de episódio tem a classe .epx-card:
-    // <a href="https://sushianimes.com.br/anime/{slug}-{seasonId}-season-{epNum}-episode"
-    //    class="epx-card js-epx-item" ...>
-    //    <div class="epx-thumb lazy" data-src="..."></div>
-    //    <div class="epx-title">1º Episódio</div>
-    //    <div class="epx-desc">Título do episódio</div>
-    // </a>
-    const epMap = new Map<number, EpisodeItem[]>();
-
-    const cardRegex =
-      /<a\b[^>]*href=["'](https?:\/\/sushianimes\.com\.br\/anime\/[^"']*-season-(\d+)-episode)["'][^>]*>([\s\S]*?)<\/a>/gi;
-    let cm;
-
-    while ((cm = cardRegex.exec(html)) !== null) {
-      const epHref = cm[1];
-      const cardInner = cm[3];
-
-      const epTitleMatch = cardInner.match(/<div class="epx-title">([\s\S]*?)<\/div>/i);
-      const epDescMatch = cardInner.match(/<div class="epx-desc"[^>]*>([\s\S]*?)<\/div>/i);
-      const thumbMatch = cardInner.match(/data-src=["']([^"']+)["']/i) || cardInner.match(/src=["']([^"']+)["']/i);
-
-      let epNum = 1;
-      if (epTitleMatch) {
-        const numM = epTitleMatch[1].match(/(\d+)/);
-        if (numM) epNum = parseInt(numM[1], 10);
-      } else {
-        const hrefM = epHref.match(/-season-(\d+)-episode/);
-        if (hrefM) epNum = parseInt(hrefM[1], 10);
-      }
-
-      // Temporada: extrai de -(\d+)-season- na URL do episódio
-      const seasonM = epHref.match(/-(\d+)-season-/);
-      const seasonNum = seasonM ? parseInt(seasonM[1], 10) : 1;
-
-      if (!epMap.has(seasonNum)) epMap.set(seasonNum, []);
-
-      const epSlug = epHref.replace(/^https?:\/\/sushianimes\.com\.br\/anime\//, "");
-      const epTitle = epTitleMatch ? epTitleMatch[1].trim() : `Episódio ${epNum}`;
-      const epName = epDescMatch ? epDescMatch[1].trim() : undefined;
-
-      epMap.get(seasonNum)!.push({
-        seasonNumber: seasonNum,
-        episodeNumber: epNum,
-        title: epName ? `${epTitle}: ${epName}` : epTitle,
-        name: epName,
-        episodeSlug: epSlug,
-        thumbUrl: thumbMatch ? thumbMatch[1].trim() : undefined,
-        streams: [],
-      });
-    }
-
-    const seasons: SeasonItem[] = Array.from(epMap.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([sNum, eps]) => ({
-        seasonNumber: sNum,
-        episodes: eps.sort((a, b) => a.episodeNumber - b.episodeNumber),
-      }));
+    // 5. Temporadas e episódios com URLs relativas e ordenação estável.
+    const seasons = parseSushiEpisodeSeasons(html);
 
     const isDub = title.toLowerCase().includes("dublado") || slug.toLowerCase().includes("dublado");
 
