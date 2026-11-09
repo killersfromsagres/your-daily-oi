@@ -243,6 +243,11 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     const tmdbId = tmdbRaw && !Number.isNaN(Number(tmdbRaw)) ? Number(tmdbRaw) : null;
     const genres = genresRaw ? genresRaw.split(",").map((g) => g.trim()).filter(Boolean) : [];
     const normKey = normalizeTitle(title);
+    // Preserve previously issued route IDs/bookmarks while adding a corrected
+    // lookup key for catalogue titles where "+" was a word separator.
+    const legacyKey = title.toLowerCase().normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ").trim();
     const cleanPoster = posterPath?.trim() ?? "";
     const posterUrl = cleanPoster
       ? cleanPoster.startsWith("http")
@@ -252,9 +257,9 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
 
     // Se já houver um item cadastrado com o mesmo título mas tipo diferente (ex: Duna filme vs Duna série),
     // cria um ID único para o novo e preserva ambos no catálogo
-    let id = normKey;
-    if (map.has(normKey) && map.get(normKey)!.type !== tipo) {
-      id = `${normKey}-${tipo === "f" ? "filme" : tipo === "s" ? "serie" : "anime"}`;
+    let id = legacyKey || normKey;
+    if (map.has(id) && map.get(id)!.type !== tipo) {
+      id = `${id}-${tipo === "f" ? "filme" : tipo === "s" ? "serie" : "anime"}`;
     }
 
     const itemObj = {
@@ -269,8 +274,10 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     };
 
     map.set(id, itemObj);
-    // Registra chave com prefixo de tipo para resolução cirúrgica (ex: "f-duna" e "s-duna")
+    // Reuse old IDs but expose normalized aliases for new direct lookups.
+    if (!map.has(normKey)) map.set(normKey, itemObj);
     map.set(`${tipo}-${normKey}`, itemObj);
+    if (legacyKey !== normKey) map.set(`${tipo}-${legacyKey}`, itemObj);
   }
   return map;
 }
