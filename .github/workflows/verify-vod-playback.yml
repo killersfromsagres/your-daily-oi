@@ -2,7 +2,7 @@ name: Verificar reprodução Saimo VOD
 
 on:
   push:
-    branches: [fix/vod-playback-saimo-parity]
+    branches: [fix/vod-playback-saimo-parity, main]
   pull_request:
     branches: [main]
 
@@ -16,8 +16,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - name: Testes de VOD / MP4 / HLS / TV
-        run: bun run test
+      - name: Testes de filmes, séries, animes, HLS e MP4
+        run: bun test tests/saimo-playback.test.ts tests/saimo-integration.test.ts tests/player-recovery.test.ts tests/vod-reliability.test.ts
+      - name: Verificação TypeScript dos módulos VOD
+        run: bun scripts/typecheck-vod.mjs
       - name: Build de produção
         run: bun run build
       - name: Smoke-test da rota no preview de produção
