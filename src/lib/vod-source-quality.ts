@@ -114,3 +114,68 @@ export function nextVodSourceIndex(
     ]),
   });
 }
+
+/** Group equivalent relay URLs, but keep true alternative hosts for failover. */
+export function vodSourceIdentity(source: Pick<StreamSource,"url">): string {
+  try {
+    const url = new URL(source.url, "https://zangflix.local");
+    if (url.pathname === "/api/saimo-vod" ||
+        (url.hostname === "saimo-tv.pages.dev" && url.pathname === "/api/stream")) {
+      return ["relay",url.searchParams.get("tipo"),url.searchParams.get("id"),
+        url.searchParams.get("temp") || "1",url.searchParams.get("ep") || "1",
+        url.searchParams.get("versao") || "dub"].join(":");
+    }
+    // These query arguments don't change the video, only analytics/cache keys.
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(?:utm_[a-z_]+|fbclid|gclid|cachebuster|_cb)$/i.test(key)) url.searchParams.delete(key);
+    }
+    return url.toString();
+  } catch {
+    return source.url;
+  }
+}
+
+export function shortlistVodSources(sources: readonly StreamSource[], maxCount = 10): StreamSource[] {
+  const limit = Math.min(16,Math.max(0,Math.floor(maxCount)));
+  if (!limit) return [];
+  // Preserve only one entry per actual video source and per relay variant.
+  // A different CDN/encoding is kept because it can be the only working fallback.
+  const sorted = playableVodSources(sources)
+    .sort((a,b) => vodSourceScore(b) - vodSourceScore(a));
+  const unique: StreamSource[] = [];
+  const seen = new Set<string>();
+  for (const source of sorted) {
+    const identity = vodSourceIdentity(source);
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    unique.push(source);
+  }
+  const chosen: StreamSource[] = [];
+  const usedHosts = new Map<string, number>();
+  const host = (s: StreamSource) => {
+    try { return new URL(s.url,"https://zangflix.local").hostname; }
+    catch { return "unknown"; }
+  };
+  const add = (s: StreamSource) => {
+    if (chosen.includes(s) || chosen.length >= limit) return;
+    chosen.push(s);
+    const h = host(s);
+    usedHosts.set(h,(usedHosts.get(h) || 0) + 1);
+  };
+  // Reserve one alternate-audio option without letting a long list of
+  // low-quality subtitles displace the best Brazilian Portuguese dub.
+  const firstDub = unique.find(s=>s.audio==="dub");
+  if (firstDub) add(firstDub);
+  const firstLeg = unique.find(s=>s.audio==="leg");
+  if (firstLeg && limit > 1) add(firstLeg);
+  for (const source of unique) {
+    if (chosen.length >= limit) break;
+    if ((usedHosts.get(host(source)) || 0) >= 3) continue;
+    add(source);
+  }
+  for (const source of unique) {
+    if (chosen.length >= limit) break;
+    add(source);
+  }
+  return chosen.sort((a,b)=>vodSourceScore(b)-vodSourceScore(a));
+}
