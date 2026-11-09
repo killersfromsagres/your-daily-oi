@@ -53,6 +53,12 @@ export function cleanDisplayTitle(title: string): string {
     .trim();
 }
 
+export function catalogDisplayTitle(item: Pick<CatalogItem,"title" | "tmdbId" | "tmdb">): string {
+  // Canonical match by TMDB ID; never infer a sequel number from the poster.
+  if (item.tmdbId === 385687) return "Velozes & Furiosos 10";
+  return cleanDisplayTitle(item.tmdb?.title || item.title);
+}
+
 export function normalizeTitle(title: string): string {
   return cleanDisplayTitle(title)
     .toLowerCase()
