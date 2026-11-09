@@ -180,7 +180,8 @@ function WatchMoviePage() {
           onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
-          expectedRuntimeMin={effectiveMovie.tmdb?.runtime || (effectiveMovie as any)?.runtime || 90}
+          {...(effectiveMovie.tmdb?.runtime && effectiveMovie.tmdb.runtime > 0
+            ? { expectedRuntimeMin: effectiveMovie.tmdb.runtime } : {})}
         />
       </PlayerErrorBoundary>
     </main>
