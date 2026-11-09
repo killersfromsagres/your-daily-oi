@@ -14,10 +14,7 @@ export const Route = createFileRoute("/assistir/filme/$id")({
   component: WatchMoviePage,
   head: () => ({
     meta: [{ title: "Assistir Filme — Zang Flix" }],
-    links: [
-      { rel: "preconnect", href: "https://saimo-tv.pages.dev" },
-      { rel: "dns-prefetch", href: "https://saimo-tv.pages.dev" },
-    ],
+
   }),
 });
 
@@ -89,7 +86,7 @@ function WatchMoviePage() {
   // fail before the working "Catálogo" source can start.
   const streams = useMemo<StreamSource[]>(() => {
     const candidates = [...(movie?.streams || []), ...extraStreams];
-    const preferred = shortlistVodSources(candidates, 10);
+    const preferred = shortlistVodSources(candidates, 6);
     if (preferred.length) return preferred;
     // Last resort for browser-only playback when the datacenter cannot resolve
     // any provider; one dubbed relay is sufficient, without duplicating audio
@@ -97,7 +94,7 @@ function WatchMoviePage() {
     if (!movie?.tmdbId) return [];
     return [{
       url: buildSaimoVodProxyUrl({tipo:"movie",id:String(movie.tmdbId),versao:"dub"}),
-      name:"Servidor de contingência",
+      name:"Reprodução alternativa",
       audio:"dub", audioDeclared:false,
       quality:"Auto", format:"auto", priority:30,
     }];
@@ -145,7 +142,7 @@ function WatchMoviePage() {
       id: effectiveMovie.id,
       contentId: effectiveMovie.id,
       type: "f",
-      title: effectiveMovie.title,
+      title: catalogDisplayTitle(effectiveMovie),
       posterUrl: effectiveMovie.posterUrl,
       currentTime,
       duration: duration || 0,
@@ -167,7 +164,7 @@ function WatchMoviePage() {
     }}>
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
       <PlayerErrorBoundary
-        title={effectiveMovie.title}
+        title={catalogDisplayTitle(effectiveMovie)}
         onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
       >
         <OwnPlayer
