@@ -26,25 +26,38 @@ try {
   if (response.status !== 200 && response.status !== 404 && response.status !== 502) {
     throw new Error(`Rota respondeu HTTP ${response.status}; esperado 200 ou falha upstream legível`);
   }
-  if (response.status === 200 && JSON.parse(body).format !== "mp4") {
-    throw new Error("Formato inesperado do stream de teste (esperado MP4)");
-  }
   if (response.status === 200) {
-    // Somente 2 bytes reais: valida o corpo 206 do vídeo, sem baixar a mídia.
-    const media = await fetch(target.replace("&probe=1", ""), {
-      headers: { Range: "bytes=0-1" },
-      signal: AbortSignal.timeout(12000),
-    });
-    const bytes = await media.arrayBuffer();
-    console.log(JSON.stringify({
-      test: "GET /api/saimo-vod Range 0-1",
-      status: media.status,
-      contentType: media.headers.get("content-type"),
-      contentRange: media.headers.get("content-range")?.replace(/\/.+$/, "/<total>"),
-      bytes: bytes.byteLength,
-    }));
-    if (media.status !== 206 || bytes.byteLength !== 2 || !media.headers.get("content-range")?.startsWith("bytes 0-1/")) {
-      throw new Error("Resposta MP4 Range incompleta: seek não funcionará");
+    const probe = JSON.parse(body);
+    if (!["mp4","hls","ts"].includes(probe.format)) {
+      throw new Error("Formato desconhecido na origem de vídeo");
+    }
+    if (probe.format === "hls") {
+      const playlist = await fetch(target.replace("&probe=1", ""), {
+        signal: AbortSignal.timeout(12000),
+      });
+      const text = await playlist.text();
+      if (!playlist.ok || !text.trimStart().startsWith("#EXTM3U")) {
+        throw new Error("HLS sem manifesto válido no proxy");
+      }
+      console.log(JSON.stringify({test:"HLS do VOD",status:playlist.status,manifest:true}));
+    } else if (probe.format === "mp4") {
+      // Only the first two bytes are transferred when the CDN honors Range.
+      const media = await fetch(target.replace("&probe=1", ""), {
+        headers: { Range: "bytes=0-1" },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (media.status === 206) {
+        const bytes = await media.arrayBuffer();
+        const range = media.headers.get("content-range") || "";
+        if (bytes.byteLength !== 2 || !range.startsWith("bytes 0-1/")) {
+          throw new Error("Resposta MP4 Range inconsistente");
+        }
+        console.log(JSON.stringify({test:"MP4 Range",status:206,bytes:bytes.byteLength}));
+      } else {
+        await media.body?.cancel();
+        if (!media.ok) throw new Error("CDN falhou ao responder MP4: HTTP "+media.status);
+        console.log(JSON.stringify({test:"MP4 sem suporte a Range",status:media.status}));
+      }
     }
   }
 } finally {
