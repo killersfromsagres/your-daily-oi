@@ -5,6 +5,7 @@ import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
 import { isAnimeItem } from "@/lib/catalog";
+import { matchesGenre } from "@/lib/genre-matching";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { Sparkles, Tv, Search, X, ChevronLeft, ChevronRight, Film, RefreshCw } from "lucide-react";
 
@@ -215,10 +216,11 @@ function AnimesPage() {
       list = list.filter((i) => i.title.toLowerCase().includes(q));
     }
     if (selectedCategory) {
-      const cat = selectedCategory.toLowerCase();
-      list = list.filter((i) =>
-        i.genres.some((g) => g.toLowerCase().includes(cat)) ||
-        (cat === "dublado" && i.streams.some((s) => s.audio === "dub"))
+      const cat = selectedCategory === "sh-nen" ? "shounen" : selectedCategory;
+      list = list.filter(item =>
+        cat === "dublado"
+          ? item.streams.some(source => source.audio === "dub")
+          : item.genres.some(genre => matchesGenre(cat, genre))
       );
     }
     return list;
