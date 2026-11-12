@@ -137,6 +137,22 @@ function WatchSeriesPage() {
     streams: [],
   };
 
+  // Prefer the next episode in the current season, then the first episode of
+  // the next available season. Never invent a non-existent episode route.
+  const followingInSeason = foundSeason?.episodes
+    .filter(item => item.episodeNumber > targetEpisode)
+    .sort((a,b) => a.episodeNumber - b.episodeNumber)[0];
+  const nextSeason = !followingInSeason ? serie?.seasons
+    ?.filter(item => item.seasonNumber > targetSeason && item.episodes.length > 0)
+    .sort((a,b) => a.seasonNumber - b.seasonNumber)[0] : undefined;
+  const followingEpisode = followingInSeason || nextSeason?.episodes
+    .slice().sort((a,b) => a.episodeNumber - b.episodeNumber)[0];
+  const followingSeasonNumber = followingInSeason ? targetSeason : nextSeason?.seasonNumber;
+  const goToNextEpisode = followingEpisode && followingSeasonNumber !== undefined
+    ? () => void navigate({ to: "/assistir/serie/$id/$temp/$ep",
+      params: { id, temp: String(followingSeasonNumber), ep: String(followingEpisode.episodeNumber) } })
+    : undefined;
+
   const episodeKey = { type: "s" as const, contentId: effectiveSerie.id, season: Number(temp), episode: Number(ep) };
   const savedProgress = getProgressById(`${effectiveSerie.id}-t${temp}-e${ep}`);
   const episodeSaved = getEpisodeProgress(episodeKey);
@@ -185,6 +201,8 @@ function WatchSeriesPage() {
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}
+          onNextEpisode={goToNextEpisode}
+          nextEpisodeLabel={nextSeason ? "Próxima temporada" : "Próximo episódio"}
           {...(effectiveSerie.tmdb?.runtime && effectiveSerie.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveSerie.tmdb.runtime } : {})}
         />
       </PlayerErrorBoundary>
