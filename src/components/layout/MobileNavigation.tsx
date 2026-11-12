@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type Dispatch, type FormEvent, type
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight, ChevronDown, Clapperboard, Compass, Film, Gamepad2,
-  Heart, Home, Menu, Search, Sparkles, Tv2, Trophy, X,
+  Heart, Home, Menu, Search, Orbit, Tv2, Trophy, X,
 } from "lucide-react";
 import { mobileTabActive, isWatchRoute } from "@/lib/device-profile";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
@@ -130,30 +130,36 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
 
   return (
     <>
-      <nav className="zf-mobile-dock" aria-label="Navegação principal no celular">
+      <nav className="zf-mobile-dock" aria-label="Navegação principal do ZANG FLIX">
         <Link to="/" className={"zf-mobile-tab" + (mobileTabActive(pathname,"home") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"home") ? "page" : undefined}>
-          <Home size={20} strokeWidth={2} /><span>Início</span>
+          <Home size={21} strokeWidth={1.9} /><span>Início</span>
         </Link>
         <Link to="/generos/$slug" params={{slug:"filmes"}}
           className={"zf-mobile-tab" + (mobileTabActive(pathname,"movies") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"movies") ? "page" : undefined}>
-          <Clapperboard size={20} strokeWidth={2} /><span>Filmes</span>
+          <Film size={21} strokeWidth={1.9} /><span>Filmes</span>
+        </Link>
+        <Link to="/generos/$slug" params={{slug:"series"}}
+          className={"zf-mobile-tab" + (mobileTabActive(pathname,"series") ? " is-active" : "")}
+          aria-current={mobileTabActive(pathname,"series") ? "page" : undefined}>
+          <Clapperboard size={21} strokeWidth={1.9} /><span>Séries</span>
+        </Link>
+        <Link to="/animes"
+          className={"zf-mobile-tab" + (mobileTabActive(pathname,"anime") ? " is-active" : "")}
+          aria-current={mobileTabActive(pathname,"anime") ? "page" : undefined}>
+          <Orbit size={21} strokeWidth={1.9} /><span>Animes</span>
         </Link>
         <Link to="/tv" className={"zf-mobile-tab zf-mobile-live" + (mobileTabActive(pathname,"tv") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"tv") ? "page" : undefined}>
-          <span className="zf-mobile-live-icon"><Tv2 size={21} strokeWidth={2.1} /></span><span>TV ao vivo</span>
+          <Tv2 size={21} strokeWidth={1.9} /><span>TV</span>
         </Link>
-        <Link to="/futebol" className={"zf-mobile-tab" + (mobileTabActive(pathname,"games") ? " is-active" : "")}
-          aria-current={mobileTabActive(pathname,"games") ? "page" : undefined}>
-          <Trophy size={21} strokeWidth={2.1} /><span>Jogos</span>
-        </Link>
-        <button type="button" className={"zf-mobile-tab zf-mobile-menu-tab" + (open ? " is-active" : "")}
-          onClick={() => onOpenChange(!open)} aria-expanded={open} aria-controls={panelId}
-          aria-label={open ? "Fechar menu" : "Abrir menu completo"}>
-          <Menu size={21} strokeWidth={2.1} /><span>Menu</span>
-        </button>
       </nav>
+      <button type="button" className={"zf-mobile-search-fab" + (open ? " is-active" : "")}
+        onClick={() => onOpenChange(!open)} aria-expanded={open} aria-controls={panelId}
+        aria-label={open ? "Fechar menu e pesquisa" : "Pesquisar e explorar o catálogo"}>
+        {open ? <X size={24} strokeWidth={1.9} /> : <Search size={24} strokeWidth={1.9} />}
+      </button>
 
       {open && (
         <div className="zf-mobile-menu-layer">
@@ -210,7 +216,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                 <Link to="/" onClick={navigateAndClose}><Home size={20} /><span>Início</span></Link>
                 <Link to="/generos/$slug" params={{slug:"filmes"}} onClick={navigateAndClose}><Film size={20} /><span>Filmes</span></Link>
                 <Link to="/generos/$slug" params={{slug:"series"}} onClick={navigateAndClose}><Clapperboard size={20} /><span>Séries</span></Link>
-                <Link to="/animes" onClick={navigateAndClose}><Sparkles size={20} /><span>Animes</span></Link>
+                <Link to="/animes" onClick={navigateAndClose}><Orbit size={20} /><span>Animes</span></Link>
                 <Link to="/tv" onClick={navigateAndClose}><Tv2 size={20} /><span>TV ao vivo</span></Link>
                 <Link to="/lancamentos" onClick={navigateAndClose}><Compass size={20} /><span>Lançamentos</span></Link>
                 <Link to="/minha-lista" className="zf-mobile-mylist" onClick={navigateAndClose}>
@@ -233,8 +239,12 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                     {expanded === section.id && (
                       <div className="zf-mobile-menu-genres">
                         {section.items.map(item => (
-                          <Link key={item.slug} to="/generos/$slug" params={{slug:item.slug}}
-                            search={{tipo:section.type}} onClick={navigateAndClose}>{item.title}</Link>
+                          section.id === "animes"
+                            ? <Link key={item.slug} to="/animes"
+                                search={{categoria:item.slug === "shounen" ? "sh-nen" : item.slug}}
+                                onClick={navigateAndClose}>{item.title}</Link>
+                            : <Link key={item.slug} to="/generos/$slug" params={{slug:item.slug}}
+                                search={{tipo:section.type}} onClick={navigateAndClose}>{item.title}</Link>
                         ))}
                       </div>
                     )}
