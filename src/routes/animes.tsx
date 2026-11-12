@@ -1,5 +1,5 @@
 import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
@@ -9,6 +9,9 @@ import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { Sparkles, Tv, Search, X, ChevronLeft, ChevronRight, Film, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/animes")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    categoria: typeof search.categoria === "string" ? search.categoria : undefined,
+  }),
   component: AnimesPage,
   head: () => ({ meta: [{ title: "Animes — Zang Flix" }] }),
 });
@@ -80,6 +83,8 @@ function sushiCardToCatalogItem(s: SushiCardData): CatalogItem {
 }
 
 function AnimesPage() {
+  const navigate = useNavigate();
+  const { categoria: urlCategory } = Route.useSearch();
   const [sushiItems, setSushiItems] = useState<SushiCardData[]>([]);
   const [localItems, setLocalItems] = useState<CatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +94,7 @@ function AnimesPage() {
   // Filtros e busca
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(urlCategory || "");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -121,6 +126,13 @@ function AnimesPage() {
     setCurrentPage(1);
     setLocalVisibleCount(CATALOG_PAGE_SIZE);
   };
+
+  useEffect(() => {
+    // Category links from the desktop dropdown and mobile menu are URL-driven.
+    setSelectedCategory(urlCategory || "");
+    setCurrentPage(1);
+    setLocalVisibleCount(CATALOG_PAGE_SIZE);
+  }, [urlCategory]);
 
   // Carrega os animes clássicos do catálogo local (preservando o acervo anterior)
   useEffect(() => {
@@ -181,6 +193,7 @@ function AnimesPage() {
 
   const handleCategoryClick = (catSlug: string) => {
     setSelectedCategory(catSlug);
+    void navigate({ to: "/animes", search: catSlug ? { categoria: catSlug } : {} });
     setSearchQuery("");
     setDebouncedQuery("");
     setCurrentPage(1);
