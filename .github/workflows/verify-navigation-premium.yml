@@ -1,0 +1,29 @@
+name: Verify ZANG FLIX navigation and hero
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/layout/**'
+      - 'src/components/catalog/HeroSection.tsx'
+      - 'src/lib/genre-matching.ts'
+      - 'src/lib/hero-images.ts'
+      - 'src/lib/device-profile.ts'
+      - 'src/routes/animes.tsx'
+      - 'src/routes/generos.$slug.tsx'
+      - 'src/styles/navigation-premium.css'
+      - 'src/routes/__root.tsx'
+      - 'tests/genre-matching.test.ts'
+      - 'tests/hero-images.test.ts'
+      - '.github/workflows/verify-navigation-premium.yml'
+  workflow_dispatch:
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Verify genre matching and hero source selection
+        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts
