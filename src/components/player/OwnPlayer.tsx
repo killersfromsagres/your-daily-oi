@@ -38,6 +38,7 @@ interface OwnPlayerProps {
   onNextEpisode?: () => void;
   nextEpisodeLabel?: string;
   openingEndSeconds?: number;
+  openingStartSeconds?: number;
   creditsStartSeconds?: number;
 }
 
@@ -140,6 +141,7 @@ export function OwnPlayer({
   onNextEpisode,
   nextEpisodeLabel,
   openingEndSeconds,
+  openingStartSeconds = 0,
   creditsStartSeconds,
 }: OwnPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -917,7 +919,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         ZANG <span>FLIX</span>
       </div>
             {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
-        engine.currentTime >= 5 && engine.currentTime < openingEndSeconds - 3 && (
+        engine.currentTime >= Math.max(0, openingStartSeconds - 2) && engine.currentTime < openingEndSeconds - 3 && (
         <button type="button" className="zf-player-episode-action zf-skip-opening"
           onClick={() => { engine.seek(openingEndSeconds); showControls(); }}>
           <SkipForward size={17} /> Pular abertura
