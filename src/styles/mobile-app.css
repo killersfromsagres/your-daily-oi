@@ -162,3 +162,17 @@
   }
   .ydo-player-container .zf-next-episode { bottom:94px; }
 }
+
+/* Watermark follows the exact same visibility state as player controls. */
+.ydo-player-container .zf-player-watermark {
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .2s ease,visibility .2s ease;
+}
+.ydo-player-container[data-controls-visible="true"] .zf-player-watermark {
+  opacity:1;
+  visibility:visible;
+}
+@media (prefers-reduced-motion:reduce) {
+  .ydo-player-container .zf-player-watermark { transition:none; }
+}
