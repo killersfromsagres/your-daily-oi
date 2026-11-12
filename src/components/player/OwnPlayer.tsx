@@ -582,13 +582,23 @@ export function OwnPlayer({
             lastTimeRef.current = Math.max(lastTimeRef.current, position);
             lastProgressRef.current = { time: position, at: now };
             if (rawStream) {
-              recordFailedSource(rawStream.url);
               autoSwitchCountRef.current++;
               if (autoSwitchCountRef.current <= Math.max(2, orderedStreams.length * 2)) {
                 setAutoSwitchMsg("Recuperando reprodução…");
-                if (!chooseNextApprovedSource()) {
-                  // A single source can still recover via its alternate transport.
-                  setAttemptStage(stage => stage === 0 ? 1 : 0);
+                // Retry the same provider through its alternate transport first.
+                // Only blacklist the provider after both transports have failed.
+                const first = getStreamUrlForStage(rawStream.url, 0, rawStream.format);
+                const alternate = getStreamUrlForStage(rawStream.url, 1, rawStream.format);
+                if (attemptStage === 0 && alternate !== first) {
+                  setResolvedDirectUrl(null);
+                  setResolvedIsHls(null);
+                  setAttemptStage(1);
+                } else {
+                  recordFailedSource(rawStream.url);
+                  if (!chooseNextApprovedSource()) {
+                    // No usable source remains; do not toggle stage forever.
+                    setExhaustedSources(true);
+                  }
                 }
               } else {
                 setExhaustedSources(true);
