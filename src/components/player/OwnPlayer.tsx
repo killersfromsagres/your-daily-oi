@@ -673,6 +673,23 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     onTimeUpdate?.(engine.currentTime, engine.duration);
   }, [engine.currentTime, engine.duration, onTimeUpdate]);
 
+  // Persist the actual video position on app background/close, not stale React state.
+  useEffect(() => {
+    const persist = () => {
+      const video = videoRef.current;
+      if (video && Number.isFinite(video.currentTime) && video.currentTime > 2) {
+        onTimeUpdate?.(video.currentTime, Number.isFinite(video.duration) ? video.duration : 0);
+      }
+    };
+    window.addEventListener("pagehide", persist);
+    document.addEventListener("visibilitychange", persist);
+    return () => {
+      persist();
+      window.removeEventListener("pagehide", persist);
+      document.removeEventListener("visibilitychange", persist);
+    };
+  }, [onTimeUpdate]);
+
   // Auto-hide controles
   const showControls = useCallback(() => {
     setControlsVisible(true);
