@@ -1,0 +1,196 @@
+/* ZANG FLIX — cinematic navigation system. Loaded after legacy navigation layers. */
+.ydo-header { box-sizing:border-box; }
+.zf-install-header { display:flex; align-items:center; flex:0 0 auto; position:relative; min-width:0; }
+.zf-header-apk { cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:7px; white-space:nowrap; }
+.zf-install-help {
+  position:absolute; right:0; top:calc(100% + 12px); z-index:1500;
+  width:min(328px,calc(100vw - 26px)); padding:15px;
+  border:1px solid rgba(236,198,138,.24); border-radius:18px;
+  color:#f4f5f8; background:rgba(20,25,35,.97);
+  backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+  box-shadow:0 18px 55px rgba(0,0,0,.6);
+}
+.zf-install-help-head { display:flex; align-items:center; gap:9px; color:#edc58f; font-size:13px; }
+.zf-install-help-head strong { flex:1; }
+.zf-install-help-head button {
+  display:grid;place-items:center; width:30px;height:30px;border-radius:9px;
+  background:rgba(255,255,255,.065);color:#fff;border:1px solid rgba(255,255,255,.09);cursor:pointer;
+}
+.zf-install-help p { margin:11px 0 9px; line-height:1.55; font-size:13px;color:#f0f0f4; }
+.zf-install-help small { display:block;line-height:1.45;color:#aeb5c0;font-size:11px; }
+.zf-genre-fallback {
+  margin:5px 0 20px;padding:14px 16px;border-radius:13px;
+  border:1px solid rgba(225,189,137,.22);background:rgba(225,189,137,.055);
+  color:#d6d8dd;font-size:13px;line-height:1.5;
+}
+
+/* The previous intrinsic-width desktop nav exceeded its floating container. */
+@media (min-width:1121px) {
+  .ydo-header {
+    width:min(1460px,calc(100vw - 36px));
+    max-width:none; min-width:0; justify-content:space-between;
+    gap:clamp(6px,.7vw,14px); padding-inline:clamp(8px,1.15vw,19px);
+  }
+  .ydo-header .ydo-logo { flex:0 0 auto;min-width:0;margin-right:0; }
+  .ydo-header .ydo-nav {
+    flex:1 1 auto;min-width:0;display:flex;
+    justify-content:space-evenly;gap:clamp(0px,.08vw,4px);
+  }
+  .ydo-header .ydo-nav-link {
+    font-size:clamp(11px,.82vw,13px);
+    padding-inline:clamp(5px,.58vw,10px);
+    min-width:0;white-space:nowrap;
+  }
+  .ydo-header .ydo-nav-football {
+    gap:5px;padding-inline:8px;white-space:nowrap;
+  }
+  .ydo-header .ydo-nav-mylist { gap:4px; }
+  .ydo-header .ydo-logo-text { font-size:clamp(14px,1vw,17px); }
+  .ydo-header .ydo-logo-img { max-width:36px; }
+  .ydo-header .zf-header-apk { min-height:34px;padding:0 10px;font-size:11px; }
+  .ydo-header .ydo-header-tools { margin-left:0; flex:0 0 auto; }
+  .ydo-header .ydo-dropdown-container:last-of-type .ydo-categories-dropdown {
+    left:auto;right:0;
+  }
+}
+@media (min-width:1121px) and (max-width:1340px) {
+  .ydo-header .ydo-nav-link { font-size:11px;padding-inline:5px; }
+  .ydo-header .ydo-football-today { display:none; }
+  .ydo-header .ydo-logo { gap:5px; }
+  .ydo-header .zf-header-apk { padding-inline:8px; font-size:10.5px; }
+}
+
+/* Five destinations + detached search, following a restrained glass dock. */
+.zf-mobile-search-fab { display:none; }
+@media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
+    position:fixed; z-index:1100;
+    left:12px;right:85px; width:auto;max-width:650px;
+    margin:0 auto;
+    bottom:calc(11px + env(safe-area-inset-bottom,0px));
+    min-height:70px;padding:6px 5px;align-items:center;
+    border-radius:24px;border:1px solid rgba(255,255,255,.19);
+    background:rgba(25,29,39,.64);
+    -webkit-backdrop-filter:blur(27px) saturate(155%);
+    backdrop-filter:blur(27px) saturate(155%);
+    box-shadow:0 12px 36px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.09);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab {
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    gap:5px;min-height:56px;min-width:0;padding:5px 2px;border:0;
+    border-radius:18px;background:transparent;color:rgba(238,240,247,.76);
+    font-size:10px;font-weight:650;letter-spacing:-.015em;
+    text-decoration:none;transition:color .2s ease,background .2s ease;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab svg { flex:0 0 auto; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab.is-active {
+    background:rgba(255,255,255,.13);color:#ffcf8a;border:0;
+    box-shadow:inset 0 1px rgba(255,255,255,.13);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab span:last-child {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {
+    display:grid;place-items:center;
+    position:fixed;z-index:1101;right:12px;bottom:calc(11px + env(safe-area-inset-bottom,0px));
+    height:70px;width:65px;padding:0;
+    color:#f4f7fc;border-radius:24px;border:1px solid rgba(255,255,255,.19);
+    background:rgba(25,29,39,.76);
+    -webkit-backdrop-filter:blur(27px) saturate(155%);backdrop-filter:blur(27px) saturate(155%);
+    box-shadow:0 12px 36px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.10);
+    cursor:pointer;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {color:#ffd49a;background:rgba(70,57,44,.94);}
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab:focus-visible,
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab:focus-visible {
+    outline:2px solid #eac187;outline-offset:3px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim {
+    background:rgba(2,5,12,.60);
+    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
+    top:calc(10px + env(safe-area-inset-top,0px));right:10px;
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    width:min(430px,calc(100vw - 20px));height:auto;
+    border:1px solid rgba(255,255,255,.17);border-radius:27px;
+    overflow:hidden;background:rgba(19,24,36,.85);
+    backdrop-filter:blur(32px) saturate(160%);
+    -webkit-backdrop-filter:blur(32px) saturate(160%);
+    box-shadow:0 28px 85px rgba(0,0,0,.65);
+    padding-top:0;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-top {padding:17px 20px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scroll {
+    padding:16px 18px calc(22px + env(safe-area-inset-bottom,0px));
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a {
+    background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.10);
+    border-radius:16px;min-height:63px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg {
+    color:#f0c58f;stroke-width:1.8;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search {
+    border-color:rgba(255,255,255,.15);background:rgba(8,12,20,.42);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature {
+    border:1px solid rgba(248,204,144,.2);
+    background:linear-gradient(115deg,rgba(111,81,43,.36),rgba(36,46,65,.45));
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections {
+    background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.12);
+  }
+  html:not([data-zf-platform="tv"]) body {
+    padding-bottom:calc(94px + env(safe-area-inset-bottom,0px));
+  }
+  html:not([data-zf-platform="tv"])[data-zf-watch="true"] body {padding-bottom:0;}
+}
+@media (max-width:767px) {
+  html:not([data-zf-platform="tv"]) .ydo-header {
+    top:calc(9px + env(safe-area-inset-top,0px));
+    left:12px;right:12px;width:auto;height:56px;min-height:56px;
+    padding:0 10px;gap:6px;border-radius:20px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(20,24,35,.75);
+    -webkit-backdrop-filter:blur(22px) saturate(145%);
+    backdrop-filter:blur(22px) saturate(145%);
+    box-shadow:0 9px 28px rgba(0,0,0,.4);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-logo {flex:0 1 auto;min-width:0;gap:6px;}
+  html:not([data-zf-platform="tv"]) .ydo-logo-text {font-size:clamp(12px,3.3vw,15px);}
+  html:not([data-zf-platform="tv"]) .ydo-logo-img {height:24px;max-width:31px;}
+  html:not([data-zf-platform="tv"]) .zf-install-header {margin-left:auto; }
+  html:not([data-zf-platform="tv"]) .zf-header-apk {
+    display:flex;gap:5px;min-height:36px;padding:0 8px;border-radius:13px;
+    font-size:clamp(10px,2.6vw,11px);
+  }
+  html:not([data-zf-platform="tv"]) .zf-header-apk svg {height:15px;width:15px;}
+  html:not([data-zf-platform="tv"]) .ydo-header-tools {
+    flex:0 0 auto;width:auto;min-width:0;margin:0;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn {
+    width:36px;height:36px;min-width:36px;border-radius:13px;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-mobile-menu-trigger {display:none;}
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    left:10px;right:80px;min-height:69px;max-width:none;margin:0;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {right:10px;height:69px;width:62px;}
+  html:not([data-zf-platform="tv"]) .ydo-hero {height:clamp(535px,82svh,750px);}
+  html:not([data-zf-platform="tv"]) .ydo-hero-content {padding:0 20px 100px;}
+  html:not([data-zf-platform="tv"]) .ydo-hero-title {font-size:clamp(30px,8.5vw,48px);letter-spacing:-.045em;line-height:1.03;}
+  html:not([data-zf-platform="tv"]) .ydo-hero-img {object-position:center 28%;}
+  html:not([data-zf-platform="tv"]) .ydo-hero-veil-bottom {
+    background:linear-gradient(to top,#080a10 0%,rgba(8,10,16,.98) 10%,rgba(8,10,16,.77) 36%,transparent 77%);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-hero-dots {bottom:calc(86px + env(safe-area-inset-bottom,0px));}
+  html:not([data-zf-platform="tv"]) .ydo-hero-actions {gap:10px;flex-wrap:wrap;}
+}
+@media(max-width:380px) {
+  html:not([data-zf-platform="tv"]) .zf-header-apk span {font-size:0;line-height:0;}
+  html:not([data-zf-platform="tv"]) .zf-header-apk svg {height:18px;width:18px;}
+  html:not([data-zf-platform="tv"]) .zf-header-apk {width:38px;padding:0;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .zf-mobile-tab,.zf-mobile-search-fab {transition:none!important;}
+}
