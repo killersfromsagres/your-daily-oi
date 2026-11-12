@@ -38,8 +38,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
   // When the server selects a new half-hour collection, show its first feature.
   useEffect(() => { setActiveIndex(0); }, [itemsKey]);
 
-  // Avança apenas enquanto a aba está visível. Celulares recebem imagens menores
-  // e transições menos frequentes para evitar ocupação excessiva de memória.
+  // Avança apenas com aba visível; no celular preserva tempo de leitura e bateria.
   useEffect(() => {
     if (items.length <= 1) return;
     const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -68,7 +67,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
     if (connection?.saveData || ["slow-2g","2g","3g"].includes(connection?.effectiveType || "")) return;
     const next = items[(activeIndex + 1) % items.length];
     if (!next) return;
-    const src = getSizedHeroImage(next.backdropUrl, next.posterUrl, "w1280");
+    const src = getSizedHeroImage(next.backdropUrl, next.posterUrl, "original");
     if (!src) return;
     const timeout = window.setTimeout(() => {
       const image = new Image();
@@ -98,15 +97,18 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
         const backdrop = failedBackdropId === hero.id ? null : hero.backdropUrl;
         const poster = failedPosterId === hero.id ? null : hero.posterUrl;
         const imageUrl = getSizedHeroImage(backdrop, poster, "w1280");
-        const mobileUrl = getSizedHeroImage(backdrop, poster, "w780");
+        const mobileUrl = getSizedHeroImage(backdrop, poster, "w1280");
         const largeUrl = getSizedHeroImage(backdrop, poster, "original");
         return (
           <div key={hero.id} className="ydo-hero-slide is-active" aria-hidden={false}>
             {imageUrl && (
               <picture>
-                {/* Full-resolution only on 4K-scale screens; never on phones. */}
-                <source media="(min-width: 2200px)" srcSet={largeUrl} />
-                <source media="(max-width: 1120px)" srcSet={mobileUrl} />
+                {/* Original TMDB artwork on desktop / high-density tablet;
+                    1280px on phones preserves sharpness without oversized memory use.
+                    Original quality depends on the source file's actual resolution. */}
+                <source media="(min-width: 1024px)" srcSet={largeUrl} />
+                <source media="(min-width: 700px) and (min-resolution: 2dppx)" srcSet={largeUrl} />
+                <source media="(max-width: 1023px)" srcSet={mobileUrl} />
                 <img src={imageUrl} alt="" className="ydo-hero-img"
                   fetchPriority="high" loading="eager" decoding="async"
                   onError={() => {
