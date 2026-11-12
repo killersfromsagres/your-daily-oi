@@ -563,23 +563,35 @@ export function OwnPlayer({
           return;
         }
       }
-      // A5: Watchdog de congelamento mid-play
-      if (engine.state === "playing") {
+      // Detect stalls using the media element, not React's last rendered time.
+      // Browsers can transition from "playing" to "waiting"/"stalled" while
+      // retaining buffered data that is no longer decodable.
+      const media = videoRef.current;
+      if (hasEverPlayedRef.current && media && !media.paused && !media.ended &&
+          !media.seeking && !pausedByUserRef.current &&
+          document.visibilityState !== "hidden") {
         const now = Date.now();
-        if (!lastProgressRef.current || Math.abs(engine.currentTime - lastProgressRef.current.time) > 0.5) {
-          lastProgressRef.current = { time: engine.currentTime, at: now };
-        } else {
-          const elapsed = now - lastProgressRef.current.at;
-          if (elapsed > 15000 && engine.buffered <= engine.currentTime + 2) {
-            console.warn(`[OwnPlayer] Congelamento mid-play detectado (sem avanço há ${Math.round(elapsed / 1000)}s). Trocando de servidor...`);
-            lastProgressRef.current = null;
+        const position = media.currentTime;
+        if (!lastProgressRef.current || Math.abs(position - lastProgressRef.current.time) > 0.25) {
+          lastProgressRef.current = { time: position, at: now };
+        } else if (now - lastProgressRef.current.at > 18000) {
+          const remaining = Number.isFinite(media.duration) ? media.duration - position : Infinity;
+          // Never fail over when playback has naturally reached the end.
+          if (remaining > 3 && media.playbackRate > 0) {
+            console.warn("[OwnPlayer] Playback stopped progressing; attempting next source.");
+            lastTimeRef.current = Math.max(lastTimeRef.current, position);
+            lastProgressRef.current = { time: position, at: now };
             if (rawStream) {
               recordFailedSource(rawStream.url);
               autoSwitchCountRef.current++;
-              if (autoSwitchCountRef.current <= orderedStreams.length * 2) {
-                setAutoSwitchMsg("Trocando de servidor…");
-                chooseNextApprovedSource();
-setTimeout(() => setAutoSwitchMsg(null), 1200);
+              if (autoSwitchCountRef.current <= Math.max(2, orderedStreams.length * 2)) {
+                setAutoSwitchMsg("Recuperando reprodução…");
+                if (!chooseNextApprovedSource()) {
+                  // A single source can still recover via its alternate transport.
+                  setAttemptStage(stage => stage === 0 ? 1 : 0);
+                }
+              } else {
+                setExhaustedSources(true);
               }
             }
             return;
