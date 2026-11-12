@@ -42,6 +42,8 @@ export interface EpisodeItem {
   title?: string;
   name?: string;
   episodeSlug?: string;
+  /** Verified credit start in seconds; cue appears one second later. */
+  creditsStartSeconds?: number;
   thumbUrl?: string;
   streams: StreamSource[];
 }
