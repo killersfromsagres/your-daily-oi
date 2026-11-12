@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy, Download } from "lucide-react";
+import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
+import { InstallAppButton } from "@/components/layout/InstallAppButton";
 import { detectDeviceProfile, isWatchRoute, type DeviceProfile } from "@/lib/device-profile";
 import { installTvRemoteNavigation } from "@/lib/tv-remote";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
@@ -459,10 +460,7 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
       </nav>
 
-      <a className="zf-header-apk" href="https://github.com/killersfromsagres/your-daily-oi/actions/workflows/android-apk.yml"
-        target="_blank" rel="noopener noreferrer" title="Baixar APK Android (build de testes)">
-        <Download size={16} aria-hidden="true" /><span>Baixar aplicativo</span>
-      </a>
+      <InstallAppButton />
             {/* Busca do catálogo */}
       <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Sistema de Busca Minimalista e Profissional */}
