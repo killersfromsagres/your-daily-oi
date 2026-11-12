@@ -201,6 +201,7 @@ function WatchAnimePage() {
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}
           onNextEpisode={goToNextEpisode}
+          creditsStartSeconds={foundEp?.creditsStartSeconds}
           nextEpisodeLabel={nextSeason ? "Próxima temporada" : "Próximo episódio"}
           openingEndSeconds={90}
           {...(effectiveAnime.tmdb?.runtime && effectiveAnime.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveAnime.tmdb.runtime } : {})}
