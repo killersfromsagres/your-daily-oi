@@ -27,9 +27,11 @@ export function isWatchRoute(pathname: string): boolean {
   return pathname === "/assistir" || pathname.startsWith("/assistir/");
 }
 
-export function mobileTabActive(pathname: string, tab: "home" | "movies" | "tv" | "games"): boolean {
+export function mobileTabActive(pathname: string, tab: "home" | "movies" | "series" | "anime" | "tv" | "games"): boolean {
   if (tab === "home") return pathname === "/";
   if (tab === "movies") return pathname === "/generos/filmes" || pathname.startsWith("/filme/");
+  if (tab === "series") return pathname === "/generos/series" || pathname.startsWith("/serie/");
+  if (tab === "anime") return pathname === "/animes" || pathname.startsWith("/anime/");
   if (tab === "tv") return pathname === "/tv" || pathname.startsWith("/tv/");
   return pathname === "/futebol" || pathname.startsWith("/futebol/");
 }
