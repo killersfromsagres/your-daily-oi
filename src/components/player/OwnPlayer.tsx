@@ -894,7 +894,10 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       onTouchStart={showControls}
       style={{ cursor: controlsVisible ? "default" : "none" }}
     >
-      {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
+      <div className="zf-player-watermark" aria-hidden="true">
+        ZANG <span>FLIX</span>
+      </div>
+            {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
         engine.currentTime >= 5 && engine.currentTime < openingEndSeconds - 3 && (
         <button type="button" className="zf-player-episode-action zf-skip-opening"
           onClick={() => { engine.seek(openingEndSeconds); showControls(); }}>
@@ -903,7 +906,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       )}
       {onNextEpisode && engine.duration > 0 &&
         engine.currentTime >= (creditsStartSeconds !== undefined && Number.isFinite(creditsStartSeconds)
-          ? creditsStartSeconds + 1 : Math.max(0, engine.duration - 90)) &&
+          ? creditsStartSeconds + 1 : Math.max(0, engine.duration - 180)) &&
         engine.duration - engine.currentTime > 0 && (
         <button type="button" className="zf-player-episode-action zf-next-episode"
           style={{ zIndex: 999, pointerEvents: "auto" }}
