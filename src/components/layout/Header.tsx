@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy } from "lucide-react";
+import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy, Download } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { getSavedList } from "@/lib/storage";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
@@ -459,7 +459,11 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
       </nav>
 
-      {/* Busca do catálogo */}
+      <a className="zf-header-apk" href="https://github.com/killersfromsagres/your-daily-oi/actions/workflows/android-apk.yml"
+        target="_blank" rel="noopener noreferrer" title="Baixar APK Android (build de testes)">
+        <Download size={16} aria-hidden="true" /><span>Baixar aplicativo</span>
+      </a>
+            {/* Busca do catálogo */}
       <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Sistema de Busca Minimalista e Profissional */}
         {searchOpen ? (
