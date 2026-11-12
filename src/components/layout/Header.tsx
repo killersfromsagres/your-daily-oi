@@ -418,9 +418,8 @@ export function Header({ onSearch }: HeaderProps) {
                   return (
                     <Link
                       key={cat.slug}
-                      to="/generos/$slug"
-                      params={{ slug: cat.slug }}
-                      search={{ tipo: "a" }}
+                      to="/animes"
+                      search={{ categoria: cat.slug === "shounen" ? "sh-nen" : cat.slug }}
                       className="ydo-category-item"
                       onClick={() => setAnimesHover(false)}
                     >
