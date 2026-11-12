@@ -202,6 +202,7 @@ function WatchSeriesPage() {
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}
           onNextEpisode={goToNextEpisode}
+          creditsStartSeconds={foundEp?.creditsStartSeconds}
           nextEpisodeLabel={nextSeason ? "Próxima temporada" : "Próximo episódio"}
           {...(effectiveSerie.tmdb?.runtime && effectiveSerie.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveSerie.tmdb.runtime } : {})}
         />
