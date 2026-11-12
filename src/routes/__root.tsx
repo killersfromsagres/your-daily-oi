@@ -25,7 +25,6 @@ import minimalLiveControlsCss from "../styles/live-controls-minimal.css?url";
 import serverSelectorCss from "../styles/server-selector.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout";
-import { InstallAppButton } from "@/components/layout/InstallAppButton";
 
 function NotFoundComponent() {
   return (
@@ -126,7 +125,6 @@ function RootComponent() {
       <div className="ambient-glow" aria-hidden />
       <Header />
       <Outlet />
-      <InstallAppButton />
     </QueryClientProvider>
   );
 }
