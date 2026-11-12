@@ -142,3 +142,23 @@
 @media (max-width:360px) {
   html:not([data-zf-platform="tv"]) .zf-header-apk span { max-width:54px;white-space:normal;line-height:1.1; }
 }
+
+/* Unobtrusive on-screen brand; independent of player controls and clicks. */
+.ydo-player-container .zf-player-watermark {
+  position:absolute;top:clamp(66px,10vh,100px);right:clamp(15px,3vw,40px);
+  z-index:25;pointer-events:none;user-select:none;
+  color:rgba(255,255,255,.24);font-size:clamp(11px,1.25vw,16px);
+  font-weight:900;letter-spacing:.12em;line-height:1;
+  text-shadow:0 1px 3px rgba(0,0,0,.4);
+}
+.ydo-player-container .zf-player-watermark span { color:rgba(239,187,103,.36); }
+.ydo-player-container .zf-next-episode {
+  z-index:999!important;pointer-events:auto!important;
+  bottom:clamp(105px,17vh,165px);
+}
+@media(max-width:767px){
+  .ydo-player-container .zf-player-watermark {
+    top:60px;right:15px;font-size:11px;letter-spacing:.09em;
+  }
+  .ydo-player-container .zf-next-episode { bottom:94px; }
+}
