@@ -148,10 +148,15 @@ function WatchAnimePage() {
   const followingEpisode = followingInSeason || nextSeason?.episodes
     .slice().sort((a,b) => a.episodeNumber - b.episodeNumber)[0];
   const followingSeasonNumber = followingInSeason ? targetSeason : nextSeason?.seasonNumber;
-  const goToNextEpisode = followingEpisode && followingSeasonNumber !== undefined
-    ? () => void navigate({ to: "/assistir/anime/$id/$temp/$ep",
-      params: { id, temp: String(followingSeasonNumber), ep: String(followingEpisode.episodeNumber) } })
-    : undefined;
+  // Some upstream catalogs omit the episode list entirely. Keep navigation
+  // available instead of silently hiding the control; the destination will
+  // resolve the actual stream and show its unavailable state if necessary.
+  const goToNextEpisode = () => {
+    const nextTemp = followingSeasonNumber ?? targetSeason;
+    const nextEp = followingEpisode?.episodeNumber ?? targetEpisode + 1;
+    void navigate({ to: "/assistir/anime/$id/$temp/$ep",
+      params: { id, temp: String(nextTemp), ep: String(nextEp) } });
+  };
 
   const episodeKey = { type: "a" as const, contentId: effectiveAnime.id, season: Number(temp), episode: Number(ep) };
   const savedProgress = getProgressById(`${effectiveAnime.id}-t${temp}-e${ep}`);
