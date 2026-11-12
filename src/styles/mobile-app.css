@@ -53,3 +53,75 @@
 @media (prefers-reduced-motion:reduce) {
   .zf-mobile-menu-panel, .ydo-card { animation:none !important; }
 }
+
+/* 2026 mobile redesign: editorial cinema layout with compact, accessible navigation. */
+@media (max-width: 767px) {
+  html:not([data-zf-platform="tv"]) .ydo-header {
+    top:calc(6px + env(safe-area-inset-top,0px));
+    left:10px;right:10px;height:56px;min-height:56px;padding-inline:12px;
+    border:1px solid rgba(255,255,255,.09);border-radius:16px;
+    background:rgba(9,12,20,.96);box-shadow:0 14px 40px rgba(0,0,0,.3);
+    backdrop-filter:none;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    min-height:65px;padding:5px;border-radius:19px;
+    background:#101722;border:1px solid rgba(255,255,255,.11);
+    box-shadow:0 12px 30px rgba(0,0,0,.42);backdrop-filter:none;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab {
+    gap:5px;min-height:53px;border-radius:14px;font-size:10px;
+    font-weight:650;color:#94a2b4;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab.is-active {
+    background:#2b2a2a;border-color:rgba(241,196,127,.14);color:#f7cc8e;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-live-icon {
+    width:26px;height:26px;margin-top:-3px;background:transparent;border:0;box-shadow:none;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim { background:rgba(0,0,0,.75);backdrop-filter:none; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
+    top:0;bottom:0;width:min(390px,100%);border:0;
+    background:#0d121d;box-shadow:-15px 0 55px rgba(0,0,0,.55);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-top {
+    padding:15px 18px;border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scroll { padding:16px 18px calc(36px + env(safe-area-inset-bottom,0px)); }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search {
+    min-height:52px;border-radius:16px;background:#181f2d;border-color:#343c4c;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature {
+    min-height:87px;margin:18px 0 24px;border-radius:18px;
+    background:linear-gradient(110deg,#31271e,#171e2a);border-color:rgba(244,194,122,.23);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid { gap:10px;margin-bottom:26px; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a {
+    min-height:65px;border-radius:16px;padding:0 14px;
+    background:#171e2b;border-color:rgba(255,255,255,.07);font-size:13px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections {
+    background:#151c29;border-color:rgba(255,255,255,.07);border-radius:17px;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-hero { height:clamp(520px,80svh,700px); }
+  html:not([data-zf-platform="tv"]) .ydo-hero-content { padding:0 19px 78px; }
+  html:not([data-zf-platform="tv"]) .ydo-hero-title {
+    font-size:clamp(29px,8vw,42px);line-height:1.08;letter-spacing:-.045em;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-row-track { scroll-snap-type:x proximity; }
+  html:not([data-zf-platform="tv"]) .ydo-card { scroll-snap-align:start; }
+}
+.zf-player-episode-action {
+  position:absolute;z-index:30;right:clamp(12px,4vw,35px);
+  bottom:clamp(95px,16vh,145px);display:flex;align-items:center;gap:9px;
+  min-height:44px;padding:10px 16px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.28);background:rgba(13,17,25,.92);
+  color:#fff;font:700 13px/1.2 inherit;font-family:inherit;cursor:pointer;
+  box-shadow:0 7px 25px rgba(0,0,0,.4);
+}
+.zf-player-episode-action:focus-visible { outline:2px solid #f3c78b;outline-offset:3px; }
+.zf-player-episode-action.zf-skip-opening { bottom:clamp(155px,25vh,205px); }
+@media (max-width:767px) {
+  .zf-player-episode-action { right:12px;bottom:90px;min-height:40px;padding:8px 12px;font-size:12px; }
+  .zf-player-episode-action.zf-skip-opening { bottom:144px; }
+}
