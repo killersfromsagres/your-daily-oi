@@ -484,11 +484,17 @@ export function LivePlayer({
     let advancedAt = Date.now();
     const watchdog = window.setInterval(() => {
       const video = videoRef.current;
-      if (!video || video.paused || video.ended || video.seeking) {
+      // Background tabs and offline devices suspend media timers. Do not
+      // blacklist a working channel because Android paused the webview.
+      if (!video || video.paused || video.ended || video.seeking ||
+          document.visibilityState === "hidden" || !navigator.onLine) {
+        last = video?.currentTime ?? last;
         advancedAt = Date.now();
         return;
       }
-      if (video.currentTime > last + 0.3) {
+      // Live playlists may jump backwards when the rolling window resets.
+      // Any meaningful position change is progress, not a frozen stream.
+      if (Math.abs(video.currentTime - last) > 0.3) {
         last = video.currentTime;
         advancedAt = Date.now();
       } else {
