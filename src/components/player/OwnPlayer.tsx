@@ -692,6 +692,25 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     };
   }, [onTimeUpdate]);
 
+  // Android media notification: override the browser/provider fallback artwork.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+    const session = navigator.mediaSession;
+    session.metadata = new MediaMetadata({
+      title: title || "ZANG FLIX",
+      artist: subtitle || "Reproduzindo no ZANG FLIX",
+      album: "ZANG FLIX",
+      artwork: [
+        { src: new URL("/favicon.svg", window.location.origin).href, sizes: "any", type: "image/svg+xml" },
+        { src: new URL("/logo.png", window.location.origin).href, sizes: "512x512", type: "image/png" },
+      ],
+    });
+    return () => {
+      // Avoid clearing metadata belonging to the next route's player.
+      if (session.metadata?.title === (title || "ZANG FLIX")) session.metadata = null;
+    };
+  }, [title, subtitle]);
+
   // Auto-hide controles
   const showControls = useCallback(() => {
     setControlsVisible(true);
