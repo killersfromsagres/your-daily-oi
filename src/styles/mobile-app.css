@@ -1,0 +1,55 @@
+/* ZANG FLIX mobile application layer — lightweight, safe-area aware, reduced layout work. */
+.zf-install-wrap { display:none; }
+@media (max-width: 767px) {
+  html:not([data-zf-platform="tv"]) { color-scheme:dark; overflow-x:clip; }
+  html:not([data-zf-platform="tv"]) body { overflow-x:clip; background:#090b12; -webkit-tap-highlight-color:transparent; }
+  html:not([data-zf-platform="tv"]) .ydo-header {
+    top:calc(7px + env(safe-area-inset-top,0px)); left:12px; right:12px;
+    height:54px; min-height:54px; border-radius:17px;
+    background:rgba(13,16,26,.94); border:1px solid rgba(255,255,255,.11);
+    box-shadow:0 10px 35px rgba(0,0,0,.38);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-logo-img { max-width:42px; height:30px; object-fit:contain; }
+  html:not([data-zf-platform="tv"]) .ydo-logo-text { font-size:15px; letter-spacing:-.045em; }
+  html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn,
+  html:not([data-zf-platform="tv"]) .ydo-mobile-menu-trigger { width:auto; min-width:42px; height:42px; border-radius:12px; }
+  html:not([data-zf-platform="tv"]) .ydo-hero { height:clamp(480px,76svh,650px); }
+  html:not([data-zf-platform="tv"]) .ydo-hero-content { padding-inline:18px; padding-bottom:65px; }
+  html:not([data-zf-platform="tv"]) .ydo-hero-title { font-size:clamp(28px,7.5vw,43px); line-height:1.08; text-wrap:balance; }
+  html:not([data-zf-platform="tv"]) .ydo-row-header { padding-inline:18px; }
+  html:not([data-zf-platform="tv"]) .ydo-row-track { padding-inline:18px; scroll-snap-type:x proximity; overscroll-behavior-inline:contain; }
+  html:not([data-zf-platform="tv"]) .ydo-card { scroll-snap-align:start; }
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    left:12px; right:12px; bottom:calc(8px + env(safe-area-inset-bottom,0px));
+    min-height:64px; border-radius:20px; background:rgba(14,19,30,.96);
+    box-shadow:0 12px 40px rgba(0,0,0,.55); backdrop-filter:blur(12px);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab { min-height:53px; }
+  html:not([data-zf-platform="tv"]) .zf-install-wrap {
+    display:block; position:fixed; z-index:1090; right:16px;
+    bottom:calc(86px + env(safe-area-inset-bottom,0px)); max-width:min(310px,calc(100vw - 32px));
+  }
+  html:not([data-zf-platform="tv"])[data-zf-watch="true"] .zf-install-wrap { display:none; }
+  .zf-install-action {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    min-height:42px; padding:9px 15px; border-radius:999px;
+    border:1px solid rgba(250,212,151,.4); background:linear-gradient(120deg,#e9ba75,#f5d8a5);
+    color:#17191f; font:700 12px/1.2 inherit; font-family:inherit;
+    box-shadow:0 8px 26px rgba(0,0,0,.5); cursor:pointer;
+  }
+  .zf-install-help {
+    display:flex; align-items:flex-start; gap:8px; margin-top:8px; padding:12px;
+    border:1px solid rgba(239,196,126,.3); border-radius:14px;
+    background:#161c29; color:#f4e8d4; font-size:12px; line-height:1.45;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .zf-install-help svg { flex-shrink:0; color:#f0c584; }
+}
+@media (display-mode:standalone) {
+  html { overscroll-behavior-y:contain; }
+  body { -webkit-user-select:none; user-select:none; }
+  input,textarea,[contenteditable="true"] { -webkit-user-select:text; user-select:text; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .zf-mobile-menu-panel, .ydo-card { animation:none !important; }
+}
