@@ -4,6 +4,7 @@ import { MediaCard } from "@/components/catalog/MediaCard";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
 import type { CatalogItem } from "@/lib/types";
 import { normalizeTitle, isAnimeItem } from "@/lib/catalog";
+import { matchesGenre } from "@/lib/genre-matching";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
 import { Film, Tv, Sparkles, Filter } from "lucide-react";
@@ -36,20 +37,9 @@ function GenrePage() {
   const isFilmes = normSlug === "filmes";
   const isSeries = normSlug === "series";
 
-  // tipo da URL ou estado selecionado
-  const [selectedType, setSelectedType] = useState<string>(
-    search.tipo || (isFilmes ? "f" : isSeries ? "s" : "todos")
-  );
-
-  useEffect(() => {
-    if (search.tipo) {
-      setSelectedType(search.tipo);
-    } else if (isFilmes) {
-      setSelectedType("f");
-    } else if (isSeries) {
-      setSelectedType("s");
-    }
-  }, [search.tipo, isFilmes, isSeries]);
+  // URL is the sole source of truth. Reusing the route for another genre must
+  // never keep a stale filter from the previous selection.
+  const selectedType = isFilmes ? "f" : isSeries ? "s" : search.tipo || "todos";
 
   useEffect(() => {
     setSavedIds(new Set(getSavedList()));
@@ -72,32 +62,30 @@ function GenrePage() {
   // Changing genre or content type must never inherit a huge DOM from a previous view.
   useEffect(() => { setVisibleCount(CATALOG_PAGE_SIZE); }, [slug, selectedType]);
 
-  // Filtra itens com separação estrita entre filmes, séries e animes
   const filtered = useMemo(() => {
     let base = items;
-
-    // 1. Filtragem estrita por tipo
-    if (selectedType === "s" || selectedType === "serie" || selectedType === "series" || isSeries) {
-      base = base.filter((i) => i.type === "s");
-    } else if (selectedType === "f" || selectedType === "filme" || selectedType === "filmes" || isFilmes) {
-      base = base.filter((i) => i.type === "f");
+    if (selectedType === "s" || selectedType === "serie" || selectedType === "series") {
+      base = base.filter(item => item.type === "s");
+    } else if (selectedType === "f" || selectedType === "filme" || selectedType === "filmes") {
+      base = base.filter(item => item.type === "f");
     } else if (selectedType === "a" || selectedType === "anime" || selectedType === "animes") {
-      base = base.filter((i) => i.type === "a" || isAnimeItem(i));
+      base = base.filter(item => item.type === "a" || isAnimeItem(item));
     }
-
-    // Se a rota for exatamente /generos/filmes ou /generos/series, já retorna
     if (isFilmes || isSeries) return base;
+    return base.filter(item => item.genres?.some(genre => matchesGenre(decoded, genre)));
+  }, [items, decoded, isFilmes, isSeries, selectedType]);
 
-    // 2. Filtragem pelo gênero específico
-    return base.filter((i) =>
-      i.genres.some((g) => {
-        const normGenre = normalizeTitle(g);
-        return normGenre === normSlug || normGenre.includes(normSlug) || normSlug.includes(normGenre);
-      })
-    );
-  }, [items, normSlug, isFilmes, isSeries, selectedType]);
-
-  const visibleItems = useMemo(() => catalogVisibleItems(filtered, visibleCount), [filtered, visibleCount]);
+  // Some catalogs omit genre metadata. Show an explicitly labelled discovery
+  // fallback for that content type rather than a blank page or fake genre tags.
+  const fallback = useMemo(() => {
+    if (filtered.length || isFilmes || isSeries || selectedType === "todos") return [];
+    if (selectedType === "a") return items.filter(item => item.type === "a" || isAnimeItem(item));
+    if (selectedType === "s") return items.filter(item => item.type === "s");
+    if (selectedType === "f") return items.filter(item => item.type === "f");
+    return [];
+  }, [filtered.length, items, isFilmes, isSeries, selectedType]);
+  const displayItems = filtered.length ? filtered : fallback;
+  const visibleItems = useMemo(() => catalogVisibleItems(displayItems, visibleCount), [displayItems, visibleCount]);
 
   const rawTitle = isFilmes ? "Filmes" : isSeries ? "Séries" : decoded.charAt(0).toUpperCase() + decoded.slice(1);
   const typeBadge =
@@ -112,7 +100,6 @@ function GenrePage() {
   const pageTitle = typeBadge && !isFilmes && !isSeries ? `${rawTitle} (${typeBadge})` : rawTitle;
 
   const handleTypeChange = (newType: string) => {
-    setSelectedType(newType);
     void navigate({
       to: "/generos/$slug",
       params: { slug },
@@ -143,7 +130,7 @@ function GenrePage() {
             Catálogo completo e exclusivo Zang Flix
           </span>
         </div>
-        {!loading && <span className="ydo-search-count">{filtered.length} títulos</span>}
+        {!loading && <span className="ydo-search-count">{displayItems.length} títulos</span>}
       </div>
 
       {/* Pílulas de filtro para alternar facilmente se desejar */}
@@ -216,7 +203,7 @@ function GenrePage() {
           <p>Confira sua conexão e tente novamente.</p>
           <button className="ydo-btn-primary" type="button" onClick={() => window.location.reload()}>Tentar novamente</button>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : displayItems.length === 0 ? (
         <div className="ydo-empty-state">
           <h2>Nenhum título encontrado</h2>
           <p>
@@ -229,6 +216,12 @@ function GenrePage() {
         </div>
       ) : (
         <>
+          {fallback.length > 0 && (
+            <p className="zf-genre-fallback" role="status">
+              Nenhum título com o gênero exato foi identificado. Mostrando outras opções
+              de {typeBadge?.toLowerCase() || "nosso catálogo"} enquanto o catálogo é atualizado.
+            </p>
+          )}
           <div className="ydo-search-grid">
             {visibleItems.map(item => (
               <MediaCard key={item.id} item={item}
@@ -236,10 +229,10 @@ function GenrePage() {
             ))}
           </div>
           <div className="zf-catalog-progress" aria-live="polite">
-            <span>Exibindo {visibleItems.length} de {filtered.length} títulos</span>
-            {visibleItems.length < filtered.length && (
+            <span>Exibindo {visibleItems.length} de {displayItems.length} títulos</span>
+            {visibleItems.length < displayItems.length && (
               <button type="button" className="zf-catalog-load-more"
-                onClick={() => setVisibleCount(current => nextCatalogPage(current, filtered.length))}>
+                onClick={() => setVisibleCount(current => nextCatalogPage(current, displayItems.length))}>
                 Carregar mais títulos
               </button>
             )}
