@@ -19,11 +19,13 @@ import tvStudioCss from "../styles/tv-studio.css?url";
 import tvGlassCss from "../styles/tv-glass.css?url";
 import footballCss from "../styles/football-center.css?url";
 import adaptiveCss from "../styles/adaptive-navigation.css?url";
+import mobileAppCss from "../styles/mobile-app.css?url";
 import searchAutocompleteCss from "../styles/search-autocomplete.css?url";
 import minimalLiveControlsCss from "../styles/live-controls-minimal.css?url";
 import serverSelectorCss from "../styles/server-selector.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Header } from "@/components/layout";
+import { InstallAppButton } from "@/components/layout/InstallAppButton";
 
 function NotFoundComponent() {
   return (
@@ -86,6 +88,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: tvGlassCss },
       { rel: "stylesheet", href: footballCss },
       { rel: "stylesheet", href: adaptiveCss },
+      { rel: "stylesheet", href: mobileAppCss },
       { rel: "stylesheet", href: searchAutocompleteCss },
       { rel: "stylesheet", href: minimalLiveControlsCss },
       { rel: "stylesheet", href: serverSelectorCss },
@@ -123,6 +126,7 @@ function RootComponent() {
       <div className="ambient-glow" aria-hidden />
       <Header />
       <Outlet />
+      <InstallAppButton />
     </QueryClientProvider>
   );
 }
