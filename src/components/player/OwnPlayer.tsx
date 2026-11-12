@@ -38,6 +38,7 @@ interface OwnPlayerProps {
   onNextEpisode?: () => void;
   nextEpisodeLabel?: string;
   openingEndSeconds?: number;
+  creditsStartSeconds?: number;
 }
 
 // 4b: Ordem de tentativa por tipo de relay
@@ -139,6 +140,7 @@ export function OwnPlayer({
   onNextEpisode,
   nextEpisodeLabel,
   openingEndSeconds,
+  creditsStartSeconds,
 }: OwnPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -899,10 +901,14 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           <SkipForward size={17} /> Pular abertura
         </button>
       )}
-      {onNextEpisode && engine.duration > 0 && engine.duration - engine.currentTime <= 75 &&
+      {onNextEpisode && engine.duration > 0 &&
+        engine.currentTime >= (creditsStartSeconds !== undefined && Number.isFinite(creditsStartSeconds)
+          ? creditsStartSeconds + 1 : Math.max(0, engine.duration - 90)) &&
         engine.duration - engine.currentTime > 0 && (
         <button type="button" className="zf-player-episode-action zf-next-episode"
-          onClick={onNextEpisode}>
+          style={{ zIndex: 999, pointerEvents: "auto" }}
+          onPointerDown={event => event.stopPropagation()}
+          onClick={event => { event.preventDefault(); event.stopPropagation(); onNextEpisode(); }}>
           <SkipForward size={17} /> {nextEpisodeLabel || "Próximo episódio"}
         </button>
       )}
