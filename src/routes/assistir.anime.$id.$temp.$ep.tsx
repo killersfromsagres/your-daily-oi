@@ -8,6 +8,7 @@ import type { CatalogItem, StreamSource } from "@/lib/types";
 import { shortlistVodSources } from "@/lib/vod-source-quality";
 import { saveProgress, getProgressById } from "@/lib/storage";
 import { getEpisodeProgress, saveEpisodeProgress, setEpisodeWatched } from "@/lib/episode-progress";
+import { useAnimeOpening } from "@/lib/use-anime-opening";
 
 export const Route = createFileRoute("/assistir/anime/$id/$temp/$ep")({
   component: WatchAnimePage,
@@ -27,6 +28,7 @@ function WatchAnimePage() {
   const [loading, setLoading] = useState(true);
 
   const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
+  const opening = useAnimeOpening(anime?.title, Number(ep));
 
   useEffect(() => {
     let active = true;
@@ -208,7 +210,8 @@ function WatchAnimePage() {
           onNextEpisode={goToNextEpisode}
           creditsStartSeconds={foundEp?.creditsStartSeconds}
           nextEpisodeLabel={nextSeason ? "Próxima temporada" : "Próximo episódio"}
-          openingEndSeconds={90}
+          openingStartSeconds={opening?.start}
+          openingEndSeconds={opening?.end}
           {...(effectiveAnime.tmdb?.runtime && effectiveAnime.tmdb.runtime > 0 ? { expectedRuntimeMin: effectiveAnime.tmdb.runtime } : {})}
         />
       </PlayerErrorBoundary>
