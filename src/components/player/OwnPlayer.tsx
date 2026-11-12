@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles, SkipForward } from "lucide-react";
 import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { PlayerControls } from "./PlayerControls";
@@ -35,6 +35,9 @@ interface OwnPlayerProps {
   preferredAudio?: "dub" | "leg";
   expectedRuntimeMin?: number;
   contentType?: "movie" | "series" | "anime";
+  onNextEpisode?: () => void;
+  nextEpisodeLabel?: string;
+  openingEndSeconds?: number;
 }
 
 // 4b: Ordem de tentativa por tipo de relay
@@ -133,6 +136,9 @@ export function OwnPlayer({
   preferredAudio = "dub",
   expectedRuntimeMin,
   contentType = "movie",
+  onNextEpisode,
+  nextEpisodeLabel,
+  openingEndSeconds,
 }: OwnPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -355,7 +361,8 @@ export function OwnPlayer({
 
   const handleEnded = useCallback(() => {
     onEnded?.();
-  }, [onEnded]);
+    onNextEpisode?.();
+  }, [onEnded, onNextEpisode]);
 
   // TDZ SAFE: Declarado antes de qualquer useEffect/handler que o cite
   const engine = usePlayerEngine(videoRef, currentStream, handleEnded, {
@@ -868,6 +875,20 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       onTouchStart={showControls}
       style={{ cursor: controlsVisible ? "default" : "none" }}
     >
+      {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
+        engine.currentTime >= 5 && engine.currentTime < openingEndSeconds - 3 && (
+        <button type="button" className="zf-player-episode-action zf-skip-opening"
+          onClick={() => { engine.seek(openingEndSeconds); showControls(); }}>
+          <SkipForward size={17} /> Pular abertura
+        </button>
+      )}
+      {onNextEpisode && engine.duration > 0 && engine.duration - engine.currentTime <= 75 &&
+        engine.duration - engine.currentTime > 0 && (
+        <button type="button" className="zf-player-episode-action zf-next-episode"
+          onClick={onNextEpisode}>
+          <SkipForward size={17} /> {nextEpisodeLabel || "Próximo episódio"}
+        </button>
+      )}
       <video
         ref={videoRef}
         className="ydo-player-video"
