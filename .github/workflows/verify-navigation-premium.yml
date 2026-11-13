@@ -13,6 +13,7 @@ on:
       - 'src/styles/navigation-premium.css'
       - 'src/styles/liquid-glass-nav.css'
       - 'src/styles/apple-glass-nav.css'
+      - 'src/styles/adaptive-navigation.css'
       - 'scripts/smoke-apple-glass-nav.mjs'
       - 'src/routes/__root.tsx'
       - 'tests/genre-matching.test.ts'
