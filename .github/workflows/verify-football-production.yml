@@ -4,6 +4,13 @@ on:
     branches: [main]
     paths:
       - 'scripts/smoke-football-production.mjs'
+      - 'src/lib/jogos.ts'
+      - 'src/lib/jogos-match.ts'
+      - 'src/lib/football-backup.ts'
+      - 'src/lib/football-lineups.ts'
+      - 'src/lib/football-broadcasts.ts'
+      - 'src/components/tv/JogosShelf.tsx'
+      - 'src/components/sports/MatchLineups.tsx'
       - '.github/workflows/verify-football-production.yml'
   workflow_dispatch:
 jobs:
