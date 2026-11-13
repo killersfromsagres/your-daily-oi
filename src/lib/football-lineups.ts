@@ -114,7 +114,7 @@ export function parseESPNLineups(jogo:string,raw:ESPNSummary):MatchLineups {
           // ESPN frequently assigns formationPlace=0 to *every substitute*.
           // Checking for non-null put entire 25-player squads on the pitch.
           (p.formationPlace!==undefined&&p.formationPlace!==null&&
-            /^\\d+(?::\\d+)?$/.test(String(p.formationPlace))&&
+            /^\d+(?::\d+)?$/.test(String(p.formationPlace))&&
             Number(String(p.formationPlace).split(":")[0])>0)};
       });
     return {
