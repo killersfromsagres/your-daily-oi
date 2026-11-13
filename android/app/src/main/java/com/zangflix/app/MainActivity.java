@@ -20,6 +20,8 @@ public final class MainActivity extends Activity {
     web = new WebView(this);
     web.setBackgroundColor(0xff090a10);
     web.getSettings().setJavaScriptEnabled(true);
+    // Identify the actual installed Android APK, not a Chrome PWA shortcut.
+    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/1.0");
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(false);
     web.getSettings().setAllowFileAccess(false);
