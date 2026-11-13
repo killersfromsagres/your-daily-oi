@@ -15,8 +15,7 @@ const server=Bun.serve({hostname:"127.0.0.1",port:4210,fetch(request){
 const bin=["google-chrome","google-chrome-stable","chromium","chromium-browser"].find(x=>spawnSync("which",[x]).status===0);
 if(!bin)throw new Error("Chrome is required");
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const profile=mkdtempSync(join(tmpdir(),"zf-fullscreen-"));
-const chrome=spawn(bin,["--headless=new","--no-sandbox","--disable-dev-shm-usage","--disable-gpu","--no-first-run","--remote-allow-origins=*","--remote-debugging-port=0","--user-data-dir="+profile,"about:blank"],{stdio:"ignore"});
+let chrome;
 let ws,seq=0;const pending=new Map();
 const send=(method,params={})=>new Promise((resolve,reject)=>{
  const id=++seq,timeout=setTimeout(()=>{pending.delete(id);reject(Error(method+" timeout"));},15000);
@@ -40,9 +39,19 @@ const click=async()=>{
 };
 const viewport=async landscape=>send("Emulation.setDeviceMetricsOverride",{width:landscape?844:390,height:landscape?390:844,deviceScaleFactor:1,mobile:true});
 try{
- const portfile=join(profile,"DevToolsActivePort");
- for(let i=0;i<80&&!existsSync(portfile);i++)await sleep(100);
- const port=Number(readFileSync(portfile,"utf8").split("\n")[0]);
+ let port=0,chromeLog="";
+ for(let attempt=0;attempt<3&&!port;attempt++){
+  const profile=mkdtempSync(join(tmpdir(),"zf-fullscreen-"));
+  chrome=spawn(bin,["--headless=new","--no-sandbox","--disable-dev-shm-usage","--disable-gpu",
+   "--disable-background-networking","--disable-extensions","--no-default-browser-check","--no-first-run",
+   "--remote-allow-origins=*","--remote-debugging-port=0","--user-data-dir="+profile,"about:blank"],{stdio:["ignore","pipe","pipe"]});
+  for(const stream of [chrome.stdout,chrome.stderr])stream.on('data',data=>chromeLog=(chromeLog+String(data)).slice(-2500));
+  const portfile=join(profile,"DevToolsActivePort");
+  for(let i=0;i<100&&!existsSync(portfile)&&chrome.exitCode===null;i++)await sleep(120);
+  if(existsSync(portfile)){port=Number(readFileSync(portfile,"utf8").split("\n")[0]);break;}
+  chrome.kill('SIGTERM');await sleep(400);
+ }
+ if(!port)throw Error('Chrome could not start: '+chromeLog);
  const tabs=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();
  ws=new WebSocket(tabs.find(t=>t.type==='page').webSocketDebuggerUrl);
  ws.addEventListener("message",event=>{const r=JSON.parse(event.data),p=pending.get(r.id);if(!p)return;clearTimeout(p.timeout);pending.delete(r.id);r.error?p.reject(Error(JSON.stringify(r.error))):p.resolve(r.result);});
@@ -87,4 +96,4 @@ try{
   if(closed.overflow==='hidden')throw Error('Page scroll was not restored');
   console.log(JSON.stringify({event:'mobile-fullscreen',mode,opened,closed}));
  }
-}finally{ws?.close();chrome.kill('SIGTERM');server.stop(true);}
+}finally{ws?.close();chrome?.kill('SIGTERM');server.stop(true);}
