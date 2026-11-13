@@ -59,6 +59,28 @@ function Coach({team,backupName}:{team?:LineupTeam;backupName:string}){
     </span>
   </div>;
 }
+function MiniTeamPreview({team,name}:{team?:LineupTeam;name:string}){
+  const players=team?.starting||[];
+  const visible=players.slice(0,3);
+  const surnames=players.slice(0,2).map(player=>{
+    const surname=player.name.split(" ").filter(Boolean).at(-1)||player.name;
+    return surname+" · "+player.group;
+  }).join(" / ");
+  return <span className="zlineup-mini-team" title={players.length?players.map(p=>p.name).join(", "):"Aguardando divulgação da escalação"}>
+    <span className="zlineup-mini-head">
+      <span className="zlineup-summary-dot" aria-hidden="true"/>
+      <strong>{name}</strong><small>{players.length?players.length+" confirmados":"Aguardando"}</small>
+    </span>
+    {visible.length>0&&<span className="zlineup-mini-line">
+      <span className="zlineup-mini-faces" aria-hidden="true">
+        {visible.map(player=><span key={player.id} className="zlineup-mini-face">
+          <PlayerAvatar player={player}/>
+        </span>)}
+      </span>
+      <span className="zlineup-mini-names">{surnames}</span>
+    </span>}
+  </span>;
+}
 function isNearMatch(game:JogoBrasileirao):boolean{
   const at=Date.parse(game.inicioIso),now=Date.now();
   return Number.isFinite(at)&&now>=at-90*60_000&&now<=at+5*60*60_000;
@@ -116,11 +138,10 @@ export function MatchLineups({game}:{game:JogoBrasileirao}){
   const away=data?.equipes.find(t=>t!==home&&t.name.toLowerCase()===game.fora.toLowerCase())||
     data?.equipes.find(t=>t!==home);
 
-  const homeCount=home?.starting.length||0,awayCount=away?.starting.length||0;
   return <div className="zlineup-widget">
-    <div className="zlineup-summary" aria-label="Situação das escalações">
-      <span><span className="zlineup-summary-dot"/> {homeCount?homeCount+" titulares · "+game.casa:"Escalação "+game.casa+": aguardando"}</span>
-      <span><span className="zlineup-summary-dot"/> {awayCount?awayCount+" titulares · "+game.fora:"Escalação "+game.fora+": aguardando"}</span>
+    <div className="zlineup-summary" aria-label="Prévia das escalações">
+      <MiniTeamPreview name={game.casa} team={home}/>
+      <MiniTeamPreview name={game.fora} team={away}/>
     </div>
     <button type="button" className="zlineup-toggle" aria-expanded={expanded}
       aria-controls={id} onClick={()=>setExpanded(value=>!value)}>
