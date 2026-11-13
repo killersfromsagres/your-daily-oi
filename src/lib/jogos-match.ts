@@ -29,6 +29,8 @@ export interface JogoBrasileirao {
   canalLogo: string | null;
   /** Brazilian event/EPG broadcasters, even when no matching player source exists. */
   canaisTransmissao?: string[];
+  /** Every specifically matched station in the local catalog, not just the preferred one. */
+  canaisDisponiveis?: Array<{ id:string; nome:string; logo?:string }>;
   transmissao: "confirmada" | "nao-confirmada";
   origemTransmissao?: "epg" | "grade-br" | "configuracao" | "verificada";
 }
