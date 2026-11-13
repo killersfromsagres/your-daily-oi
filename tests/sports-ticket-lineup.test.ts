@@ -26,6 +26,11 @@ describe("match lineup single team selector",()=>{
     expect(selectLineupTeam(game,labeled,"home")?.name).toBe("Unknown Club");
     expect(selectLineupTeam(game,labeled,"away")).toBe(away);
   });
+  test("English provider team names identify Brazil and Japan without switching lineups",()=>{
+    const data={...lineup,equipes:[{...home,name:"Brazil"},{...away,name:"Japan"}]};
+    expect(selectLineupTeam({casa:"Japão",fora:"Brasil"},data,"home")?.name).toBe("Japan");
+    expect(selectLineupTeam({casa:"Japão",fora:"Brasil"},data,"away")?.name).toBe("Brazil");
+  });
   test("supports accents and club suffixes",()=>{
     const a={...home,name:"São Paulo Futebol Clube"};
     expect(selectLineupTeam({casa:"São Paulo",fora:"Bahia"},{...lineup,equipes:[away,a]},"home")).toBe(a);
@@ -39,14 +44,18 @@ describe("match ticket and tactical field",()=>{
     expect(component).toContain("zf-ticket-watermark");
     expect(component).toContain("ZANG <span>FLIX</span>");
     expect(component).toContain("game.estadio?.trim()");
+    expect(component).toContain("game.canaisDisponiveis");
+    expect(component).toContain("isBrazilFixture(game)");
   });
-  test("home and away are independent lineup buttons",()=>{
+  test("one Escalação button opens the dialog with two crest-backed team tabs",()=>{
     const component=readFileSync("src/components/sports/MatchLineups.tsx","utf8");
-    expect(component).toContain('preview("home")');
-    expect(component).toContain('preview("away")');
+    expect(component).toContain('className="zf-lineup-single-button"');
+    expect(component).toContain("setSide(\"home\");setError(null)");
+    expect(component).toContain('className="zf-lineup-pair-crests"');
     expect(component).toContain('onClick={()=>setSide("home")}');
     expect(component).toContain('onClick={()=>setSide("away")}');
     expect(component).toContain('createPortal(');
+    expect(component).not.toContain('preview("home")');
     expect(component).not.toContain("zlineup-half--");
   });
   test("field renders one team, in goalkeeper-to-attack order",()=>{
