@@ -1,5 +1,5 @@
 // src/lib/football-ranking.ts — editorial ordering for Zang Flix football fixtures.
-import { isFeaturedTeam, type JogoBrasileirao } from "./jogos-match";
+import { isFeaturedTeam, normalizeSoccerName, type JogoBrasileirao } from "./jogos-match";
 
 const LEAGUE_WEIGHT: Record<string, number> = {
   "bra.1": 1000,
@@ -35,8 +35,7 @@ const NATIONAL_TEAM_WEIGHTS: Record<string,number> = {
   "republic of korea":1850,marrocos:1820,morocco:1820,
 };
 function nationalTeamWeight(name:string):number {
-  const normal=name.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
-    .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  const normal=normalizeSoccerName(name);
   return NATIONAL_TEAM_WEIGHTS[normal]||0;
 }
 function isNationalCompetition(name:string):boolean {
