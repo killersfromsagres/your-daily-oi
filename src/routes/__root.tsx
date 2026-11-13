@@ -8,6 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import friday13Css from "../styles/friday13-edition.css?url";
+import { Friday13EditionProvider } from "@/components/catalog/Friday13Edition";
 import mobileCatalogCss from "../styles/mobile-catalog-filters.css?url";
 import playerFullscreenCss from "../styles/player-fullscreen.css?url";
 import iconographyCss from "../styles/iconography.css?url";
@@ -105,6 +107,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: iconographyCss },
       { rel: "stylesheet", href: playerFullscreenCss },
       { rel: "stylesheet", href: mobileCatalogCss },
+      { rel: "stylesheet", href: friday13Css },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
@@ -136,9 +139,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
+      <Friday13EditionProvider>
       <div className="ambient-glow" aria-hidden />
       <Header />
       <Outlet />
+      </Friday13EditionProvider>
     </QueryClientProvider>
   );
 }

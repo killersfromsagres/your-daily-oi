@@ -6,6 +6,7 @@ export interface CatalogClientData {
   highlights: HighlightRow[];
   genres: string[];
   featuredHero?: CatalogItem[];
+  friday13Hero?: CatalogItem[];
   sourceStatus?: { state: "remote" | "fallback" | "uninitialized"; checkedAt: string | null };
 }
 

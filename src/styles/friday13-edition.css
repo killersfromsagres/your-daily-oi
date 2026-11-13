@@ -1,0 +1,85 @@
+/* A single dated edition. Removing the root attribute restores the normal site. */
+html[data-zf-edition="friday13"] .ambient-glow {
+  background:radial-gradient(ellipse at 12% 0%,#721b2633,transparent 56%);
+}
+html[data-zf-edition="friday13"] .ydo-header,
+html[data-zf-edition="friday13"] .zf-mobile-dock {border-color:#b9746b55;}
+html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
+  border-color:#d0938659;background:linear-gradient(145deg,#7f36334d,#281d2780);
+}
+.zf-friday13-hero {isolation:isolate;}
+.zf-friday13-hero .ydo-hero-badge-tag {
+  background:#b43e43;color:#fff7f1;letter-spacing:.1em;
+}
+.zf-friday13-hero .ydo-hero-dot.active {background:#de8277;}
+.zf-friday13-hero .ydo-btn-primary {
+  background:#eee5d9;color:#1b1516;box-shadow:0 8px 36px #0006;
+}
+.zf-friday13-masthead {
+  position:absolute;z-index:5;top:clamp(114px,14vh,145px);
+  left:clamp(1.5rem,5vw,4.5rem);display:flex;align-items:center;gap:13px;
+  pointer-events:none;color:#f4ece0;
+}
+.zf-friday13-date {
+  display:flex;align-items:center;justify-content:center;width:49px;height:58px;
+  border:1px solid #d9987c66;border-radius:5px;background:#1c1014a8;
+  font-size:32px;font-weight:900;line-height:1;letter-spacing:-.08em;
+  box-shadow:inset 0 1px #ffffff0a;
+}
+.zf-friday13-masthead p {margin:0;font-size:13px;font-weight:850;letter-spacing:.19em;}
+.zf-friday13-masthead small {
+  display:block;margin-top:6px;font-size:9px;letter-spacing:.14em;color:#d4aaa0;
+}
+.zf-friday13-atmosphere {position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;}
+.zf-friday13-atmosphere::before {
+  content:"";position:absolute;inset:0;background:linear-gradient(115deg,#49151b36,transparent 65%),
+    radial-gradient(ellipse at 90% 20%,transparent 20%,#13060a30 80%);
+}
+.zf-friday13-fog {
+  position:absolute;left:-12%;right:-12%;bottom:-30px;height:42%;
+  background:radial-gradient(ellipse at 30% 70%,#e6d8cd17,transparent 58%),
+    radial-gradient(ellipse at 80% 85%,#9eb8bb18,transparent 60%);
+  animation:zf-friday13-drift 24s ease-in-out infinite alternate;
+}
+.zf-friday13-watermark {
+  position:absolute;right:5%;top:19%;font-size:clamp(160px,32vw,440px);
+  line-height:1;font-weight:950;letter-spacing:-.09em;color:#dfb4a30d;transform:rotate(-7deg);
+}
+.zf-friday13-collection {
+  position:relative;margin:0 0 22px;padding:24px 0 4px;
+  background:linear-gradient(100deg,#57182018,transparent 75%);
+  border-top:1px solid #cf716333;
+}
+.zf-friday13-collection .ydo-row-eyebrow {color:#dc9b8b;}
+.zf-friday13-collection .ydo-row-title {color:#f4e9dd;}
+.zf-friday13-collection-footer {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:12px;margin:0 clamp(1.5rem,5vw,4.5rem) 20px;font-size:12px;color:#b6a6a4;
+}
+.zf-friday13-collection-footer p {margin:0;line-height:1.6;}
+.zf-friday13-collection-footer a {
+  display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;
+  border:1px solid #a5665c66;border-radius:999px;color:#f4c4b1;text-decoration:none;font-weight:700;
+}
+@keyframes zf-friday13-drift {
+  from {transform:translate3d(-2%,0,0);opacity:.5;}
+  to {transform:translate3d(3%,-12px,0);opacity:.9;}
+}
+@media(max-width:1120px) {
+  .zf-friday13-hero {min-height:760px;min-height:max(760px,90svh);}
+  .zf-friday13-masthead {top:116px;left:20px;gap:11px;}
+  .zf-friday13-masthead p {font-size:11px;letter-spacing:.16em;}
+  .zf-friday13-masthead small {font-size:8px;}
+  .zf-friday13-date {width:40px;height:48px;font-size:28px;}
+  .zf-friday13-hero .ydo-hero-content {padding-bottom:64px;}
+  .zf-friday13-hero .ydo-hero-title {font-size:clamp(30px,8vw,46px);}
+  .zf-friday13-hero .ydo-hero-overview {-webkit-line-clamp:2;}
+  .zf-friday13-collection-footer {margin-inline:18px;font-size:11px;}
+}
+@media(max-height:520px) and (orientation:landscape) {
+  .zf-friday13-hero {min-height:650px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .zf-friday13-fog {animation:none;}
+}
+html[data-zf-edition-paused="true"] .zf-friday13-fog {animation-play-state:paused;}

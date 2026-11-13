@@ -5,6 +5,11 @@ on:
     paths:
       - 'src/components/layout/**'
       - 'src/components/catalog/HeroSection.tsx'
+      - 'src/components/catalog/Friday13Edition.tsx'
+      - 'src/lib/friday13-edition.ts'
+      - 'src/styles/friday13-edition.css'
+      - 'src/routes/index.tsx'
+      - 'tests/friday13-edition.test.ts'
       - 'src/components/catalog/MobileCatalogFilters.tsx'
       - 'src/lib/mobile-catalog-filters.ts'
       - 'src/styles/mobile-catalog-filters.css'
@@ -41,7 +46,7 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
       - name: Verify genre matching and hero source selection
-        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts tests/reference-glass-dock.test.ts tests/mobile-catalog-filters.test.ts
+        run: bun test tests/friday13-edition.test.ts tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts tests/reference-glass-dock.test.ts tests/mobile-catalog-filters.test.ts
       - name: Audit icon consistency across every application screen
         run: node scripts/audit-iconography.mjs
       - name: Build site for visual browser checks

@@ -22,11 +22,12 @@ export interface HeroItem {
 
 interface HeroSectionProps {
   items: HeroItem[];
+  edition?: "friday13";
   savedIds?: Set<string>;
   onToggleSaved?: (id: string) => void;
 }
 
-export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: HeroSectionProps) {
+export function HeroSection({ items, savedIds = new Set(), onToggleSaved, edition }: HeroSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [failedBackdropId, setFailedBackdropId] = useState<string | null>(null);
   const [failedPosterId, setFailedPosterId] = useState<string | null>(null);
@@ -91,7 +92,17 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
   const playPath = hero.type === "f" ? `/assistir/filme/${hero.id}` : `/assistir/serie/${hero.id}/1/1`;
 
   return (
-    <section className="ydo-hero" aria-label="Carrossel em Destaque">
+    <section className={"ydo-hero"+(edition === "friday13" ? " zf-friday13-hero" : "")} aria-label={edition ? "Especial Sexta-feira 13" : "Carrossel em Destaque"}>
+      {edition === "friday13" && <>
+        <div className="zf-friday13-atmosphere" aria-hidden="true">
+          <span className="zf-friday13-watermark">13</span>
+          <div className="zf-friday13-fog" />
+        </div>
+        <div className="zf-friday13-masthead">
+          <span className="zf-friday13-date" aria-hidden="true">13</span>
+          <div><p>SEXTA-FEIRA 13</p><small>EDIÇÃO ESPECIAL · SÓ HOJE, ATÉ 23H59</small></div>
+        </div>
+      </>}
       {/* One image in memory; quality scales with display size. */}
       {(() => {
         const backdrop = failedBackdropId === hero.id ? null : hero.backdropUrl;
@@ -150,7 +161,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved }: Hero
       {/* Conteúdo sobreposto */}
       <div className="ydo-hero-content">
         <div className="ydo-hero-badges">
-          <span className="ydo-hero-badge-tag">EM ALTA</span>
+          <span className="ydo-hero-badge-tag">{edition ? "A NOITE É DE JASON" : "EM ALTA"}</span>
           {hero.hasDub && <span className="ydo-hero-badge">DUBLADO</span>}
           {hero.hasLeg && <span className="ydo-hero-badge ydo-hero-badge-leg">LEGENDADO</span>}
           {hero.type === "s" && <span className="ydo-hero-badge ydo-hero-badge-type">SÉRIE</span>}

@@ -17,6 +17,7 @@ import { handleLiveFormatApi } from "./lib/live-probe";
 import { isLivePlaylistTarget, liveSourceFingerprint } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
+import { isFriday13EditionActive, selectFriday13Movies } from "./lib/friday13-edition";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
 import { playableVodSources, shortlistVodSources } from "./lib/vod-source-quality";
@@ -51,6 +52,8 @@ function jsonResponse(payload: unknown, status = 200, cacheControl = "no-cache, 
 
 // Cache em memória de itens hidratados para resposta instantânea (< 10ms)
 const itemDetailsCache = new Map<string, { data: CatalogItem; expires: number }>();
+// Artwork-only catalog items must never short-circuit the player's source hydration.
+const heroArtworkCache = new Map<string, { data: CatalogItem; expires: number }>();
 
 // Backdrops oficiais em 4K/Full HD widescreen para os filmes mais assistidos
 const POPULAR_HD_BACKDROPS: Record<string, string> = {
@@ -97,14 +100,14 @@ function uniqueCatalogItems(items: Map<string, CatalogItem>): CatalogItem[] {
   return result;
 }
 
-async function getFeaturedHero(items: CatalogItem[], highlights: HighlightRow[]): Promise<CatalogItem[]> {
-  const selectedMostWatched = selectRotatingHero(items, highlights, TOP_BLOCKBUSTERS, Date.now(), 8);
+async function getFeaturedHero(items: CatalogItem[], highlights: HighlightRow[], selected?: CatalogItem[]): Promise<CatalogItem[]> {
+  const selectedMostWatched = selected ?? selectRotatingHero(items, highlights, TOP_BLOCKBUSTERS, Date.now(), 8);
     // Only enrich the eight selected movies; metadata remains cached for one day.
     const enrichedHeroItems = await Promise.all(
       selectedMostWatched.map(async (item) => {
-        const cached = itemDetailsCache.get(item.id);
-        if (cached && cached.data.tmdb?.backdropUrl) {
-          return cached.data;
+        const cached = heroArtworkCache.get(item.id);
+        if (cached && cached.expires > Date.now() && cached.data.tmdb?.backdropUrl) {
+          return { ...item, tmdb:cached.data.tmdb };
         }
 
         let tmdbData = item.tmdb;
@@ -144,7 +147,11 @@ async function getFeaturedHero(items: CatalogItem[], highlights: HighlightRow[])
               },
         };
 
-        itemDetailsCache.set(item.id, { data: enriched, expires: Date.now() + 86400000 });
+        if (heroArtworkCache.size >= 64) {
+          const oldest = heroArtworkCache.keys().next().value;
+          if (oldest) heroArtworkCache.delete(oldest);
+        }
+        heroArtworkCache.set(item.id, { data: enriched, expires: Date.now() + 86400000 });
         return enriched;
       })
     );
@@ -156,11 +163,22 @@ async function getFeaturedHero(items: CatalogItem[], highlights: HighlightRow[])
   return finalHero.length > 0 ? finalHero : enrichedHeroItems;
 }
 
+async function getHeroCollections(items: CatalogItem[], highlights: HighlightRow[]) {
+  // Keep the regular selection available for an immediate client-side expiry.
+  // No franchise metadata requests run outside this one-day campaign.
+  const special = isFriday13EditionActive() ? selectFriday13Movies(items).slice(0,8) : [];
+  const [featuredHero,friday13Hero] = await Promise.all([
+    getFeaturedHero(items,highlights),
+    special.length ? getFeaturedHero(items,highlights,special) : Promise.resolve([]),
+  ]);
+  return {featuredHero,friday13Hero};
+}
+
 async function handleDestaquesApi(): Promise<Response> {
   try {
     const { items, highlights } = await loadCatalog();
-    const featuredHero = await getFeaturedHero(uniqueCatalogItems(items), highlights);
-    return jsonResponse({ featuredHero, refreshWindowMs: HERO_ROTATION_MS }, 200, "private, max-age=60");
+    const collections = await getHeroCollections(uniqueCatalogItems(items), highlights);
+    return jsonResponse({ ...collections, refreshWindowMs: HERO_ROTATION_MS }, 200, "private, max-age=60");
   } catch (error) {
     console.error("[Hero] Falha ao renovar destaques:", error);
     return jsonResponse({ error: "Destaques indisponíveis" }, 503);
@@ -187,13 +205,13 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
     }
 
     const allItems = uniqueCatalogItems(items);
-    const finalHero = await getFeaturedHero(allItems, highlights);
+    const collections = await getHeroCollections(allItems, highlights);
 
     return jsonResponse({
       items: allItems,
       highlights,
       genres: getGenres(items),
-      featuredHero: finalHero,
+      ...collections,
       sourceStatus: getCatalogSourceStatus(),
     });
   } catch (error) {

@@ -1,5 +1,7 @@
 import { getClientCatalog } from "@/lib/catalog-client";
-import { createFileRoute } from "@tanstack/react-router";
+import { useFriday13Edition } from "@/components/catalog/Friday13Edition";
+import { selectFriday13Movies } from "@/lib/friday13-edition";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { MobileCatalogFilters } from "@/components/catalog/MobileCatalogFilters";
 import { HeroSection } from "@/components/catalog/HeroSection";
@@ -31,6 +33,8 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  const friday13 = useFriday13Edition();
+  const [friday13Hero,setFriday13Hero] = useState<CatalogItem[]>([]);
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [highlights, setHighlights] = useState<HighlightRow[]>([]);
   const [genres, setGenres] = useState<string[]>([]);
@@ -65,6 +69,7 @@ function HomePage() {
         setItems(data.items);
         setHighlights(data.highlights);
         setGenres(data.genres);
+        setFriday13Hero(Array.isArray(data.friday13Hero) ? data.friday13Hero : []);
         setCatalogDegraded(data.sourceStatus?.state === "fallback");
         if (data.featuredHero && data.featuredHero.length > 0) {
           setFeaturedHero(data.featuredHero);
@@ -98,8 +103,9 @@ function HomePage() {
       try {
         const response = await fetch("/api/destaques", { cache:"no-store", signal:controller.signal });
         if (!response.ok) return;
-        const data = await response.json() as { featuredHero?: CatalogItem[] };
+        const data = await response.json() as { featuredHero?: CatalogItem[]; friday13Hero?: CatalogItem[] };
         if (controller.signal.aborted || !Array.isArray(data.featuredHero) || !data.featuredHero.length) return;
+        setFriday13Hero(Array.isArray(data.friday13Hero) ? data.friday13Hero : []);
         setFeaturedHero(previous => {
           const latest = data.featuredHero!;
           return previous.length === latest.length &&
@@ -129,10 +135,14 @@ function HomePage() {
 
   // Recalculate expensive catalog grouping only when the payload changes.
   // Especially important for lower-memory mobile browsers and My List updates.
+  const friday13Movies = useMemo(() => selectFriday13Movies(items),[items]);
   const heroItems = useMemo(() => {
-    const source = featuredHero.length > 0
+    const regularSource = featuredHero.length > 0
       ? featuredHero
       : items.filter(it => Boolean(it.tmdb?.backdropUrl) && !it.title.startsWith("#"));
+    const source = friday13 && friday13Movies.length
+      ? (friday13Hero.length ? friday13Hero : friday13Movies)
+      : regularSource;
     return source.slice(0, 8).map(item => ({
       id: item.id,
       type: item.type,
@@ -148,9 +158,9 @@ function HomePage() {
       quality: item.streams.some(stream => stream.quality?.includes("4K"))
         ? "4K ULTRA HD"
         : item.streams.some(stream => stream.quality?.includes("2K"))
-          ? "2K QUAD HD" : "FULL HD",
+          ? "2K QUAD HD" : item.streams.find(stream => /^(1080p|720p|480p)$/i.test(stream.quality || ""))?.quality || "AUTO",
     }));
-  }, [featuredHero, items]);
+  }, [featuredHero, items, friday13, friday13Movies, friday13Hero]);
 
   const rows = useMemo(() => {
     const result: Array<{
@@ -218,11 +228,23 @@ function HomePage() {
           </button>
         </div>
       ) : (
-        <HeroSection items={heroItems} savedIds={savedIds} onToggleSaved={toggleSaved} />
+        <HeroSection items={heroItems} savedIds={savedIds} onToggleSaved={toggleSaved}
+          edition={friday13 && friday13Movies.length ? "friday13" : undefined} />
       )}
 
       <div className="ydo-catalog">
         <MobileCatalogFilters kind={null} home/>
+        {friday13 && friday13Movies.length > 0 && !loading && (
+          <section className="zf-friday13-collection" aria-label="Maratona Sexta-feira 13">
+            <MediaRow title="Não olhe para trás."
+              eyebrow="A coleção Sexta-feira 13 · Especial de hoje"
+              items={friday13Movies} savedIds={savedIds} onToggleSaved={toggleSaved}/>
+            <div className="zf-friday13-collection-footer">
+              <p>Crystal Lake espera por você.<br/>Edição até 23h59 de 13/11, horário de Brasília.</p>
+              <Link to="/generos/$slug" params={{slug:"terror"}} search={{tipo:"f"}} preload={false}>Explorar mais terror</Link>
+            </div>
+          </section>
+        )}
         {continueWatching.length > 0 && (
           <ContinueWatchingRow
             items={continueWatching}
