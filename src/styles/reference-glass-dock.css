@@ -2,22 +2,22 @@
  * ZANG FLIX · Frosted Capsule 2026
  * Reference adaptation: one dark/teal neutral glass capsule with a raised,
  * softly rounded active item. Real background blur; no solid blue fill.
- * Five useful destinations + an integrated search action.
- * Loaded LAST so old mobile rules cannot reintroduce a detached search FAB.
+ * Five useful destinations; search stays in the upper header.
+ * Loaded LAST so old mobile rules cannot shift or stretch the dock.
  */
 @media (max-width: 1120px), (pointer: coarse) and (max-width: 1440px) {
   html:not([data-zf-platform="tv"]) .zf-mobile-dock {
     box-sizing: border-box;
     position: fixed;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     place-items: stretch;
-    gap: clamp(2px, 1vw, 7px);
+    gap: clamp(2px, 1vw, 8px);
     z-index: 1100;
     left: 50%;
     right: auto;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    width: min(560px, calc(100vw - 24px));
+    width: min(470px, calc(100vw - 32px));
     max-width: none;
     min-height: 76px;
     height: 76px;
@@ -54,8 +54,7 @@
   }
 
   html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:not(.is-active),
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:not(.is-active) {
     position: relative;
     inset: auto;
     z-index: 1;
@@ -88,8 +87,7 @@
     touch-action: manipulation;
   }
 
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab svg,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab svg {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab svg svg {
     flex-shrink: 0;
     width: clamp(21px, 5.8vw, 26px);
     height: clamp(21px, 5.8vw, 26px);
@@ -116,8 +114,7 @@
   }
 
   html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab.is-active,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab[aria-current="page"],
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab.is-active {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab[aria-current="page"].is-active {
     color: #ffffff;
     border: 1px solid rgba(237, 250, 252, .11);
     background:
@@ -139,23 +136,13 @@
     fill: none;
   }
 
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:active,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab:active {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:active:active {
     color: white;
     background: rgba(202, 227, 234, .20);
   }
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:focus-visible,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab:focus-visible {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:focus-visible:focus-visible {
     outline: 2px solid rgba(243, 251, 255, .95);
     outline-offset: -3px;
-  }
-
-  /* Search remains reachable, but is part of the capsule, not a floating circle. */
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab {
-    bottom: auto;
-    right: auto;
-    left: auto;
-    border-radius: 999px;
   }
 
   /* Keep the photo's tasteful glass feel on menu backdrop and top bar too. */
@@ -176,15 +163,14 @@
 /* Tight phones, including 320 px: preserve equal touch targets and safe area. */
 @media (max-width: 370px) {
   html:not([data-zf-platform="tv"]) .zf-mobile-dock {
-    width: calc(100vw - 16px);
+    width: calc(100vw - 28px);
     min-height: 68px;
     height: 68px;
     gap: 0;
     padding: 5px;
     bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   }
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab {
     min-height: 56px;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-dock svg {
@@ -199,11 +185,10 @@
     bottom: calc(6px + env(safe-area-inset-bottom, 0px));
     height: 56px;
     min-height: 56px;
-    max-width: 460px;
+    max-width: 420px;
     padding: 4px 6px;
   }
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-search-fab {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab {
     min-height: 46px;
   }
 }
@@ -232,8 +217,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .zf-mobile-dock > .zf-mobile-tab,
-  .zf-mobile-dock > .zf-mobile-search-fab {
+  .zf-mobile-dock > .zf-mobile-tab {
     transition: none !important;
   }
 }
