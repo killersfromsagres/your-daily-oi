@@ -36,6 +36,9 @@ const STATE=`(()=>{
  const modalRect=dialog?.getBoundingClientRect();
  return {
   viewport:innerWidth,
+  pageText:document.body?.innerText?.slice(0,420)||"",
+  mockReady:!!window.__zfVisualMock,
+  mockReads:window.__zfMockReads||[],
   cards:document.querySelectorAll(".zf-ticket").length,
   ticket:rect?{left:rect.left,right:rect.right,width:rect.width,height:rect.height}:null,
   ticketBg:styles?.backgroundColor||null,
@@ -129,10 +132,11 @@ try{
    "/api/jogos-escalacao":lineup};
  await send("Page.addScriptToEvaluateOnNewDocument",{source:
    "(()=>{const original=window.fetch.bind(window);const mocks="+JSON.stringify(mocks)+
+   ";window.__zfVisualMock=true;window.__zfMockReads=[];"+
    ";window.fetch=function(input,options){const value=String(input?.url||input);"+
    "let path;try{path=new URL(value,location.origin).pathname}catch{return original(input,options)}"+
-   "const payload=mocks[path];if(payload)return Promise.resolve(new Response(JSON.stringify(payload),"+
-   "{status:200,headers:{'Content-Type':'application/json'}}));"+
+   "const payload=mocks[path];if(payload){window.__zfMockReads.push(path);return Promise.resolve(new Response(JSON.stringify(payload),"+
+   "{status:200,headers:{'Content-Type':'application/json'}}));}"+
    "return original(input,options);};})();"});
  mkdirSync("artifacts",{recursive:true});
  const cases=[
