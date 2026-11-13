@@ -151,7 +151,7 @@ try{
       await evalInPage('document.querySelector(".zf-mobile-dock > .zf-mobile-search-fab").click()');
       let opened=false;
       for(let tries=0;tries<28;tries++){
-        opened=Boolean(await evalInPage('document.querySelector(".zf-mobile-menu-panel") && document.querySelector(".zf-mobile-menu-panel input[type=search]")'));
+        opened=Boolean(await evalInPage('!!document.querySelector(".zf-mobile-menu-panel") && !!document.querySelector(".zf-mobile-menu-panel input[type=search]")'));
         if(opened)break;
         await sleep(180);
       }
