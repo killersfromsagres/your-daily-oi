@@ -1,6 +1,7 @@
 // src/lib/football-broadcasts.ts — Brazilian TV listings from TheSportsDB event-TV API.
 // Only Brazil-tagged broadcasts may allocate a ZANG FLIX channel.
 import type { JogoBrasileirao } from "./jogos-match";
+import { matchImportance } from "./football-ranking";
 const cache=new Map<string,{expires:number;names:string[]}>();
 export type TvEvent={strCountry?:string|null;strChannel?:string|null;strEvent?:string|null;};
 export function broadcastersForBrazil(rows:readonly TvEvent[]): string[] {
@@ -26,17 +27,18 @@ async function lookup(game:JogoBrasileirao):Promise<string[]> {
 export async function getBrazilianSportsDbBroadcasts(
   games:readonly JogoBrasileirao[],
 ):Promise<Map<string,string[]>>{
+  // Inspect national-team headlines and Brazil fixtures first, even when
+  // the full day contains dozens of other games. The lookup runs again when
+  // upcoming events enter the agenda's rolling window.
   const candidates=games.filter(g=>g.id.startsWith("sportsdb:"))
-    .sort((a,b)=>Number(b.destaque)-Number(a.destaque))
-    .slice(0,10);
+    .sort((a,b)=>matchImportance(b)-matchImportance(a))
+    .slice(0,16);
   const results=new Map<string,string[]>();
-  for(let i=0;i<candidates.length;i+=5){
-    const batch=candidates.slice(i,i+5);
-    const entries=await Promise.allSettled(batch.map(lookup));
-    entries.forEach((entry,k)=>{
-      if(entry.status==="fulfilled"&&entry.value.length&&batch[k])
-        results.set(batch[k].id,entry.value);
-    });
-  }
+  const entries=await Promise.allSettled(candidates.map(lookup));
+  entries.forEach((entry,k)=>{
+    const game=candidates[k];
+    if(entry.status==="fulfilled"&&entry.value.length&&game)
+      results.set(game.id,entry.value);
+  });
   return results;
 }
