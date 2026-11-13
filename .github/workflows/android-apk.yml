@@ -1,12 +1,24 @@
-name: Build ZANG FLIX Android APK
+name: Build and publish ZANG FLIX Android APK
+
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['android/**', '.github/workflows/android-apk.yml']
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: zangflix-android-release
+  cancel-in-progress: false
+
 jobs:
   apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -17,11 +29,43 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build debug APK
+      - name: Generate ZANG FLIX Android application icon
+        run: |
+          python3 -m pip install --disable-pip-version-check --quiet Pillow
+          python3 android/scripts/build-icons.py
+      - name: Build installable Android APK
         working-directory: android
-        run: gradle --no-daemon assembleDebug
-      - uses: actions/upload-artifact@v4
+        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Verify installable package and prepare download filename
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/ZANG-FLIX-Android.apk
+          sha256sum dist/ZANG-FLIX-Android.apk | tee dist/SHA256SUMS.txt
+          "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose dist/ZANG-FLIX-Android.apk
+      - name: Keep build artifact available for diagnostics
+        uses: actions/upload-artifact@v4
         with:
-          name: zang-flix-android-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: ZANG-FLIX-Android-APK
+          path: |
+            dist/ZANG-FLIX-Android.apk
+            dist/SHA256SUMS.txt
           if-no-files-found: error
+          retention-days: 30
+      - name: Publish directly downloadable APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view android-latest >/dev/null 2>&1; then
+            gh release upload android-latest dist/ZANG-FLIX-Android.apk dist/SHA256SUMS.txt --clobber
+          else
+            gh release create android-latest dist/ZANG-FLIX-Android.apk dist/SHA256SUMS.txt \
+              --title "ZANG FLIX — aplicativo Android (APK)" \
+              --notes "APK Android nativo com o site ZANG FLIX integrado. Arquivo assinado com a chave de depuração do GitHub Actions; esta distribuição inicial não tem assinatura de publicação permanente. Android pedirá confirmação para instalar aplicativos externos."
+          fi
+      - name: Verify public APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view android-latest --json assets --jq '.assets[].name' | grep -Fx 'ZANG-FLIX-Android.apk'
+          printf 'APK download: https://github.com/${GITHUB_REPOSITORY}/releases/download/android-latest/ZANG-FLIX-Android.apk\n'
