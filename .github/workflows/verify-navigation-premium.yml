@@ -13,6 +13,7 @@ on:
       - 'src/styles/navigation-premium.css'
       - 'src/styles/liquid-glass-nav.css'
       - 'src/styles/apple-glass-nav.css'
+      - 'src/styles/reference-glass-dock.css'
       - 'src/styles/adaptive-navigation.css'
       - 'scripts/smoke-apple-glass-nav.mjs'
       - 'src/routes/__root.tsx'
@@ -20,6 +21,7 @@ on:
       - 'tests/hero-images.test.ts'
       - 'tests/liquid-glass-nav.test.ts'
       - 'tests/apple-glass-nav.test.ts'
+      - 'tests/reference-glass-dock.test.ts'
       - '.github/workflows/verify-navigation-premium.yml'
   workflow_dispatch:
 jobs:
@@ -32,7 +34,7 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
       - name: Verify genre matching and hero source selection
-        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts
+        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts tests/reference-glass-dock.test.ts
       - name: Build site for visual browser checks
         run: bun run build
       - name: Verify real Chrome glass rendering on Android and desktop viewports
