@@ -27,6 +27,16 @@ for(const dIso of [date, new Date(Date.parse(date+"T12:00:00Z")+86400000).toISOS
  count:data.events?.length??0,sample:data.events?.slice(0,2).map(e=>({id:e.idEvent,home:e.strHomeTeam,away:e.strAwayTeam,date:e.dateEvent,utc:e.strTimestamp,league:e.strLeague,leagueId:e.idLeague,tv:e.strTVStation,keys:Object.keys(e).filter(k=>/Photo|Badge|Thumb|Poster|TV|League/.test(k)).slice(0,15)}))}));
  }catch(e){console.log(JSON.stringify({name:"sportsdb",date:dIso,error:String(e)}));}
 }
+for(const id of ["2442829","1032723"]){
+ for(const endpoint of ["lookuplineup","lookuptv"]){
+  try{
+    const response=await fetch("https://www.thesportsdb.com/api/v1/json/123/"+endpoint+".php?id="+id,{signal:AbortSignal.timeout(5000)});
+    const payload=await response.json();
+    const entries=Object.entries(payload).map(([key,value])=>({key,count:Array.isArray(value)?value.length:null,sample:Array.isArray(value)?value.slice(0,2):value}));
+    console.log(JSON.stringify({name:"sportsdb-"+endpoint,id,status:response.status,entries}).slice(0,4300));
+  }catch(error){console.log(JSON.stringify({name:"sportsdb-"+endpoint,id,error:String(error)}));}
+ }
+}
 const league="bra.1";
 const id=await inspect("espn-bra",`https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${d}&limit=120`);
 await inspect("zang",`https://zangflix.vercel.app/api/jogos-agenda?data=${date}`,30000);
