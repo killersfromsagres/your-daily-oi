@@ -109,7 +109,7 @@ try{
     if(!state?.header)throw new Error("Missing header in "+scenario.name);
     const inspect=(name,style)=>{
       if(!style)throw new Error("Missing "+name+" on "+scenario.name);
-      if(!/blur\\(/.test(style.backdrop||""))throw new Error(name+" has no backdrop blur: "+JSON.stringify(style));
+      if(!/blur\(/.test(style.backdrop||""))throw new Error(name+" has no backdrop blur: "+JSON.stringify(style));
       if(style.alpha>=.31)throw new Error(name+" has opaque background alpha "+style.alpha);
     };
     inspect("header",state.header);
