@@ -89,3 +89,16 @@ Não são adicionados tokens de mídia, logins, credenciais nem cópias dos stre
 Em um deploy atualizado, acesse \`/tv\`, navegue pelas datas e verifique a API \`/api/jogos-agenda?data=2026-11-07\`. O backend precisa estar implantado, não apenas o frontend. Um erro 404 HTML na rota de jogos indica que a versão publicada ainda é antiga.
 
 O ESPN Site API é uma fonte pública de dados sem SLA ou garantia de cobertura de todas as competições. O projeto não garante horário/placar corretos se o provedor alterar partidas sem atualizar sua resposta ou indisponibilizar uma liga. As correspondências de emissoras exigem evidência específica de transmissão no Brasil.
+
+## API multiorigem e escalações — novembro de 2026
+
+- A API `/api/jogos-agenda?data=YYYY-MM-DD` combina os placares ESPN e o calendário público TheSportsDB (`eventsday.php`), preservando horários de Brasília, escudos de fontes HTTPS e deduplicação por confronto/horário. Não cria partidas fictícias para preencher o catálogo.
+- O guia cobre também UEFA Nations League, eliminatórias europeias e amistosos de seleções, além das competições de clubes já integradas. A agenda completa fica em `/futebol`; os destaques da TV não ficam vazios durante pausas internacionais se houver confrontos registrados.
+- Direitos brasileiros são extraídos de metadados ESPN destinados ao Brasil, EPG por confronto, configuração específica autorizada ou `lookuptv.php` do TheSportsDB apenas quando `strCountry` é Brasil/Brazil/BR. Uma transmissão listada em outro país nunca resulta em link brasileiro inferido. O destino de assistir é a rota existente do canal, se o canal estiver no catálogo local.
+- `/api/jogos-escalacao?jogo=<id>` usa as listas publicadas pela ESPN para os IDs ESPN, ou `lookuplineup.php` para jogos TheSportsDB. O identificador é validado contra ligas aceitas e IDs numéricos; não aceita URLs arbitrárias.
+- O painel React `src/components/sports/MatchLineups.tsx` exibe um campo dividido (mandante/visitante), atletas por posição com fotos reais de fornecedores quando disponíveis, reservas não confundidos com titulares, formação e técnico informado pela fonte. A prévia compacta fica sempre no card; nomes, fotos e posições surgem quando há dados publicados.
+- Escalações incompletas **continuam marcadas como parciais**, sem completar 11 com reservas ou elenco. Para jogos ainda não confirmados ou sem cobertura, exibe estado de espera. O endpoint usa cache curto enquanto a escalação não estiver completa; o navegador atualiza automaticamente perto do início do jogo e enquanto o campo estiver aberto.
+- O plano público do TheSportsDB limita os registros da resposta de escalação e TV; por isso algumas partidas têm poucos titulares/fotos disponíveis. Nem a ESPN nem a TheSportsDB garantem técnicos/fotos/escalações de todas as competições.
+- Verificações: `tests/football-providers-lineups.test.ts`, `.github/workflows/verify-sports-premium.yml` e `scripts/smoke-football-production.mjs`. Em 13/11/2026, a produção retornou 21 jogos em ~2 s; um jogo com dados ESPN completos retornou 11 titulares por lado, e o endpoint TheSportsDB retornou uma escalação parcial com fotos.
+
+Nenhuma API pública garante que todas as transmissões estejam disponíveis ou que um canal local esteja autorizado a reproduzi-las. O botão de assistir só aparece com correspondência específica de canal.
