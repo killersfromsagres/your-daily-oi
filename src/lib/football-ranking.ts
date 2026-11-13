@@ -89,6 +89,8 @@ export function mergeFootballScores(
       canalId: previous.canalId || update.canalId,
       canalNome: previous.canalNome || update.canalNome,
       canalLogo: previous.canalLogo || update.canalLogo,
+      ...(previous.canaisDisponiveis?.length || update.canaisDisponiveis?.length ?
+        { canaisDisponiveis: previous.canaisDisponiveis?.length ? previous.canaisDisponiveis : update.canaisDisponiveis } : {}),
       ...(broadcasters?.length ? {canaisTransmissao: broadcasters} : {}),
       transmissao: previous.canalId || update.canalId ? "confirmada" : previous.transmissao,
       ...(origin ? {origemTransmissao: origin} : {}),
