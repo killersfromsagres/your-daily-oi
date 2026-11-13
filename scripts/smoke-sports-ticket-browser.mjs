@@ -14,6 +14,7 @@ let serverLog="";
 for(const stream of [server.stdout,server.stderr])
  stream.on("data",data=>serverLog=(serverLog+String(data)).slice(-1800));
 let browser,ws,seq=0;
+const browserErrors=[];
 const pending=new Map();
 function send(method,params={}){
  const id=++seq;
@@ -59,7 +60,7 @@ async function waitFor(fn,attempts=110){
   if(state && fn(state))return state;
   await sleep(230);
  }
- throw new Error("Timeout waiting for app state: "+JSON.stringify(await evaluate(STATE))+"; worker "+serverLog);
+ throw new Error("Timeout waiting for app state: "+JSON.stringify(await evaluate(STATE))+"; browser errors "+JSON.stringify(browserErrors.slice(-6))+"; worker "+serverLog);
 }
 async function screenshot(name){
  const result=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
@@ -89,6 +90,13 @@ try{
  ws=new WebSocket(tab.webSocketDebuggerUrl);
  ws.addEventListener("message",event=>{
   let message;try{message=JSON.parse(event.data);}catch{return;}
+  if(message.method==="Runtime.exceptionThrown"){
+    browserErrors.push(message.params?.exceptionDetails?.exception?.description||
+      message.params?.exceptionDetails?.text||"Unknown browser exception");
+  }
+  if(message.method==="Runtime.consoleAPICalled"&&message.params?.type==="error"){
+    browserErrors.push(message.params?.args?.map(a=>a.value||a.description||"").join(" ").slice(0,1200));
+  }
   if(message.id===undefined)return;
   const request=pending.get(message.id);
   if(!request)return;
