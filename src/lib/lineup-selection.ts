@@ -1,12 +1,13 @@
 // src/lib/lineup-selection.ts — avoid showing away starters as the home team.
 import { normalizeSoccerName, type JogoBrasileirao } from "./jogos-match";
+import { broadcastTeamKey } from "./broadcast-verified";
 import type { LineupTeam, MatchLineups } from "./football-lineups";
 
 export type TeamSide = "home" | "away";
 
 function matches(a: string, b: string) {
-  const left = normalizeSoccerName(a);
-  const right = normalizeSoccerName(b);
+  const left = broadcastTeamKey(normalizeSoccerName(a));
+  const right = broadcastTeamKey(normalizeSoccerName(b));
   if (!left || !right) return false;
   return left === right || (left.length > 5 && right.startsWith(left+" ")) ||
     (right.length > 5 && left.startsWith(right+" "));
