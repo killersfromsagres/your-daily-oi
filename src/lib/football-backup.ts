@@ -13,6 +13,7 @@ type SourceEvent = {
   strHomeTeamBadge?: string | null; strAwayTeamBadge?: string | null;
   strLeagueBadge?: string | null; strStatus?: string | null;
   intHomeScore?: string | number | null; intAwayScore?: string | number | null;
+  strVenue?: string | null;
 };
 function safeHttps(value?: string | null): string | undefined {
   if (!value || typeof value !== "string") return undefined;
@@ -69,6 +70,7 @@ export function sportsDbToFixture(raw: SourceEvent, date: string): JogoBrasileir
     id:"sportsdb:"+id,casa:home,fora:away,
     escudoCasa:safeHttps(raw.strHomeTeamBadge),escudoFora:safeHttps(raw.strAwayTeamBadge),
     horarioLocal:horaBrasilia(start),inicioIso:start.toISOString(),dataLocal:date,
+    estadio:raw.strVenue?.trim().slice(0,120)||undefined,
     rodada:undefined,liga:league,ligaId:category.id,ligaLogo:safeHttps(raw.strLeagueBadge)||null,
     grupo:category.grupo,status,
     fase:status==="ao-vivo"?"ao-vivo":status, faseRotulo:status==="ao-vivo"?"Ao vivo":undefined,
