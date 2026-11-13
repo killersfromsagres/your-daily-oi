@@ -115,9 +115,9 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
     return <button key={sideName} type="button" className="zf-lineup-team-button"
       onClick={()=>open(sideName)} aria-label={"Ver escalação do "+name}>
       <LocalCrest name={name} src={crest}/>
-      <span><small>{sideName==="home"?"MANDANTE":"VISITANTE"}</small>
-        <strong>Escalação {name}</strong>
-        <em>{team?.starting.length?team.starting.length+" titulares divulgados":"Ver formação"}</em>
+      <span><small>{sideName==="home"?"ESCALAÇÃO · CASA":"ESCALAÇÃO · FORA"}</small>
+        <strong title={name}>{name}</strong>
+        <em>{team?.starting.length?team.starting.length+" titulares":"Ver formação"}</em>
       </span>
       <ChevronRight size={17} aria-hidden="true"/>
     </button>;
