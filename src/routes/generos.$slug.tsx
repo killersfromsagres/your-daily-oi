@@ -1,3 +1,5 @@
+import { MobileCatalogFilters } from "@/components/catalog/MobileCatalogFilters";
+import { catalogKind } from "@/lib/mobile-catalog-filters";
 import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
@@ -76,16 +78,7 @@ function GenrePage() {
     return base.filter(item => item.genres?.some(genre => matchesGenre(decoded, genre)));
   }, [items, decoded, isFilmes, isSeries, selectedType]);
 
-  // Some catalogs omit genre metadata. Show an explicitly labelled discovery
-  // fallback for that content type rather than a blank page or fake genre tags.
-  const fallback = useMemo(() => {
-    if (filtered.length || isFilmes || isSeries || selectedType === "todos") return [];
-    if (selectedType === "a") return items.filter(item => item.type === "a" || isAnimeItem(item));
-    if (selectedType === "s") return items.filter(item => item.type === "s");
-    if (selectedType === "f") return items.filter(item => item.type === "f");
-    return [];
-  }, [filtered.length, items, isFilmes, isSeries, selectedType]);
-  const displayItems = filtered.length ? filtered : fallback;
+  const displayItems = filtered;
   const visibleItems = useMemo(() => catalogVisibleItems(displayItems, visibleCount), [displayItems, visibleCount]);
 
   const rawTitle = isFilmes ? "Filmes" : isSeries ? "Séries" : decoded.charAt(0).toUpperCase() + decoded.slice(1);
@@ -134,9 +127,11 @@ function GenrePage() {
         {!loading && <span className="ydo-search-count">{displayItems.length} títulos</span>}
       </div>
 
+      <MobileCatalogFilters kind={catalogKind(selectedType)} category={isFilmes||isSeries?"":decoded}/>
+
       {/* Pílulas de filtro para alternar facilmente se desejar */}
       {!isFilmes && !isSeries && (
-        <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "16px", marginBottom: "20px" }}>
+        <div className="zf-desktop-catalog-filters" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "16px", marginBottom: "20px" }}>
           <button
             onClick={() => handleTypeChange("todos")}
             style={{
@@ -217,12 +212,6 @@ function GenrePage() {
         </div>
       ) : (
         <>
-          {fallback.length > 0 && (
-            <p className="zf-genre-fallback" role="status">
-              Nenhum título com o gênero exato foi identificado. Mostrando outras opções
-              de {typeBadge?.toLowerCase() || "nosso catálogo"} enquanto o catálogo é atualizado.
-            </p>
-          )}
           <div className="ydo-search-grid">
             {visibleItems.map(item => (
               <MediaCard key={item.id} item={item}

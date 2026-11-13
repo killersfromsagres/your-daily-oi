@@ -1,3 +1,5 @@
+import { MobileCatalogFilters } from "@/components/catalog/MobileCatalogFilters";
+import { CATALOG_CATEGORIES } from "@/lib/mobile-catalog-filters";
 import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -37,19 +39,7 @@ interface SushiResponse {
   totalItens: number;
 }
 
-const CATEGORIES: Array<{ label: string; slug: string }> = [
-  { label: "Todos", slug: "" },
-  { label: "Dublados", slug: "dublado" },
-  { label: "Shōnen", slug: "sh-nen" },
-  { label: "Ação", slug: "acao" },
-  { label: "Aventura", slug: "aventura" },
-  { label: "Comédia", slug: "comedia" },
-  { label: "Drama", slug: "drama" },
-  { label: "Fantasia", slug: "fantasia" },
-  { label: "Sobrenatural", slug: "sobrenatural" },
-  { label: "Romance", slug: "romance" },
-  { label: "Ficção Científica", slug: "ficcao-cientifica" },
-];
+const CATEGORIES=CATALOG_CATEGORIES.a;
 
 function sushiCardToCatalogItem(s: SushiCardData): CatalogItem {
   return {
@@ -123,6 +113,7 @@ function AnimesPage() {
   };
 
   const handleClearSearch = () => {
+    if(debounceTimerRef.current)clearTimeout(debounceTimerRef.current);
     setSearchQuery("");
     setDebouncedQuery("");
     setCurrentPage(1);
@@ -130,11 +121,15 @@ function AnimesPage() {
   };
 
   useEffect(() => {
-    // Category links from the desktop dropdown and mobile menu are URL-driven.
+    // Category links and Back/Forward restore one URL-driven selection.
+    if(debounceTimerRef.current)clearTimeout(debounceTimerRef.current);
+    setSearchQuery("");setDebouncedQuery("");
     setSelectedCategory(urlCategory || "");
     setCurrentPage(1);
     setLocalVisibleCount(CATALOG_PAGE_SIZE);
   }, [urlCategory]);
+
+  useEffect(()=>()=>{if(debounceTimerRef.current)clearTimeout(debounceTimerRef.current);},[]);
 
   // Carrega os animes clássicos do catálogo local (preservando o acervo anterior)
   useEffect(() => {
@@ -157,6 +152,7 @@ function AnimesPage() {
     setLoading(true);
     setError(false);
 
+    const controller=new AbortController();
     let apiUrl = `/api/animes-sushi?pagina=${currentPage}`;
     if (debouncedQuery) {
       apiUrl = `/api/animes-sushi?q=${encodeURIComponent(debouncedQuery)}`;
@@ -164,7 +160,7 @@ function AnimesPage() {
       apiUrl = `/api/animes-sushi?pagina=${currentPage}&categoria=${encodeURIComponent(selectedCategory)}`;
     }
 
-    fetch(apiUrl, { cache: "no-store" })
+    fetch(apiUrl, { cache: "no-store",signal:controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error("Falha ao carregar");
         return res.json() as Promise<SushiResponse>;
@@ -176,6 +172,7 @@ function AnimesPage() {
         setTotalCount(data.totalItens || data.items?.length || 0);
       })
       .catch((err) => {
+        if(!active||controller.signal.aborted)return;
         console.error("Erro ao carregar animes do Sushi:", err);
         if (active) setError(true);
       })
@@ -184,7 +181,7 @@ function AnimesPage() {
       });
 
     return () => {
-      active = false;
+      active = false;controller.abort();
     };
   }, [currentPage, debouncedQuery, selectedCategory, retryNonce]);
 
@@ -194,8 +191,9 @@ function AnimesPage() {
   };
 
   const handleCategoryClick = (catSlug: string) => {
+    if(debounceTimerRef.current)clearTimeout(debounceTimerRef.current);
     setSelectedCategory(catSlug);
-    void navigate({ to: "/animes", search: catSlug ? { categoria: catSlug } : {} });
+    void navigate({ to: "/animes", search: {categoria:catSlug||undefined} });
     setSearchQuery("");
     setDebouncedQuery("");
     setCurrentPage(1);
@@ -250,6 +248,8 @@ function AnimesPage() {
           </span>
         )}
       </div>
+
+      <MobileCatalogFilters kind="a" category={selectedCategory} onCategorySelect={handleCategoryClick}/>
 
       {/* Barra de Pesquisa Rápida com Ícones */}
       <div
@@ -307,7 +307,7 @@ function AnimesPage() {
       </div>
 
       {/* Pílulas de Filtros por Categoria / Gênero */}
-      <div
+      <div className="zf-desktop-catalog-filters"
         style={{
           display: "flex",
           gap: "8px",

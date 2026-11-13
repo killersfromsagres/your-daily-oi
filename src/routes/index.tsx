@@ -1,6 +1,7 @@
 import { getClientCatalog } from "@/lib/catalog-client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { MobileCatalogFilters } from "@/components/catalog/MobileCatalogFilters";
 import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
 import { SkeletonRow } from "@/components/catalog/SkeletonRow";
@@ -221,6 +222,7 @@ function HomePage() {
       )}
 
       <div className="ydo-catalog">
+        <MobileCatalogFilters kind={null} home/>
         {continueWatching.length > 0 && (
           <ContinueWatchingRow
             items={continueWatching}

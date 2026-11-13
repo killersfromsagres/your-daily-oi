@@ -222,6 +222,66 @@ try{
     writeFileSync("artifacts/apple-glass-icons-search-"+scenario.name+".png",Buffer.from(screenshot.data,"base64"));
     console.log(JSON.stringify({event:"professional-iconography",device:scenario.name,heading:true,empty:true,search:true,...icon}));
   }
+  // Verify content and genre together with deterministic, non-playable fixtures.
+  const fixtureItems=[
+    {id:"f-horror",title:"Filme Terror",type:"f",genres:["Horror"]},
+    {id:"f-action",title:"Filme Ação",type:"f",genres:["Action"]},
+    {id:"s-horror",title:"Série Terror",type:"s",genres:["Horror"]},
+    {id:"s-action",title:"Série Ação",type:"s",genres:["Action"]},
+    {id:"a-action",title:"Anime Ação",type:"a",genres:["Anime","Action"]},
+    {id:"a-shonen",title:"Anime Shōnen",type:"a",genres:["Anime","Shounen"]},
+  ].map(item=>({...item,streams:[{url:"pending",audio:"dub"}]}));
+  await send("Page.addScriptToEvaluateOnNewDocument",{source:
+    `(()=>{const original=window.fetch.bind(window),items=${JSON.stringify(fixtureItems)};
+      window.__catalogReads=0;
+      window.fetch=(input,options)=>{const url=new URL(String(input?.url||input),location.origin);
+       let payload;
+       if(url.pathname==="/api/catalogo"){window.__catalogReads++;payload={items,highlights:[],genres:[]};}
+       if(url.pathname==="/api/animes-sushi")payload={items:[],pagina:1,totalPaginas:1,totalItens:0};
+       return payload?Promise.resolve(new Response(JSON.stringify(payload),{headers:{"Content-Type":"application/json"}})):original(input,options);
+      };
+    })()`});
+  const filterState=()=>evalInPage(`(()=>{
+    const root=document.querySelector('.zf-mobile-catalog'),rect=root?.getBoundingClientRect();
+    return {path:location.pathname,query:location.search,display:root&&getComputedStyle(root).display,
+      left:rect?.left,right:rect?.right,width:innerWidth,bodyWidth:document.documentElement.scrollWidth,
+      type:root?.querySelector('.zf-mobile-catalog-type[aria-current="page"]')?.textContent,
+      category:root?.querySelector('.zf-mobile-catalog-chip[aria-current="true"]')?.textContent,
+      cards:Array.from(document.querySelectorAll('.ydo-search-grid .ydo-card')).map(card=>card.querySelector('.ydo-card-poster-link')?.getAttribute('aria-label')),
+      reads:window.__catalogReads};
+  })()`);
+  const waitFilters=async predicate=>{
+    for(let attempt=0;attempt<75;attempt++){const value=await filterState().catch(()=>null);if(value&&predicate(value))return value;await sleep(120);}
+    throw Error('Mobile catalog state timeout: '+JSON.stringify(await filterState()));
+  };
+  const pickFilter=async(selector,label)=>{
+    await evalInPage(`Array.from(document.querySelectorAll(${JSON.stringify(selector)})).find(link=>link.textContent.trim()===${JSON.stringify(label)}).click()`);
+  };
+  for(const scenario of cases.filter(item=>["mobile-320","mobile","desktop"].includes(item.name))){
+    await send("Emulation.setDeviceMetricsOverride",{width:scenario.width,height:scenario.height,mobile:scenario.mobile,deviceScaleFactor:scenario.mobile?2:1});
+    await send("Emulation.setUserAgentOverride",{userAgent:scenario.ua});
+    await send("Page.navigate",{url:BASE+"/generos/filmes"});
+    const initial=await waitFilters(s=>s.path==='/generos/filmes'&&s.cards.length===2&&s.reads===1);
+    if(!scenario.mobile){if(initial.display!=='none')throw Error('Desktop compact filters should remain hidden');continue;}
+    if(initial.display==='none'||initial.left<0||initial.right>scenario.width+1||initial.bodyWidth>scenario.width+1)
+      throw Error('Mobile filter layout overflows: '+JSON.stringify(initial));
+    await pickFilter('.zf-mobile-catalog-chip','Terror');
+    const horror=await waitFilters(s=>s.category==='Terror'&&s.type==='Filmes'&&s.cards.length===1&&s.cards[0].includes('Filme Terror'));
+    let shot=await send('Page.captureScreenshot',{format:'png'});
+    writeFileSync('artifacts/apple-glass-catalog-'+scenario.name+'.png',Buffer.from(shot.data,'base64'));
+    await pickFilter('.zf-mobile-catalog-type','Séries');
+    await waitFilters(s=>s.category==='Terror'&&s.type==='Séries'&&s.cards.length===1&&s.cards[0].includes('Série Terror'));
+    await pickFilter('.zf-mobile-catalog-type','Animes');
+    await waitFilters(s=>s.path==='/animes'&&s.category==='Todos'&&s.cards.length===2);
+    await pickFilter('.zf-mobile-catalog-chip','Ação');
+    await waitFilters(s=>s.category==='Ação'&&s.type==='Animes'&&s.cards.length===1&&s.cards[0].includes('Anime Ação'));
+    await pickFilter('.zf-mobile-catalog-type','Filmes');
+    await waitFilters(s=>s.category==='Ação'&&s.type==='Filmes'&&s.cards.length===1&&s.cards[0].includes('Filme Ação'));
+    await evalInPage('history.back()');
+    const restored=await waitFilters(s=>s.path==='/animes'&&s.category==='Ação'&&s.cards.length===1&&s.cards[0].includes('Anime Ação'));
+    if(restored.reads!==1)throw Error('Switching filters refetched the entire catalog');
+    console.log(JSON.stringify({event:'mobile-catalog-filters',device:scenario.name,horror,restored}));
+  }
 }finally{
   ws?.close();
   browser?.kill("SIGTERM");
