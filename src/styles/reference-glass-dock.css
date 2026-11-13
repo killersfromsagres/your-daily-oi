@@ -208,6 +208,18 @@
   }
 }
 
+/* Landscape phones can be wider than 767px; retain translucent header there
+   instead of inheriting the old opaque tablet navigation background. */
+@media (min-width: 768px) and (max-width: 1120px) and (max-height: 530px) and (orientation: landscape) {
+  html:not([data-zf-platform="tv"]) .ydo-header {
+    background:
+      linear-gradient(169deg, rgba(255, 255, 255, .09), transparent 62%),
+      rgba(9, 11, 15, .52);
+    -webkit-backdrop-filter: blur(31px) saturate(130%) brightness(.82);
+    backdrop-filter: blur(31px) saturate(130%) brightness(.82);
+    border-color: rgba(255,255,255,.21);
+  }
+}
 /* A browser without blur support gets a readable translucent fallback. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   @media (max-width: 1120px), (pointer: coarse) and (max-width: 1440px) {
