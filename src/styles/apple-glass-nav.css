@@ -1,0 +1,307 @@
+/*
+ * ZANG FLIX / Apple-inspired frosted glass — final navigation skin.
+ * All glass surfaces use alpha-only tint, true backdrop-filter, and a
+ * reflective border. They must NOT contain opaque navy/gray fills.
+ * This stylesheet is loaded after the older mobile navigation layers.
+ */
+:root {
+  --zf-glass-bg: rgba(225, 235, 255, .075);
+  --zf-glass-bg-strong: rgba(230, 236, 247, .095);
+  --zf-glass-rim: rgba(255, 255, 255, .28);
+  --zf-glass-rim-inner: rgba(255, 255, 255, .14);
+  --zf-glass-shadow: 0 13px 35px rgba(0, 0, 0, .24);
+}
+
+/* ── Header: transparent light-reflecting surface on ALL screen sizes ── */
+.ydo-header {
+  border: 1px solid var(--zf-glass-rim);
+  border-radius: 25px;
+  background:
+    linear-gradient(167deg, rgba(255, 255, 255, .17) 0%, rgba(255, 255, 255, .055) 30%, transparent 68%),
+    var(--zf-glass-bg);
+  -webkit-backdrop-filter: blur(30px) saturate(175%) brightness(1.09);
+  backdrop-filter: blur(30px) saturate(175%) brightness(1.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .25),
+    inset 0 -1px 0 rgba(255, 255, 255, .045),
+    var(--zf-glass-shadow);
+}
+.ydo-header::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 42%);
+  z-index: 0;
+}
+.ydo-header > * {
+  position: relative;
+  z-index: 1;
+}
+.ydo-header .ydo-nav-link {
+  border-radius: 999px;
+  color: rgba(255, 255, 255, .80);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: color .18s ease, background .18s ease, border-color .18s ease;
+}
+.ydo-header .ydo-nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .095);
+  border-color: rgba(255, 255, 255, .095);
+}
+.ydo-header .ydo-nav-link[data-status="active"],
+.ydo-header .ydo-nav-link.is-active {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.075));
+  border: 1px solid rgba(255, 255, 255, .19);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16);
+}
+.ydo-header .zf-header-apk,
+.ydo-header .ydo-search-trigger-btn {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .21);
+  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.045));
+  box-shadow: inset 0 1px rgba(255, 255, 255, .15);
+}
+.ydo-header .zf-header-apk {
+  border-radius: 15px;
+}
+.ydo-header .ydo-search-trigger-btn {
+  border-radius: 15px;
+}
+.ydo-header .zf-header-apk:hover,
+.ydo-header .zf-header-apk:focus-visible,
+.ydo-header .ydo-search-trigger-btn:hover,
+.ydo-header .ydo-search-trigger-btn:focus-visible {
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.30);
+}
+
+/* ── Mobile dock and detached search: genuine see-through glass ── */
+@media (max-width: 1120px), (pointer: coarse) and (max-width: 1440px) {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    gap: 3px;
+    position: fixed;
+    z-index: 1100;
+    left: 12px;
+    right: 86px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-width: 650px;
+    min-height: 74px;
+    margin: 0 auto;
+    padding: 7px 6px;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,.29);
+    background:
+      linear-gradient(165deg, rgba(255,255,255,.19) 0%, rgba(255,255,255,.04) 44%, transparent 86%),
+      var(--zf-glass-bg);
+    -webkit-backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
+    backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.26),
+      inset 0 -1px 0 rgba(255,255,255,.05),
+      0 14px 42px rgba(0,0,0,.26);
+    isolation: auto;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.095), transparent 45%);
+    z-index: 0;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab,
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab:not(.is-active) {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    min-height: 58px;
+    padding: 5px 1px;
+    gap: 5px;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    background: transparent;
+    box-shadow: none;
+    color: rgba(255,255,255,.88);
+    font: 600 11px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-align: center;
+    text-decoration: none;
+    transition: color .18s ease, background .18s ease, border-color .18s ease;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab svg {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.85;
+    color: inherit;
+    filter: none;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab span {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab.is-active,
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab[aria-current="page"] {
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.23);
+    background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
+    box-shadow: inset 0 1px rgba(255,255,255,.18), 0 4px 13px rgba(0,0,0,.10);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab:active {
+    color:#fff;
+    background: rgba(255,255,255,.24);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    z-index: 1101;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 72px;
+    height: 72px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,.30);
+    border-radius: 50%;
+    color: #fff;
+    background:
+      linear-gradient(155deg, rgba(255,255,255,.20), rgba(255,255,255,.035) 70%),
+      var(--zf-glass-bg-strong);
+    -webkit-backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
+    backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
+    box-shadow: inset 0 1px rgba(255,255,255,.24), 0 12px 35px rgba(0,0,0,.25);
+    transition: background .18s ease, border-color .18s ease;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab svg {
+    width: 27px;
+    height: 27px;
+    stroke-width: 1.9;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {
+    background: rgba(255,255,255,.24);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab:focus-visible,
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  /* Drawer follows the same material, with slightly higher opacity for text. */
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim {
+    background: rgba(0,0,0,.49);
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
+    color: #fff;
+    background:
+      linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.025) 48%),
+      rgba(26,28,34,.34);
+    border: 1px solid rgba(255,255,255,.26);
+    border-radius: 27px;
+    -webkit-backdrop-filter: blur(34px) saturate(155%) brightness(1.05);
+    backdrop-filter: blur(34px) saturate(155%) brightness(1.05);
+    box-shadow: inset 0 1px rgba(255,255,255,.20), 0 24px 70px rgba(0,0,0,.32);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a,
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections,
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-search {
+    color: #fff;
+    background: rgba(255,255,255,.075);
+    border-color: rgba(255,255,255,.17);
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg {
+    stroke-width: 1.85;
+    color: #fff;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-feature {
+    background: rgba(255,255,255,.09);
+    border-color: rgba(255,255,255,.16);
+  }
+}
+
+/* ── Compact mobile header: no half-width translation or opaque fill ── */
+@media (max-width: 767px) {
+  html:not([data-zf-platform="tv"]) .ydo-header {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: 10px;
+    right: 10px;
+    width: auto;
+    min-height: 60px;
+    height: 60px;
+    padding: 0 11px;
+    gap: 7px;
+    border-radius: 23px;
+    border: 1px solid rgba(255,255,255,.25);
+    background:
+      linear-gradient(175deg, rgba(255,255,255,.18), rgba(255,255,255,.045) 40%, transparent 86%),
+      rgba(228,237,255,.065);
+    -webkit-backdrop-filter: blur(31px) saturate(180%) brightness(1.08);
+    backdrop-filter: blur(31px) saturate(180%) brightness(1.08);
+    box-shadow: inset 0 1px rgba(255,255,255,.25), 0 12px 30px rgba(0,0,0,.23);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-logo-text {
+    font-size: clamp(12px, 3.1vw, 14px);
+    white-space: nowrap;
+  }
+  html:not([data-zf-platform="tv"]) .zf-header-apk {
+    min-height: 38px;
+    padding: 0 10px;
+    border-radius: 14px;
+    font-size: clamp(10px,2.65vw,11px);
+  }
+  html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 14px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
+    left: 10px;
+    right: 82px;
+    min-height: 70px;
+    padding: 5px;
+    border-radius: 26px;
+    max-width: none;
+    margin: 0;
+  }
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {
+    right: 10px;
+    width: 66px;
+    height: 70px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (max-width: 370px) {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock {right:76px;gap:1px;}
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {width:61px;}
+  html:not([data-zf-platform="tv"]) .zf-mobile-tab {font-size:10px;}
+}
+/* Hardware/OS with no backdrop support still has readable controls. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ydo-header { background: rgba(35,36,41,.87); }
+  @media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
+    html:not([data-zf-platform="tv"]) .zf-mobile-dock,
+    html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {
+      background: rgba(39,40,45,.89);
+    }
+    html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
+      background: rgba(30,31,37,.93);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ydo-header .ydo-nav-link,
+  .zf-mobile-tab,
+  .zf-mobile-search-fab {transition:none!important;}
+}
