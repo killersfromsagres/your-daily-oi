@@ -93,7 +93,7 @@ export function useNeuralVideoUpscaler(
     let animationRequest = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let rendered = 0;
-    let slowFrames = 0;
+    let slowSince = 0;
     let networkSize: "s" | "m" = "s";
     previousAvg.current = 0;
     const abortController = new AbortController();
@@ -164,8 +164,14 @@ export function useNeuralVideoUpscaler(
         rendered++;
         if (rendered === 1) setStatus("active"); // Never hide native video before first frame.
         if (rendered % 15 === 0) setAvgFrameMs(Math.round(previousAvg.current));
-        slowFrames = previousAvg.current > 48 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
-        if (rendered > 25 && slowFrames > 28) {
+        // 48 ms for a few frames is normal while pipelines compile or the
+        // GPU ramps up. Downgrade only after sustained severe pressure.
+        if (previousAvg.current > 95) {
+          if (!slowSince) slowSince = performance.now();
+        } else {
+          slowSince = 0;
+        }
+        if (rendered > 45 && slowSince > 0 && performance.now() - slowSince > 12000) {
           if (networkSize === "m") {
             // Adaptive quality: keep real AI on slow desktop GPUs by dropping
             // from the medium model to the smaller trained CNN before giving up.
@@ -176,7 +182,7 @@ export function useNeuralVideoUpscaler(
             if (cancelled) return;
             engine.switchNetwork("anime4k/cnn-2x-s", await smaller.json());
             networkSize = "s";
-            slowFrames = 0;
+            slowSince = 0;
             rendered = 0;
             previousAvg.current = 0;
           } else {
@@ -184,8 +190,12 @@ export function useNeuralVideoUpscaler(
             return;
           }
         }
-      } catch {
-        unavailable("A GPU ou a origem do vídeo não permite inferência neural neste stream");
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.info("[ZANG FLIX HQ] Neural inference unavailable:", reason);
+        unavailable(/cross.origin|cors|security|origin.clean|tainted/i.test(reason)
+          ? "Esta fonte não autoriza leitura dos quadros pela GPU"
+          : "A GPU não conseguiu processar a super-resolução desta fonte");
         return;
       }
       nextFrame();
