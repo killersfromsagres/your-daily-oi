@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
 import { CastControl } from "./CastControl";
 import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, type LiveLatencyMode } from "@/lib/live-latency";
@@ -588,7 +588,7 @@ export function LivePlayer({
         if (originalIndex >= 0) {
           try {
             const response = await fetch(
-              `/api/live-format?canal=${encodeURIComponent(canal.id)}&fonte=${originalIndex}`,
+              `/api/live-format?canal=${encodeURIComponent(canal.id)}&fonte=${originalIndex}&assinatura=${liveSourceFingerprint(rawFonte.url)}`,
               { signal: AbortSignal.timeout(6500), cache: "no-store" },
             );
             if (response.ok) {
