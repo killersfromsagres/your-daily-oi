@@ -1,7 +1,7 @@
 "use client";
 // src/components/sports/TeamLineupBoard.tsx — one-team portrait football lineup.
 import { useEffect, useState } from "react";
-import { Shield, UserRound } from "lucide-react";
+import { Shield } from "lucide-react";
 import type { LineupPlayer, LineupTeam, PlayerPosition } from "@/lib/football-lineups";
 
 const SECTIONS: { group: PlayerPosition; label: string }[] = [
@@ -13,14 +13,20 @@ const SECTIONS: { group: PlayerPosition; label: string }[] = [
 
 function Photo({ src, name }: { src: string | null; name: string }) {
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setFailed(false); setLoaded(false); }, [src]);
+  const initials=name.split(" ").filter(Boolean).slice(-2).map(part=>part.charAt(0)).join("").toUpperCase()||"?";
   return (
     <span className="zf-formation-portrait">
-      {src && !failed ? (
-        <img src={src} alt={name} loading="lazy" decoding="async" referrerPolicy="no-referrer"
-          onError={() => setFailed(true)} />
-      ) : (
-        <UserRound size={22} strokeWidth={1.5} aria-label="Foto indisponível" />
+      <span className="zf-formation-photo-fallback" aria-hidden="true">{initials}</span>
+      {src && !failed && (
+        <img src={src} alt={name} loading="lazy" decoding="async"
+          className={loaded?"is-loaded":""}
+          onLoad={event=>{
+            if(event.currentTarget.naturalWidth>4)setLoaded(true);
+            else setFailed(true);
+          }}
+          onError={() => setFailed(true)}/>
       )}
     </span>
   );
