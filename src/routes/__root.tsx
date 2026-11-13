@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import playerFullscreenCss from "../styles/player-fullscreen.css?url";
 import iconographyCss from "../styles/iconography.css?url";
 import appCss from "../styles.css?url";
 import headerCss from "../styles/header.css?url";
@@ -101,6 +102,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appleGlassNavCss },
       { rel: "stylesheet", href: referenceGlassDockCss },
       { rel: "stylesheet", href: iconographyCss },
+      { rel: "stylesheet", href: playerFullscreenCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },

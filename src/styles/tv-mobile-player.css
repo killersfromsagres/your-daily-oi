@@ -528,29 +528,6 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
 }
 
 
-/* Landscape fullscreen: Screen Orientation API is attempted first. When the
-   mobile browser denies the lock, rotate the video surface in portrait.
-   This does not claim to physically rotate iOS or the device sensors. */
-@media (orientation: portrait) {
-  .ztv-player-frame .ydo-live-player-container.is-landscape-fallback:fullscreen,
-  .ztv-player-frame .ydo-live-player-container.is-landscape-fallback.is-theater {
-    position: fixed !important;
-    inset: auto !important;
-    top: 50% !important;
-    left: 50% !important;
-    width: 100dvh !important;
-    height: 100dvw !important;
-    max-width: none !important;
-    max-height: none !important;
-    aspect-ratio: auto !important;
-    transform: translate(-50%, -50%) rotate(90deg) !important;
-    transform-origin: center center !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: #000 !important;
-    z-index: 2147483000 !important;
-  }
-}
 .ztv-player-frame .ydo-live-player-container.is-landscape-fallback
   .ydo-live-video {
   object-fit: contain;

@@ -9,7 +9,9 @@ export function isMobileLandscapeTarget(input: {
   viewportWidth: number;
   coarsePointer: boolean;
 }): boolean {
+  if (/smart.?tv|tizen|webos|hbbtv|android.?tv|googletv|aft[a-z0-9]/i.test(input.userAgent)) return false;
   if (/(?:iPhone|iPod|Android.*Mobile|Mobile.*Android)/i.test(input.userAgent)) return true;
+  if (/Windows NT|X11/i.test(input.userAgent)) return false;
   return input.coarsePointer && input.viewportWidth <= 1100;
 }
 
@@ -35,4 +37,14 @@ export async function tryLockLandscape(orientation: OrientationLock | null | und
 
 export function unlockLandscape(orientation: OrientationLock | null | undefined): void {
   try { orientation?.unlock?.(); } catch { /* Browser may have released it already. */ }
+}
+
+export function fullscreenProgressFraction(input: {
+  clientX:number; clientY:number; rotated:boolean;
+  rect:{left:number;top:number;width:number;height:number};
+}):number {
+  const length=input.rotated?input.rect.height:input.rect.width;
+  if(length<=0)return 0;
+  const offset=input.rotated?input.clientY-input.rect.top:input.clientX-input.rect.left;
+  return Math.max(0,Math.min(1,offset/length));
 }

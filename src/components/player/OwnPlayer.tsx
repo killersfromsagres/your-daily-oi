@@ -6,6 +6,7 @@ import { useVideoEnhancer } from "./useVideoEnhancer";
 import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
 import { selectHqBackend } from "@/lib/hq-playback-policy";
 import { chooseHqProcessing } from "@/lib/hq-render-policy";
+import { usePlayerFullscreen } from "./usePlayerFullscreen";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import {
@@ -171,7 +172,7 @@ export function OwnPlayer({
   const [sourceIndex, setSourceIndex] = useState(() => pickBestSourceIndex(orderedStreams, preferredAudio));
   const [attemptStage, setAttemptStage] = useState<0 | 1>(0);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const {isFullscreen,theaterFullscreen,rotateLandscapeFallback,toggle:toggleFullscreen}=usePlayerFullscreen(containerRef,videoRef);
   const [hasSeekedToInitial, setHasSeekedToInitial] = useState(false);
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [exhaustedSources, setExhaustedSources] = useState(false);
@@ -787,48 +788,6 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     if (engine.state !== "playing") setControlsVisible(true);
   }, [engine.state]);
 
-  // Fullscreen listener cross-browser (incluindo iOS Safari)
-  useEffect(() => {
-    const handler = () => {
-      const doc = document as Document & {
-        webkitFullscreenElement?: Element;
-        mozFullScreenElement?: Element;
-        msFullscreenElement?: Element;
-      };
-      const v = videoRef.current as (HTMLVideoElement & { webkitDisplayingFullscreen?: boolean }) | null;
-      setIsFullscreen(
-        !!(
-          doc.fullscreenElement ||
-          doc.webkitFullscreenElement ||
-          doc.mozFullScreenElement ||
-          doc.msFullscreenElement ||
-          v?.webkitDisplayingFullscreen
-        )
-      );
-    };
-
-    document.addEventListener("fullscreenchange", handler);
-    document.addEventListener("webkitfullscreenchange", handler);
-
-    const v = videoRef.current;
-    const onBegin = () => setIsFullscreen(true);
-    const onEnd = () => setIsFullscreen(false);
-
-    if (v) {
-      v.addEventListener("webkitbeginfullscreen", onBegin);
-      v.addEventListener("webkitendfullscreen", onEnd);
-    }
-
-    return () => {
-      document.removeEventListener("fullscreenchange", handler);
-      document.removeEventListener("webkitfullscreenchange", handler);
-      if (v) {
-        v.removeEventListener("webkitbeginfullscreen", onBegin);
-        v.removeEventListener("webkitendfullscreen", onEnd);
-      }
-    };
-  }, []);
-
   // Atalhos de teclado
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -837,12 +796,12 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       if (e.key === "ArrowRight") { e.preventDefault(); engine.seek(engine.currentTime + 10); }
       if (e.key === "ArrowLeft") { e.preventDefault(); engine.seek(engine.currentTime - 10); }
       if (e.key === "m") engine.setMuted(!engine.muted);
-      if (e.key === "f") engine.requestFullscreen();
+      if (e.key === "f") toggleFullscreen();
       showControls();
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [engine, handlePlay, handlePause]);
+  }, [engine, handlePlay, handlePause, toggleFullscreen]);
 
   const measureAndImproveQuality = useCallback(() => {
     updateVideoResolution();
@@ -970,12 +929,13 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
   return (
     <div
       ref={containerRef}
-      className="ydo-player-container"
+      className={"ydo-player-container"+(theaterFullscreen?" is-theater":"")+(rotateLandscapeFallback?" is-landscape-fallback":"")}
       data-controls-visible={controlsVisible}
       onMouseMove={showControls}
       onTouchStart={showControls}
       style={{ cursor: controlsVisible ? "default" : "none" }}
     >
+      <div className="zf-fullscreen-surface">
       <div className="zf-player-watermark" aria-hidden="true">
         ZANG <span>FLIX</span>
       </div>
@@ -1258,6 +1218,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           muted={engine.muted}
           playbackRate={engine.playbackRate}
           isFullscreen={isFullscreen}
+          rotatedLandscape={rotateLandscapeFallback}
           sources={sources}
           currentSourceIndex={sourceIndex}
           detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "Auto"}
@@ -1266,7 +1227,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           onSeek={engine.seek}
           onVolume={engine.setVolume}
           onMute={() => engine.setMuted(!engine.muted)}
-          onFullscreen={engine.requestFullscreen}
+          onFullscreen={toggleFullscreen}
           onPiP={() => void engine.requestPiP()}
           onRate={engine.setPlaybackRate}
           onSourceChange={handleSourceChange}
@@ -1276,6 +1237,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           hqMode={hqBackend === "waiting" ? "loading" : hqBackend === "neural" ? "ai" : "shader"}
           onToggleHq={toggleHq}
         />
+      </div>
       </div>
     </div>
   );

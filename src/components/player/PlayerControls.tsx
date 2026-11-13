@@ -1,4 +1,5 @@
 "use client";
+import { fullscreenProgressFraction } from "@/lib/fullscreen-orientation";
 import { useEffect, useRef, useState } from "react";
 import {
   Play,
@@ -41,6 +42,7 @@ interface PlayerControlsProps {
   muted: boolean;
   playbackRate: number;
   isFullscreen: boolean;
+  rotatedLandscape?: boolean;
   sources: Array<{ name: string; audio: string; quality?: string; format?: string }>;
   currentSourceIndex: number;
   detectedQuality?: string;
@@ -70,6 +72,7 @@ export function PlayerControls({
   muted,
   playbackRate,
   isFullscreen,
+  rotatedLandscape = false,
   sources,
   currentSourceIndex,
   detectedQuality,
@@ -119,7 +122,7 @@ export function PlayerControls({
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = progressRef.current?.getBoundingClientRect();
     if (!rect || !duration) return;
-    const pct = (e.clientX - rect.left) / rect.width;
+    const pct = fullscreenProgressFraction({clientX:e.clientX,clientY:e.clientY,rotated:rotatedLandscape,rect});
     onSeek(Math.max(0, Math.min(duration, pct * duration)));
   };
 

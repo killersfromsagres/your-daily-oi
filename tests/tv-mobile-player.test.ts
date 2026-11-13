@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 
 const source = (name: string) => readFileSync(new URL("../src/" + name, import.meta.url), "utf8");
 const player = source("components/player/LivePlayer.tsx");
+const fullscreen=source("components/player/usePlayerFullscreen.ts");
+const fullscreenCss=source("styles/player-fullscreen.css");
 const tv = source("components/tv/TvView.tsx");
 const cast = source("components/player/CastControl.tsx");
 const css = source("styles/tv-mobile-player.css");
@@ -16,11 +18,11 @@ describe("Zang Live mobile-first player", () => {
     expect(source("styles/live-controls-minimal.css")).toContain(".zf-player-toolbar");
   });
   test("uses native browser fullscreen and iPhone fullscreen before theater fallback", () => {
-    expect(player).toContain("video.webkitEnterFullscreen()");
-    expect(player).toContain("el.requestFullscreen()");
-    expect(player).toContain('setTheaterFullscreen(true)');
-    expect(player).toContain('document.addEventListener("fullscreenchange"');
-    expect(player).toContain('video?.addEventListener("webkitbeginfullscreen"');
+    expect(fullscreen).toContain("video.webkitEnterFullscreen()");
+    expect(fullscreen).toContain("container.requestFullscreen()");
+    expect(fullscreen).toContain('setTheaterFullscreen(true)');
+    expect(fullscreen).toContain('document.addEventListener("fullscreenchange"');
+    expect(fullscreen).toContain('video?.addEventListener("webkitbeginfullscreen"');
     expect(css).toContain(".ydo-live-player-container.is-theater");
     expect(css).toContain("height: 100dvh !important");
   });
@@ -34,13 +36,13 @@ describe("Zang Live mobile-first player", () => {
     expect(minimalCss).toContain("--zf-toolbar-icon: 30px");
   });
   test("requests landscape on fullscreen, unlocks on exit and rotates portrait fallback", () => {
-    expect(player).toContain("tryLockLandscape(getOrientation())");
-    expect(player).toContain("unlockLandscape(getOrientation())");
+    expect(fullscreen).toContain("tryLockLandscape(orientation())");
+    expect(fullscreen).toContain("unlockLandscape(orientation())");
     expect(player).toContain("is-landscape-fallback");
     expect(player).toContain("rotateLandscapeFallback");
-    expect(css).toContain("rotate(90deg)");
-    expect(css).toContain("width: 100dvh !important");
-    expect(css).toContain("height: 100dvw !important");
+    expect(fullscreenCss).toContain("rotate(90deg)");
+    expect(fullscreenCss).toContain("width:100dvh");
+    expect(fullscreenCss).toContain("height:100dvw");
   });
   test("minimal controls isolate the toolbar from old desktop and mobile CSS rules", () => {
     const minimalCss = source("styles/live-controls-minimal.css");

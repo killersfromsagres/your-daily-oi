@@ -1,0 +1,32 @@
+name: Verify mobile landscape fullscreen
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/player/**'
+      - 'src/lib/fullscreen-orientation.ts'
+      - 'src/styles/player-fullscreen.css'
+      - 'scripts/fixtures/fullscreen-harness.tsx'
+      - 'scripts/smoke-mobile-fullscreen.mjs'
+      - 'tests/fullscreen-orientation.test.ts'
+      - '.github/workflows/verify-mobile-fullscreen.yml'
+  workflow_dispatch:
+jobs:
+  fullscreen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test tests/fullscreen-orientation.test.ts tests/tv-mobile-player.test.ts
+      - run: bun run build
+      - run: bun scripts/smoke-mobile-fullscreen.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-fullscreen-visual
+          path: artifacts/mobile-fullscreen-*.png
+          if-no-files-found: warn
+          retention-days: 7

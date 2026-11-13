@@ -41,7 +41,6 @@ interface PlayerEngine {
   setVolume: (vol: number) => void;
   setMuted: (m: boolean) => void;
   setPlaybackRate: (r: number) => void;
-  requestFullscreen: () => void;
   requestPiP: () => void;
   castToTv: () => void;
 }
@@ -459,67 +458,6 @@ export function usePlayerEngine(
     if (v) v.playbackRate = r;
   }, []);
 
-  const requestFullscreen = useCallback(() => {
-    const v = videoRef.current as (HTMLVideoElement & {
-      webkitEnterFullscreen?: () => void;
-      webkitExitFullscreen?: () => void;
-      webkitDisplayingFullscreen?: boolean;
-    }) | null;
-    if (!v) return;
-
-    const el = (v.closest(".ydo-player-container") || v) as HTMLElement & {
-      webkitRequestFullscreen?: () => void;
-      mozRequestFullScreen?: () => void;
-      msRequestFullscreen?: () => void;
-    };
-
-    const doc = document as Document & {
-      webkitFullscreenElement?: Element;
-      mozFullScreenElement?: Element;
-      msFullscreenElement?: Element;
-      webkitExitFullscreen?: () => void;
-      mozCancelFullScreen?: () => void;
-      msExitFullscreen?: () => void;
-    };
-
-    const isFull = !!(
-      doc.fullscreenElement ||
-      doc.webkitFullscreenElement ||
-      doc.mozFullScreenElement ||
-      doc.msFullscreenElement ||
-      v.webkitDisplayingFullscreen
-    );
-
-    if (isFull) {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      } else if (doc.webkitExitFullscreen) {
-        doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) {
-        doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) {
-        doc.msExitFullscreen();
-      } else if (v.webkitExitFullscreen) {
-        v.webkitExitFullscreen();
-      }
-      return;
-    }
-
-    // Tenta primeiro container (desktop & Android), com fallback direto para o vídeo (iOS Safari no iPhone)
-    if (el.requestFullscreen) {
-      el.requestFullscreen().catch(() => {
-        if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
-      });
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen();
-    } else if (v.webkitEnterFullscreen) {
-      // iPhone / iPad no Safari
-      v.webkitEnterFullscreen();
-    } else if (v.requestFullscreen) {
-      v.requestFullscreen().catch(() => {});
-    }
-  }, []);
-
   const requestPiP = useCallback(async () => {
     const v = videoRef.current;
     if (!v) return;
@@ -591,7 +529,6 @@ export function usePlayerEngine(
     setVolume,
     setMuted,
     setPlaybackRate,
-    requestFullscreen,
     requestPiP,
     castToTv,
   };
