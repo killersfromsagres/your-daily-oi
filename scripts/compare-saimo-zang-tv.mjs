@@ -53,8 +53,18 @@ function classify(status,type,first) {
   if(status>=400)return "http-error";
   const mime=type.toLowerCase().split(";")[0].trim();
   if(/<!doctype html|<html|<head/i.test(first)||mime.includes("text/html"))return "html";
+  // Content-Type alone is not proof of a playable manifest. Some upstream
+  // gateways return HTTP 218 with an HLS MIME but a non-HLS error body.
+  if (/mpegurl|mpeg-url/i.test(mime)) {
+    return first.trimStart().startsWith("#EXTM3U")
+      ? "media-candidate" : "invalid-hls-body";
+  }
+  if (mime.includes("dash+xml")) {
+    return /<MPD[\s>]/i.test(first)
+      ? "media-candidate" : "invalid-dash-body";
+  }
   if(first.trimStart().startsWith("#EXTM3U")||
-     /mpegurl|mpeg-url|dash\+xml|video\/mp2t|video\/mp4|application\/mp4/.test(mime) ||
+     /video\/mp2t|video\/mp4|application\/mp4/.test(mime) ||
      /<MPD[\s>]/i.test(first))return "media-candidate";
   if(mime.includes("application/json"))return "json";
   return "unconfirmed";
@@ -172,4 +182,10 @@ const csv=["id,name,sourceIndex,host,localSourceIndex,saimoHttp,saimoStatus,zang
 writeFileSync("artifacts/tv-saimo-zang-parity.csv",csv);
 console.log(JSON.stringify({event:"overview",...overview}));
 for(const ch of byChannel) console.log(JSON.stringify({event:"channel",...ch}));
+for (const row of rows) {
+  if (row.parity === "saimo-media-zang-failed") {
+    console.log(JSON.stringify({event:"unresolved",name:row.name,sourceIndex:row.sourceIndex,
+      host:row.host,saimo:row.saimo,zang:row.zang}));
+  }
+}
 console.log(JSON.stringify({event:"finished",durationSec:Math.round((Date.now()-startAt)/1000)}));
