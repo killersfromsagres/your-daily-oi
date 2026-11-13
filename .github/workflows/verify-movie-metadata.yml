@@ -1,0 +1,21 @@
+name: Verify movie metadata
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/movie-metadata-fixes.ts'
+      - 'src/lib/catalog.ts'
+      - 'tests/movie-metadata-fixes.test.ts'
+      - '.github/workflows/verify-movie-metadata.yml'
+  workflow_dispatch:
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Validate Street Fighter year, poster and stream identity
+        run: bun test tests/movie-metadata-fixes.test.ts
