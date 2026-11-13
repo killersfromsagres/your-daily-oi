@@ -43,7 +43,11 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
     <span className="zgame-crest">
       {src && !bad ? (
         <img src={src} alt={"Escudo do " + name} loading="lazy" decoding="async" onError={() => setBad(true)} />
-      ) : <span className="zgame-monogram" aria-label={"Escudo indisponível: " + export function MatchCard({ game, onWatch, onExplore }: {
+      ) : <span className="zgame-monogram" aria-label={"Escudo indisponível: " + name}>{initials || "FC"}</span>}
+    </span>
+  );
+}
+export function MatchCard({ game, onWatch, onExplore }: {
   game: JogoBrasileirao;
   onWatch: (id: string) => void;
   onExplore?: (() => void) | undefined;
@@ -123,11 +127,6 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
         )}
       </div>
       <MatchLineups game={game}/>
-    </article>
-  );
-}
-
-<MatchLineups game={game} />
     </article>
   );
 }
