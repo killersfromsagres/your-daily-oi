@@ -13,7 +13,7 @@ import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { handleLiveFormatApi } from "./lib/live-probe";
-import { isLivePlaylistTarget } from "./lib/live-source";
+import { isLivePlaylistTarget, liveSourceFingerprint } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
@@ -1207,9 +1207,21 @@ async function handleTvStreamApi(request: Request, url: URL): Promise<Response> 
   if (request.method !== "GET" && request.method !== "HEAD" && request.method !== "OPTIONS") {
     return jsonResponse({ error: "Método não permitido" }, 405);
   }
+  const signature = url.searchParams.get("assinatura");
+  if (signature !== null && !/^[a-f0-9]{8}$/.test(signature)) {
+    return jsonResponse({ error: "Identificador da fonte inválido" }, 400);
+  }
   const data = await loadCanais();
   const canal = data.canais.find((item) => item.id === id);
-  const fonte = canal?.fontes[Number(source)];
+  let fonte = canal?.fontes[Number(source)];
+  // A browser may have loaded a newer remote M3U than the backend cache.
+  // Never return a DIFFERENT live channel after source ordering changes.
+  if (signature && (!fonte || liveSourceFingerprint(fonte.url) !== signature)) {
+    fonte = canal?.fontes.find(item => liveSourceFingerprint(item.url) === signature);
+    if (!fonte) {
+      return jsonResponse({ error: "Catálogo da TV desatualizado; tentar fonte direta" }, 409);
+    }
+  }
   if (!fonte) {
     return jsonResponse({ error: "Fonte não encontrada ou temporariamente indisponível" }, 404);
   }
