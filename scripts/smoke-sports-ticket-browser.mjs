@@ -74,16 +74,27 @@ try{
   await sleep(300);
  }
  if(!ready)throw new Error("Worker not ready: "+serverLog);
- const profile=mkdtempSync(join(tmpdir(),"zang-sport-"));
- browser=spawn(chrome,["--headless=new","--no-sandbox","--disable-dev-shm-usage",
-  "--disable-background-networking","--disable-extensions",
-  "--no-first-run","--no-default-browser-check",
-  "--remote-allow-origins=*","--remote-debugging-port=0",
-  "--user-data-dir="+profile,"--window-size=1440,900",BASE+"/futebol"],{stdio:["ignore","pipe","pipe"]});
- const portfile=join(profile,"DevToolsActivePort");
- for(let i=0;i<85&&!existsSync(portfile);i++)await sleep(150);
- if(!existsSync(portfile))throw new Error("Chrome port not available");
- const port=Number(readFileSync(portfile,"utf8").split("\n")[0]);
+ let port=0,chromiumLog="";
+ for(let attempt=0;attempt<3&&!port;attempt++){
+   const profile=mkdtempSync(join(tmpdir(),"zang-sport-"));
+   browser=spawn(chrome,["--headless=new","--no-sandbox","--disable-dev-shm-usage",
+    "--disable-gpu","--disable-background-networking","--disable-extensions",
+    "--no-first-run","--no-default-browser-check",
+    "--remote-allow-origins=*","--remote-debugging-port=0",
+    "--user-data-dir="+profile,"--window-size=1440,900",BASE+"/futebol"],{stdio:["ignore","pipe","pipe"]});
+   for(const output of [browser.stdout,browser.stderr])output.on("data",chunk=>{
+     chromiumLog=(chromiumLog+String(chunk)).slice(-1100);
+   });
+   const portfile=join(profile,"DevToolsActivePort");
+   for(let i=0;i<75&&!existsSync(portfile)&&browser.exitCode===null;i++)await sleep(150);
+   if(existsSync(portfile)){
+     port=Number(readFileSync(portfile,"utf8").split("\n")[0]);
+     break;
+   }
+   browser.kill("SIGTERM");
+   await sleep(600);
+ }
+ if(!port)throw new Error("Chrome port unavailable after three attempts: "+chromiumLog);
  const tabs=await (await fetch("http://127.0.0.1:"+port+"/json")).json();
  const tab=tabs.find(x=>x.type==="page");
  if(!tab)throw new Error("Chrome page target not found");
