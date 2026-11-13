@@ -12,6 +12,8 @@ on:
       - 'tests/neural-upscale-policy.test.ts'
       - 'src/lib/hq-playback-policy.ts'
       - 'tests/hq-playback-policy.test.ts'
+      - 'src/lib/hq-render-policy.ts'
+      - 'tests/hq-render-policy.test.ts'
       - '.github/workflows/verify-neural-upscale.yml'
   workflow_dispatch:
 jobs:
@@ -26,4 +28,4 @@ jobs:
       - name: Check bundled WebGPU library JavaScript
         run: node --check public/vendor/websr/websr.js
       - name: Validate CNN weights, video eligibility and fallback
-        run: bun test tests/neural-upscale-policy.test.ts tests/hq-playback-policy.test.ts
+        run: bun test tests/neural-upscale-policy.test.ts tests/hq-playback-policy.test.ts tests/hq-render-policy.test.ts
