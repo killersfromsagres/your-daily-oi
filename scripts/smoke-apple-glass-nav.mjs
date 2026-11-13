@@ -327,18 +327,24 @@ try{
     const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-friday13-"+scenario.name+".png",Buffer.from(shot.data,"base64"));
     await evalInPage("document.querySelector('.zf-zangs-picks').scrollIntoView({block:'start',behavior:'instant'})");
-    // Finish lazy poster loads before capturing this newly visible collection.
-    await evalInPage(`Promise.all(Array.from(document.querySelectorAll('.zf-zangs-picks img')).map(img=>new Promise(resolve=>{
-      if(img.complete){resolve();return;}
-      img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
-      setTimeout(resolve,10000);
-    })))`);
-    const posterState=await evalInPage(`Array.from(document.querySelectorAll('.zf-zangs-picks .ydo-card')).map(card=>({
-      title:card.querySelector('.ydo-card-title')?.textContent,
-      loaded:!!card.querySelector('img')?.naturalWidth,
-      fallback:!!card.querySelector('.ydo-card-fallback')
-    }))`);
-    if(posterState.some(p=>!p.loaded&&!p.fallback))throw Error('Curated posters did not settle: '+JSON.stringify(posterState));
+    // Visit every card: mobile intentionally defers posters outside its scroll viewport.
+    const posterState=await evalInPage(`(async()=>{
+      const section=document.querySelector('.zf-zangs-picks'),row=section.querySelector('.ydo-row-track');
+      const result=[];
+      for(const card of row.querySelectorAll('.ydo-card')){
+        card.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});
+        const img=card.querySelector('img');
+        if(img&&!img.complete)await new Promise(resolve=>{
+          img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
+          setTimeout(resolve,10000);
+        });
+        result.push({title:card.querySelector('.ydo-card-title')?.textContent,loaded:!!card.querySelector('img')?.naturalWidth});
+      }
+      row.scrollTo({left:0,behavior:'instant'});
+      section.scrollIntoView({block:'start',behavior:'instant'});
+      return result;
+    })()`);
+    if(posterState.some(p=>!p.loaded))throw Error('Curated artwork did not load: '+JSON.stringify(posterState));
     console.log(JSON.stringify({event:'zangs-poster-artwork',device:scenario.name,posters:posterState}));
     const collectionShot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-zangs-picks-"+scenario.name+".png",Buffer.from(collectionShot.data,"base64"));
