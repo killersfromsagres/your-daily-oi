@@ -1,6 +1,6 @@
 // tests/live-tv.test.ts — Bun; Saimo catalog, formats, fallback and media probes.
 import { describe, test, expect, afterEach } from "bun:test";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, isLivePlaylistTarget, looksOffline, nextLiveMode, orderLiveSources } from "../src/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, isLivePlaylistTarget, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources } from "../src/lib/live-source";
 import { mergeCanaisCatalogs, parseCanais, filterCanaisAndExtractCategories } from "../src/lib/canais";
 import { handleLiveFormatApi } from "../src/lib/live-probe";
 
@@ -46,7 +46,18 @@ describe("Compatibilidade Vercel com proxy legado", () => {
 
   test("usa a rota catalogada em backend atualizado", () => {
     const path = buildLiveProxyPath("amazon-prime-video-01", 0, fonte, true);
-    expect(path).toBe("/api/tv/stream?canal=amazon-prime-video-01&fonte=0");
+    const parsed = new URL(path, "https://zangflix.vercel.app");
+    expect(parsed.pathname).toBe("/api/tv/stream");
+    expect(parsed.searchParams.get("canal")).toBe("amazon-prime-video-01");
+    expect(parsed.searchParams.get("fonte")).toBe("0");
+    expect(parsed.searchParams.get("assinatura")).toBe(liveSourceFingerprint(fonte.url));
+  });
+
+  test("a assinatura é estável entre cliente e servidor, inclusive com URLs assinadas", () => {
+    const first = liveSourceFingerprint(fonte.url);
+    expect(first).toMatch(/^[a-f0-9]{8}$/);
+    expect(first).toBe(liveSourceFingerprint(fonte.url));
+    expect(first).not.toBe(liveSourceFingerprint(fonte.url + "&v=2"));
   });
 
   test("troca para a rota legada quando o deploy não tem /api/tv/stream", () => {
