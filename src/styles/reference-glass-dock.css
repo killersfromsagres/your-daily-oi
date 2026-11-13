@@ -87,7 +87,7 @@
     touch-action: manipulation;
   }
 
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab svg svg {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab svg {
     flex-shrink: 0;
     width: clamp(21px, 5.8vw, 26px);
     height: clamp(21px, 5.8vw, 26px);
@@ -114,7 +114,7 @@
   }
 
   html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab.is-active,
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab[aria-current="page"].is-active {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab[aria-current="page"] {
     color: #ffffff;
     border: 1px solid rgba(237, 250, 252, .11);
     background:
@@ -136,11 +136,11 @@
     fill: none;
   }
 
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:active:active {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:active {
     color: white;
     background: rgba(202, 227, 234, .20);
   }
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:focus-visible:focus-visible {
+  html:not([data-zf-platform="tv"]) .zf-mobile-dock > .zf-mobile-tab:focus-visible {
     outline: 2px solid rgba(243, 251, 255, .95);
     outline-offset: -3px;
   }
