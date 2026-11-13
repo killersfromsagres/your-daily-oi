@@ -164,7 +164,7 @@ try{
       }
       if(await evalInPage('!!document.querySelector(".zf-mobile-menu-panel")'))
         throw new Error("Catalogue drawer did not close");
-      await evalInPage('document.querySelector(".zf-mobile-dock a[href=\"/generos/filmes\"]").click()');
+      await evalInPage('document.querySelector(".zf-mobile-dock > a:nth-child(2)").click()');
       for(let tries=0;tries<30;tries++){
         if(await evalInPage('location.pathname==="/generos/filmes"'))break;
         await sleep(180);
