@@ -269,6 +269,11 @@ export function OwnPlayer({
     catch { return false; }
   });
   const [hqNotice, setHqNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hqNotice) return;
+    const timeout = window.setTimeout(() => setHqNotice(null), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [hqNotice]);
   const [webglFailed, setWebglFailed] = useState(false);
   const [hqSourceSize, setHqSourceSize] = useState({ width: 0, height: 0 });
   const hqDevice = useMemo(() => {
@@ -328,12 +333,12 @@ export function OwnPlayer({
     setHqEnabled(next);
     if (next) {
       setWebglFailed(false); // Retry on demand, never restart the video.
-      setHqNotice("HQ ativado: procurando o melhor processamento disponível…");
+      setHqNotice(hqStrategy === "native" ? "HQ ligado · reprodução fluida preservada" : "HQ ligado · aprimorando nitidez…");
     } else {
       setHqNotice(null);
     }
     try { localStorage.setItem("zangflix:ai-upscale", String(next)); } catch {}
-  }, [hqEnabled]);
+  }, [hqEnabled, hqStrategy]);
 
   const updateVideoResolution = useCallback(() => {
     const v = videoRef.current;
