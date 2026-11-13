@@ -110,20 +110,19 @@ describe("published lineups only",()=>{
     expect(validLineupId("http://localhost/private")).toBe(false);
     expect(validLineupId("hacker:12345")).toBe(false);
   });
-  test("position matching and the 50/50 player pitch are present",()=>{
+  test("positions remain sourced from provider and one team is shown at a time",()=>{
     expect(groupPosition("Goalkeeper")).toBe("GOL");
     expect(groupPosition("Centre-Back")).toBe("DEF");
     expect(groupPosition("Midfielder")).toBe("MEI");
     expect(groupPosition("Striker")).toBe("ATA");
     const ui=readFileSync("src/components/sports/MatchLineups.tsx","utf8");
-    const css=readFileSync("src/styles/match-lineups.css","utf8");
-    expect(ui).toContain('className="zlineup-pitch"');
-    expect(ui).toContain('side="home"');
-    expect(ui).toContain('side="away"');
-    expect(ui).toContain("MiniTeamPreview");
-    expect(ui).toContain('className="zlineup-mini-faces"');
-    expect(ui).toContain("player.group");
-    expect(css).toContain(".zlineup-mini-names");
-    expect(css).toContain("grid-template-columns:minmax(0,1fr) minmax(0,1fr)");
+    const board=readFileSync("src/components/sports/TeamLineupBoard.tsx","utf8");
+    const css=readFileSync("src/styles/sports-ticket-lineup.css","utf8");
+    expect(ui).toContain('preview("home")');
+    expect(ui).toContain('preview("away")');
+    expect(ui).toContain("<TeamLineupBoard team={selected}/>");
+    expect(board).toContain('className="zf-formation-pitch"');
+    expect(board).toContain("team.starting.filter");
+    expect(css).toContain("grid-template-rows:repeat(4,1fr)");
   });
 });
