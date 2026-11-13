@@ -120,6 +120,10 @@ describe("published lineups only",()=>{
     expect(ui).toContain('className="zlineup-pitch"');
     expect(ui).toContain('side="home"');
     expect(ui).toContain('side="away"');
+    expect(ui).toContain("MiniTeamPreview");
+    expect(ui).toContain('className="zlineup-mini-faces"');
+    expect(ui).toContain("player.group");
+    expect(css).toContain(".zlineup-mini-names");
     expect(css).toContain("grid-template-columns:minmax(0,1fr) minmax(0,1fr)");
   });
 });
