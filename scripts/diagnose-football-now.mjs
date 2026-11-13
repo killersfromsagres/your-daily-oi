@@ -18,6 +18,15 @@ async function inspect(name,url,timeout=12000){
   return name!=="zang"?(payload?.events||[])[0]?.id:null;
  }catch(e){console.log(JSON.stringify({name,date,error:String(e),ms:Date.now()-started}));return null;}
 }
+for(const dIso of [date, new Date(Date.parse(date+"T12:00:00Z")+86400000).toISOString().slice(0,10)]){
+ try {
+ const started=Date.now(), endpoint="https://www.thesportsdb.com/api/v1/json/123/eventsday.php?d="+dIso+"&s=Soccer";
+ const response=await fetch(endpoint,{headers:{Accept:"application/json"},signal:AbortSignal.timeout(8000)});
+ const data=await response.json();
+ console.log(JSON.stringify({name:"sportsdb",date:dIso,http:response.status,ms:Date.now()-started,
+ count:data.events?.length??0,sample:data.events?.slice(0,2).map(e=>({id:e.idEvent,home:e.strHomeTeam,away:e.strAwayTeam,date:e.dateEvent,utc:e.strTimestamp,league:e.strLeague,leagueId:e.idLeague,tv:e.strTVStation,keys:Object.keys(e).filter(k=>/Photo|Badge|Thumb|Poster|TV|League/.test(k)).slice(0,15)}))}));
+ }catch(e){console.log(JSON.stringify({name:"sportsdb",date:dIso,error:String(e)}));}
+}
 const league="bra.1";
 const id=await inspect("espn-bra",`https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${d}&limit=120`);
 await inspect("zang",`https://zangflix.vercel.app/api/jogos-agenda?data=${date}`,30000);
