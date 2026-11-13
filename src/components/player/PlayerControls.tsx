@@ -329,12 +329,12 @@ export function PlayerControls({
                 cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
-              title={hqMode === "shader" ? "HQ clássico: nitidez WebGL sem rede neural" : hqMode === "loading" ? "Carregando modelo neural WebGPU" : "IA 2×: super-resolução neural em tempo real com WebGPU"}
-              aria-label={hqMode === "shader" ? "Alternar HQ clássico" : "Alternar super-resolução IA 2 vezes"}
+              title={hqMode === "loading" ? "HQ · preparando processamento" : hqMode === "ai" ? "HQ · reconstrução neural ativa quando compatível" : "HQ · melhoria de imagem compatível com a fonte"}
+              aria-label="Ativar ou desativar melhoria de imagem HQ"
               aria-pressed={Boolean(hqActive)}
             >
               <Sparkles size={14} style={{ color: hqActive ? "#e8b44a" : "currentColor" }} />
-              <span>{hqMode === "loading" ? "IA…" : hqMode === "shader" ? "HQ" : "IA 2×"}</span>
+              <span>HQ</span>
             </button>
           )}
 
