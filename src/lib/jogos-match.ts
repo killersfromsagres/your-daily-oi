@@ -30,7 +30,7 @@ export interface JogoBrasileirao {
   /** Brazilian event/EPG broadcasters, even when no matching player source exists. */
   canaisTransmissao?: string[];
   transmissao: "confirmada" | "nao-confirmada";
-  origemTransmissao?: "epg" | "grade-br" | "configuracao";
+  origemTransmissao?: "epg" | "grade-br" | "configuracao" | "verificada";
 }
 
 export const LIGAS_FUTEBOL = [
