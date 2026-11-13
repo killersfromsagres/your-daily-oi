@@ -1,24 +1,46 @@
-name: Audit complete Saimo TV catalog
+name: Audit every Saimo and ZANG FLIX TV channel
 on:
   push:
-    branches: [audit/all-tv-sources-live]
+    branches: [main]
+    paths:
+      - 'scripts/audit-all-tv-channels.mjs'
+      - 'scripts/compare-saimo-zang-tv.mjs'
+      - 'src/lib/live-source.ts'
+      - 'src/components/player/LivePlayer.tsx'
+      - 'src/lib/canais.ts'
+      - 'src/server.ts'
+      - 'tests/live-tv.test.ts'
+      - '.github/workflows/audit-all-tv-channels.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * *'
 jobs:
   full-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     permissions: { contents: read }
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - name: Audit every current channel and source with bounded GET
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify live catalog and source identity
+        run: bun test tests/live-tv.test.ts
+      - name: Probe all declared origin streams
         run: bun scripts/audit-all-tv-channels.mjs
-      - name: Save complete anonymized channel health report
+      - name: Compare all catalog entries and accessible Saimo/ZANG proxy candidates
+        run: bun scripts/compare-saimo-zang-tv.mjs
+        env:
+          PARITY_CONCURRENCY: '6'
+          PARITY_TIMEOUT_MS: '5500'
+      - name: Save full per-channel and per-source reports, without stream tokens
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: zang-live-health-report
-          path: artifacts/tv-health-audit.json
+          name: zang-saimo-full-tv-audit
+          path: |
+            artifacts/tv-health-audit.json
+            artifacts/tv-saimo-zang-parity.json
+            artifacts/tv-saimo-zang-parity.csv
           if-no-files-found: warn
-          retention-days: 7
+          retention-days: 14
