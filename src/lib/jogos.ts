@@ -224,7 +224,7 @@ async function annotateBroadcasts(
       resolved = matchBrazilianBroadcastChannel(name, available);
       if (resolved) { origin = "configuracao"; break; }
     }
-    if (!resolved && epgChannel) {
+    if (!resolved && epgChannel && available.some(ch=>ch.id===epgChannel.id&&ch.fontes?.length>0)) {
       resolved = epgChannel;
       origin = "epg";
     }
