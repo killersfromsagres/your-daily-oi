@@ -1,0 +1,27 @@
+name: Verify neural video upscaler
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/player/useNeuralVideoUpscaler.ts'
+      - 'src/components/player/OwnPlayer.tsx'
+      - 'src/components/player/PlayerControls.tsx'
+      - 'src/components/player/useVideoEnhancer.ts'
+      - 'public/models/websr/**'
+      - 'public/vendor/websr/**'
+      - 'tests/neural-upscale-policy.test.ts'
+      - '.github/workflows/verify-neural-upscale.yml'
+  workflow_dispatch:
+jobs:
+  neural-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Check bundled WebGPU library JavaScript
+        run: node --check public/vendor/websr/websr.js
+      - name: Validate CNN weights, video eligibility and fallback
+        run: bun test tests/neural-upscale-policy.test.ts
