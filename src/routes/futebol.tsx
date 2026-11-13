@@ -8,7 +8,7 @@ import { MatchCard } from "@/components/tv/JogosShelf";
 import { FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
-import { sortedFootballMatches, matchImportance, mergeFootballScores, liveScoreLeagueIds } from "@/lib/football-ranking";
+import { sortedFootballMatches, matchImportance, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import "@/styles/football-center.css";
 
 export const Route = createFileRoute("/futebol")({
@@ -63,10 +63,13 @@ function FootballPage() {
     return scores.jogos;
   },[scores,data,day]);
   const games=useMemo(()=>sortedFootballMatches(mergeFootballScores(agendaGames,scoreGames,day)),[agendaGames,scoreGames,day]);
-  const liveGames=useMemo(()=>games.filter(g=>g.status==="ao-vivo"),[games]);
-  const remainingGames=useMemo(()=>games.filter(g=>g.status!=="ao-vivo"),[games]);
+  // A genuine Brazil fixture is pinned once at the top, whether upcoming or
+  // live. No duplicate card appears in the live or remaining sections.
+  const brazilGames=useMemo(()=>games.filter(isBrazilFixture),[games]);
+  const liveGames=useMemo(()=>games.filter(g=>g.status==="ao-vivo"&&!isBrazilFixture(g)),[games]);
+  const remainingGames=useMemo(()=>games.filter(g=>g.status!=="ao-vivo"&&!isBrazilFixture(g)),[games]);
   const linked=games.filter(g=>Boolean(g.canalId)).length;
-  const live=liveGames.length;
+  const live=games.filter(g=>g.status==="ao-vivo").length;
   const availableLeagues=[...new Set(games.map(g=>g.ligaId))].length;
   const scoresUpdated = scores?.dataLocal===day && Number.isFinite(Date.parse(scores.atualizadoEm)) ?
     new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",hour:"2-digit",minute:"2-digit",second:"2-digit"}).format(new Date(scores.atualizadoEm)) : null;
@@ -234,6 +237,22 @@ function FootballPage() {
             </div>
           ) : (
             <>
+              {brazilGames.length>0&&(
+                <section className="zf-football-brazil-section" aria-label="Jogos da Seleção Brasileira em destaque">
+                  <div className="zf-football-brazil-head">
+                    <span>BRASIL EM DESTAQUE</span>
+                    <strong>Seleção Brasileira</strong>
+                    <small>Partidas reais da agenda · atualizadas automaticamente</small>
+                  </div>
+                  <div className="zf-football-grid">
+                    {brazilGames.map(game=>(
+                      <div key={game.id} className="zf-football-match is-featured">
+                        <MatchCard game={game} onWatch={onWatch} onExplore={()=>void navigate({to:"/tv"})}/>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
               {liveGames.length>0&&(
                 <section className="zf-football-live-section" aria-label="Jogos em andamento">
                   <div className="zf-football-live-head">
