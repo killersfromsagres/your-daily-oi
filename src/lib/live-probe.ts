@@ -1,6 +1,6 @@
 // src/lib/live-probe.ts — Cloudflare worker, a bounded content-type probe for catalog-backed live sources.
 import { loadCanais } from "./canais";
-import { classifyLiveSource, type LiveStreamFormat } from "./live-source";
+import { classifyLiveSource, liveSourceFingerprint, type LiveStreamFormat } from "./live-source";
 
 const resultCache = new Map<string, { format: LiveStreamFormat; expires: number }>();
 const FORMATS: Readonly<Record<string, LiveStreamFormat>> = {
@@ -34,9 +34,17 @@ export async function handleLiveFormatApi(url: URL): Promise<Response> {
     return respond({ error: "Canal ou fonte inválidos" }, 400);
   }
   const sourceIndex = Number(sourceParam);
+  const signature = url.searchParams.get("assinatura");
+  if (signature !== null && !/^[a-f0-9]{8}$/.test(signature)) {
+    return respond({ error: "Identificador de fonte inválido" }, 400);
+  }
   const { canais } = await loadCanais();
   const channel = canais.find((item) => item.id === id);
-  const source = channel?.fontes[sourceIndex];
+  let source = channel?.fontes[sourceIndex];
+  if (signature && (!source || liveSourceFingerprint(source.url) !== signature)) {
+    source = channel?.fontes.find(item => liveSourceFingerprint(item.url) === signature);
+    if (!source) return respond({ error: "Fonte desatualizada" }, 409);
+  }
   if (!source) return respond({ error: "Fonte não encontrada" }, 404);
 
   const staticFormat = classifyLiveSource(source);
