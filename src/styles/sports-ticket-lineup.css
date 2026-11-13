@@ -19,7 +19,7 @@
 .zf-lineup-team-button>.zf-lineup-crest {width:31px;height:31px;flex:0 0 31px;border-radius:8px;}
 .zf-lineup-team-button>span:nth-child(2) {display:flex;min-width:0;flex:1;flex-direction:column;gap:3px;}
 .zf-lineup-team-button small {font-size:8px;letter-spacing:.10em;color:rgba(255,255,255,.56);font-weight:800;}
-.zf-lineup-team-button strong {font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.zf-lineup-team-button strong {font-size:10px;line-height:1.25;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;overflow-wrap:anywhere;}
 .zf-lineup-team-button em {font-size:9px;font-style:normal;color:rgba(255,255,255,.65);}
 .zf-lineup-team-button>svg {flex:0 0 auto;color:var(--zf-sport-gold);}
 .zf-lineup-crest {display:grid;place-items:center;background:rgba(255,255,255,.065);}
@@ -98,7 +98,9 @@
 .zf-formation-portrait {display:grid;place-items:center;position:relative;width:clamp(44px,6vw,74px);height:clamp(44px,6vw,74px);
   border:2px solid rgba(244,248,255,.92);border-radius:50%;overflow:hidden;background:linear-gradient(140deg,#edf4ff,#b3c6e4);
   color:#4a6488;box-shadow:0 7px 20px rgba(0,0,0,.32),0 0 0 3px rgba(9,25,52,.26);}
-.zf-formation-portrait img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%;}
+.zf-formation-photo-fallback {display:grid;place-items:center;width:100%;height:100%;color:#375172;font-size:clamp(15px,2.2vw,21px);letter-spacing:.01em;font-weight:900;}
+.zf-formation-portrait img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%;opacity:0;transition:opacity .2s;}
+.zf-formation-portrait img.is-loaded {opacity:1;}
 .zf-formation-player strong {display:block;max-width:100%;font-size:clamp(9px,1.5vw,12px);font-weight:800;line-height:1.16;overflow-wrap:anywhere;}
 .zf-formation-player strong span {color:#f2cd92;}
 .zf-formation-player small {display:block;max-width:100%;font-size:9px;color:#bfcee2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
