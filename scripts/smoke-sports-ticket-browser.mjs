@@ -98,6 +98,42 @@ try{
   ws.addEventListener("error",reject,{once:true});
  });
  await send("Runtime.enable");await send("Page.enable");
+ // UI verification must not depend on third-party football coverage during
+ // a GitHub CI run. Real API connectivity is independently checked in the
+ // verify-football-production workflow. These fixtures are TEST ONLY.
+ const parts=new Intl.DateTimeFormat("en-US",{
+   timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit",
+ }).formatToParts(new Date());
+ const field=key=>parts.find(p=>p.type===key)?.value||"";
+ const date=field("year")+"-"+field("month")+"-"+field("day");
+ const first={
+   id:"fifa.friendly:99999",casa:"Brasil",fora:"Japão",escudoCasa:null,escudoFora:null,
+   horarioLocal:"07:15",inicioIso:new Date(Date.now()+60_000).toISOString(),
+   dataLocal:date,rodada:"Amistoso",estadio:"Estádio Nacional",
+   liga:"Amistosos de seleções",ligaId:"fifa.friendly",ligaLogo:null,grupo:"internacional",
+   status:"agendado",placarCasa:null,placarFora:null,destaque:true,
+   canalId:"globo",canalNome:"TV Globo",canalLogo:null,
+   canaisDisponiveis:[{id:"globo",nome:"TV Globo"},{id:"sportv",nome:"SporTV"}],
+   canaisTransmissao:["TV Globo","SporTV"],transmissao:"confirmada",
+ };
+ const second={...first,id:"fifa.friendly:99998",casa:"Argentina",fora:"França",
+   horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
+   canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false};
+ const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
+   jogos:[first,second],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
+ const placares={...agenda,jogos:[]};
+ const lineup={jogo:first.id,atualizadoEm:new Date().toISOString(),
+   disponivel:false,completa:false,origem:"ESPN",
+   mensagem:"Aguardando escalações oficiais",equipes:[]};
+ const mocks={"/api/jogos-agenda":agenda,"/api/jogos-placares":placares,
+   "/api/jogos-escalacao":lineup};
+ await send("Page.addScriptToEvaluateOnNewDocument",{source:
+   "(()=>{const original=window.fetch.bind(window);const mocks="+JSON.stringify(mocks)+
+   ";window.fetch=function(input,options){const value=String(input?.url||input);"+
+   "let path;try{path=new URL(value,location.origin).pathname}catch{return original(input,options)}"+
+   "const payload=mocks[path];if(payload)return Promise.resolve(new Response(JSON.stringify(payload),"+
+   "{status:200,headers:{'Content-Type':'application/json'}}));"+
+   "return original(input,options);};})();"});
  mkdirSync("artifacts",{recursive:true});
  const cases=[
   {name:"android",width:390,height:844,mobile:true,
@@ -130,7 +166,7 @@ try{
   console.log(JSON.stringify({event:"sports-ticket-chrome",device:device.name,cards:state.cards,
    ticketWidth:state.ticket.width,singleLineupButton:state.lineupButtons,
    modalWidth:opened.dialogRect.width,firstClub:opened.title,switchedClub:switched.title,
-   pitchOrPending:opened.hasPitch||opened.pending}));
+   pitchOrPending:opened.hasPitch||opened.pending,visualData:"synthetic fixtures, production checked separately"}));
  }
 }finally{
  ws?.close();browser?.kill("SIGTERM");server.kill("SIGTERM");
