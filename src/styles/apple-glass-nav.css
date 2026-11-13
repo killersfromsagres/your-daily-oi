@@ -1,14 +1,14 @@
 /*
  * ZANG FLIX / Apple-inspired frosted glass — final navigation skin.
- * All glass surfaces use alpha-only tint, true backdrop-filter, and a
- * reflective border. They must NOT contain opaque navy/gray fills.
+ * Smoke-glass surfaces retain true backdrop-filter with a neutral black tint,
+ * reflective rim, and visible content behind each translucent layer.
  * This stylesheet is loaded after the older mobile navigation layers.
  */
 :root {
-  --zf-glass-bg: rgba(225, 235, 255, .075);
-  --zf-glass-bg-strong: rgba(230, 236, 247, .095);
-  --zf-glass-rim: rgba(255, 255, 255, .28);
-  --zf-glass-rim-inner: rgba(255, 255, 255, .14);
+  --zf-glass-bg: rgba(9, 11, 15, .49);
+  --zf-glass-bg-strong: rgba(9, 11, 15, .56);
+  --zf-glass-rim: rgba(255, 255, 255, .19);
+  --zf-glass-rim-inner: rgba(255, 255, 255, .11);
   --zf-glass-shadow: 0 13px 35px rgba(0, 0, 0, .24);
 }
 
@@ -17,12 +17,12 @@
   border: 1px solid var(--zf-glass-rim);
   border-radius: 25px;
   background:
-    linear-gradient(167deg, rgba(255, 255, 255, .17) 0%, rgba(255, 255, 255, .055) 30%, transparent 68%),
+    linear-gradient(167deg, rgba(255, 255, 255, .085) 0%, rgba(255, 255, 255, .022) 30%, transparent 68%),
     var(--zf-glass-bg);
-  -webkit-backdrop-filter: blur(30px) saturate(175%) brightness(1.09);
-  backdrop-filter: blur(30px) saturate(175%) brightness(1.09);
+  -webkit-backdrop-filter: blur(30px) saturate(145%) brightness(.82);
+  backdrop-filter: blur(30px) saturate(145%) brightness(.82);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .25),
+    inset 0 1px 0 rgba(255, 255, 255, .17),
     inset 0 -1px 0 rgba(255, 255, 255, .045),
     var(--zf-glass-shadow);
 }
@@ -32,7 +32,7 @@
   inset: 1px;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .10), transparent 42%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .055), transparent 42%);
   z-index: 0;
 }
 .ydo-header > * {
@@ -62,7 +62,7 @@
 .ydo-header .ydo-search-trigger-btn {
   color: #fff;
   border: 1px solid rgba(255, 255, 255, .21);
-  background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.045));
+  background: linear-gradient(180deg, rgba(255,255,255,.105), rgba(255,255,255,.025));
   box-shadow: inset 0 1px rgba(255, 255, 255, .15);
 }
 .ydo-header .zf-header-apk {
@@ -75,8 +75,8 @@
 .ydo-header .zf-header-apk:focus-visible,
 .ydo-header .ydo-search-trigger-btn:hover,
 .ydo-header .ydo-search-trigger-btn:focus-visible {
-  background: rgba(255,255,255,.18);
-  border-color: rgba(255,255,255,.30);
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.26);
 }
 
 /* ── Mobile dock and detached search: genuine see-through glass ── */
@@ -99,10 +99,10 @@
     border-radius: 28px;
     border: 1px solid rgba(255,255,255,.29);
     background:
-      linear-gradient(165deg, rgba(255,255,255,.19) 0%, rgba(255,255,255,.04) 44%, transparent 86%),
+      linear-gradient(165deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.018) 44%, transparent 86%),
       var(--zf-glass-bg);
-    -webkit-backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
-    backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
+    -webkit-backdrop-filter: blur(32px) saturate(145%) brightness(.80);
+    backdrop-filter: blur(32px) saturate(145%) brightness(.80);
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,.26),
       inset 0 -1px 0 rgba(255,255,255,.05),
@@ -115,7 +115,7 @@
     inset: 1px;
     border-radius: inherit;
     pointer-events: none;
-    background: linear-gradient(180deg, rgba(255,255,255,.095), transparent 45%);
+    background: linear-gradient(180deg, rgba(255,255,255,.055), transparent 45%);
     z-index: 0;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab,
@@ -154,12 +154,12 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-tab[aria-current="page"] {
     color: #fff;
     border: 1px solid rgba(255,255,255,.23);
-    background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08));
+    background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.055));
     box-shadow: inset 0 1px rgba(255,255,255,.18), 0 4px 13px rgba(0,0,0,.10);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab:active {
     color:#fff;
-    background: rgba(255,255,255,.24);
+    background: rgba(255,255,255,.14);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {
     display: grid;
@@ -175,10 +175,10 @@
     border-radius: 50%;
     color: #fff;
     background:
-      linear-gradient(155deg, rgba(255,255,255,.20), rgba(255,255,255,.035) 70%),
+      linear-gradient(155deg, rgba(255,255,255,.10), rgba(255,255,255,.016) 70%),
       var(--zf-glass-bg-strong);
-    -webkit-backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
-    backdrop-filter: blur(32px) saturate(175%) brightness(1.10);
+    -webkit-backdrop-filter: blur(32px) saturate(145%) brightness(.80);
+    backdrop-filter: blur(32px) saturate(145%) brightness(.80);
     box-shadow: inset 0 1px rgba(255,255,255,.24), 0 12px 35px rgba(0,0,0,.25);
     transition: background .18s ease, border-color .18s ease;
   }
@@ -188,7 +188,7 @@
     stroke-width: 1.9;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {
-    background: rgba(255,255,255,.24);
+    background: rgba(255,255,255,.14);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab:focus-visible,
   html:not([data-zf-platform="tv"]) .zf-mobile-tab:focus-visible {
@@ -205,12 +205,12 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
     color: #fff;
     background:
-      linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.025) 48%),
-      rgba(26,28,34,.34);
+      linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.015) 48%),
+      rgba(8,10,14,.60);
     border: 1px solid rgba(255,255,255,.26);
     border-radius: 27px;
-    -webkit-backdrop-filter: blur(34px) saturate(155%) brightness(1.05);
-    backdrop-filter: blur(34px) saturate(155%) brightness(1.05);
+    -webkit-backdrop-filter: blur(34px) saturate(145%) brightness(.82);
+    backdrop-filter: blur(34px) saturate(145%) brightness(.82);
     box-shadow: inset 0 1px rgba(255,255,255,.20), 0 24px 70px rgba(0,0,0,.32);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a,
@@ -244,10 +244,10 @@
     border-radius: 23px;
     border: 1px solid rgba(255,255,255,.25);
     background:
-      linear-gradient(175deg, rgba(255,255,255,.18), rgba(255,255,255,.045) 40%, transparent 86%),
-      rgba(228,237,255,.065);
-    -webkit-backdrop-filter: blur(31px) saturate(180%) brightness(1.08);
-    backdrop-filter: blur(31px) saturate(180%) brightness(1.08);
+      linear-gradient(175deg, rgba(255,255,255,.085), rgba(255,255,255,.018) 40%, transparent 86%),
+      rgba(9,11,15,.50);
+    -webkit-backdrop-filter: blur(31px) saturate(145%) brightness(.82);
+    backdrop-filter: blur(31px) saturate(145%) brightness(.82);
     box-shadow: inset 0 1px rgba(255,255,255,.25), 0 12px 30px rgba(0,0,0,.23);
   }
   html:not([data-zf-platform="tv"]) .ydo-logo-text {
