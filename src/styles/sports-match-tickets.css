@@ -177,3 +177,16 @@
 @media(max-width:610px){
  .zf-ticket-channel-choices button {min-height:35px;font-size:11px;}
 }
+
+/* Dedicated national-team hero section: visible only when a real fixture exists. */
+.zf-football-brazil-section {margin-bottom:25px;padding:15px;border:1px solid rgba(116,218,150,.25);
+ border-radius:20px;background:linear-gradient(125deg,rgba(11,62,43,.33),rgba(4,21,26,.16));}
+.zf-football-brazil-head {display:flex;align-items:baseline;flex-wrap:wrap;gap:7px 12px;padding:3px 2px 15px;}
+.zf-football-brazil-head>span {color:#a4e6b5;font-size:10px;letter-spacing:.15em;font-weight:950;}
+.zf-football-brazil-head>strong {color:#f0f8f0;font-size:clamp(15px,2vw,21px);letter-spacing:-.03em;}
+.zf-football-brazil-head>small {margin-left:auto;color:rgba(230,241,232,.64);font-size:10px;}
+@media(max-width:610px){
+ .zf-football-brazil-section {padding:9px;border-radius:16px;margin-bottom:18px;}
+ .zf-football-brazil-head {padding:8px 7px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
+ .zf-football-brazil-head>small {margin-left:0;font-size:9px;}
+}
