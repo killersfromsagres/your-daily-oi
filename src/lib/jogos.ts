@@ -4,6 +4,7 @@ import { localizarJogosNaGradeEPG } from "./epg";
 import { matchBrazilianBroadcastChannel } from "./broadcast-match";
 import { fetchSportsDbFixtures, mergeProviderFixtures } from "./football-backup";
 import { getBrazilianSportsDbBroadcasts } from "./football-broadcasts";
+import { sameBroadcastFixture, verifiedBroadcastEvidence } from "./broadcast-verified";
 import {
   LIGAS_FUTEBOL, addDaysUTC, brBroadcastsFromESPN, dataBrasilia, fixturePriority,
   isValidSportsDate, normalizeSoccerName, parseESPNFixture,
@@ -202,10 +203,12 @@ async function annotateBroadcasts(
       config[date + "|" + normalizeSoccerName(game.casa).replace(/ /g, "-") +
         "|" + normalizeSoccerName(game.fora).replace(/ /g, "-")];
     const manual = (Array.isArray(configured) ? configured : configured ? [configured] : []);
+    const verified = verifiedBroadcastEvidence(game);
     const sourceNames = [...new Set([
       ...brBroadcastsFromESPN(fixture.raw),
       ...(detailedBroadcasts.get(game.id) || []),
       ...(backupBroadcasts.get(game.id) || []),
+      ...(verified?.names || []),
     ])];
     // Store rights metadata independently of available player links.
     const announced = manual.length ? manual : sourceNames;
@@ -227,7 +230,7 @@ async function annotateBroadcasts(
     }
     if (!resolved) for (const name of sourceNames) {
       resolved = matchBrazilianBroadcastChannel(name, available);
-      if (resolved) { origin = "grade-br"; break; }
+      if (resolved) { origin = verified?.names.includes(name) ? "verificada" : "grade-br"; break; }
     }
     if (resolved) {
       game.canalId = resolved.id;
@@ -264,7 +267,20 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
   const originalById=new Map(primary.map(x=>[x.item.id,x.raw]));
   const fixtures=combined.map(item=>({item,raw:originalById.get(item.id)||({} as ESPNEvent)}));
   const brazilianBroadcasters=loadBrazilBroadcastDetails(primary);
-  const backupBroadcasts=getBrazilianSportsDbBroadcasts(combined);
+  // TheSportsDB event IDs disappear when an identical ESPN fixture wins the
+  // deduplication. Query the original backup IDs and transfer the broadcaster
+  // evidence to a matching ESPN fixture only when both teams + kickoff agree.
+  const backupBroadcasts=getBrazilianSportsDbBroadcasts(backup||[]).then(found=>{
+    for (const game of combined) {
+      if(found.has(game.id))continue;
+      const counterpart=(backup||[]).find(item=>sameBroadcastFixture(game,item));
+      if(counterpart) {
+        const channels=found.get(counterpart.id);
+        if(channels?.length)found.set(game.id,channels);
+      }
+    }
+    return found;
+  });
   const games = await annotateBroadcasts(fixtures, date, brazilianBroadcasters, backupBroadcasts);
   games.sort((a,b) => {
     const timeA = Date.parse(a.inicioIso), timeB = Date.parse(b.inicioIso);
