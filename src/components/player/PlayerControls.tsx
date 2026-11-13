@@ -18,7 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-  Sparkles,
+  ScanLine,
 } from "lucide-react";
 import type { PlayerState } from "./usePlayerEngine";
 
@@ -329,11 +329,11 @@ export function PlayerControls({
                 cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
-              title={hqMode === "loading" ? "HQ · preparando processamento" : hqMode === "ai" ? "HQ · reconstrução neural ativa quando compatível" : "HQ · melhoria de imagem compatível com a fonte"}
+              title={hqMode === "loading" ? "HQ · preparando aprimoramento" : hqMode === "ai" ? "HQ · super-resolução quando suportada" : "HQ · melhoria de nitidez e imagem, otimizada para fluidez"}
               aria-label="Ativar ou desativar melhoria de imagem HQ"
               aria-pressed={Boolean(hqActive)}
             >
-              <Sparkles size={14} style={{ color: hqActive ? "#e8b44a" : "currentColor" }} />
+              <ScanLine size={14} style={{ color: hqActive ? "#e8b44a" : "currentColor" }} />
               <span>HQ</span>
             </button>
           )}
