@@ -21,11 +21,13 @@ html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
   pointer-events:none;color:#f4ece0;
 }
 .zf-friday13-date {
-  display:flex;align-items:center;justify-content:center;width:49px;height:58px;
-  border:1px solid #d9987c66;border-radius:5px;background:#1c1014a8;
-  font-size:32px;font-weight:900;line-height:1;letter-spacing:-.08em;
-  box-shadow:inset 0 1px #ffffff0a;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:56px;height:64px;
+  border:1px solid #a758566b;border-radius:7px;
+  background:radial-gradient(ellipse at 20% 90%,#67152636,transparent 72%),linear-gradient(145deg,#22171de8,#0d1013d9);
+  box-shadow:inset 0 1px #ecd0b514,0 4px 18px #0004;
 }
+.zf-friday13-emblem {display:block;width:100%;height:100%;overflow:visible;}
+.zf-friday13-blood-number {filter:drop-shadow(0 1px 1px #120309);font-family:Arial,Helvetica,sans-serif;}
 .zf-friday13-masthead p {margin:0;font-size:13px;font-weight:850;letter-spacing:.19em;}
 .zf-friday13-masthead small {
   display:block;margin-top:6px;font-size:9px;letter-spacing:.14em;color:#d4aaa0;
@@ -70,7 +72,7 @@ html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
   .zf-friday13-masthead {top:116px;left:20px;gap:11px;}
   .zf-friday13-masthead p {font-size:11px;letter-spacing:.16em;}
   .zf-friday13-masthead small {font-size:8px;}
-  .zf-friday13-date {width:40px;height:48px;font-size:28px;}
+  .zf-friday13-date {width:48px;height:56px;}
   .zf-friday13-hero .ydo-hero-content {padding-bottom:64px;}
   .zf-friday13-hero .ydo-hero-title {font-size:clamp(30px,8vw,46px);}
   .zf-friday13-hero .ydo-hero-overview {-webkit-line-clamp:2;}
