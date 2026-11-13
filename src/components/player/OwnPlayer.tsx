@@ -5,6 +5,7 @@ import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
 import { selectHqBackend } from "@/lib/hq-playback-policy";
+import { chooseHqProcessing } from "@/lib/hq-render-policy";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import {
@@ -269,6 +270,21 @@ export function OwnPlayer({
   });
   const [hqNotice, setHqNotice] = useState<string | null>(null);
   const [webglFailed, setWebglFailed] = useState(false);
+  const [hqSourceSize, setHqSourceSize] = useState({ width: 0, height: 0 });
+  const hqDevice = useMemo(() => {
+    if (typeof navigator === "undefined") return {
+      mobile: true, logicalCores: 2, memoryGb: 4, webgpu: false,
+    };
+    const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      window.matchMedia("(pointer: coarse)").matches;
+    return {
+      mobile,
+      logicalCores: navigator.hardwareConcurrency || 2,
+      memoryGb: (navigator as Navigator & {deviceMemory?: number}).deviceMemory || 4,
+      webgpu: "gpu" in navigator,
+    };
+  }, []);
+  const hqStrategy = chooseHqProcessing({ ...hqDevice, ...hqSourceSize });
 
   // Failure of an optional renderer must NEVER change the user's HQ setting,
   // permanently disable HQ or stop audio/video. Restore native compositing.
@@ -277,31 +293,35 @@ export function OwnPlayer({
     setHqNotice("HQ: esta fonte bloqueia o processamento por GPU ou excedeu o limite de desempenho. Ajuste visual leve aplicado.");
   }, []);
 
-  const neural = useNeuralVideoUpscaler(videoRef, neuralCanvasRef, hqEnabled, contentType);
+  // Mobile always keeps hardware-decoded native playback. CNN2x, even when
+  // available, competes with the video decoder for the same mobile GPU.
+  const neuralWanted = hqEnabled && hqStrategy === "neural";
+  const neural = useNeuralVideoUpscaler(videoRef, neuralCanvasRef, neuralWanted, contentType);
   const enhancer = useVideoEnhancer(
     videoRef, canvasRef,
-    hqEnabled && neural.status === "unavailable" && !webglFailed,
+    hqEnabled && !webglFailed &&
+      (hqStrategy === "webgl" || (hqStrategy === "neural" && neural.status === "unavailable")),
     handleHqDowngrade
   );
   const hqBackend = selectHqBackend({
     requested: hqEnabled,
     neuralActive: neural.active,
-    neuralUnavailable: neural.status === "unavailable",
+    neuralUnavailable: hqStrategy !== "neural" || neural.status === "unavailable",
     webglActive: enhancer.active,
-    webglSupported: enhancer.supported,
-    webglFailed,
+    webglSupported: hqStrategy !== "native" && enhancer.supported,
+    webglFailed: webglFailed || hqStrategy === "native",
   });
   const enhancedActive = hqBackend === "neural" || hqBackend === "webgl";
   // Native compositor fallback improves tones modestly. It cannot create
   // missing pixels when CORS or the browser blocks both GPU rendering paths.
-  const nativeHqFallback = hqBackend === "native";
+  const nativeHqFallback = hqEnabled && !enhancedActive;
   useEffect(() => {
-    if (!hqEnabled || neural.status !== "unavailable") return;
+    if (!hqEnabled || !neuralWanted || neural.status !== "unavailable") return;
     setHqNotice((neural.reason || "A IA não está disponível nesta fonte") +
       " · usando HQ compatível");
     const noticeTimer = setTimeout(() => setHqNotice(null), 5000);
     return () => clearTimeout(noticeTimer);
-  }, [hqEnabled, neural.status, neural.reason]);
+  }, [hqEnabled, neuralWanted, neural.status, neural.reason]);
 
   const toggleHq = useCallback(() => {
     const next = !hqEnabled;
@@ -320,6 +340,10 @@ export function OwnPlayer({
     if (!v) return;
     const h = v.videoHeight;
     const w = v.videoWidth;
+    if (w > 0 && h > 0) {
+      setHqSourceSize(prev => prev.width === w && prev.height === h
+        ? prev : {width: w, height: h});
+    }
     if (h >= 2160 || w >= 3840) setDetectedQuality("4K");
     else if (h >= 1440 || w >= 2560) setDetectedQuality("2K");
     else if (h >= 1080 || w >= 1920) setDetectedQuality("1080p");
@@ -984,7 +1008,9 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         onCanPlay={measureAndImproveQuality}
         style={{
           opacity: enhancedActive ? 0 : 1,
-          filter: nativeHqFallback ? "contrast(1.06) saturate(1.035)" : "none",
+          // Hardware-accelerated color tuning: zero extra frame copies.
+          // The light WebGL pass supplies edge sharpening on capable PCs.
+          filter: nativeHqFallback ? "contrast(1.09) saturate(1.06) brightness(1.015)" : "none",
           transition: "opacity 0.25s ease-in-out, filter 0.2s ease-in-out",
         }}
       />
