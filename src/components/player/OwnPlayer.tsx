@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles, SkipForward } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, ScanLine, SkipForward } from "lucide-react";
 import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
@@ -1120,7 +1120,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
           }}
         >
-          <Sparkles size={14} style={{ color: "#e8b44a" }} />
+          <ScanLine size={14} style={{ color: "#e8b44a" }} />
           <span>{hqNotice}</span>
         </div>
       )}
