@@ -1,5 +1,6 @@
 // scripts/smoke-sports-ticket-browser.mjs — Bun + Chrome CDP, mobile/desktop match cards and lineup modal.
 import { spawn, spawnSync } from "node:child_process";
+import { parseESPNLineups } from "../src/lib/football-lineups.ts";
 import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -133,7 +134,7 @@ try{
  const field=key=>parts.find(p=>p.type===key)?.value||"";
  const date=field("year")+"-"+field("month")+"-"+field("day");
  const first={
-   id:"fifa.friendly:99999",casa:"Brasil",fora:"Japão",escudoCasa:null,escudoFora:null,
+   id:"uefa.nations:401861162",casa:"Moldova",fora:"Kazakhstan",escudoCasa:null,escudoFora:null,
    horarioLocal:"07:15",inicioIso:new Date(Date.now()+60_000).toISOString(),
    dataLocal:date,rodada:"Amistoso",estadio:"Estádio Nacional",
    liga:"Amistosos de seleções",ligaId:"fifa.friendly",ligaLogo:null,grupo:"internacional",
@@ -148,15 +149,10 @@ try{
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
    jogos:[first,second],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
- const lineup={jogo:first.id,atualizadoEm:new Date().toISOString(),
-   disponivel:true,completa:true,origem:"ESPN",
-   mensagem:"Synthetic UI test lineup",equipes:["Brasil","Japão"].map(name=>({
-     name,formation:"4-5-1",crest:null,coach:null,substitutes:[],
-     starting:["GOL",...Array(4).fill("DEF"),...Array(5).fill("MEI"),"ATA"].map((group,index)=>({
-       id:String(index+1),name:"Jogador de teste "+(index+1),number:String(index+1),
-       position:group,group,photo:null,grid:null,
-     })),
-   }))};
+ // Recorded provider roles from the exact match that exposed the LB/CB swap.
+ // Mock only transport; parser, vocabulary and rendered ordering are production code.
+ const recorded=JSON.parse(readFileSync("tests/fixtures/espn-moldova-kazakhstan-lineups.json","utf8"));
+ const lineup=parseESPNLineups(first.id,recorded);
  const mocks={"/api/jogos-agenda":agenda,"/api/jogos-placares":placares,
    "/api/jogos-escalacao":lineup,
    "/api/catalogo":{items:[],highlights:[],genres:[]}};
@@ -230,7 +226,7 @@ try{
   const opened=await waitFor(x=>x.dialog && !!x.activeSide && x.players===11);
   if(opened.attackingGoal)throw new Error("Attacking goal marking is still present");
   const rows=await evaluate('Array.from(document.querySelectorAll(".zf-formation-row")).map(row=>row.children.length)');
-  if(JSON.stringify(rows)!=="[1,4,5,1]")throw new Error("Incorrect formation rows: "+JSON.stringify(rows));
+  if(JSON.stringify(rows)!=="[1,5,3,2]")throw new Error("Incorrect formation rows: "+JSON.stringify(rows));
   const overlaps=await evaluate(`Array.from(document.querySelectorAll(".zf-formation-row")).some(row=>{
     const boxes=Array.from(row.children).map(player=>player.getBoundingClientRect());
     return boxes.some((box,index)=>index>0&&box.left<boxes[index-1].right-1);
@@ -238,9 +234,18 @@ try{
   if(overlaps)throw new Error("Player positions overlap on "+device.name);
   if(!opened.activeSide)throw new Error("Home lineup did not open");
   if(opened.dialogRect.left<-1||opened.dialogRect.right>device.width+1)throw new Error("Lineup modal overflows viewport: "+JSON.stringify(opened));
+  const defensiveRoles=await evaluate('Array.from(document.querySelectorAll(".zf-formation-row")[1].children).map(player=>[player.dataset.playerId,player.dataset.position])');
+  if(JSON.stringify(defensiveRoles)!=='[["272239","LE"],["365829","ZAG"],["326717","ZAG"],["293878","ZAG"],["276606","LD"]]')
+    throw new Error("Moldova roles or lateral order wrong: "+JSON.stringify(defensiveRoles));
   await screenshot(device.name+"-lineup");
   await evaluate('document.querySelectorAll(".zf-lineup-switch button")[1].click()');
   const switched=await waitFor(x=>x.dialog && x.activeSide && x.activeSide!==opened.activeSide);
+  const awayDefense=await evaluate('Array.from(document.querySelectorAll(".zf-formation-row")[1].children).map(player=>[player.dataset.playerId,player.dataset.position])');
+  if(JSON.stringify(awayDefense)!=='[["402239","LE"],["272045","ZAG"],["237805","ZAG"],["320005","ZAG"],["326288","LD"]]')
+    throw new Error("Kazakhstan roles or lateral order wrong: "+JSON.stringify(awayDefense));
+  const awayAttack=await evaluate('Array.from(document.querySelectorAll(".zf-formation-row")[3].children).map(player=>player.dataset.position)');
+  if(JSON.stringify(awayAttack)!=='["CA","CA"]')throw new Error("Central forwards mislabeled as wingers");
+  await screenshot(device.name+"-kazakhstan-lineup");
   if(switched.activeSide===opened.activeSide)throw new Error("Team switch not working");
   await send("Input.dispatchKeyEvent",{type:"keyDown",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});
   await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});

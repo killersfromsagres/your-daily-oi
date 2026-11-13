@@ -2053,9 +2053,7 @@ export default {
         const jogo=url.searchParams.get("jogo") || "";
         try {
           const lineup=await getMatchLineups(jogo);
-          return jsonResponse(lineup, 200, lineup.completa
-            ? "public, max-age=900, stale-while-revalidate=300"
-            : "public, max-age=90, stale-while-revalidate=30");
+          return jsonResponse(lineup, 200, "public, max-age=30, stale-while-revalidate=15");
         } catch (error) {
           if (error instanceof RangeError) return jsonResponse({ erro: "Partida inválida" }, 400);
           console.warn("[Sports] Escalação indisponível",String(error).slice(0,180));

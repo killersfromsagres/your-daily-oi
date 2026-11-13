@@ -1,0 +1,308 @@
+{
+  "sourceUrl": "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.nations/summary?event=401861162",
+  "capturedAt": "2026-11-13",
+  "rosters": [
+    {
+      "team": {
+        "displayName": "Moldova"
+      },
+      "formation": "5-3-2",
+      "roster": [
+        {
+          "athlete": {
+            "id": "237286",
+            "displayName": "Dumitru Celeadnic"
+          },
+          "position": {
+            "name": "Goalkeeper",
+            "displayName": "Goalkeeper",
+            "abbreviation": "G"
+          },
+          "jersey": "12",
+          "formationPlace": "1"
+        },
+        {
+          "athlete": {
+            "id": "326717",
+            "displayName": "Iurie Iovu"
+          },
+          "position": {
+            "name": "Center Defender",
+            "displayName": "Center Defender",
+            "abbreviation": "CD"
+          },
+          "jersey": "18",
+          "formationPlace": "5"
+        },
+        {
+          "athlete": {
+            "id": "365829",
+            "displayName": "Mihail Gherasimencov"
+          },
+          "position": {
+            "name": "Center Left Defender",
+            "displayName": "Center Left Defender",
+            "abbreviation": "CD-L"
+          },
+          "jersey": "6",
+          "formationPlace": "4"
+        },
+        {
+          "athlete": {
+            "id": "293878",
+            "displayName": "Vladislav Baboglo"
+          },
+          "position": {
+            "name": "Center Right Defender",
+            "displayName": "Center Right Defender",
+            "abbreviation": "CD-R"
+          },
+          "jersey": "4",
+          "formationPlace": "6"
+        },
+        {
+          "athlete": {
+            "id": "272239",
+            "displayName": "Oleg Reabciuk"
+          },
+          "position": {
+            "name": "Left Back",
+            "displayName": "Left Back",
+            "abbreviation": "LB"
+          },
+          "jersey": "2",
+          "formationPlace": "3"
+        },
+        {
+          "athlete": {
+            "id": "276606",
+            "displayName": "Ioan-Calin Revenco"
+          },
+          "position": {
+            "name": "Right Back",
+            "displayName": "Right Back",
+            "abbreviation": "RB"
+          },
+          "jersey": "21",
+          "formationPlace": "2"
+        },
+        {
+          "athlete": {
+            "id": "162275",
+            "displayName": "Vadim Rata"
+          },
+          "position": {
+            "name": "Center Midfielder",
+            "displayName": "Center Midfielder",
+            "abbreviation": "CM"
+          },
+          "jersey": "22",
+          "formationPlace": "8"
+        },
+        {
+          "athlete": {
+            "id": "389461",
+            "displayName": "Sergiu Perciun"
+          },
+          "position": {
+            "name": "Center Left Midfielder",
+            "displayName": "Center Left Midfielder",
+            "abbreviation": "CM-L"
+          },
+          "jersey": "9",
+          "formationPlace": "11"
+        },
+        {
+          "athlete": {
+            "id": "377052",
+            "displayName": "Vladimir Fratea"
+          },
+          "position": {
+            "name": "Center Right Midfielder",
+            "displayName": "Center Right Midfielder",
+            "abbreviation": "CM-R"
+          },
+          "jersey": "10",
+          "formationPlace": "7"
+        },
+        {
+          "athlete": {
+            "id": "401267",
+            "displayName": "Petru Popescu"
+          },
+          "position": {
+            "name": "Center Left Forward",
+            "displayName": "Center Left Forward",
+            "abbreviation": "CF-L"
+          },
+          "jersey": "15",
+          "formationPlace": "9"
+        },
+        {
+          "athlete": {
+            "id": "319855",
+            "displayName": "Nicky Clescenco"
+          },
+          "position": {
+            "name": "Center Right Forward",
+            "displayName": "Center Right Forward",
+            "abbreviation": "CF-R"
+          },
+          "jersey": "20",
+          "formationPlace": "10"
+        }
+      ]
+    },
+    {
+      "team": {
+        "displayName": "Kazakhstan"
+      },
+      "formation": "5-3-2",
+      "roster": [
+        {
+          "athlete": {
+            "id": "189045",
+            "displayName": "Stas Pokatilov"
+          },
+          "position": {
+            "name": "Goalkeeper",
+            "displayName": "Goalkeeper",
+            "abbreviation": "G"
+          },
+          "jersey": "1",
+          "formationPlace": "1"
+        },
+        {
+          "athlete": {
+            "id": "237805",
+            "displayName": "Temirlan Erlanov"
+          },
+          "position": {
+            "name": "Center Defender",
+            "displayName": "Center Defender",
+            "abbreviation": "CD"
+          },
+          "jersey": "23",
+          "formationPlace": "5"
+        },
+        {
+          "athlete": {
+            "id": "272045",
+            "displayName": "Nuraly Alip"
+          },
+          "position": {
+            "name": "Center Left Defender",
+            "displayName": "Center Left Defender",
+            "abbreviation": "CD-L"
+          },
+          "jersey": "3",
+          "formationPlace": "4"
+        },
+        {
+          "athlete": {
+            "id": "320005",
+            "displayName": "Alibek Kasym"
+          },
+          "position": {
+            "name": "Center Right Defender",
+            "displayName": "Center Right Defender",
+            "abbreviation": "CD-R"
+          },
+          "jersey": "6",
+          "formationPlace": "6"
+        },
+        {
+          "athlete": {
+            "id": "402239",
+            "displayName": "Nauryzbek Zhagorov"
+          },
+          "position": {
+            "name": "Left Back",
+            "displayName": "Left Back",
+            "abbreviation": "LB"
+          },
+          "jersey": "14",
+          "formationPlace": "3"
+        },
+        {
+          "athlete": {
+            "id": "326288",
+            "displayName": "Aleksandr Mrynskiy"
+          },
+          "position": {
+            "name": "Right Back",
+            "displayName": "Right Back",
+            "abbreviation": "RB"
+          },
+          "jersey": "13",
+          "formationPlace": "2"
+        },
+        {
+          "athlete": {
+            "id": "326653",
+            "displayName": "Dinmuhamed Karaman"
+          },
+          "position": {
+            "name": "Center Midfielder",
+            "displayName": "Center Midfielder",
+            "abbreviation": "CM"
+          },
+          "jersey": "18",
+          "formationPlace": "8"
+        },
+        {
+          "athlete": {
+            "id": "406093",
+            "displayName": "Zhasulan Amir"
+          },
+          "position": {
+            "name": "Center Left Midfielder",
+            "displayName": "Center Left Midfielder",
+            "abbreviation": "CM-L"
+          },
+          "jersey": "15",
+          "formationPlace": "11"
+        },
+        {
+          "athlete": {
+            "id": "289830",
+            "displayName": "Ramazan Orazov"
+          },
+          "position": {
+            "name": "Center Right Midfielder",
+            "displayName": "Center Right Midfielder",
+            "abbreviation": "CM-R"
+          },
+          "jersey": "20",
+          "formationPlace": "7"
+        },
+        {
+          "athlete": {
+            "id": "363855",
+            "displayName": "Islam Chesnokov"
+          },
+          "position": {
+            "name": "Center Left Forward",
+            "displayName": "Center Left Forward",
+            "abbreviation": "CF-L"
+          },
+          "jersey": "17",
+          "formationPlace": "9"
+        },
+        {
+          "athlete": {
+            "id": "316610",
+            "displayName": "Maksim Samorodov"
+          },
+          "position": {
+            "name": "Center Right Forward",
+            "displayName": "Center Right Forward",
+            "abbreviation": "CF-R"
+          },
+          "jersey": "10",
+          "formationPlace": "10"
+        }
+      ]
+    }
+  ]
+}

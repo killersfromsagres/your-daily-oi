@@ -13,7 +13,7 @@ const cache = new Map<string,{data:MatchLineups;time:number}>();
 function currentCache(id:string) {
   const item=cache.get(id);
   if(!item)return null;
-  const ttl=item.data.completa?30*60_000:item.data.disponivel?5*60_000:90_000;
+  const ttl=60_000;
   return Date.now()-item.time<ttl?item.data:null;
 }
 function LocalCrest({src,name}:{src?:string|null|undefined;name:string}) {
@@ -48,10 +48,10 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
   useEffect(()=>{
     if(!opened)return;
     const cached=currentCache(game.id);
-    if(cached&&version===0){setData(cached);return;}
+    if(cached&&version===0){setData(cached);setLoading(false);return;}
     const controller=new AbortController();
     setLoading(true);setError(null);
-    fetch("/api/jogos-escalacao?jogo="+encodeURIComponent(game.id),{
+    fetch("/api/jogos-escalacao?jogo="+encodeURIComponent(game.id)+"&v=2",{
       cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal,
     }).then(async response=>{
       if(!response.ok)throw new Error("Escalação temporariamente indisponível ("+response.status+")");
@@ -71,12 +71,12 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
   },[game.id,opened,version]);
 
   useEffect(()=>{
-    if(!opened||data?.completa)return;
+    if(!opened)return;
     const interval=window.setInterval(()=>{
       if(document.visibilityState==="visible")setVersion(v=>v+1);
-    },3*60_000);
+    },60_000);
     return ()=>window.clearInterval(interval);
-  },[opened,data?.completa]);
+  },[opened]);
 
   useEffect(()=>{
     if(!opened)return;

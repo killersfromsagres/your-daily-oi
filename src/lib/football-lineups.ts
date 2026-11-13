@@ -1,7 +1,8 @@
 // src/lib/football-lineups.ts — ESPN match rosters + TheSportsDB lineup, server-only.
 // Never invent starters/coach/photos before the provider releases the lineup.
 import { LIGAS_FUTEBOL } from "./jogos-match";
-export type PlayerPosition="GOL"|"DEF"|"MEI"|"ATA";
+import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
+export type { PlayerPosition } from "./football-positions";
 export interface LineupPlayer {
   id:string;name:string;number:string|null;position:string;
   group:PlayerPosition;photo:string|null;grid:string|null;
@@ -25,11 +26,7 @@ function nameOf(v:unknown):string {
   return typeof v==="string"?v.trim().slice(0,85):"";
 }
 export function groupPosition(raw:string):PlayerPosition {
-  const p=raw.toLowerCase();
-  if(/goal|goleir|keeper|\bgk\b|\bgl\b|portero|torwart/.test(p))return "GOL";
-  if(/defend|zagueir|lateral|back|\bcb\b|\blb\b|\brb\b|\bdf\b/.test(p))return "DEF";
-  if(/attac|forward|strik|atacant|ponta|winger|\bst\b|\bfw\b|\bcf\b/.test(p))return "ATA";
-  return "MEI";
+  return resolveFootballPosition(raw).group;
 }
 type SportsDbLine = {
   idLineup?:string;idPlayer?:string;strPlayer?:string;strTeam?:string;
@@ -169,8 +166,8 @@ export async function getMatchLineups(jogo:string):Promise<MatchLineups>{
       const json=await response.json() as ESPNSummary;
       payload=parseESPNLineups(jogo,json);
     }
-    // Announced lineups refresh quickly before kickoff, completed rosters are stable.
-    cache.set(jogo,{until:Date.now()+(payload.completa?30:payload.disponivel?5:2)*60_000,data:payload});
+    // A complete XI can still receive corrections before kickoff or during play.
+    cache.set(jogo,{until:Date.now()+60_000,data:payload});
     if(cache.size>150)cache.delete(cache.keys().next().value!);
     return payload;
   })().finally(()=>inflight.delete(jogo));

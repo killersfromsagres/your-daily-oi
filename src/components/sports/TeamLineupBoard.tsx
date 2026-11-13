@@ -28,7 +28,7 @@ function Photo({ src, name }: { src: string | null; name: string }) {
 function Player({ player }: { player: LineupPlayer }) {
   const role = positionBadge(player);
   return (
-    <div className="zf-formation-player" data-sector={player.group} title={role.label + " · " + player.position}>
+    <div className="zf-formation-player" data-sector={role.group} data-position={role.code} data-player-id={player.id} title={role.label + " · " + player.position}>
       <Photo name={player.name} src={player.photo}/>
       <strong>{player.number && <span>{player.number} </span>}{player.name}</strong>
       <small className="zf-formation-role" aria-label={role.label}>
@@ -59,7 +59,9 @@ export function TeamLineupBoard({ team }: { team: LineupTeam }) {
       </div>
       <p className="zf-formation-direction">↓ Sentido do ataque · {layout.source === "grid"
         ? "Posições fornecidas pela fonte" : layout.source === "formation"
-        ? "Distribuição pela formação divulgada" : "Organização por setor"}</p>
+        ? "Formação e funções divulgadas" : "Funções divulgadas · desenho tático não confirmado"}
+        <span className="zf-formation-perspective">Esquerda da equipe à esquerda do campo.</span>
+      </p>
       <div className="zf-formation-extras">
         <div className="zf-formation-coach">
           <span className="zf-formation-coach-photo"><Photo name={team.coach?.name || "Técnico"} src={team.coach?.photo || null} /></span>

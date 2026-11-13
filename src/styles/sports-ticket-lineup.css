@@ -213,3 +213,5 @@
   .zf-formation-legend {gap:8px 12px;}
   .zf-formation-legend>span {font-size:9px;}
 }
+[data-sector="ND"] {--zf-position-color:#b2bdce;}
+.zf-formation-perspective {display:block;margin-top:3px;font-size:9px;color:#91a5bd;}
