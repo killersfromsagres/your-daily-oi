@@ -1,6 +1,7 @@
+import { SeriesIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useMemo } from "react";
-import { Play, Star, Tv, Check, Heart, X, Users, Layers, Clapperboard, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Star, Check, Heart, X, Users, Layers, Clapperboard, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
@@ -172,7 +173,7 @@ function SeriesDetailPage() {
         padding: "24px",
         backdropFilter: "blur(16px)"
       }}>
-        <Tv size={48} style={{ color: "#e8b44a" }} />
+        <SeriesIcon size={48} style={{ color: "#e8b44a" }} />
         <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Série não localizada</h1>
         <p style={{ color: "rgba(255,255,255,0.6)" }}>Esta série não faz parte do catálogo atual.</p>
         <button onClick={closeDialog} className="ydo-btn-primary">
@@ -445,7 +446,7 @@ function SeriesDetailPage() {
                       fontSize: "0.8rem",
                     }}
                   >
-                    ★ {serie.tmdb.voteAverage.toFixed(1)}
+                    <Star size={13} className="zf-rating-icon" fill="currentColor" aria-hidden="true" /> {serie.tmdb.voteAverage.toFixed(1)}
                   </span>
                 ) : null}
 
@@ -693,7 +694,7 @@ function SeriesDetailPage() {
                   border: "1px dashed rgba(255, 255, 255, 0.1)",
                 }}
               >
-                <Tv size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
+                <SeriesIcon size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
                 <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "4px" }}>
                   Episódios ainda não sincronizados — volte em breve
                 </h4>

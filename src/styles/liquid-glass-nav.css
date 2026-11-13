@@ -140,7 +140,7 @@
     flex-shrink:0;
     color:inherit;
     stroke:currentColor;
-    stroke-width:1.8;
+    stroke-width:var(--zf-icon-stroke,1.8);
     filter:none;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab span {
@@ -183,7 +183,7 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab svg {
     width:27px;
     height:27px;
-    stroke-width:1.85;
+    stroke-width:var(--zf-icon-stroke,1.8);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {
     background:rgba(255,255,255,.21);
@@ -217,7 +217,7 @@
     color:#f6f6f7;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg {
-    stroke-width:1.85;
+    stroke-width:var(--zf-icon-stroke,1.8);
     color:#f3f3f4;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-feature {

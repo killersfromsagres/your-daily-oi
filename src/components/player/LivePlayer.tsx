@@ -25,7 +25,7 @@ import {
   PictureInPicture2,
   Gauge,
   AlertCircle,
-  Tv,
+  TvMinimal,
 } from "lucide-react";
 
 export interface LivePlayerProps {
@@ -1087,7 +1087,7 @@ export function LivePlayer({
         <div className="ydo-live-skeleton-overlay" aria-live="polite">
           <div className="ydo-live-skeleton-glow" />
           <div className="ydo-live-loading-content">
-            <Tv size={36} className="ydo-live-loading-icon" />
+            <TvMinimal size={36} className="ydo-live-loading-icon" />
             <div className="ydo-live-skeleton-bar short" />
             <div className="ydo-live-skeleton-bar" />
             <span>Sintonizando…</span>

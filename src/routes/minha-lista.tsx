@@ -6,7 +6,7 @@ import {
   Trash2,
   Play,
   Film,
-  Tv,
+  Clapperboard,
   ArrowRight,
   Clock,
   RotateCcw,

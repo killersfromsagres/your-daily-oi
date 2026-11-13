@@ -13,7 +13,6 @@ import {
   RotateCcw,
   RotateCw,
   Cast,
-  Tv,
   Server,
   ChevronDown,
   ChevronUp,

@@ -1,3 +1,4 @@
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -7,7 +8,7 @@ import type { CatalogItem } from "@/lib/types";
 import { isAnimeItem } from "@/lib/catalog";
 import { matchesGenre } from "@/lib/genre-matching";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
-import { Sparkles, Tv, Search, X, ChevronLeft, ChevronRight, Film, RefreshCw } from "lucide-react";
+import { ServerOff, Search, X, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/animes")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -238,7 +239,7 @@ function AnimesPage() {
       {/* Cabeçalho */}
       <div className="ydo-search-header" style={{ marginBottom: "20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Sparkles size={28} style={{ color: "#e8b44a" }} />
+          <AnimeIcon size={28} style={{ color: "#e8b44a" }} />
           <h1 style={{ fontSize: "2rem", fontWeight: "900", letterSpacing: "-0.02em" }}>Animes</h1>
         </div>
         {!loading && (
@@ -347,7 +348,7 @@ function AnimesPage() {
         <SkeletonRow count={12} />
       ) : error && displayItems.length === 0 ? (
         <div className="ydo-empty-state" style={{ padding: "60px 20px", textAlign: "center" }}>
-          <Tv size={52} style={{ color: "rgba(232, 180, 74, 0.5)", margin: "0 auto 16px" }} />
+          <ServerOff size={48} style={{ color: "rgba(232, 180, 74, 0.5)", margin: "0 auto 16px" }} />
           <h2 style={{ fontSize: "1.4rem", fontWeight: "800", marginBottom: "8px" }}>Instabilidade temporária no catálogo de animes</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.6)", maxWidth: "520px", margin: "0 auto 20px" }}>
             Não conseguimos conectar aos servidores de animes neste momento. Você pode tentar recarregar ou navegar pelos clássicos abaixo.
@@ -362,7 +363,7 @@ function AnimesPage() {
         </div>
       ) : displayItems.length === 0 ? (
         <div className="ydo-empty-state" style={{ padding: "60px 20px", textAlign: "center" }}>
-          <Tv size={48} style={{ color: "rgba(232, 180, 74, 0.5)", margin: "0 auto 16px" }} />
+          <AnimeIcon size={48} style={{ color: "rgba(232, 180, 74, 0.5)", margin: "0 auto 16px" }} />
           <h2 style={{ fontSize: "1.3rem", fontWeight: "700" }}>Nenhum anime encontrado</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.6)" }}>
             Tente pesquisar com outro termo ou selecionar outra categoria.
@@ -468,7 +469,7 @@ function AnimesPage() {
       {!debouncedQuery && !isUsingLocalFallback && localItems.length > 0 && currentPage === 1 && (
         <section style={{ marginTop: "64px", paddingTop: "32px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-            <Film size={22} style={{ color: "#e8b44a" }} />
+            <AnimeIcon size={22} style={{ color: "#e8b44a" }} />
             <h2 style={{ fontSize: "1.4rem", fontWeight: "800", color: "#ffffff" }}>
               Clássicos do Japão (Domínio Público)
             </h2>

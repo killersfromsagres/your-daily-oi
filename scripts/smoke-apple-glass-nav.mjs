@@ -172,6 +172,56 @@ try{
     }
     console.log(JSON.stringify({event:"apple-glass-browser",name:scenario.name,...state}));
   }
+  // Deterministic empty-anime and search-result states, using the same
+  // production components. These fixtures contain no playable media.
+  await send("Page.addScriptToEvaluateOnNewDocument",{source:`(()=>{
+    const original=window.fetch.bind(window);
+    window.fetch=(input,options)=>{
+      const url=new URL(String(input?.url||input),location.origin);
+      let payload;
+      if(url.pathname==="/api/animes-sushi") payload={items:[],pagina:1,totalPaginas:1,totalItens:0};
+      if(url.pathname==="/api/catalogo") payload=url.searchParams.has("suggest")
+        ?{items:[{id:"icon-anime-fixture",title:"Anime de teste",type:"a",posterUrl:null,year:2026}]}
+        :{items:[],highlights:[],genres:[]};
+      return payload?Promise.resolve(new Response(JSON.stringify(payload),{status:200,headers:{"Content-Type":"application/json"}})):original(input,options);
+    };
+  })()`});
+  for(const scenario of cases.filter(item=>item.name==="mobile"||item.name==="desktop")){
+    await send("Emulation.setDeviceMetricsOverride",{width:scenario.width,height:scenario.height,
+      deviceScaleFactor:scenario.mobile?2:1,mobile:scenario.mobile});
+    await send("Emulation.setUserAgentOverride",{userAgent:scenario.ua});
+    await send("Page.navigate",{url:BASE+"/animes"});
+    let ready=false;
+    for(let attempt=0;attempt<70;attempt++){
+      ready=await evalInPage('!!document.querySelector(".ydo-search-header .lucide-animation-frames")&&!!document.querySelector(".ydo-empty-state .lucide-animation-frames")');
+      if(ready)break;
+      await sleep(200);
+    }
+    if(!ready)throw new Error("Shared anime pictogram missing from heading or empty state");
+    const icon=await evalInPage(`(()=>{
+      const svg=document.querySelector(".ydo-search-header .lucide-animation-frames");
+      return {stroke:parseFloat(getComputedStyle(svg).strokeWidth),width:svg.getBoundingClientRect().width,
+        decorative:!!document.querySelector(".lucide-sparkles,.lucide-orbit"),
+        dock:!!document.querySelector('.zf-mobile-tab[title="Animes"][aria-current="page"] .lucide-animation-frames')};
+    })()`);
+    if(icon.stroke!==1.8||icon.width!==28||icon.decorative||(scenario.mobile&&!icon.dock))
+      throw new Error("Inconsistent anime iconography: "+JSON.stringify(icon));
+    let screenshot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+    writeFileSync("artifacts/apple-glass-icons-anime-"+scenario.name+".png",Buffer.from(screenshot.data,"base64"));
+    await evalInPage('document.querySelector(".ydo-search-trigger-btn").click()');
+    await sleep(150);
+    await send("Input.insertText",{text:"Anime"});
+    let result=false;
+    for(let attempt=0;attempt<35;attempt++){
+      result=await evalInPage('!!document.querySelector(".zf-search-poster .lucide-animation-frames")');
+      if(result)break;
+      await sleep(180);
+    }
+    if(!result)throw new Error("Anime search fallback is not using the shared pictogram");
+    screenshot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+    writeFileSync("artifacts/apple-glass-icons-search-"+scenario.name+".png",Buffer.from(screenshot.data,"base64"));
+    console.log(JSON.stringify({event:"professional-iconography",device:scenario.name,heading:true,empty:true,search:true,...icon}));
+  }
 }finally{
   ws?.close();
   browser?.kill("SIGTERM");

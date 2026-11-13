@@ -1,0 +1,13 @@
+/* A single outline weight for UI pictograms. Brand artwork is independent. */
+:root { --zf-icon-stroke: 1.8; }
+svg.lucide {
+  flex-shrink:0;
+  stroke-width:var(--zf-icon-stroke);
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  vertical-align:middle;
+}
+/* Numeric ratings retain the conventional star, rendered as an SVG rather
+   than a platform-dependent text glyph. */
+.ydo-hero-score {display:inline-flex;align-items:center;gap:5px;}
+.zf-rating-icon {display:inline-block;}

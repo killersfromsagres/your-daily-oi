@@ -1,10 +1,11 @@
 "use client";
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 // src/components/layout/MobileNavigation.tsx — premium bottom dock and accessible catalogue drawer.
 import { useEffect, useId, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  ArrowRight, ChevronDown, Clapperboard, Compass, Film, Gamepad2,
-  Heart, Home, Menu, Search, Orbit, Tv2, Trophy, X,
+  ArrowRight, ChevronDown, Clapperboard, CalendarDays, Film,
+  Heart, Home, Menu, Search, Tv2, Trophy, X,
 } from "lucide-react";
 import { mobileTabActive, isWatchRoute } from "@/lib/device-profile";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
@@ -148,7 +149,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
         <Link to="/animes" search={{ categoria: undefined }} title="Animes"
           className={"zf-mobile-tab" + (mobileTabActive(pathname,"anime") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"anime") ? "page" : undefined}>
-          <Orbit size={21} strokeWidth={1.9} /><span>Animes</span>
+          <AnimeIcon size={21} strokeWidth={1.9} /><span>Animes</span>
         </Link>
         <Link to="/tv" title="TV ao vivo" className={"zf-mobile-tab zf-mobile-live" + (mobileTabActive(pathname,"tv") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"tv") ? "page" : undefined}>
@@ -211,14 +212,14 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                 <Link to="/" onClick={navigateAndClose}><Home size={20} /><span>Início</span></Link>
                 <Link to="/generos/$slug" params={{slug:"filmes"}} onClick={navigateAndClose}><Film size={20} /><span>Filmes</span></Link>
                 <Link to="/generos/$slug" params={{slug:"series"}} onClick={navigateAndClose}><Clapperboard size={20} /><span>Séries</span></Link>
-                <Link to="/animes" search={{ categoria: undefined }} onClick={navigateAndClose}><Orbit size={20} /><span>Animes</span></Link>
+                <Link to="/animes" search={{ categoria: undefined }} onClick={navigateAndClose}><AnimeIcon size={20} /><span>Animes</span></Link>
                 <Link to="/tv" onClick={navigateAndClose}><Tv2 size={20} /><span>TV ao vivo</span></Link>
-                <Link to="/lancamentos" onClick={navigateAndClose}><Compass size={20} /><span>Lançamentos</span></Link>
+                <Link to="/lancamentos" onClick={navigateAndClose}><CalendarDays size={20} /><span>Lançamentos</span></Link>
                 <Link to="/minha-lista" className="zf-mobile-mylist" onClick={navigateAndClose}>
                   <Heart size={20} /><span>Minha lista</span>
                   {savedCount > 0 && <b>{savedCount}</b>}
                 </Link>
-                <Link to="/futebol" onClick={navigateAndClose}><Gamepad2 size={20} /><span>Futebol</span></Link>
+                <Link to="/futebol" onClick={navigateAndClose}><Trophy size={20} /><span>Futebol</span></Link>
               </div>
 
               <p className="zf-mobile-menu-label">ENCONTRE ALGO PARA ASSISTIR</p>

@@ -1,4 +1,5 @@
 "use client";
+import { TelevisionIcon as Tv } from "@/components/icons/ContentIcons";
 
 // src/components/tv/JogosShelf.tsx — React 19, Zang Live sports match center.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -9,7 +10,7 @@ import { MatchLineups } from "@/components/sports/MatchLineups";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
-  Clock3, MapPin, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
+  Clock3, MapPin, Radio, RefreshCw, ShieldQuestion, Trophy, WifiOff,
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import "@/styles/jogos-center.css";
@@ -343,7 +344,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
       )}
       <div className="zgame-standings-entry"><LeagueStandings /></div>
       <footer className="zgame-footer">
-        <span><Sparkles size={15} /> Datas e placares de fonte esportiva; atualizações automáticas.</span>
+        <span><RefreshCw size={15} /> Datas e placares de fonte esportiva; atualizações automáticas.</span>
         <span>Os canais são vinculados apenas quando a transmissão específica é identificada. A disponibilidade pode variar.</span>
       </footer>
     </section>

@@ -93,7 +93,7 @@
     height: clamp(21px, 5.8vw, 26px);
     color: inherit;
     stroke: currentColor;
-    stroke-width: 1.9;
+    stroke-width:var(--zf-icon-stroke,1.8);
     fill: none;
     filter: none;
   }

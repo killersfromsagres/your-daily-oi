@@ -1,5 +1,6 @@
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 // src/components/search/SearchSuggestionList.tsx — shared accessible result panel for header and mobile drawer.
-import { ArrowRight, Clapperboard, Film, LoaderCircle, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Clapperboard, Film, LoaderCircle, Search } from "lucide-react";
 import type { SearchSuggestion } from "@/lib/search-suggestions";
 import type { SuggestionStatus } from "./useLiveSuggestions";
 
@@ -18,7 +19,7 @@ const labels: Record<SearchSuggestion["type"], string> = {
   f: "Filme", s: "Série", a: "Anime",
 };
 const symbols = {
-  f: Film, s: Clapperboard, a: Sparkles,
+  f: Film, s: Clapperboard, a: AnimeIcon,
 } as const;
 
 export function SearchSuggestionList({

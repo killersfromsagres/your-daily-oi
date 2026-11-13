@@ -1,8 +1,9 @@
 "use client";
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 
 // src/components/tv/ChannelCard.tsx — glass channel card with actual EPG programme.
 import { useEffect, useState } from "react";
-import { Clapperboard, Film, Music2, Newspaper, Play, Sparkles, Star, Trophy, Tv2 } from "lucide-react";
+import { Clapperboard, Film, Music2, Newspaper, Play, Heart, Trophy, Tv2 } from "lucide-react";
 import type { CanalTV } from "@/lib/canais";
 import { resolveChannelProgram, type ProgramSlot } from "@/lib/tv-program";
 
@@ -37,7 +38,7 @@ export function ChannelCard({
   const preview = resolveChannelProgram(slot, channel.categoria + " " + channel.nome, nowMs);
   const KindIcon = preview.kind === "Filme" ? Film :
     preview.kind === "Série" || preview.kind === "Filmes e séries" ? Clapperboard :
-    preview.kind === "Anime" ? Sparkles :
+    preview.kind === "Anime" ? AnimeIcon :
     preview.kind === "Esportes" ? Trophy :
     preview.kind === "Notícias" ? Newspaper :
     preview.kind === "Música" ? Music2 : Tv2;
@@ -108,7 +109,7 @@ export function ChannelCard({
         onClick={onFavorite} aria-label={(favorite ? "Remover " : "Favoritar ") + channel.nome}
         title={favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
       >
-        <Star size={17} fill={favorite ? "currentColor" : "none"} />
+        <Heart size={17} fill={favorite ? "currentColor" : "none"} />
       </button>
     </article>
   );

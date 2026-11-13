@@ -1,3 +1,4 @@
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
 import { MediaCard } from "@/components/catalog/MediaCard";
@@ -7,7 +8,7 @@ import { normalizeTitle, isAnimeItem } from "@/lib/catalog";
 import { matchesGenre } from "@/lib/genre-matching";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { getClientCatalog, CATALOG_PAGE_SIZE, catalogVisibleItems, nextCatalogPage } from "@/lib/catalog-client";
-import { Film, Tv, Sparkles, Filter } from "lucide-react";
+import { Film, Clapperboard, Filter } from "lucide-react";
 
 interface GeneroSearch {
   tipo?: string;
@@ -118,9 +119,9 @@ function GenrePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {selectedType === "s" || isSeries ? (
-              <Tv size={26} style={{ color: "#e8b44a" }} />
+              <Clapperboard size={26} style={{ color: "#e8b44a" }} />
             ) : selectedType === "a" ? (
-              <Sparkles size={26} style={{ color: "#e8b44a" }} />
+              <AnimeIcon size={26} style={{ color: "#e8b44a" }} />
             ) : (
               <Film size={26} style={{ color: "#e8b44a" }} />
             )}
@@ -189,7 +190,7 @@ function GenrePage() {
               transition: "all 0.18s ease",
             }}
           >
-            <Tv size={13} />
+            <Clapperboard size={13} />
             Apenas Séries
           </button>
         </div>

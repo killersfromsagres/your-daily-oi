@@ -5,7 +5,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Clock3,
   Grid2X2, Heart, List, Radio, RefreshCw, Search, Signal,
-  Star, Tv2, WifiOff, X,
+  Tv2, WifiOff, X,
 } from "lucide-react";
 import { type CanalTV, fetchCanaisFallbackClient } from "@/lib/canais";
 import type { CanalEPG, ProgramaEPG } from "@/lib/epg";
@@ -589,7 +589,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
                 <button type="button" key={cat} onClick={() => setCategory(cat)}
                   className={"ztv-category" + (category === cat ? " is-active" : "")}
                   aria-pressed={category === cat}>
-                  {cat === "Favoritos" && <Star size={14} />}
+                  {cat === "Favoritos" && <Heart size={14} />}
                   {cat === "Recentes" && <Clock3 size={14} />}
                   {cat}<span>{count}</span>
                 </button>

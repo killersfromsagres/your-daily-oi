@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { catalogDisplayTitle, detectQuality } from "@/lib/catalog";
@@ -390,7 +390,7 @@ function MovieDetailPage() {
                       fontSize: "0.8rem",
                     }}
                   >
-                    ★ {movie.tmdb.voteAverage.toFixed(1)}
+                    <Star size={13} className="zf-rating-icon" fill="currentColor" aria-hidden="true" /> {movie.tmdb.voteAverage.toFixed(1)}
                   </span>
                 ) : null}
 

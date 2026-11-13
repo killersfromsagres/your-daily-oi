@@ -1,6 +1,7 @@
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Tv, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { OwnPlayer } from "@/components/player";
 import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
@@ -115,7 +116,7 @@ function WatchAnimePage() {
   if (streams.length === 0) {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
-        <Tv size={48} style={{ color: "#e8b44a" }} />
+        <AnimeIcon size={48} style={{ color: "#e8b44a" }} />
         <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Episódio indisponível</h1>
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
           Não encontramos fontes ativas para o Temporada {temp}, Episódio {ep}.

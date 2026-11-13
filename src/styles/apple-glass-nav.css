@@ -140,7 +140,7 @@
     flex-shrink: 0;
     width: 22px;
     height: 22px;
-    stroke-width: 1.85;
+    stroke-width:var(--zf-icon-stroke,1.8);
     color: inherit;
     filter: none;
   }
@@ -185,7 +185,7 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab svg {
     width: 27px;
     height: 27px;
-    stroke-width: 1.9;
+    stroke-width:var(--zf-icon-stroke,1.8);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {
     background: rgba(255,255,255,.14);
@@ -221,7 +221,7 @@
     border-color: rgba(255,255,255,.17);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg {
-    stroke-width: 1.85;
+    stroke-width:var(--zf-icon-stroke,1.8);
     color: #fff;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-feature {

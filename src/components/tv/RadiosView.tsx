@@ -1,4 +1,5 @@
 "use client";
+import { TelevisionIcon as Tv } from "@/components/icons/ContentIcons";
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
@@ -11,7 +12,6 @@ import {
   Volume2,
   VolumeX,
   X,
-  Tv,
   Layers,
 } from "lucide-react";
 

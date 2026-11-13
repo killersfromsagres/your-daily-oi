@@ -1,6 +1,7 @@
+import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Play, Star, Tv, Check, Heart, X, Users, Layers, Clapperboard, Sparkles } from "lucide-react";
+import { Play, Star, Check, Heart, X, Users, Layers, Clapperboard } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { cleanDisplayTitle } from "@/lib/catalog";
@@ -154,7 +155,7 @@ function AnimeDetailPage() {
         padding: "24px",
         backdropFilter: "blur(16px)"
       }}>
-        <Tv size={48} style={{ color: "#e8b44a" }} />
+        <AnimeIcon size={48} style={{ color: "#e8b44a" }} />
         <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Anime não localizado</h1>
         <p style={{ color: "rgba(255,255,255,0.6)" }}>Este anime não faz parte do catálogo atual.</p>
         <button onClick={closeDialog} className="ydo-btn-primary">
@@ -411,7 +412,7 @@ function AnimeDetailPage() {
                       fontSize: "0.8rem",
                     }}
                   >
-                    ★ {anime.tmdb.voteAverage.toFixed(1)}
+                    <Star size={13} className="zf-rating-icon" fill="currentColor" aria-hidden="true" /> {anime.tmdb.voteAverage.toFixed(1)}
                   </span>
                 ) : null}
 
@@ -597,7 +598,7 @@ function AnimeDetailPage() {
                   border: "1px dashed rgba(255, 255, 255, 0.1)",
                 }}
               >
-                <Tv size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
+                <AnimeIcon size={36} style={{ color: "#e8b44a", margin: "0 auto 10px auto", opacity: 0.8 }} />
                 <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "4px" }}>
                   Nenhuma fonte de episódios confirmada
                 </h4>
