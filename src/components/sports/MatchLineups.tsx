@@ -2,7 +2,7 @@
 // src/components/sports/MatchLineups.tsx — separate team buttons + full-size lineup dialog.
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, RefreshCw, Shirt, Users, X } from "lucide-react";
+import { ChevronRight, RefreshCw, Shirt, Users, X } from "lucide-react";
 import type { JogoBrasileirao } from "@/lib/jogos-match";
 import type { MatchLineups } from "@/lib/football-lineups";
 import { selectLineupTeam, type TeamSide } from "@/lib/lineup-selection";
@@ -106,27 +106,22 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
     };
   },[opened]);
 
-  const open=(next:TeamSide)=>{setSide(next);setError(null);};
-  const photoCount=(team:typeof selected)=>team?.starting.length||0;
-  const preview=(sideName:TeamSide)=>{
-    const team=sideName==="home"?homeTeam:awayTeam;
-    const name=sideName==="home"?game.casa:game.fora;
-    const crest=sideName==="home"?game.escudoCasa:game.escudoFora;
-    return <button key={sideName} type="button" className="zf-lineup-team-button"
-      onClick={()=>open(sideName)} aria-label={"Ver escalação do "+name}>
-      <LocalCrest name={name} src={crest}/>
-      <span><small>{sideName==="home"?"ESCALAÇÃO · CASA":"ESCALAÇÃO · FORA"}</small>
-        <strong title={name}>{name}</strong>
-        <em>{team?.starting.length?team.starting.length+" titulares":"Ver formação"}</em>
-      </span>
-      <ChevronRight size={17} aria-hidden="true"/>
-    </button>;
-  };
-
   return <>
-    <div className="zf-lineup-actions" aria-label="Escolher escalação de um time">
-      {preview("home")}
-      {preview("away")}
+    <div className="zf-lineup-actions">
+      <button type="button" className="zf-lineup-single-button" onClick={()=>{setSide("home");setError(null);}}
+        aria-label={"Ver escalações de "+game.casa+" e "+game.fora}>
+        <span className="zf-lineup-pair-crests" aria-hidden="true">
+          <LocalCrest name={game.casa} src={game.escudoCasa}/>
+          <LocalCrest name={game.fora} src={game.escudoFora}/>
+        </span>
+        <span className="zf-lineup-single-copy">
+          <strong><Users size={16} strokeWidth={1.8} aria-hidden="true"/> Escalação</strong>
+          <small>{homeTeam?.starting.length||awayTeam?.starting.length
+            ? "Titulares disponíveis · toque para consultar"
+            : "Titulares, posições e técnicos"}</small>
+        </span>
+        <ChevronRight size={18} aria-hidden="true"/>
+      </button>
     </div>
     {opened&&typeof document!=="undefined"&&createPortal(
       <div className="zf-lineup-overlay" onPointerDown={event=>{
@@ -155,11 +150,11 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
           <nav className="zf-lineup-switch" aria-label="Alternar entre escalações">
             <button type="button" className={side==="home"?"is-active":""}
               aria-pressed={side==="home"} onClick={()=>setSide("home")}>
-              <ChevronLeft size={14}/>{game.casa}
+              <LocalCrest name={game.casa} src={game.escudoCasa}/><span>{game.casa}</span>
             </button>
             <button type="button" className={side==="away"?"is-active":""}
               aria-pressed={side==="away"} onClick={()=>setSide("away")}>
-              {game.fora}<ChevronRight size={14}/>
+              <LocalCrest name={game.fora} src={game.escudoFora}/><span>{game.fora}</span>
             </button>
           </nav>
           <div className="zf-lineup-dialog-body">
