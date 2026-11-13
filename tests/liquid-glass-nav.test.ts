@@ -22,13 +22,14 @@ describe("Apple-inspired ZANG FLIX glass navigation", () => {
     expect(stylesheet).toContain('left:10px;');
     expect(stylesheet).toContain('right:10px;');
   });
-  test("dock has five working navigation destinations plus separate search", () => {
+  test("dock has five working destinations while search remains in the header", () => {
     expect(stylesheet).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");
     expect(mobile).toContain('to="/generos/$slug" params={{slug:"filmes"}}');
     expect(mobile).toContain('to="/generos/$slug" params={{slug:"series"}}');
     expect(mobile).toContain('to="/animes"');
     expect(mobile).toContain('to="/tv"');
-    expect(mobile).toContain('className={"zf-mobile-search-fab"');
+    expect(mobile).not.toContain('className={"zf-mobile-search-fab"');
+    expect(header).toContain('className="ydo-search-trigger-btn"');
   });
   test("selected section uses neutral translucent capsule, without blue", () => {
     expect(stylesheet).toContain('.zf-mobile-tab.is-active');
