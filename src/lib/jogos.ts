@@ -232,6 +232,20 @@ async function annotateBroadcasts(
       resolved = matchBrazilianBroadcastChannel(name, available);
       if (resolved) { origin = verified?.names.includes(name) ? "verificada" : "grade-br"; break; }
     }
+    // Preserve each verified in-catalog option so viewers can choose a
+    // specific broadcaster, not a generic TV entry or guessed URL.
+    const listed = [...new Set([...manual,...sourceNames])];
+    const alternatives = [ ...(epgChannel ? [epgChannel] : []),
+      ...listed.map(name=>matchBrazilianBroadcastChannel(name,available))
+        .filter((ch): ch is NonNullable<typeof ch> => ch!==null),
+    ];
+    const ids = new Set<string>();
+    const validAlternatives = alternatives.filter(ch=>{
+      if(ids.has(ch.id))return false;
+      ids.add(ch.id);
+      return available.some(c=>c.id===ch.id&&c.fontes?.length>0);
+    });
+    if(validAlternatives.length)game.canaisDisponiveis=validAlternatives;
     if (resolved) {
       game.canalId = resolved.id;
       game.canalNome = resolved.nome;
