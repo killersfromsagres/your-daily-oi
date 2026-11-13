@@ -4,6 +4,7 @@ import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles, SkipForward
 import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
+import { selectHqBackend } from "@/lib/hq-playback-policy";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import {
@@ -282,10 +283,18 @@ export function OwnPlayer({
     hqEnabled && neural.status === "unavailable" && !webglFailed,
     handleHqDowngrade
   );
-  const enhancedActive = hqEnabled && (neural.active || (!webglFailed && enhancer.active));
-  // Native compositor fallback: improves tones slightly but does NOT claim
-  // to reconstruct pixels when browser CORS prevents GPU video readback.
-  const nativeHqFallback = hqEnabled && neural.status === "unavailable" && webglFailed;
+  const hqBackend = selectHqBackend({
+    requested: hqEnabled,
+    neuralActive: neural.active,
+    neuralUnavailable: neural.status === "unavailable",
+    webglActive: enhancer.active,
+    webglSupported: enhancer.supported,
+    webglFailed,
+  });
+  const enhancedActive = hqBackend === "neural" || hqBackend === "webgl";
+  // Native compositor fallback improves tones modestly. It cannot create
+  // missing pixels when CORS or the browser blocks both GPU rendering paths.
+  const nativeHqFallback = hqBackend === "native";
   useEffect(() => {
     if (!hqEnabled || neural.status !== "unavailable") return;
     setHqNotice((neural.reason || "A IA não está disponível nesta fonte") +
@@ -1233,7 +1242,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           onCast={engine.castToTv}
           hqSupported={true}
           hqActive={hqEnabled}
-          hqMode={neural.status === "loading" ? "loading" : neural.active ? "ai" : "shader"}
+          hqMode={hqBackend === "waiting" ? "loading" : hqBackend === "neural" ? "ai" : "shader"}
           onToggleHq={toggleHq}
         />
       </div>
