@@ -11,9 +11,11 @@ on:
       - 'src/routes/animes.tsx'
       - 'src/routes/generos.$slug.tsx'
       - 'src/styles/navigation-premium.css'
+      - 'src/styles/liquid-glass-nav.css'
       - 'src/routes/__root.tsx'
       - 'tests/genre-matching.test.ts'
       - 'tests/hero-images.test.ts'
+      - 'tests/liquid-glass-nav.test.ts'
       - '.github/workflows/verify-navigation-premium.yml'
   workflow_dispatch:
 jobs:
@@ -26,4 +28,4 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
       - name: Verify genre matching and hero source selection
-        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts
+        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts
