@@ -253,7 +253,9 @@ export function Header({ onSearch }: HeaderProps) {
       className={"ydo-header" + (searchOpen ? " is-searching" : "")}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-120%)",
+        transform: platform === "mobile"
+          ? (visible ? "translateY(0)" : "translateY(-120%)")
+          : (visible ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(-120%)"),
         transition: `opacity 0.3s var(--ease-out-expo), transform 0.3s var(--ease-out-expo)`,
       }}
     >
