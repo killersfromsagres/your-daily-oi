@@ -1,0 +1,20 @@
+name: Verify real football fixtures and player lineup API
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/smoke-football-production.mjs'
+      - '.github/workflows/verify-football-production.yml'
+  workflow_dispatch:
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify published fixtures, country-specific TV and real lineup photographs
+        run: bun scripts/smoke-football-production.mjs
