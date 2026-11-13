@@ -27,6 +27,7 @@ export interface TmdbData {
   voteAverage: number;
   backdropPath: string | null;
   backdropUrl: string | null;
+  posterPath?: string | null;
   trailerId: string | null;
   cast: CastMember[];
   releaseYear: number | null;
