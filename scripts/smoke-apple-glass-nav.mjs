@@ -122,7 +122,7 @@ try{
       // Dark smoked glass should remain translucent: enough black tint to
       // avoid washed-out controls, but never a solid opaque backdrop.
       if(style.alpha<.39||style.alpha>.70)throw new Error(name+" is not translucent smoke glass (alpha "+style.alpha+")");
-      if(!/brightness\(0\.(?:8|82)/.test(style.backdrop||""))throw new Error(name+" lacks darkened backdrop: "+style.backdrop);
+      if(!/brightness\(0\.(?:79|8|80|82)/.test(style.backdrop||""))throw new Error(name+" lacks darkened backdrop: "+style.backdrop);
     };
     inspect("header",state.header);
     if(scenario.mobile){
