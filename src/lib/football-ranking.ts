@@ -4,6 +4,9 @@ import { isFeaturedTeam, type JogoBrasileirao } from "./jogos-match";
 const LEAGUE_WEIGHT: Record<string, number> = {
   "bra.1": 1000,
   "uefa.champions": 950,
+  "uefa.nations": 680,
+  "fifa.worldq.uefa": 665,
+  "fifa.friendly": 280,
   "conmebol.libertadores": 790,
   "bra.copa_do_brazil": 650,
   "eng.1": 550,
@@ -94,7 +97,10 @@ export function sortedFootballMatches(games: readonly JogoBrasileirao[]): JogoBr
 export function featuredFootballMatches(games: readonly JogoBrasileirao[], limit=8): JogoBrasileirao[] {
   const featured = games.filter(g =>
     g.ligaId === "bra.1" || g.ligaId === "uefa.champions" ||
+    g.ligaId === "uefa.nations" || g.ligaId === "fifa.worldq.uefa" ||
     isFeaturedTeam(g.casa) || isFeaturedTeam(g.fora)
   );
-  return sortedFootballMatches(featured).slice(0, Math.max(0,Math.min(30,Math.floor(limit))));
+  // International breaks do not justify an empty shelf when fixtures exist.
+  const pool=featured.length?featured:games;
+  return sortedFootballMatches(pool).slice(0, Math.max(0,Math.min(30,Math.floor(limit))));
 }
