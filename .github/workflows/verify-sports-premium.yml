@@ -15,7 +15,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Unit regressions
-        run: bun test tests/jogos-match.test.ts tests/jogos-broadcast.test.ts tests/standings.test.ts tests/football-ranking.test.ts tests/football-live.test.ts tests/football-providers-lineups.test.ts
+        run: bun test tests/jogos-match.test.ts tests/jogos-broadcast.test.ts tests/standings.test.ts tests/football-ranking.test.ts tests/football-live.test.ts tests/football-providers-lineups.test.ts tests/sports-ticket-lineup.test.ts
       - name: Build application
         run: bun run build
       - name: Sports TypeScript validation
