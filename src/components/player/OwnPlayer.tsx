@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, RefreshCw, ArrowLeft, Play, Volume2, Sparkles, SkipForward } from "lucide-react";
 import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
+import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
 import { PlayerControls } from "./PlayerControls";
 import type { StreamSource } from "@/lib/types";
 import {
@@ -256,29 +257,39 @@ export function OwnPlayer({
     setAutoSwitchMsg("Selecionando áudio dublado…");
   }, [orderedStreams, preferredAudio]);
 
-  // B1/B2: Upscaling HQ via WebGL2 shaders
+  // Genuine WebGPU neural 2× super-resolution (trained Anime4K CNN);
+  // keep legacy WebGL HQ only as an explicit, correctly named fallback.
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const neuralCanvasRef = useRef<HTMLCanvasElement>(null);
   const [hqEnabled, setHqEnabled] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const saved = localStorage.getItem("zangflix:hq-enhance");
-    return saved !== null ? saved === "true" : true;
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem("zangflix:ai-upscale") === "true"; }
+    catch { return false; }
   });
   const [hqNotice, setHqNotice] = useState<string | null>(null);
-
   const handleHqDowngrade = useCallback(() => {
     setHqEnabled(false);
-    setHqNotice("HQ desativado por desempenho");
+    try { localStorage.setItem("zangflix:ai-upscale", "false"); } catch {}
+    setHqNotice("Melhoria desativada para preservar a reprodução");
     setTimeout(() => setHqNotice(null), 4000);
   }, []);
-
-  const enhancer = useVideoEnhancer(videoRef, canvasRef, hqEnabled, handleHqDowngrade);
+  const neural = useNeuralVideoUpscaler(videoRef, neuralCanvasRef, hqEnabled, contentType);
+  const enhancer = useVideoEnhancer(
+    videoRef, canvasRef, hqEnabled && neural.status === "unavailable", handleHqDowngrade
+  );
+  const enhancedActive = neural.active || enhancer.active;
+  useEffect(() => {
+    if (!hqEnabled || neural.status !== "unavailable") return;
+    setHqNotice((neural.reason || "IA indisponível") + " · HQ clássico ativado");
+    const noticeTimer = setTimeout(() => setHqNotice(null), 5500);
+    return () => clearTimeout(noticeTimer);
+  }, [hqEnabled, neural.status, neural.reason]);
 
   const toggleHq = useCallback(() => {
-    setHqEnabled((prev) => {
+    setHqEnabled(prev => {
       const next = !prev;
-      try {
-        localStorage.setItem("zangflix:hq-enhance", String(next));
-      } catch {}
+      try { localStorage.setItem("zangflix:ai-upscale", String(next)); } catch {}
+      if (!next) setHqNotice(null);
       return next;
     });
   }, []);
@@ -951,12 +962,19 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         onLoadedMetadata={measureAndImproveQuality}
         onCanPlay={measureAndImproveQuality}
         style={{
-          opacity: enhancer.active ? 0 : 1,
+          opacity: enhancedActive ? 0 : 1,
           transition: "opacity 0.25s ease-in-out",
         }}
       />
 
-      {/* Canvas WebGL2 para Upscaling HQ com nitidez adaptativa */}
+      {/* Neural canvas is shown only after the first successfully inferred WebGPU frame. */}
+      <canvas
+        ref={neuralCanvasRef}
+        className={`ydo-hq-canvas ydo-ai-canvas ${neural.active ? "active" : ""}`}
+        aria-hidden="true"
+      />
+
+      {/* WebGL2 HQ is a non-neural fallback on unsupported devices or sources. */}
       <canvas
         ref={canvasRef}
         className={`ydo-hq-canvas ${enhancer.active ? "active" : ""}`}
@@ -1200,8 +1218,9 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           onRate={engine.setPlaybackRate}
           onSourceChange={handleSourceChange}
           onCast={engine.castToTv}
-          hqSupported={enhancer.supported}
+          hqSupported={true}
           hqActive={hqEnabled}
+          hqMode={neural.status === "loading" ? "loading" : neural.status === "unavailable" ? "shader" : "ai"}
           onToggleHq={toggleHq}
         />
       </div>
