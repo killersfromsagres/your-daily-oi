@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play, Info, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { cleanDisplayTitle } from "@/lib/catalog";
@@ -28,38 +28,10 @@ interface HeroSectionProps {
 }
 
 function Friday13Emblem() {
-  const id = useId();
   return (
     <span className="zf-friday13-date" aria-hidden="true">
-      <svg className="zf-friday13-emblem" viewBox="0 0 72 80" fill="none" focusable="false">
-        <defs>
-          <linearGradient id={`${id}-steel`} x1="36" y1="8" x2="53" y2="45" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#f4eee1"/><stop offset=".32" stopColor="#8e9b9c"/>
-            <stop offset=".55" stopColor="#dce1dc"/><stop offset="1" stopColor="#647579"/>
-          </linearGradient>
-          <linearGradient id={`${id}-blood`} x1="17" y1="27" x2="25" y2="68" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#ff7e69"/><stop offset=".28" stopColor="#db363e"/>
-            <stop offset=".65" stopColor="#a51229"/><stop offset="1" stopColor="#580d1d"/>
-          </linearGradient>
-        </defs>
-        {/* Broad steel blade, bevel and riveted grip: a machete silhouette. */}
-        <g transform="rotate(24 44 39)">
-          <path d="M37 8Q41 2 52 4V41Q51 48 37 51Z" fill={`url(#${id}-steel)`} stroke="#d5d4c5" strokeWidth=".65"/>
-          <path d="M39 10V47Q47 45 50 41" stroke="#f7f3e7" strokeWidth="1" opacity=".7"/>
-          <path d="M48 6V39" stroke="#465559" strokeWidth=".65" opacity=".55"/>
-          <path d="M38 38L44 34L42 41L50 38L48 45L38 49Z" fill="#851c2b" opacity=".88"/>
-          <path d="M35 50L51 46L52 50L36 54Z" fill="#a49c88" stroke="#453d39" strokeWidth=".8"/>
-          <path d="M38 54L48 51V70Q47 75 42 75Q38 74 38 70Z" fill="#302122" stroke="#99715b" strokeWidth=".85"/>
-          <path d="M40 56V70" stroke="#8e6151" strokeWidth=".8" opacity=".7"/>
-          <circle cx="43" cy="58" r="1.25" fill="#b7a48a"/>
-          <circle cx="43" cy="68" r="1.25" fill="#b7a48a"/>
-        </g>
-        <g className="zf-friday13-blood-number" fill={`url(#${id}-blood)`}>
-          <text x="7" y="55" fontSize="40" fontWeight="900" letterSpacing="-4" stroke="#3a0a15" strokeWidth=".65" paintOrder="stroke">13</text>
-          <path d="M15 53H18V64Q18 68 16.5 68Q15 68 15 64ZM35 53H38V59Q38 62 36.5 62Q35 62 35 59ZM42 51H44V64Q44 66 43 66Q42 66 42 64Z"/>
-          <circle cx="16.5" cy="72" r="1.2"/>
-        </g>
-      </svg>
+      <span className="zf-friday13-orbit" />
+      <span className="zf-friday13-number">13</span>
     </span>
   );
 }

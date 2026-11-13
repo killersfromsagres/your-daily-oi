@@ -7,6 +7,31 @@
   padding: 2rem 0 4rem;
 }
 
+.zf-zangs-picks {
+  margin:12px 0 42px;padding:30px 0 6px;min-width:0;
+  background:linear-gradient(115deg,#e8b44a06,transparent 65%);
+  border-top:1px solid #e5c69324;
+}
+.zf-zangs-picks-heading {
+  display:flex;align-items:flex-end;justify-content:space-between;gap:22px;
+  padding:0 clamp(1.5rem,5vw,4.5rem) 24px;
+}
+.zf-zangs-picks-eyebrow {
+  margin:0 0 9px;color:#bca987;font-size:10px;font-weight:750;letter-spacing:.18em;
+}
+.zf-zangs-picks h2 {
+  margin:0;color:#f5f0e8;font-size:clamp(25px,3vw,36px);font-weight:800;line-height:1.15;letter-spacing:-.035em;
+}
+.zf-zangs-picks h2 span {color:#dbc29b;}
+.zf-zangs-picks-description {margin:0;color:#a7a3a3;font-size:12px;line-height:1.75;}
+.zf-zangs-picks .ydo-row-track {padding-bottom:22px;scroll-snap-type:x proximity;}
+.zf-zangs-picks .ydo-row-track:focus-visible {outline:1px solid #dbc29b;outline-offset:-2px;}
+@media(max-width:1120px) {
+  .zf-zangs-picks {margin-bottom:28px;padding-top:24px;}
+  .zf-zangs-picks-heading {display:block;padding:0 18px 20px;}
+  .zf-zangs-picks-description {margin-top:12px;font-size:11px;}
+}
+
 .ydo-hero-skeleton {
   height: clamp(480px, 88vh, 800px);
   border-radius: 0;

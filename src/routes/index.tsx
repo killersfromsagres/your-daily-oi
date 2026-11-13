@@ -1,6 +1,8 @@
 import { getClientCatalog } from "@/lib/catalog-client";
 import { useFriday13Edition } from "@/components/catalog/Friday13Edition";
 import { selectFriday13Movies } from "@/lib/friday13-edition";
+import { selectZangsPicks } from "@/lib/zangs-picks";
+import { ZangsPicks } from "@/components/catalog/ZangsPicks";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { MobileCatalogFilters } from "@/components/catalog/MobileCatalogFilters";
@@ -136,6 +138,7 @@ function HomePage() {
   // Recalculate expensive catalog grouping only when the payload changes.
   // Especially important for lower-memory mobile browsers and My List updates.
   const friday13Movies = useMemo(() => selectFriday13Movies(items),[items]);
+  const zangsPicks = useMemo(() => selectZangsPicks(items),[items]);
   const heroItems = useMemo(() => {
     const regularSource = featuredHero.length > 0
       ? featuredHero
@@ -245,6 +248,7 @@ function HomePage() {
             </div>
           </section>
         )}
+        {!loading && <ZangsPicks items={zangsPicks} savedIds={savedIds} onToggleSaved={toggleSaved}/>}
         {continueWatching.length > 0 && (
           <ContinueWatchingRow
             items={continueWatching}
