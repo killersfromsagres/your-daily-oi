@@ -41,6 +41,19 @@ describe("Zang Flix football relevance",()=>{
     const live={...a,status:"ao-vivo" as const};
     expect(matchImportance(live)).toBeGreaterThan(matchImportance(a));
   });
+  test("actual Brazil friendly outranks unrelated national matches, including when names are English",()=>{
+    const brasil={...game("fifa.friendly","Japan","Brazil","br-jp"),liga:"Amistosos de seleções"};
+    const low={...game("fifa.friendly","Qatar","Australia","qa-au"),liga:"Amistosos de seleções",status:"ao-vivo" as const};
+    expect(sortedFootballMatches([low,brasil])[0]?.id).toBe("br-jp");
+    expect(featuredFootballMatches([low,brasil],1)[0]?.id).toBe("br-jp");
+    expect(matchImportance(brasil)).toBeGreaterThan(matchImportance(low));
+  });
+  test("Argentina, Japan and Portugal get priority without inventing fixtures",()=>{
+    const japan={...game("fifa.friendly","Japan","Honduras","jp-hn"),liga:"Amistosos de seleções"};
+    const qatar={...game("fifa.friendly","Qatar","Honduras","qa-hn"),liga:"Amistosos de seleções"};
+    expect(sortedFootballMatches([qatar,japan])[0]?.id).toBe("jp-hn");
+    expect(featuredFootballMatches([japan,qatar]).some(x=>x.id==="jp-hn")).toBe(true);
+  });
   test("identified broadcaster does not become invented for others",()=>{
     expect(a.canalId).toBeNull();
     expect(b.canalId).toBeNull();
