@@ -145,6 +145,33 @@ try{
     }
     const screenshot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-"+scenario.name+".png",Buffer.from(screenshot.data,"base64"));
+    if(scenario.name==="mobile"){
+      // Verify the integrated search still opens the functional catalogue drawer
+      // after moving its button into the six-slot navigation capsule.
+      await evalInPage('document.querySelector(".zf-mobile-dock > .zf-mobile-search-fab").click()');
+      let opened=false;
+      for(let tries=0;tries<28;tries++){
+        opened=Boolean(await evalInPage('document.querySelector(".zf-mobile-menu-panel") && document.querySelector(".zf-mobile-menu-panel input[type=search]")'));
+        if(opened)break;
+        await sleep(180);
+      }
+      if(!opened)throw new Error("Integrated search failed to open the catalogue drawer");
+      await evalInPage('document.querySelector(".zf-mobile-menu-close").click()');
+      for(let tries=0;tries<28;tries++){
+        const closed=await evalInPage('!document.querySelector(".zf-mobile-menu-panel")');
+        if(closed)break;
+        await sleep(150);
+      }
+      if(await evalInPage('!!document.querySelector(".zf-mobile-menu-panel")'))
+        throw new Error("Catalogue drawer did not close");
+      await evalInPage('document.querySelector(".zf-mobile-dock a[href=\"/generos/filmes\"]").click()');
+      for(let tries=0;tries<30;tries++){
+        if(await evalInPage('location.pathname==="/generos/filmes"'))break;
+        await sleep(180);
+      }
+      if(!await evalInPage('location.pathname==="/generos/filmes"'))
+        throw new Error("Filmes tab navigation failed after integrating search");
+    }
     console.log(JSON.stringify({event:"apple-glass-browser",name:scenario.name,...state}));
   }
 }finally{
