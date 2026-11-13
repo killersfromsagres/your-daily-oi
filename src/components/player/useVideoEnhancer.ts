@@ -225,7 +225,11 @@ export function useVideoEnhancer(
 
     let animId = 0;
     let lastTime = performance.now();
+    let lastRenderedAt = 0;
     let isDrawing = false;
+    avgRef.current = 16;
+    slowTimeRef.current = 0;
+    downgradedRef.current = false;
 
     const resizeIfNeeded = () => {
       if (!video || !canvas || !gl) return;
@@ -282,6 +286,11 @@ export function useVideoEnhancer(
       }
 
       const t0 = performance.now();
+      // Heavy 2-pass GPU processing at display refresh rate (60/120Hz)
+      // repeatedly processed identical decoded frames and triggered a false
+      // performance shutdown. Limit the optional enhancer to <=30fps.
+      if (t0 - lastRenderedAt < 33) return;
+      lastRenderedAt = t0;
       resizeIfNeeded();
 
       if (canvas.width === 0 || canvas.height === 0) return;
@@ -364,16 +373,15 @@ export function useVideoEnhancer(
       const elapsed = t1 - lastTime;
       lastTime = t1;
 
-      if (avgRef.current > 24) {
+      if (avgRef.current > 68) {
         slowTimeRef.current += elapsed;
-        if (slowTimeRef.current > 5000 && !downgradedRef.current) {
+        if (slowTimeRef.current > 12000 && !downgradedRef.current) {
           downgradedRef.current = true;
           console.warn(
             `[VideoEnhancer] Performance baixa (${Math.round(avgRef.current)}ms/frame). Desativando HQ...`
           );
-          try {
-            localStorage.setItem("zangflix:hq-enhance", "false");
-          } catch {}
+          // Only stop this renderer. The HQ preference is managed by the
+          // player and remains enabled; no silent localStorage downgrade.
           setActive(false);
           onPerformanceDowngrade?.();
           cancelAnimationFrame(animId);
