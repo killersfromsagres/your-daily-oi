@@ -1,0 +1,16 @@
+name: Diagnose live football agenda and lineups
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/diagnose-football-now.mjs
+      - .github/workflows/diagnose-football-now.yml
+  workflow_dispatch:
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun scripts/diagnose-football-now.mjs
