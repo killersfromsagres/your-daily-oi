@@ -37,9 +37,8 @@ export function correctClassicStreetFighter<T extends Pick<CatalogItem, "type" |
     ...item,
     tmdbId: STREET_FIGHTER_1994_TMDB_ID,
     tmdb: fallback,
-    // Do not display a 2026 reboot poster on the 1994 film while
-    // the correct 1994 TMDB artwork is being resolved by the API.
-    posterUrl: "",
-    posterPath: "",
+    // Poster associated with TMDB movie 11667 (1994), not the 2026 reboot.
+    posterPath: "/6yh95dD2Y6uWAlPfWCZZygBM1ec.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/6yh95dD2Y6uWAlPfWCZZygBM1ec.jpg",
   };
 }
