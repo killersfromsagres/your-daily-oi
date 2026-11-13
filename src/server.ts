@@ -1555,6 +1555,13 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
           },
         });
       }
+      // The response body was consumed by res.text(). Returning res.body
+      // further below throws "Response body object should not be disturbed
+      // or locked" on Node/Undici and concealed the invalid playlist.
+      return new Response("Origem não retornou um manifesto HLS válido", {
+        status: 502,
+        headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
+      });
     }
 
     // Reescrita de Manifesto MPD / DASH
@@ -1575,6 +1582,10 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
             },
           });
         }
+        return new Response("Origem não retornou um manifesto DASH válido", {
+          status: 502,
+          headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
+        });
       } catch (err) {
         console.warn("[LiveProxy] Falha ao reescrever manifesto MPD:", err);
         return new Response("Falha na reescrita de MPD", {
