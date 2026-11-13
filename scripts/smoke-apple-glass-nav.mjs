@@ -326,8 +326,20 @@ try{
       throw Error("Campaign is not using the correct high-resolution banner");
     const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-friday13-"+scenario.name+".png",Buffer.from(shot.data,"base64"));
-    await evalInPage("document.querySelector('.zf-zangs-picks').scrollIntoView({block:'start'})");
-    await sleep(180);
+    await evalInPage("document.querySelector('.zf-zangs-picks').scrollIntoView({block:'start',behavior:'instant'})");
+    // Finish lazy poster loads before capturing this newly visible collection.
+    await evalInPage(`Promise.all(Array.from(document.querySelectorAll('.zf-zangs-picks img')).map(img=>new Promise(resolve=>{
+      if(img.complete){resolve();return;}
+      img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
+      setTimeout(resolve,10000);
+    })))`);
+    const posterState=await evalInPage(`Array.from(document.querySelectorAll('.zf-zangs-picks .ydo-card')).map(card=>({
+      title:card.querySelector('.ydo-card-title')?.textContent,
+      loaded:!!card.querySelector('img')?.naturalWidth,
+      fallback:!!card.querySelector('.ydo-card-fallback')
+    }))`);
+    if(posterState.some(p=>!p.loaded&&!p.fallback))throw Error('Curated posters did not settle: '+JSON.stringify(posterState));
+    console.log(JSON.stringify({event:'zangs-poster-artwork',device:scenario.name,posters:posterState}));
     const collectionShot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-zangs-picks-"+scenario.name+".png",Buffer.from(collectionShot.data,"base64"));
     await evalInPage("scrollTo(0,0)");
