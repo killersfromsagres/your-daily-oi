@@ -149,8 +149,10 @@ export function useVideoEnhancer(
           const displayW=Math.min(1280, Math.max(sourceW, Math.round(video.clientWidth * dpr)));
           const renderW=Math.max(1,Math.min(sourceW*2,displayW));
           const renderH=Math.max(1,Math.round(renderW * sourceH / sourceW));
-          canvas.width=renderW;
-          canvas.height=Math.min(720,renderH);
+          // Preserve the decoded video aspect ratio when capping GPU pixels.
+          const fit=Math.min(1,720/renderH);
+          canvas.width=Math.max(1,Math.round(renderW*fit));
+          canvas.height=Math.max(1,Math.round(renderH*fit));
           lastSourceW=sourceW;
           lastSourceH=sourceH;
         }
@@ -227,8 +229,7 @@ export function useVideoEnhancer(
         if(shaderProgram) gl.deleteProgram(shaderProgram);
         if(texture) gl.deleteTexture(texture);
         if(buffer) gl.deleteBuffer(buffer);
-        // Free shader resources before switching back to hardware decoder.
-        gl.getExtension("WEBGL_lose_context")?.loseContext();
+        // Keep the context reusable when the user toggles HQ again.
       }
     };
   },[videoRef,canvasRef,enabled,onPerformanceDowngrade]);
