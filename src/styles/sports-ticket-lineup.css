@@ -145,3 +145,42 @@
   .zf-formation-portrait {width:37px;height:37px;}
 }
 @media(prefers-reduced-motion:reduce){.is-spinning {animation:none}.zf-lineup-team-button {transition:none;}}
+
+/* 2026 compact lineup CTA: one action on the card, two crest tabs inside. */
+.zf-lineup-actions {grid-template-columns:minmax(0,1fr);margin:0;padding:0 12px 13px;}
+.zf-lineup-single-button {
+  display:flex;align-items:center;gap:12px;width:100%;min-width:0;min-height:56px;
+  padding:10px 13px;border:1px solid rgba(246,206,138,.33);border-radius:13px;
+  background:linear-gradient(140deg,rgba(244,194,103,.14),rgba(255,255,255,.035) 48%,rgba(255,255,255,.065));
+  box-shadow:inset 0 1px rgba(255,255,255,.13),0 5px 16px rgba(0,0,0,.13);
+  color:#fff;text-align:left;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:background .2s,border-color .2s;
+}
+.zf-lineup-single-button:hover,.zf-lineup-single-button:focus-visible {
+  background:rgba(245,200,125,.18);border-color:rgba(255,220,155,.59);
+}
+.zf-lineup-single-button:focus-visible {outline:2px solid #f4cf91;outline-offset:2px;}
+.zf-lineup-pair-crests {display:flex;align-items:center;flex:0 0 auto;padding-left:3px;}
+.zf-lineup-pair-crests .zf-lineup-crest {
+  width:31px;height:31px;flex:0 0 31px;padding:4px;border:1px solid rgba(255,255,255,.26);
+  border-radius:50%;background:#1d2931;box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+.zf-lineup-pair-crests .zf-lineup-crest+.zf-lineup-crest {margin-left:-8px;}
+.zf-lineup-single-copy {display:flex;flex:1;flex-direction:column;gap:5px;min-width:0;}
+.zf-lineup-single-copy strong {display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:-.01em;}
+.zf-lineup-single-copy strong svg {color:#f4cf91;}
+.zf-lineup-single-copy small {font-size:10px;color:rgba(248,247,244,.69);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.zf-lineup-single-button>svg:last-child {color:#f6d18f;flex:0 0 18px;}
+.zf-lineup-switch button {gap:9px;justify-content:center;min-width:0;text-overflow:initial;}
+.zf-lineup-switch button .zf-lineup-crest {width:29px;height:29px;flex:0 0 29px;padding:3px;background:rgba(255,255,255,.08);border-radius:50%;}
+.zf-lineup-switch button span:last-child {overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0;}
+@media(max-width:420px) {
+  .zf-lineup-single-button {min-height:54px;padding:9px 10px;gap:9px;}
+  .zf-lineup-single-copy strong {font-size:12px;}
+  .zf-lineup-single-copy small {font-size:9px;}
+  .zf-lineup-pair-crests .zf-lineup-crest {width:27px;height:27px;flex-basis:27px;}
+  .zf-lineup-switch {gap:6px;}
+  .zf-lineup-switch button {font-size:10px;padding:6px 5px;gap:5px;}
+  .zf-lineup-switch button .zf-lineup-crest {width:25px;height:25px;flex-basis:25px;}
+}
