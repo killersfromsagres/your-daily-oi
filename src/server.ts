@@ -1426,15 +1426,26 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
     };
 
     let res: Response | null = null;
+    // The public sources that worked through Saimo but timed out on Vercel
+    // (TV Câmara, Globo Bahia) did not declare Referer or User-Agent.
+    // Previously ZANG invented a cross-site Origin/Referer for *every* source.
+    // Start with the browser-equivalent minimal request when no identity was
+    // supplied, preserving explicit catalog headers where required.
+    const hasSourceIdentityHeaders = Boolean(customReferer || customUa);
     try {
-      res = await tryFetchWith5xxRetry(() => buildHeaders(defaultReferer, defaultOrigin, defaultUa));
+      res = await tryFetchWith5xxRetry(() =>
+        hasSourceIdentityHeaders
+          ? buildHeaders(defaultReferer, defaultOrigin, defaultUa)
+          : buildHeaders("", "", "", true)
+      );
     } catch {
-      // continua para estratégias de resgate
+      // Continua para as alternativas, sem bloquear o canal.
     }
 
-    // Resgate cirúrgico para 403 / 404
     if (!res || res.status === 403 || res.status === 404) {
       const rescueHeaders = [
+        // A canonical Referer/Origin is a fallback only, not an invented default.
+        () => buildHeaders(defaultReferer, defaultOrigin, defaultUa),
         // 1. Referer original sem Origin
         () => buildHeaders(defaultReferer, "", defaultUa),
         // 2. UA Android Mobile sem Referer
