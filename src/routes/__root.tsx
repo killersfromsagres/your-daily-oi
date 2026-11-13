@@ -23,6 +23,7 @@ import mobileAppCss from "../styles/mobile-app.css?url";
 import navPremiumCss from "../styles/navigation-premium.css?url";
 import liquidGlassNavCss from "../styles/liquid-glass-nav.css?url";
 import appleGlassNavCss from "../styles/apple-glass-nav.css?url";
+import referenceGlassDockCss from "../styles/reference-glass-dock.css?url";
 import searchAutocompleteCss from "../styles/search-autocomplete.css?url";
 import minimalLiveControlsCss from "../styles/live-controls-minimal.css?url";
 import serverSelectorCss from "../styles/server-selector.css?url";
@@ -97,6 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: navPremiumCss },
       { rel: "stylesheet", href: liquidGlassNavCss },
       { rel: "stylesheet", href: appleGlassNavCss },
+      { rel: "stylesheet", href: referenceGlassDockCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
