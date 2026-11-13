@@ -21,6 +21,7 @@ import footballCss from "../styles/football-center.css?url";
 import adaptiveCss from "../styles/adaptive-navigation.css?url";
 import mobileAppCss from "../styles/mobile-app.css?url";
 import navPremiumCss from "../styles/navigation-premium.css?url";
+import liquidGlassNavCss from "../styles/liquid-glass-nav.css?url";
 import searchAutocompleteCss from "../styles/search-autocomplete.css?url";
 import minimalLiveControlsCss from "../styles/live-controls-minimal.css?url";
 import serverSelectorCss from "../styles/server-selector.css?url";
@@ -93,6 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: minimalLiveControlsCss },
       { rel: "stylesheet", href: serverSelectorCss },
       { rel: "stylesheet", href: navPremiumCss },
+      { rel: "stylesheet", href: liquidGlassNavCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
