@@ -123,7 +123,7 @@ describe("published lineups only",()=>{
     expect(ui).toContain('onClick={()=>setSide("away")}');
     expect(ui).toContain("<TeamLineupBoard team={selected}/>");
     expect(board).toContain('className="zf-formation-pitch"');
-    expect(board).toContain("team.starting.filter");
-    expect(css).toContain("grid-template-rows:repeat(4,1fr)");
+    expect(board).toContain("buildTacticalLayout(team)");
+    expect(board).not.toContain("zf-formation-bottom-box");
   });
 });

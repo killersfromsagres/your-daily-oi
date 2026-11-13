@@ -82,17 +82,16 @@
   content:"";position:absolute;inset:5% 5%;z-index:0;pointer-events:none;
   border:2px solid rgba(141,182,236,.25);border-radius:2px;
 }
-.zf-formation-top-box,.zf-formation-bottom-box {
+.zf-formation-top-box {
   position:absolute;left:29%;width:42%;height:17%;pointer-events:none;
   border:2px solid rgba(132,180,235,.26);z-index:0;
 }
 .zf-formation-top-box {top:5%;border-top:0;}
-.zf-formation-bottom-box {bottom:5%;border-bottom:0;}
 .zf-formation-center-line {position:absolute;top:50%;left:5%;right:5%;height:2px;background:rgba(132,180,235,.23);pointer-events:none;}
 .zf-formation-center-circle {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24%;aspect-ratio:1;border:2px solid rgba(132,180,235,.22);border-radius:50%;pointer-events:none;}
 .zf-formation-watermark {position:absolute;right:15px;bottom:10px;color:rgba(255,255,255,.22);font-size:14px;letter-spacing:.13em;font-weight:950;pointer-events:none;z-index:2;text-shadow:0 2px 8px rgba(0,0,0,.30);}
 .zf-formation-watermark b {color:rgba(247,201,108,.34);}
-.zf-formation-players {position:relative;z-index:1;display:grid;grid-template-rows:repeat(4,1fr);gap:5px;min-height:620px;padding:24px 18px 38px;}
+.zf-formation-players {position:relative;z-index:1;display:grid;gap:8px;min-height:620px;padding:24px 18px 38px;}
 .zf-formation-row {display:flex;align-items:center;justify-content:space-around;gap:7px;min-width:0;}
 .zf-formation-player {display:flex;flex:0 1 115px;min-width:0;flex-direction:column;align-items:center;text-align:center;gap:4px;text-shadow:0 2px 7px rgba(0,0,0,.84);}
 .zf-formation-portrait {display:grid;place-items:center;position:relative;width:clamp(44px,6vw,74px);height:clamp(44px,6vw,74px);
@@ -183,4 +182,34 @@
   .zf-lineup-switch {gap:6px;}
   .zf-lineup-switch button {font-size:10px;padding:6px 5px;gap:5px;}
   .zf-lineup-switch button .zf-lineup-crest {width:25px;height:25px;flex-basis:25px;}
+}
+
+/* Position palette inspired by football games. Orbs identify the player's
+   sector; they never claim an unreported performance rating or fitness. */
+[data-sector="GOL"] {--zf-position-color:#f4cc65;}
+[data-sector="DEF"] {--zf-position-color:#74baff;}
+[data-sector="MEI"] {--zf-position-color:#76dfae;}
+[data-sector="ATA"] {--zf-position-color:#ff8d91;}
+.zf-position-orb {
+  display:inline-block;flex:0 0 9px;width:9px;height:9px;border-radius:50%;
+  background:radial-gradient(circle at 32% 25%,#fff 0%,var(--zf-position-color) 38%,var(--zf-position-color) 60%,#152031 100%);
+  box-shadow:0 0 7px color-mix(in srgb,var(--zf-position-color) 35%,transparent),inset 0 0 0 1px #ffffff58;
+}
+.zf-formation-legend {display:flex;justify-content:center;flex-wrap:wrap;gap:9px 16px;padding:0 5px 12px;}
+.zf-formation-legend>span {display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#c8d5e5;}
+.zf-formation-player .zf-formation-role {
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:21px;
+  padding:3px 7px;border:1px solid color-mix(in srgb,var(--zf-position-color) 35%,transparent);
+  border-radius:7px;background:#08182ed9;color:var(--zf-position-color);
+  font-size:9px;font-weight:850;letter-spacing:.045em;text-shadow:none;
+}
+.zf-formation-direction {margin:8px 0 0;text-align:center;color:#b2c5db;font-size:10px;line-height:1.5;}
+@media(max-width:700px) {
+  .zf-formation-players {padding-inline:5px;row-gap:10px;}
+  .zf-formation-player {flex:1 1 0;}
+  .zf-formation-player .zf-formation-portrait {width:clamp(32px,10vw,50px);height:auto;aspect-ratio:1;max-width:90%;}
+  .zf-formation-player .zf-formation-role {font-size:8px;gap:4px;padding:3px 5px;}
+  .zf-position-orb {width:8px;height:8px;flex-basis:8px;}
+  .zf-formation-legend {gap:8px 12px;}
+  .zf-formation-legend>span {font-size:9px;}
 }

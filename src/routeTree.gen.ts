@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnimesRouteImport } from './routes/animes'
 import { Route as BuscaRouteImport } from './routes/busca'
+import { Route as FutebolRouteImport } from './routes/futebol'
 import { Route as LancamentosRouteImport } from './routes/lancamentos'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as TvRouteImport } from './routes/tv'
@@ -41,6 +42,11 @@ const AnimesRoute = AnimesRouteImport.update({
 const BuscaRoute = BuscaRouteImport.update({
   id: '/busca',
   path: '/busca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FutebolRoute = FutebolRouteImport.update({
+  id: '/futebol',
+  path: '/futebol',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LancamentosRoute = LancamentosRouteImport.update({
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/animes': typeof AnimesRoute
   '/busca': typeof BuscaRoute
+  '/futebol': typeof FutebolRoute
   '/lancamentos': typeof LancamentosRoute
   '/minha-lista': typeof MinhaListaRoute
   '/tv': typeof TvRouteWithChildren
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/animes': typeof AnimesRoute
   '/busca': typeof BuscaRoute
+  '/futebol': typeof FutebolRoute
   '/lancamentos': typeof LancamentosRoute
   '/minha-lista': typeof MinhaListaRoute
   '/anime/$id': typeof AnimeIdRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/animes': typeof AnimesRoute
   '/busca': typeof BuscaRoute
+  '/futebol': typeof FutebolRoute
   '/lancamentos': typeof LancamentosRoute
   '/minha-lista': typeof MinhaListaRoute
   '/tv': typeof TvRouteWithChildren
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/'
     | '/animes'
     | '/busca'
+    | '/futebol'
     | '/lancamentos'
     | '/minha-lista'
     | '/tv'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/animes'
     | '/busca'
+    | '/futebol'
     | '/lancamentos'
     | '/minha-lista'
     | '/anime/$id'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/'
     | '/animes'
     | '/busca'
+    | '/futebol'
     | '/lancamentos'
     | '/minha-lista'
     | '/tv'
@@ -245,6 +257,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnimesRoute: typeof AnimesRoute
   BuscaRoute: typeof BuscaRoute
+  FutebolRoute: typeof FutebolRoute
   LancamentosRoute: typeof LancamentosRoute
   MinhaListaRoute: typeof MinhaListaRoute
   TvRoute: typeof TvRouteWithChildren
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/busca'
       fullPath: '/busca'
       preLoaderRoute: typeof BuscaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/futebol': {
+      id: '/futebol'
+      path: '/futebol'
+      fullPath: '/futebol'
+      preLoaderRoute: typeof FutebolRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lancamentos': {
@@ -409,6 +429,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnimesRoute: AnimesRoute,
   BuscaRoute: BuscaRoute,
+  FutebolRoute: FutebolRoute,
   LancamentosRoute: LancamentosRoute,
   MinhaListaRoute: MinhaListaRoute,
   TvRoute: TvRouteWithChildren,

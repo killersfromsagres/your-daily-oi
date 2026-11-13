@@ -16,7 +16,7 @@ function currentCache(id:string) {
   const ttl=item.data.completa?30*60_000:item.data.disponivel?5*60_000:90_000;
   return Date.now()-item.time<ttl?item.data:null;
 }
-function LocalCrest({src,name}:{src?:string|null;name:string}) {
+function LocalCrest({src,name}:{src?:string|null|undefined;name:string}) {
   const [failed,setFailed]=useState(false);
   useEffect(()=>setFailed(false),[src]);
   return <span className="zf-lineup-crest">
@@ -173,7 +173,7 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
             <>
               {!data?.completa&&<p className="zf-lineup-partial">Escalação parcial · apenas jogadores publicados pela fonte</p>}
               <TeamLineupBoard team={selected}/>
-              <p className="zf-lineup-source">Fonte: {data?.origem} · Posições organizadas por setor. O posicionamento exato depende dos dados táticos disponíveis.</p>
+              <p className="zf-lineup-source">Fonte: {data?.origem} · Cores identificam o setor de cada jogador. A distribuição no campo depende dos dados táticos disponíveis.</p>
             </>}
           </div>
         </section>

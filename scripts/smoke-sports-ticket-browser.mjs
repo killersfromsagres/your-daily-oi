@@ -37,6 +37,8 @@ const STATE=`(()=>{
  const modalRect=dialog?.getBoundingClientRect();
  return {
   viewport:innerWidth,
+  pathname:location.pathname,
+  search:location.search,
   pageText:document.body?.innerText?.slice(0,420)||"",
   mockReady:!!window.__zfVisualMock,
   mockReads:window.__zfMockReads||[],
@@ -50,6 +52,8 @@ const STATE=`(()=>{
   dialogRect:modalRect?{left:modalRect.left,right:modalRect.right,width:modalRect.width}:null,
   activeSide:dialog?.querySelector(".zf-lineup-switch button[aria-pressed=true]")?.textContent?.trim()||null,
   hasPitch:!!dialog?.querySelector(".zf-formation-pitch"),
+  players:dialog?.querySelectorAll(".zf-formation-player").length||0,
+  attackingGoal:!!dialog?.querySelector(".zf-formation-bottom-box"),
   title:dialog?.querySelector(".zf-lineup-dialog-club h2")?.textContent?.trim()||null,
   pending:!!dialog?.querySelector(".zf-lineup-message"),
  };
@@ -145,10 +149,17 @@ try{
    jogos:[first,second],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
  const lineup={jogo:first.id,atualizadoEm:new Date().toISOString(),
-   disponivel:false,completa:false,origem:"ESPN",
-   mensagem:"Aguardando escalações oficiais",equipes:[]};
+   disponivel:true,completa:true,origem:"ESPN",
+   mensagem:"Synthetic UI test lineup",equipes:["Brasil","Japão"].map(name=>({
+     name,formation:"4-5-1",crest:null,coach:null,substitutes:[],
+     starting:["GOL",...Array(4).fill("DEF"),...Array(5).fill("MEI"),"ATA"].map((group,index)=>({
+       id:String(index+1),name:"Jogador de teste "+(index+1),number:String(index+1),
+       position:group,group,photo:null,grid:null,
+     })),
+   }))};
  const mocks={"/api/jogos-agenda":agenda,"/api/jogos-placares":placares,
-   "/api/jogos-escalacao":lineup};
+   "/api/jogos-escalacao":lineup,
+   "/api/catalogo":{items:[],highlights:[],genres:[]}};
  await send("Page.addScriptToEvaluateOnNewDocument",{source:
    "(()=>{const original=window.fetch.bind(window);const mocks="+JSON.stringify(mocks)+
    ";window.__zfVisualMock=true;window.__zfMockReads=[];"+
@@ -159,6 +170,8 @@ try{
    "return original(input,options);};})();"});
  mkdirSync("artifacts",{recursive:true});
  const cases=[
+  {name:"android-small",width:320,height:780,mobile:true,
+   ua:"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"},
   {name:"android",width:390,height:844,mobile:true,
    ua:"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"},
   {name:"desktop",width:1440,height:900,mobile:false,
@@ -175,8 +188,52 @@ try{
   await evaluate('document.querySelector(".zf-ticket").scrollIntoView({block:"center"})');
   await sleep(600);
   await screenshot(device.name+"-ticket");
+  if(device.mobile){
+    await evaluate('window.scrollTo(0,400)');
+    await sleep(150);
+    const collapsed=await evaluate(`(()=>{
+      const header=document.querySelector(".ydo-header");
+      return {collapsed:header.classList.contains("is-mobile-collapsed"),
+       width:header.getBoundingClientRect().width,
+       logo:getComputedStyle(header.querySelector(".ydo-logo")).display,
+       apk:getComputedStyle(header.querySelector(".zf-install-header")).display};
+    })()`);
+    if(!collapsed.collapsed||collapsed.width>47||collapsed.logo!=="none"||collapsed.apk!=="none")
+      throw new Error("Mobile header did not collapse: "+JSON.stringify(collapsed));
+    await screenshot(device.name+"-collapsed-search");
+    await evaluate('document.querySelector(".ydo-search-trigger-btn").click()');
+    await sleep(150);
+    const search=await evaluate(`(()=>{
+      const input=document.querySelector(".ydo-search-input"),form=input?.closest("form");
+      const rect=form?.getBoundingClientRect();
+      return {focused:document.activeElement===input,left:rect?.left,right:rect?.right};
+    })()`);
+    if(!search.focused||search.left<0||search.right>device.width+1)
+      throw new Error("Collapsed search is inaccessible or overflows: "+JSON.stringify(search));
+    await send("Input.insertText",{text:"Batman"});
+    await send("Input.dispatchKeyEvent",{type:"keyDown",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
+    await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
+    await waitFor(x=>x.pathname==="/busca"&&x.search.includes("Batman"));
+    await send("Page.navigate",{url:BASE+"/futebol"});
+    await waitFor(x=>x.cards>0&&x.lineupButtons===1);
+    await evaluate('window.scrollTo(0,0)');
+    await sleep(150);
+    const restored=await evaluate('!document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")');
+    if(!restored)throw new Error("Header did not return at top");
+  }else{
+    const collapsed=await evaluate('document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")');
+    if(collapsed)throw new Error("Desktop header must not collapse on scroll");
+  }
   await evaluate('document.querySelector(".zf-ticket .zf-lineup-single-button").click()');
-  const opened=await waitFor(x=>x.dialog && !!x.activeSide);
+  const opened=await waitFor(x=>x.dialog && !!x.activeSide && x.players===11);
+  if(opened.attackingGoal)throw new Error("Attacking goal marking is still present");
+  const rows=await evaluate('Array.from(document.querySelectorAll(".zf-formation-row")).map(row=>row.children.length)');
+  if(JSON.stringify(rows)!=="[1,4,5,1]")throw new Error("Incorrect formation rows: "+JSON.stringify(rows));
+  const overlaps=await evaluate(`Array.from(document.querySelectorAll(".zf-formation-row")).some(row=>{
+    const boxes=Array.from(row.children).map(player=>player.getBoundingClientRect());
+    return boxes.some((box,index)=>index>0&&box.left<boxes[index-1].right-1);
+  })`);
+  if(overlaps)throw new Error("Player positions overlap on "+device.name);
   if(!opened.activeSide)throw new Error("Home lineup did not open");
   if(opened.dialogRect.left<-1||opened.dialogRect.right>device.width+1)throw new Error("Lineup modal overflows viewport: "+JSON.stringify(opened));
   await screenshot(device.name+"-lineup");

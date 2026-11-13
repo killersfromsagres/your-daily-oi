@@ -1,5 +1,8 @@
 // tests/sports-ticket-lineup.test.ts — one-club lineup UI and premium match-ticket regression.
 import { describe, expect, test } from "bun:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { TeamLineupBoard } from "../src/components/sports/TeamLineupBoard";
 import { readFileSync } from "node:fs";
 import { selectLineupTeam } from "../src/lib/lineup-selection";
 import type { MatchLineups } from "../src/lib/football-lineups";
@@ -58,14 +61,13 @@ describe("match ticket and tactical field",()=>{
     expect(component).not.toContain('preview("home")');
     expect(component).not.toContain("zlineup-half--");
   });
-  test("field renders one team, in goalkeeper-to-attack order",()=>{
-    const field=readFileSync("src/components/sports/TeamLineupBoard.tsx","utf8");
-    const css=readFileSync("src/styles/sports-ticket-lineup.css","utf8");
-    expect(field).toContain("team.starting.filter(player => player.group === group)");
-    expect(field.indexOf('group: "GOL"')).toBeLessThan(field.indexOf('group: "ATA"'));
-    expect(field).toContain("zf-formation-watermark");
-    expect(css).toContain("grid-template-rows:repeat(4,1fr)");
-    expect(css).toContain("width:min(720px,100%)");
+  test("field keeps the goalkeeper area and removes the attacking goal marking",()=>{
+    const html=renderToStaticMarkup(createElement(TeamLineupBoard,{team:home}));
+    expect(html).toContain('zf-formation-top-box');
+    expect(html).not.toContain('zf-formation-bottom-box');
+    expect(html).toContain('Sentido do ataque');
+    expect(html).toContain('Cores das posições');
+    expect(html).toContain('zf-formation-watermark');
   });
   test("responsive tickets and separate dialog accessibility are present",()=>{
     const css=readFileSync("src/styles/sports-match-tickets.css","utf8");

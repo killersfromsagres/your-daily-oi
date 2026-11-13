@@ -2,14 +2,8 @@
 // src/components/sports/TeamLineupBoard.tsx — one-team portrait football lineup.
 import { useEffect, useState } from "react";
 import { Shield } from "lucide-react";
-import type { LineupPlayer, LineupTeam, PlayerPosition } from "@/lib/football-lineups";
-
-const SECTIONS: { group: PlayerPosition; label: string }[] = [
-  { group: "GOL", label: "Goleiro" },
-  { group: "DEF", label: "Defesa" },
-  { group: "MEI", label: "Meio-campo" },
-  { group: "ATA", label: "Ataque" },
-];
+import type { LineupPlayer, LineupTeam } from "@/lib/football-lineups";
+import { buildTacticalLayout, positionBadge, POSITION_SECTORS } from "@/lib/lineup-tactics";
 
 function Photo({ src, name }: { src: string | null; name: string }) {
   const [failed, setFailed] = useState(false);
@@ -32,35 +26,40 @@ function Photo({ src, name }: { src: string | null; name: string }) {
   );
 }
 function Player({ player }: { player: LineupPlayer }) {
+  const role = positionBadge(player);
   return (
-    <div className="zf-formation-player" title={player.position}>
+    <div className="zf-formation-player" data-sector={player.group} title={role.label + " · " + player.position}>
       <Photo name={player.name} src={player.photo}/>
       <strong>{player.number && <span>{player.number} </span>}{player.name}</strong>
-      <small>{player.position}</small>
-    </div>
-  );
-}
-function FormationRow({ group, label, team }: { group: PlayerPosition; label: string; team: LineupTeam }) {
-  const players = team.starting.filter(player => player.group === group);
-  return (
-    <div className={"zf-formation-row zf-formation-row--" + group} aria-label={label}>
-      {players.map(player => <Player key={player.id} player={player} />)}
+      <small className="zf-formation-role" aria-label={role.label}>
+        <span className="zf-position-orb" aria-hidden="true"/>{role.code}
+      </small>
     </div>
   );
 }
 export function TeamLineupBoard({ team }: { team: LineupTeam }) {
+  const layout = buildTacticalLayout(team);
   return (
     <div className="zf-formation-content">
-      <div className="zf-formation-pitch" aria-label={"Campo tático: escalação de " + team.name}>
+      <div className="zf-formation-legend" aria-label="Cores das posições">
+        {POSITION_SECTORS.map(({ group, label }) => <span key={group} data-sector={group}>
+          <span className="zf-position-orb" aria-hidden="true"/>{label}
+        </span>)}
+      </div>
+      <div className="zf-formation-pitch" data-layout={layout.source} aria-label={"Campo tático: escalação de " + team.name}>
         <span className="zf-formation-top-box" aria-hidden="true" />
         <span className="zf-formation-center-line" aria-hidden="true" />
         <span className="zf-formation-center-circle" aria-hidden="true" />
-        <span className="zf-formation-bottom-box" aria-hidden="true" />
         <span className="zf-formation-watermark" aria-hidden="true">ZANG <b>FLIX</b></span>
-        <div className="zf-formation-players">
-          {SECTIONS.map(section => <FormationRow key={section.group} {...section} team={team}/>)}
+        <div className="zf-formation-players" style={{ gridTemplateRows: `repeat(${layout.rows.length || 1}, minmax(100px, 1fr))` }}>
+          {layout.rows.map((row, index) => <div key={index} className="zf-formation-row" aria-label={row.label}>
+            {row.players.map(player => <Player key={player.id} player={player}/>)}
+          </div>)}
         </div>
       </div>
+      <p className="zf-formation-direction">↓ Sentido do ataque · {layout.source === "grid"
+        ? "Posições fornecidas pela fonte" : layout.source === "formation"
+        ? "Distribuição pela formação divulgada" : "Organização por setor"}</p>
       <div className="zf-formation-extras">
         <div className="zf-formation-coach">
           <span className="zf-formation-coach-photo"><Photo name={team.coach?.name || "Técnico"} src={team.coach?.photo || null} /></span>

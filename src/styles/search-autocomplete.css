@@ -211,3 +211,32 @@ html[data-zf-platform="tv"] .zf-search-result-meta strong {font-size:18px;}
   .zf-search-page-field input {min-height:46px;font-size:16px;}
   .zf-search-page-field span {display:none;}
 }
+
+/* Scrolled mobile header: one glass search control, with no invisible bar
+   intercepting taps. The full header returns near the top of the page. */
+@media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed {
+    left:auto;right:10px;width:46px;max-width:calc(100vw - 20px);
+    height:46px;min-height:46px;padding:0;gap:0;
+    background:transparent;border:0;border-radius:16px;box-shadow:none;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed::before {display:none;}
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed > :not(.ydo-header-tools) {display:none;}
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed .ydo-header-tools {width:100%;margin:0;}
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed .ydo-search-trigger-btn {
+    width:46px;height:46px;min-width:46px;border-radius:16px;
+    background:rgba(14,19,28,.25);border:1px solid rgba(255,255,255,.26);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    box-shadow:inset 0 1px rgba(255,255,255,.13),0 4px 16px #0003;
+    color:#fff;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed.is-searching {
+    left:10px;width:auto;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-header.is-searching .zf-install-header {display:none;}
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed .zf-search-suggestions {top:calc(100% + 8px);}
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed .ydo-search-trigger-btn:focus-visible {
+    outline:2px solid #f4cc8f;outline-offset:3px;
+  }
+}

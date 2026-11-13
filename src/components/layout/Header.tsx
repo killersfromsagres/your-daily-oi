@@ -57,6 +57,7 @@ const CATEGORIAS_ANIMES: CategoryItem[] = [
 
 export function Header({ onSearch }: HeaderProps) {
   const [visible, setVisible] = useState(true);
+  const [mobileCollapsed, setMobileCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [moviesHover, setMoviesHover] = useState(false);
   const [seriesHover, setSeriesHover] = useState(false);
@@ -118,6 +119,30 @@ export function Header({ onSearch }: HeaderProps) {
   useEffect(() => {
     if (platform !== "mobile") setMobileMenuOpen(false);
   }, [platform]);
+
+  // Keep search reachable while freeing the screen for content. Hysteresis
+  // avoids flicker around the collapse point, including mobile overscroll.
+  useEffect(() => {
+    if (platform !== "mobile") {
+      setMobileCollapsed(false);
+      return;
+    }
+    let frame = 0;
+    const synchronize = () => {
+      frame = 0;
+      const y = Math.max(0, window.scrollY);
+      setMobileCollapsed(previous => previous ? y > 24 : y > 80);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(synchronize);
+    };
+    synchronize();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.cancelAnimationFrame(frame);
+    };
+  }, [platform, pathname]);
 
   // Remote D-pad focus navigation is activated only for recognizable TVs.
   useEffect(() => {
@@ -250,7 +275,8 @@ export function Header({ onSearch }: HeaderProps) {
     <>
     {!isWatchRoute(pathname) && (
     <header
-      className={"ydo-header" + (searchOpen ? " is-searching" : "")}
+      className={"ydo-header" + (searchOpen ? " is-searching" : "") +
+        (mobileCollapsed ? " is-mobile-collapsed" : "")}
       style={{
         opacity: visible ? 1 : 0,
         transform: platform === "mobile"
@@ -404,6 +430,7 @@ export function Header({ onSearch }: HeaderProps) {
         >
           <Link
             to="/animes"
+            search={{ categoria: undefined }}
             className={`ydo-nav-link ${animesHover ? "is-active" : ""}`}
           >
             <span>Animes</span>
@@ -520,7 +547,9 @@ export function Header({ onSearch }: HeaderProps) {
               setSearchOpen(true);
               setTimeout(() => searchRef.current?.focus(), 80);
             }}
-            aria-label='Buscar filmes ou séries (atalho: "/")'
+            type="button"
+            aria-label='Buscar filmes, séries e animes (atalho: "/")'
+            aria-expanded={searchOpen}
             title='Buscar (Atalho: "/")'
           >
             <Search size={16} />
