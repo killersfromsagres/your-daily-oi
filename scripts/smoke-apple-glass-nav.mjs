@@ -246,7 +246,7 @@ try{
     return {path:location.pathname,query:location.search,display:root&&getComputedStyle(root).display,
       left:rect?.left,right:rect?.right,width:innerWidth,bodyWidth:document.documentElement.scrollWidth,
       type:root?.querySelector('.zf-mobile-catalog-type[aria-current="page"]')?.textContent,
-      category:root?.querySelector('.zf-mobile-catalog-chip[aria-current="true"]')?.textContent,
+      category:root?.querySelector('.zf-mobile-catalog-chip.is-selected')?.textContent,
       cards:Array.from(document.querySelectorAll('.ydo-search-grid .ydo-card')).map(card=>card.querySelector('.ydo-card-poster-link')?.getAttribute('aria-label')),
       reads:window.__catalogReads};
   })()`);
