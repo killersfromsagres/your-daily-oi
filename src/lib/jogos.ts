@@ -2,6 +2,8 @@
 import { loadCanais } from "./canais";
 import { localizarJogosNaGradeEPG } from "./epg";
 import { matchBrazilianBroadcastChannel } from "./broadcast-match";
+import { fetchSportsDbFixtures, mergeProviderFixtures } from "./football-backup";
+import { getBrazilianSportsDbBroadcasts } from "./football-broadcasts";
 import {
   LIGAS_FUTEBOL, addDaysUTC, brBroadcastsFromESPN, dataBrasilia, fixturePriority,
   isValidSportsDate, normalizeSoccerName, parseESPNFixture,
@@ -166,6 +168,7 @@ async function annotateBroadcasts(
   fixtures: { item: JogoBrasileirao; raw: ESPNEvent }[],
   date: string,
   detailedBroadcastsTask: Promise<Map<string, string[]>>,
+  backupBroadcastsTask: Promise<Map<string,string[]>>,
 ): Promise<JogoBrasileirao[]> {
   const matches = fixtures.map(x => x.item);
   if (!matches.length) return matches;
@@ -187,7 +190,10 @@ async function annotateBroadcasts(
       console.warn("[Sports] EPG ou catálogo indisponível", error);
     }
   })();
-  const detailedBroadcasts = await detailedBroadcastsTask.catch(() => new Map<string, string[]>());
+  const [detailedBroadcasts,backupBroadcasts]=await Promise.all([
+    detailedBroadcastsTask.catch(()=>new Map<string,string[]>()),
+    backupBroadcastsTask.catch(()=>new Map<string,string[]>()),
+  ]);
   await epgTask;
 
   for (const fixture of fixtures) {
@@ -199,6 +205,7 @@ async function annotateBroadcasts(
     const sourceNames = [...new Set([
       ...brBroadcastsFromESPN(fixture.raw),
       ...(detailedBroadcasts.get(game.id) || []),
+      ...(backupBroadcasts.get(game.id) || []),
     ])];
     // Store rights metadata independently of available player links.
     const announced = manual.length ? manual : sourceNames;
@@ -233,8 +240,17 @@ async function annotateBroadcasts(
   return matches;
 }
 async function getFresh(date: string): Promise<JogosHojeResponse> {
+  // Independent, keyless schedule provider: fixes "0 jogos" during national-team
+  // breaks and when the ESPN feed omits competitions that play that day.
+  // Kick both providers off together so the fallback adds almost no latency.
+  const backupTask=fetchSportsDbFixtures(date).catch(error=>{
+    console.warn("[Sports] Agenda secundária indisponível",String(error).slice(0,150));
+    return null;
+  });
   const { items, successes, failed } = await fetchAllLeagues(date);
-  if (successes === 0) throw new Error("Nenhum provedor de agenda respondeu");
+  const backup = await backupTask;
+  if (successes === 0 && backup === null)
+    throw new Error("Nenhum provedor de agenda respondeu");
   const deduped = new Map<string, { item: JogoBrasileirao; raw: ESPNEvent }>();
   for (const { event, liga, leagueLogo } of items) {
     const item = parseESPNFixture(event, liga, date);
@@ -243,9 +259,13 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
       deduped.set(item.id, { item, raw: event });
     }
   }
-  const fixtures = [...deduped.values()];
-  const brazilianBroadcasters = loadBrazilBroadcastDetails(fixtures);
-  const games = await annotateBroadcasts(fixtures, date, brazilianBroadcasters);
+  const primary=[...deduped.values()];
+  const combined=mergeProviderFixtures(primary.map(x=>x.item),backup||[]);
+  const originalById=new Map(primary.map(x=>[x.item.id,x.raw]));
+  const fixtures=combined.map(item=>({item,raw:originalById.get(item.id)||({} as ESPNEvent)}));
+  const brazilianBroadcasters=loadBrazilBroadcastDetails(primary);
+  const backupBroadcasts=getBrazilianSportsDbBroadcasts(combined);
+  const games = await annotateBroadcasts(fixtures, date, brazilianBroadcasters, backupBroadcasts);
   games.sort((a,b) => {
     const timeA = Date.parse(a.inicioIso), timeB = Date.parse(b.inicioIso);
     return timeA - timeB || fixturePriority(b) - fixturePriority(a);
@@ -253,8 +273,10 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
   return {
     atualizadoEm: new Date().toISOString(),
     dataLocal: date, jogos: games,
-    fontesConsultadas: successes, ligasIndisponiveis: failed, parcial: failed.length > 0,
-    origem: "ESPN Soccer Scoreboard + EPG Brasil",
+    fontesConsultadas: successes + (backup === null ? 0 : 1),
+    ligasIndisponiveis: failed,
+    parcial: failed.length > 0 || backup === null,
+    origem: "ESPN Soccer + TheSportsDB + EPG Brasil",
   };
 }
 
