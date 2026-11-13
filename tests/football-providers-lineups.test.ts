@@ -118,8 +118,9 @@ describe("published lineups only",()=>{
     const ui=readFileSync("src/components/sports/MatchLineups.tsx","utf8");
     const board=readFileSync("src/components/sports/TeamLineupBoard.tsx","utf8");
     const css=readFileSync("src/styles/sports-ticket-lineup.css","utf8");
-    expect(ui).toContain('preview("home")');
-    expect(ui).toContain('preview("away")');
+    expect(ui).toContain('className="zf-lineup-single-button"');
+    expect(ui).toContain('onClick={()=>setSide("home")}');
+    expect(ui).toContain('onClick={()=>setSide("away")}');
     expect(ui).toContain("<TeamLineupBoard team={selected}/>");
     expect(board).toContain('className="zf-formation-pitch"');
     expect(board).toContain("team.starting.filter");
