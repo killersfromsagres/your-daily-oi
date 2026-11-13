@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { MatchLineups } from "@/components/sports/MatchLineups";
-import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds } from "@/lib/football-ranking";
+import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
   Clock3, MapPin, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
@@ -66,9 +66,10 @@ export function MatchCard({ game, onWatch, onExplore }: {
     ?game.placarCasa+" – "+game.placarFora
     :game.status==="adiado"?"ADIADO":game.horarioLocal;
   const theme=game.grupo==="copas"||game.grupo==="champions"?"is-cup":"is-league";
+  const brazilFeatured=isBrazilFixture(game);
   const venue=game.estadio?.trim();
   return (
-    <article className={"zgame-card zf-ticket "+theme+(active?" is-live":"")+(watchable?" has-channel":"")}>
+    <article className={"zgame-card zf-ticket "+theme+(brazilFeatured?" is-brazil":"")+(active?" is-live":"")+(watchable?" has-channel":"")}>
       <div className="zf-ticket-watermark" aria-hidden="true">ZANG <span>FLIX</span></div>
       <button
         type="button" className="zf-ticket-main"
@@ -109,14 +110,25 @@ export function MatchCard({ game, onWatch, onExplore }: {
       </button>
       <div className="zf-ticket-broadcast">
         {watchable&&game.canalId&&game.canalNome?(
-          <button className="zf-ticket-watch" type="button" onClick={()=>onWatch(game.canalId!)}>
-            <Tv size={16}/>
-            <span><small>ASSISTIR NO CANAL</small><strong>{game.canalNome}</strong></span>
-            <ArrowRight size={16}/>
-          </button>
+          <div className="zf-ticket-channel-panel">
+            <button className="zf-ticket-watch" type="button" onClick={()=>onWatch(game.canalId!)}>
+              <Tv size={16}/>
+              <span><small>ASSISTIR NO CANAL</small><strong>{game.canalNome}</strong></span>
+              <ArrowRight size={16}/>
+            </button>
+            {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).length>0&&
+              <div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
+                {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).map(ch=>
+                  <button key={ch.id} type="button" onClick={()=>onWatch(ch.id)}
+                    aria-label={"Assistir também em "+ch.nome}>
+                    {ch.logo?<img src={ch.logo} alt="" loading="lazy"/>:<Tv size={12}/>}
+                    <span>{ch.nome}</span>
+                  </button>)}
+              </div>}
+          </div>
         ):game.canaisTransmissao?.length?(
           <div className="zf-ticket-identified"><Tv size={15}/>
-            <span>TRANSMISSÃO BRASIL · {game.canaisTransmissao.join(" · ")}</span>
+            <span>TRANSMISSÃO INFORMADA · {game.canaisTransmissao.join(" · ")} · canais não vinculados ao catálogo</span>
           </div>
         ):(
           <div className="zf-ticket-pending">
