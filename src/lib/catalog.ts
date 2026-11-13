@@ -11,6 +11,7 @@ import type {
 import { getIndiceBases, expandBaseToken, isHlsUrl } from "./saimo-stream";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
 import { advertisedVodResolution } from "./vod-source-quality";
+import { correctClassicStreetFighter, isClassicStreetFighter } from "./movie-metadata-fixes";
 
 // As URLs de catálogo:
 const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://filmes-saimo.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
@@ -269,7 +270,7 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
       id = `${id}-${tipo === "f" ? "filme" : tipo === "s" ? "serie" : "anime"}`;
     }
 
-    const itemObj = {
+    const itemObj: Omit<CatalogItem, "streams" | "seasons"> = correctClassicStreetFighter({
       id,
       type: tipo as "f" | "s" | "a",
       title: cleanDisplayTitle(title),
@@ -278,7 +279,7 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
       posterUrl,
       genres,
       tmdb: null,
-    };
+    }, title);
 
     map.set(id, itemObj);
     // Reuse old IDs but expose normalized aliases for new direct lookups.
@@ -312,7 +313,7 @@ function parseDestaques(text: string): HighlightRow[] {
           type: tipo as "f" | "s",
           title: cleanDisplayTitle(title),
           letter: letter?.trim() ?? "",
-          year: year?.trim() ?? "",
+          year: isClassicStreetFighter(title, tipo) ? "1994" : (year?.trim() ?? ""),
           posterPath: posterPath?.trim() ?? "",
         });
       }
