@@ -69,6 +69,18 @@ export function nextLiveMode(source: LiveSourceLike, current: LiveAccessMode, al
  * Compatibilidade de deploy: versões antigas do backend possuem /api/live-proxy,
  * mas não /api/tv/stream. Ambos usam as mesmas fontes catalogadas.
  */
+/**
+ * Stable source identity shared by browser and deployed catalog.
+ * Used only to detect a stale/reordered list (not for authentication).
+ */
+export function liveSourceFingerprint(url: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < url.length; i++) {
+    hash = Math.imul(hash ^ url.charCodeAt(i), 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
 export function buildLiveProxyPath(
   channelId: string,
   sourceIndex: number,
@@ -76,7 +88,11 @@ export function buildLiveProxyPath(
   catalogEndpointAvailable: boolean,
 ): string {
   if (catalogEndpointAvailable && sourceIndex >= 0 && /^[a-z0-9-]{1,120}$/.test(channelId)) {
-    const params = new URLSearchParams({ canal: channelId, fonte: String(sourceIndex) });
+    const params = new URLSearchParams({
+      canal: channelId,
+      fonte: String(sourceIndex),
+      assinatura: liveSourceFingerprint(source.url),
+    });
     return "/api/tv/stream?" + params;
   }
   const params = new URLSearchParams({ url: source.url });
