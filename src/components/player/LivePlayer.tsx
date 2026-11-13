@@ -229,6 +229,7 @@ export function LivePlayer({
     initialModeFor(validStreams[0])
   );
   const [playNonce, setPlayNonce] = useState(0);
+  const [useLegacyOnMismatch, setUseLegacyOnMismatch] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -287,6 +288,7 @@ export function LivePlayer({
     autoRetryCountRef.current = 0;
     stablePlaybackSinceRef.current = null;
     setSourceIndex(0);
+    setUseLegacyOnMismatch(false);
     setAttemptMode(initialModeFor(validStreams[0]));
     setError(validStreams.length === 0);
     setErrorDetail(null);
@@ -305,8 +307,8 @@ export function LivePlayer({
     if (!rawFonte?.url) return "";
     if (attemptMode === "direct") return rawFonte.url;
     const index = canal.fontes.findIndex((candidate) => candidate.url === rawFonte.url);
-    return buildLiveProxyPath(canal.id, index, rawFonte, proxyBackend === "catalog");
-  }, [rawFonte, attemptMode, canal.id, canal.fontes, proxyBackend]);
+    return buildLiveProxyPath(canal.id, index, rawFonte, proxyBackend === "catalog" && !useLegacyOnMismatch);
+  }, [rawFonte, attemptMode, canal.id, canal.fontes, proxyBackend, useLegacyOnMismatch]);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -701,6 +703,18 @@ export function LivePlayer({
               const isNet = data?.type === "networkError";
               const isMedia = data?.type === "mediaError";
               const responseCode = Number(data?.response?.code || data?.networkDetails?.status || 0);
+              // Catalog lists refresh independently in the browser and on the
+              // server. A 409 means the signature cannot be found server-side;
+              // use the exact source URL via the existing legacy proxy.
+              if (responseCode === 409 && attemptMode === "proxy" &&
+                  proxyBackend === "catalog" && !useLegacyOnMismatch) {
+                setUseLegacyOnMismatch(true);
+                setErrorDetail(null);
+                setAutoSwitchMsg("Sincronizando fonte atualizada…");
+                setLoading(true);
+                setPlayNonce(v => v + 1);
+                return;
+              }
               if (responseCode === 403 || responseCode === 401) {
                 setErrorDetail("A origem recusou o acesso à transmissão (HTTP " + responseCode + "). Essa fonte exige autorização ou está bloqueada para esta conexão.");
               } else if (responseCode === 404 || responseCode === 410) {
