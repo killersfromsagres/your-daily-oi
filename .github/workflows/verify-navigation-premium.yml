@@ -12,20 +12,35 @@ on:
       - 'src/routes/generos.$slug.tsx'
       - 'src/styles/navigation-premium.css'
       - 'src/styles/liquid-glass-nav.css'
+      - 'src/styles/apple-glass-nav.css'
+      - 'scripts/smoke-apple-glass-nav.mjs'
       - 'src/routes/__root.tsx'
       - 'tests/genre-matching.test.ts'
       - 'tests/hero-images.test.ts'
       - 'tests/liquid-glass-nav.test.ts'
+      - 'tests/apple-glass-nav.test.ts'
       - '.github/workflows/verify-navigation-premium.yml'
   workflow_dispatch:
 jobs:
   navigation:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - name: Install
         run: bun install --frozen-lockfile
       - name: Verify genre matching and hero source selection
-        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts
+        run: bun test tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts
+      - name: Build site for visual browser checks
+        run: bun run build
+      - name: Verify real Chrome glass rendering on Android and desktop viewports
+        run: bun scripts/smoke-apple-glass-nav.mjs
+      - name: Save visual inspection screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zang-glass-mobile-desktop
+          path: artifacts/apple-glass-*.png
+          if-no-files-found: warn
+          retention-days: 7
