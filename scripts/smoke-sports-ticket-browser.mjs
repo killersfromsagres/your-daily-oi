@@ -211,8 +211,10 @@ try{
     if(!search.focused||search.left<0||search.right>device.width+1)
       throw new Error("Collapsed search is inaccessible or overflows: "+JSON.stringify(search));
     await send("Input.insertText",{text:"Batman"});
-    await send("Input.dispatchKeyEvent",{type:"keyDown",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
-    await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
+    // Let React commit the controlled query before submitting the form. CDP
+    // keyDown alone has no Enter character/default submission on some Chrome builds.
+    await sleep(200);
+    await evaluate('document.querySelector(".ydo-search-expand").requestSubmit()');
     await waitFor(x=>x.pathname==="/busca"&&x.search.includes("Batman"));
     await send("Page.navigate",{url:BASE+"/futebol"});
     await waitFor(x=>x.cards>0&&x.lineupButtons===1);

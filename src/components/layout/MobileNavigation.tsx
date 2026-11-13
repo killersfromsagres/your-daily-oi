@@ -145,7 +145,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
           aria-current={mobileTabActive(pathname,"series") ? "page" : undefined}>
           <Clapperboard size={21} strokeWidth={1.9} /><span>Séries</span>
         </Link>
-        <Link to="/animes" title="Animes"
+        <Link to="/animes" search={{ categoria: undefined }} title="Animes"
           className={"zf-mobile-tab" + (mobileTabActive(pathname,"anime") ? " is-active" : "")}
           aria-current={mobileTabActive(pathname,"anime") ? "page" : undefined}>
           <Orbit size={21} strokeWidth={1.9} /><span>Animes</span>
@@ -211,7 +211,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
                 <Link to="/" onClick={navigateAndClose}><Home size={20} /><span>Início</span></Link>
                 <Link to="/generos/$slug" params={{slug:"filmes"}} onClick={navigateAndClose}><Film size={20} /><span>Filmes</span></Link>
                 <Link to="/generos/$slug" params={{slug:"series"}} onClick={navigateAndClose}><Clapperboard size={20} /><span>Séries</span></Link>
-                <Link to="/animes" onClick={navigateAndClose}><Orbit size={20} /><span>Animes</span></Link>
+                <Link to="/animes" search={{ categoria: undefined }} onClick={navigateAndClose}><Orbit size={20} /><span>Animes</span></Link>
                 <Link to="/tv" onClick={navigateAndClose}><Tv2 size={20} /><span>TV ao vivo</span></Link>
                 <Link to="/lancamentos" onClick={navigateAndClose}><Compass size={20} /><span>Lançamentos</span></Link>
                 <Link to="/minha-lista" className="zf-mobile-mylist" onClick={navigateAndClose}>
