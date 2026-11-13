@@ -114,3 +114,45 @@
   .zf-ticket .zf-lineup-team-button {min-height:48px;}
 }
 @media (prefers-reduced-motion:reduce) {.zgame-card.zf-ticket {transition:none;}}
+
+/* Center the live score, kickoff and match metadata in every viewport. */
+.zgame-card.zf-ticket .zf-ticket-time-block {
+  position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  width:100%;gap:4px;padding:12px 26px 13px;text-align:center;
+}
+.zgame-card.zf-ticket .zf-ticket-time-caption {
+  width:100%;text-align:center;letter-spacing:.14em;
+}
+.zgame-card.zf-ticket .zf-ticket-time {display:block;max-width:100%;text-align:center;}
+.zgame-card.zf-ticket .zf-ticket-minute {
+  right:4px;bottom:15px;font-variant-numeric:tabular-nums;
+}
+.zgame-card.zf-ticket .zf-ticket-match-meta {
+  align-items:center;justify-content:center;text-align:center;gap:7px;min-height:56px;
+}
+.zgame-card.zf-ticket .zf-ticket-round {text-align:center;}
+.zgame-card.zf-ticket .zf-ticket-stadium {justify-content:center;text-align:center;overflow-wrap:anywhere;}
+.zf-ticket.is-brazil {border-color:rgba(104,208,138,.60);box-shadow:inset 0 1px rgba(255,255,255,.14),0 14px 38px rgba(0,0,0,.28);}
+.zf-ticket.is-brazil .zf-ticket-masthead::after {
+  content:"BRASIL EM DESTAQUE";position:absolute;left:14px;top:71px;
+  color:#b8efc6;font-size:8px;letter-spacing:.09em;font-weight:850;
+}
+.zf-ticket .zf-lineup-actions {padding:0 12px 14px;}
+@media(max-width:610px) {
+  .zgame-card.zf-ticket {min-width:0;width:100%;min-height:0;border-radius:18px;}
+  .zf-ticket-main {min-height:0;padding:15px 17px 11px;}
+  .zf-ticket-teams {min-height:124px;padding:15px 0 9px;}
+  .zf-ticket-league {min-width:0;}
+  .zf-ticket-time {font-size:clamp(31px,10vw,43px)!important;}
+  .zf-ticket-time-caption {font-size:9px;}
+  .zf-ticket-match-meta {padding-bottom:8px;}
+  .zf-ticket-broadcast {padding:9px 12px;}
+  .zf-ticket .zf-lineup-actions {padding:0 12px 13px;}
+  .zf-ticket.is-brazil .zf-ticket-masthead::after {top:67px;}
+}
+@media (max-width:370px) {
+  .zf-ticket-team .zgame-crest {width:52px;height:52px;}
+  .zf-ticket-team strong {font-size:10px;}
+  .zf-ticket-time {font-size:33px!important;}
+  .zf-ticket-main {padding-inline:12px;}
+}
