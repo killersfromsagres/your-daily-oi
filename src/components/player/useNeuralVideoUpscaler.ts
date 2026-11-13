@@ -3,16 +3,18 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 type Status = "idle" | "loading" | "active" | "unavailable";
+type NetworkName = "anime4k/cnn-2x-s" | "anime4k/cnn-2x-m";
 
 type WebSRInstance = {
   render(source: HTMLVideoElement): Promise<void>;
+  switchNetwork(network: NetworkName, weights: unknown): void;
   destroy(): Promise<void>;
 };
 type WebSRClass = {
   new (options: {
     canvas: HTMLCanvasElement;
     weights: unknown;
-    network_name: "anime4k/cnn-2x-s";
+    network_name: NetworkName;
     gpu: unknown;
   }): WebSRInstance;
   initWebGPU(): Promise<unknown | false>;
@@ -92,6 +94,7 @@ export function useNeuralVideoUpscaler(
     let timer: ReturnType<typeof setTimeout> | null = null;
     let rendered = 0;
     let slowFrames = 0;
+    let networkSize: "s" | "m" = "s";
     previousAvg.current = 0;
     const abortController = new AbortController();
 
@@ -163,8 +166,23 @@ export function useNeuralVideoUpscaler(
         if (rendered % 15 === 0) setAvgFrameMs(Math.round(previousAvg.current));
         slowFrames = previousAvg.current > 48 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
         if (rendered > 25 && slowFrames > 28) {
-          unavailable("GPU abaixo do desempenho necessário para IA em tempo real");
-          return;
+          if (networkSize === "m") {
+            // Adaptive quality: keep real AI on slow desktop GPUs by dropping
+            // from the medium model to the smaller trained CNN before giving up.
+            const weightsUrl = contentType === "anime"
+              ? "/models/websr/animation-s.json" : "/models/websr/real-life-s.json";
+            const smaller = await fetch(weightsUrl, { signal: abortController.signal });
+            if (!smaller.ok) throw new Error("Modelo compacto indisponível");
+            if (cancelled) return;
+            engine.switchNetwork("anime4k/cnn-2x-s", await smaller.json());
+            networkSize = "s";
+            slowFrames = 0;
+            rendered = 0;
+            previousAvg.current = 0;
+          } else {
+            unavailable("GPU abaixo do desempenho necessário para IA em tempo real");
+            return;
+          }
         }
       } catch {
         unavailable("A GPU ou a origem do vídeo não permite inferência neural neste stream");
@@ -188,11 +206,14 @@ export function useNeuralVideoUpscaler(
           unavailable("Vídeo já possui resolução alta para o modelo IA 2×");
           return;
         }
+        // Medium-capacity trained network on desktops with smaller source
+        // frames; compact network on mobile and higher resolution sources.
+        networkSize = window.innerWidth >= 1024 && video.videoHeight <= 720 ? "m" : "s";
+        const weightsUrl = "/models/websr/" +
+          (contentType === "anime" ? "animation" : "real-life") + "-" + networkSize + ".json";
         const [WebSR, weightsResponse] = await Promise.all([
           loadVendor(),
-          fetch(contentType === "anime"
-            ? "/models/websr/animation-s.json" : "/models/websr/real-life-s.json",
-          { signal: abortController.signal }),
+          fetch(weightsUrl, { signal: abortController.signal }),
         ]);
         if (!weightsResponse.ok) throw new Error("Pesos do modelo indisponíveis");
         const weights = await weightsResponse.json() as unknown;
@@ -205,7 +226,7 @@ export function useNeuralVideoUpscaler(
         engine = new WebSR({
           gpu: device,
           canvas,
-          network_name: "anime4k/cnn-2x-s",
+          network_name: networkSize === "m" ? "anime4k/cnn-2x-m" : "anime4k/cnn-2x-s",
           weights,
         });
         nextFrame();
