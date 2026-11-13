@@ -1,0 +1,17 @@
+name: Diagnose Globo Bahia against Saimo
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/probe-tv-bahia.mjs'
+      - '.github/workflows/probe-tv-bahia.yml'
+  workflow_dispatch:
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun scripts/probe-tv-bahia.mjs
