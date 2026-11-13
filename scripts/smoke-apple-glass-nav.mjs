@@ -36,15 +36,21 @@ const inspectExpression = `(() => {
     if(!node)return null;
     const s=getComputedStyle(node);
     const rect=node.getBoundingClientRect();
-    return {display:s.display,backdrop:s.backdropFilter||s.webkitBackdropFilter,
+    return {display:s.display,position:s.position,backdrop:s.backdropFilter||s.webkitBackdropFilter,
       background:s.backgroundColor,border:s.borderColor,
-      left:rect.left,right:rect.right,width:rect.width,
+      left:rect.left,right:rect.right,width:rect.width,height:rect.height,
+      parent:node.parentElement?.className||"",columns:s.gridTemplateColumns,
       alpha:(()=>{const c=s.backgroundColor.match(/[\\d.]+/g)||[];return c.length===4?Number(c[3]):1;})()};
   };
   return {width:innerWidth,platform:document.documentElement.dataset.zfPlatform,
     header:info(".ydo-header"),dock:info(".zf-mobile-dock"),
     search:info(".zf-mobile-search-fab"),active:info(".zf-mobile-tab.is-active"),
-    links:[...document.querySelectorAll(".zf-mobile-tab")].map(el=>el.getAttribute("href"))};
+    links:[...document.querySelectorAll(".zf-mobile-tab")].map(el=>el.getAttribute("href")),
+    dockSearchInside:!!document.querySelector(".zf-mobile-dock > .zf-mobile-search-fab"),
+    navItemCount:document.querySelector(".zf-mobile-dock")?.children.length||0,
+    accessibleTitles:[...document.querySelectorAll(".zf-mobile-dock > .zf-mobile-tab")]
+      .map(el=>({title:el.title,label:el.textContent?.trim(),current:el.getAttribute("aria-current")})),
+  };
 })()`;
 try{
   let live=false;
@@ -91,7 +97,10 @@ try{
   await send("Runtime.enable");
   mkdirSync("artifacts",{recursive:true});
   const cases=[
+    {name:"mobile-320",width:320,height:720,mobile:true,ua:"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"},
     {name:"mobile",width:390,height:844,mobile:true,ua:"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"},
+    {name:"mobile-430",width:430,height:932,mobile:true,ua:"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"},
+    {name:"mobile-landscape",width:844,height:390,mobile:true,ua:"Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"},
     {name:"desktop",width:1440,height:900,mobile:false,ua:"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"},
   ];
   for(const scenario of cases){
@@ -118,12 +127,21 @@ try{
     inspect("header",state.header);
     if(scenario.mobile){
       inspect("dock",state.dock);
-      inspect("search",state.search);
+      if(!state.dockSearchInside||state.navItemCount!==6)
+        throw new Error("Expected one unified capsule with 5 destinations and integrated search");
+      if(state.search?.position==="fixed"||state.search?.parent!=="zf-mobile-dock")
+        throw new Error("Search button must be inside the dock, not detached: "+JSON.stringify(state.search));
+      if(state.search.left<state.dock.left-1||state.search.right>state.dock.right+1)
+        throw new Error("Search control extends outside capsule: "+JSON.stringify(state.search));
       if(state.dock.left<0||state.dock.right>scenario.width+1)
         throw new Error("Dock out of viewport: "+JSON.stringify(state.dock));
       if(state.header.left<0||state.header.right>scenario.width+1)
         throw new Error("Header out of viewport: "+JSON.stringify(state.header));
-      if(state.links.length!==5)throw new Error("Expected five navigation tabs");
+      if(state.links.length!==5)throw new Error("Expected five catalogue destinations");
+      if(!state.accessibleTitles.every(link=>link.title&&link.label))
+        throw new Error("Missing accessible labels on icon-only tabs");
+      if(!state.active||state.active.height<43)
+        throw new Error("Active capsule has insufficient touch target");
     }
     const screenshot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-"+scenario.name+".png",Buffer.from(screenshot.data,"base64"));
