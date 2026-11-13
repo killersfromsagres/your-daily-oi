@@ -37,6 +37,21 @@ for(const id of ["2442829","1032723"]){
   }catch(error){console.log(JSON.stringify({name:"sportsdb-"+endpoint,id,error:String(error)}));}
  }
 }
+try{
+ const id="401916338",league="fifa.friendly";
+ const response=await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/"+league+"/summary?event="+id,{signal:AbortSignal.timeout(7000)});
+ const data=await response.json();
+ console.log(JSON.stringify({name:"espn-live-lineup-shape",http:response.status,
+   rosters:data.rosters?.slice(0,2).map(team=>({team:team.team?.displayName,
+     keys:Object.keys(team),coach:team.coach,coaches:team.coaches,
+     rosterLength:team.roster?.length,sample:team.roster?.slice(0,15).map(player=>({
+       id:player.athlete?.id,name:player.athlete?.displayName,formationPlace:player.formationPlace,
+       starter:player.starter,starting:player.starting,isStarter:player.isStarter,
+       subbedIn:player.subbedIn,subbedOut:player.subbedOut,position:player.position,
+       keys:Object.keys(player),
+     }))})),
+   boxscoreForm:data.boxscore?.form?.slice(0,2)}).slice(0,8500));
+}catch(e){console.log(JSON.stringify({name:"espn-live-lineup-shape",error:String(e)}))}
 const league="bra.1";
 const id=await inspect("espn-bra",`https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${d}&limit=120`);
 await inspect("zang",`https://zangflix.vercel.app/api/jogos-agenda?data=${date}`,30000);
