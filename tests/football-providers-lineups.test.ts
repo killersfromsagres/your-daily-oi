@@ -76,6 +76,34 @@ describe("published lineups only",()=>{
     expect(data.equipes[0].coach?.name).toBe("Treinador");
     expect(data.completa).toBe(false);
   });
+  test("ESPN's substitutes with formationPlace zero are never treated as starters",()=>{
+    const makeRoster=(club:string)=>({
+      team:{displayName:club},
+      roster:Array.from({length:25},(_,index)=>({
+        athlete:{id:String(index+100),displayName:"Player "+index},
+        position:{name:index===0?"Goalkeeper":"Defender"},
+        formationPlace:index<11?index+1:0,
+      })),
+    });
+    const response=parseESPNLineups("fifa.friendly:12345",{
+      rosters:[makeRoster("Mandante"),makeRoster("Visitante")],
+    });
+    expect(response.equipes).toHaveLength(2);
+    expect(response.equipes[0].starting).toHaveLength(11);
+    expect(response.equipes[0].substitutes).toHaveLength(14);
+    expect(response.completa).toBe(true);
+  });
+  test("an inconsistent provider cannot claim a 25-player starting lineup",()=>{
+    const roster=Array.from({length:25},(_,i)=>({
+      athlete:{id:String(i+1),displayName:"Player "+i},
+      position:{name:"Defender"},starter:true,
+    }));
+    const result=parseESPNLineups("bra.1:12345",{
+      rosters:[{team:{displayName:"Mandante"},roster},{team:{displayName:"Visitante"},roster}],
+    });
+    expect(result.completa).toBe(false);
+    expect(result.equipes[0].starting.length).toBeLessThanOrEqual(11);
+  });
   test("rejects non-whitelisted league identifiers and remote URLs",()=>{
     expect(validLineupId("bra.1:12345")).toBe(true);
     expect(validLineupId("sportsdb:2442829")).toBe(true);
