@@ -63,7 +63,7 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
   }
   const teams=[...groups.values()].slice(0,2);
   const available=teams.some(t=>t.starting.length>0);
-  const complete=teams.length===2 && teams.every(t=>t.starting.length>=11);
+  const complete=teams.length===2 && teams.every(t=>t.starting.length===11);
   return {
     jogo,atualizadoEm:new Date().toISOString(),disponivel:available,completa:complete,
     origem:"TheSportsDB",equipes:teams,
@@ -111,17 +111,24 @@ export function parseESPNLineups(jogo:string,raw:ESPNSummary):MatchLineups {
           group:groupPosition(label),photo:headshot(p.athlete),
           grid:p.formationPlace==null?null:String(p.formationPlace),
         },starter:p.starter===true||p.starting===true||p.isStarter===true||
-          (p.formationPlace!==undefined&&p.formationPlace!==null)};
+          // ESPN frequently assigns formationPlace=0 to *every substitute*.
+          // Checking for non-null put entire 25-player squads on the pitch.
+          (p.formationPlace!==undefined&&p.formationPlace!==null&&
+            /^\\d+(?::\\d+)?$/.test(String(p.formationPlace))&&
+            Number(String(p.formationPlace).split(":")[0])>0)};
       });
     return {
       name:nameOf(item.team?.displayName||item.team?.name||form?.team?.displayName)||"Equipe",
       formation:nameOf(item.formation||form?.formation)||null,
       crest:safePhoto(item.team?.logo||form?.team?.logo),coach:crew,
-      starting:players.filter(p=>p.starter).map(p=>p.player),
+      // Never render more than eleven as confirmed. A malformed provider
+      // payload is treated as pending, not sliced into a fictional starting XI.
+      starting:players.filter(p=>p.starter).length<=11
+        ?players.filter(p=>p.starter).map(p=>p.player):[],
       substitutes:players.filter(p=>!p.starter).map(p=>p.player),
     };
   });
-  const available=teams.some(t=>t.starting.length>0),complete=teams.length===2&&teams.every(t=>t.starting.length>=11);
+  const available=teams.some(t=>t.starting.length>0),complete=teams.length===2&&teams.every(t=>t.starting.length===11);
   return {
     jogo,atualizadoEm:new Date().toISOString(),disponivel:available,completa:complete,
     origem:"ESPN",equipes:teams,
