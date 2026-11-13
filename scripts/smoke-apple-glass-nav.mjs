@@ -44,9 +44,9 @@ const inspectExpression = `(() => {
   };
   return {width:innerWidth,platform:document.documentElement.dataset.zfPlatform,
     header:info(".ydo-header"),dock:info(".zf-mobile-dock"),
-    search:info(".zf-mobile-search-fab"),active:info(".zf-mobile-tab.is-active"),
+    search:info(".ydo-search-trigger-btn"),active:info(".zf-mobile-tab.is-active"),
     links:[...document.querySelectorAll(".zf-mobile-tab")].map(el=>el.getAttribute("href")),
-    dockSearchInside:!!document.querySelector(".zf-mobile-dock > .zf-mobile-search-fab"),
+    hasBottomSearch:!!document.querySelector(".zf-mobile-dock .zf-mobile-search-fab"),
     navItemCount:document.querySelector(".zf-mobile-dock")?.children.length||0,
     accessibleTitles:[...document.querySelectorAll(".zf-mobile-dock > .zf-mobile-tab")]
       .map(el=>({title:el.title,label:el.textContent?.trim(),current:el.getAttribute("aria-current")})),
@@ -127,12 +127,12 @@ try{
     inspect("header",state.header);
     if(scenario.mobile){
       inspect("dock",state.dock);
-      if(!state.dockSearchInside||state.navItemCount!==6)
-        throw new Error("Expected one unified capsule with 5 destinations and integrated search");
-      if(state.search?.position==="fixed"||state.search?.parent!=="zf-mobile-dock")
-        throw new Error("Search button must be inside the dock, not detached: "+JSON.stringify(state.search));
-      if(state.search.left<state.dock.left-1||state.search.right>state.dock.right+1)
-        throw new Error("Search control extends outside capsule: "+JSON.stringify(state.search));
+      if(state.hasBottomSearch||state.navItemCount!==5)
+        throw new Error("Expected five menu entries and no bottom search icon");
+      if(!state.search||state.search.parent!=="ydo-header-tools")
+        throw new Error("Upper header search was removed unexpectedly");
+      if(Math.abs((state.dock.left+state.dock.right)/2-scenario.width/2)>1)
+        throw new Error("Bottom navigation is not horizontally centered: "+JSON.stringify(state.dock));
       if(state.dock.left<0||state.dock.right>scenario.width+1)
         throw new Error("Dock out of viewport: "+JSON.stringify(state.dock));
       if(state.header.left<0||state.header.right>scenario.width+1)
@@ -146,31 +146,29 @@ try{
     const screenshot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-"+scenario.name+".png",Buffer.from(screenshot.data,"base64"));
     if(scenario.name==="mobile"){
-      // Verify the integrated search still opens the functional catalogue drawer
-      // after moving its button into the six-slot navigation capsule.
-      await evalInPage('document.querySelector(".zf-mobile-dock > .zf-mobile-search-fab").click()');
+      // The search icon stays in the top header, NOT in the bottom capsule.
+      await evalInPage('document.querySelector(".ydo-search-trigger-btn").click()');
       let opened=false;
       for(let tries=0;tries<28;tries++){
-        opened=Boolean(await evalInPage('!!document.querySelector(".zf-mobile-menu-panel") && !!document.querySelector(".zf-mobile-menu-panel input[type=search]")'));
+        opened=Boolean(await evalInPage('!!document.querySelector(".ydo-search-expand .ydo-search-input")'));
         if(opened)break;
         await sleep(180);
       }
-      if(!opened)throw new Error("Integrated search failed to open the catalogue drawer");
-      await evalInPage('document.querySelector(".zf-mobile-menu-close").click()');
+      if(!opened)throw new Error("Upper search field did not open");
+      await evalInPage('document.querySelector(".ydo-search-close").click()');
       for(let tries=0;tries<28;tries++){
-        const closed=await evalInPage('!document.querySelector(".zf-mobile-menu-panel")');
-        if(closed)break;
+        if(await evalInPage('!document.querySelector(".ydo-search-expand")'))break;
         await sleep(150);
       }
-      if(await evalInPage('!!document.querySelector(".zf-mobile-menu-panel")'))
-        throw new Error("Catalogue drawer did not close");
+      if(await evalInPage('!!document.querySelector(".ydo-search-expand")'))
+        throw new Error("Upper search field did not close");
       await evalInPage('document.querySelector(".zf-mobile-dock > a:nth-child(2)").click()');
       for(let tries=0;tries<30;tries++){
         if(await evalInPage('location.pathname==="/generos/filmes"'))break;
         await sleep(180);
       }
       if(!await evalInPage('location.pathname==="/generos/filmes"'))
-        throw new Error("Filmes tab navigation failed after integrating search");
+        throw new Error("Filmes tab navigation failed");
     }
     console.log(JSON.stringify({event:"apple-glass-browser",name:scenario.name,...state}));
   }
