@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
+import { MatchLineups } from "@/components/sports/MatchLineups";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
@@ -131,6 +132,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
           </div>
         )}
       </div>
+      <MatchLineups game={game} />
     </article>
   );
 }
