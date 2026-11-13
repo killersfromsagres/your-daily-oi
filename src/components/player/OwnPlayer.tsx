@@ -267,32 +267,44 @@ export function OwnPlayer({
     catch { return false; }
   });
   const [hqNotice, setHqNotice] = useState<string | null>(null);
+  const [webglFailed, setWebglFailed] = useState(false);
+
+  // Failure of an optional renderer must NEVER change the user's HQ setting,
+  // permanently disable HQ or stop audio/video. Restore native compositing.
   const handleHqDowngrade = useCallback(() => {
-    setHqEnabled(false);
-    try { localStorage.setItem("zangflix:ai-upscale", "false"); } catch {}
-    setHqNotice("Melhoria desativada para preservar a reprodução");
-    setTimeout(() => setHqNotice(null), 4000);
+    setWebglFailed(true);
+    setHqNotice("HQ: esta fonte bloqueia o processamento por GPU ou excedeu o limite de desempenho. Ajuste visual leve aplicado.");
   }, []);
+
   const neural = useNeuralVideoUpscaler(videoRef, neuralCanvasRef, hqEnabled, contentType);
   const enhancer = useVideoEnhancer(
-    videoRef, canvasRef, hqEnabled && neural.status === "unavailable", handleHqDowngrade
+    videoRef, canvasRef,
+    hqEnabled && neural.status === "unavailable" && !webglFailed,
+    handleHqDowngrade
   );
-  const enhancedActive = neural.active || enhancer.active;
+  const enhancedActive = hqEnabled && (neural.active || (!webglFailed && enhancer.active));
+  // Native compositor fallback: improves tones slightly but does NOT claim
+  // to reconstruct pixels when browser CORS prevents GPU video readback.
+  const nativeHqFallback = hqEnabled && neural.status === "unavailable" && webglFailed;
   useEffect(() => {
     if (!hqEnabled || neural.status !== "unavailable") return;
-    setHqNotice((neural.reason || "IA indisponível") + " · HQ clássico ativado");
-    const noticeTimer = setTimeout(() => setHqNotice(null), 5500);
+    setHqNotice((neural.reason || "A IA não está disponível nesta fonte") +
+      " · usando HQ compatível");
+    const noticeTimer = setTimeout(() => setHqNotice(null), 5000);
     return () => clearTimeout(noticeTimer);
   }, [hqEnabled, neural.status, neural.reason]);
 
   const toggleHq = useCallback(() => {
-    setHqEnabled(prev => {
-      const next = !prev;
-      try { localStorage.setItem("zangflix:ai-upscale", String(next)); } catch {}
-      if (!next) setHqNotice(null);
-      return next;
-    });
-  }, []);
+    const next = !hqEnabled;
+    setHqEnabled(next);
+    if (next) {
+      setWebglFailed(false); // Retry on demand, never restart the video.
+      setHqNotice("HQ ativado: procurando o melhor processamento disponível…");
+    } else {
+      setHqNotice(null);
+    }
+    try { localStorage.setItem("zangflix:ai-upscale", String(next)); } catch {}
+  }, [hqEnabled]);
 
   const updateVideoResolution = useCallback(() => {
     const v = videoRef.current;
@@ -963,7 +975,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         onCanPlay={measureAndImproveQuality}
         style={{
           opacity: enhancedActive ? 0 : 1,
-          transition: "opacity 0.25s ease-in-out",
+          filter: nativeHqFallback ? "contrast(1.06) saturate(1.035)" : "none",
+          transition: "opacity 0.25s ease-in-out, filter 0.2s ease-in-out",
         }}
       />
 
@@ -1220,7 +1233,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           onCast={engine.castToTv}
           hqSupported={true}
           hqActive={hqEnabled}
-          hqMode={neural.status === "loading" ? "loading" : neural.status === "unavailable" ? "shader" : "ai"}
+          hqMode={neural.status === "loading" ? "loading" : neural.active ? "ai" : "shader"}
           onToggleHq={toggleHq}
         />
       </div>
