@@ -14,11 +14,15 @@ describe("ZANG FLIX Apple-style liquid glass",()=>{
     expect(link).toBeGreaterThan(root.indexOf('href: navPremiumCss'));
     expect(link).toBeGreaterThan(root.indexOf('href: mobileAppCss'));
   });
-  test("glass surfaces use low-alpha backgrounds and real blur, not opaque blocks",()=>{
-    expect(css).toContain("--zf-glass-bg: rgba(225, 235, 255, .075)");
+  test("dark smoked glass uses neutral translucent tint and keeps the original strong blur",()=>{
+    expect(css).toContain("--zf-glass-bg: rgba(9, 11, 15, .49)");
+    expect(css).toContain("--zf-glass-bg-strong: rgba(9, 11, 15, .56)");
     expect(css).toContain("backdrop-filter: blur(32px)");
     expect(css).toContain("backdrop-filter: blur(31px)");
     expect(css).toContain("-webkit-backdrop-filter: blur(32px)");
+    expect(css).toContain("brightness(.80)");
+    expect(css).toContain("brightness(.82)");
+    expect(css).not.toContain("rgba(228,237,255,.065)");
     expect(css).not.toContain("rgba(13,16,26,.94)");
     expect(css).not.toContain("rgba(20,24,35,.75)");
   });
