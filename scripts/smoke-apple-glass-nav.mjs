@@ -110,7 +110,10 @@ try{
     const inspect=(name,style)=>{
       if(!style)throw new Error("Missing "+name+" on "+scenario.name);
       if(!/blur\(/.test(style.backdrop||""))throw new Error(name+" has no backdrop blur: "+JSON.stringify(style));
-      if(style.alpha>=.31)throw new Error(name+" has opaque background alpha "+style.alpha);
+      // Dark smoked glass should remain translucent: enough black tint to
+      // avoid washed-out controls, but never a solid opaque backdrop.
+      if(style.alpha<.39||style.alpha>.70)throw new Error(name+" is not translucent smoke glass (alpha "+style.alpha+")");
+      if(!/brightness\(0\.(?:8|82)/.test(style.backdrop||""))throw new Error(name+" lacks darkened backdrop: "+style.backdrop);
     };
     inspect("header",state.header);
     if(scenario.mobile){
