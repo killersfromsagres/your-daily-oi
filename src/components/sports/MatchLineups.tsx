@@ -140,7 +140,7 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
             <div>
               <span>ESCALAÇÃO · {side==="home"?"MANDANTE":"VISITANTE"}</span>
               <h2>{selectedName}</h2>
-              <p>{selected?.formation?"Formação "+selected.formation:"Formação não informada"} · {photoCount(selected)} titulares divulgados</p>
+              <p>{selected?.formation?"Formação "+selected.formation:"Formação não informada"} · {(selected?.starting.length||0)} titulares divulgados</p>
             </div>
             <button type="button" className="zf-lineup-refresh"
               onClick={()=>setVersion(v=>v+1)} disabled={loading} aria-label="Atualizar escalação">
