@@ -371,27 +371,20 @@ html[data-zf-platform="tv"] .ydo-header .ydo-nav-football[data-status="active"] 
   html:not([data-zf-platform="tv"]) .ambient-glow {
     display: none !important;
   }
+  /*
+   * Preserve the GPU budget by disabling expensive blurred TV overlays only.
+   * Do NOT disable the navigation glass: the old !important background fills
+   * and backdrop-filter:none rules made every later glass theme appear opaque.
+   */
   html:not([data-zf-platform="tv"]) :is(
-    .ydo-header, .zf-mobile-dock, .zf-mobile-menu-panel,
-    .zf-mobile-menu-scrim, .ztv-guide-overlay, .ztv-explore-glass
+    .ztv-guide-overlay, .ztv-explore-glass
   ) {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
   html:not([data-zf-platform="tv"]) .ydo-header {
-    background-color: #131b29 !important;
-    box-shadow: 0 8px 22px rgba(0,0,0,.27);
     will-change: auto;
   }
-  html:not([data-zf-platform="tv"]) .zf-mobile-dock {
-    background: #111a28 !important;
-    box-shadow: 0 9px 27px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.08);
-  }
-  html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
-    background: #121c2b !important;
-    box-shadow: -8px 0 32px rgba(0,0,0,.38);
-  }
-  html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim { background: rgba(2,7,15,.86); }
   html:not([data-zf-platform="tv"]) .ydo-row-section {
     content-visibility: auto;
     contain-intrinsic-size: auto 390px;
