@@ -8,7 +8,7 @@ on:
 jobs:
   sports-premium:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     permissions: { contents: read }
     steps:
       - uses: actions/checkout@v4
@@ -20,3 +20,13 @@ jobs:
         run: bun run build
       - name: Sports TypeScript validation
         run: bun scripts/typecheck-sports.mjs
+      - name: Chrome mobile and desktop visual interaction test
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Preserve visual snapshots for inspection
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zang-football-ticket-visual
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7
