@@ -39,7 +39,7 @@ const STATE=`(()=>{
   cards:document.querySelectorAll(".zf-ticket").length,
   ticket:rect?{left:rect.left,right:rect.right,width:rect.width,height:rect.height}:null,
   ticketBg:styles?.backgroundColor||null,
-  lineupButtons:element?.querySelectorAll(".zf-lineup-team-button").length||0,
+  lineupButtons:element?.querySelectorAll(".zf-lineup-single-button").length||0,
   hasWatermark:!!element?.querySelector(".zf-ticket-watermark"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
   dialog:!!dialog,
@@ -110,13 +110,13 @@ try{
    mobile:device.mobile,deviceScaleFactor:device.mobile?2:1});
   await send("Emulation.setUserAgentOverride",{userAgent:device.ua});
   await send("Page.navigate",{url:BASE+"/futebol"});
-  const state=await waitFor(x=>x.cards>0 && x.lineupButtons===2 && x.ticket);
+  const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket);
   if(!state.hasWatermark||!state.hasTeams)throw new Error("Missing ticket brand or team crests: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
   await evaluate('document.querySelector(".zf-ticket").scrollIntoView({block:"center"})');
   await sleep(600);
   await screenshot(device.name+"-ticket");
-  await evaluate('document.querySelector(".zf-ticket .zf-lineup-team-button").click()');
+  await evaluate('document.querySelector(".zf-ticket .zf-lineup-single-button").click()');
   const opened=await waitFor(x=>x.dialog && !!x.activeSide);
   if(!opened.activeSide)throw new Error("Home lineup did not open");
   if(opened.dialogRect.left<-1||opened.dialogRect.right>device.width+1)throw new Error("Lineup modal overflows viewport: "+JSON.stringify(opened));
@@ -128,7 +128,7 @@ try{
   await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});
   await waitFor(x=>!x.dialog);
   console.log(JSON.stringify({event:"sports-ticket-chrome",device:device.name,cards:state.cards,
-   ticketWidth:state.ticket.width,twoLineupButtons:state.lineupButtons,
+   ticketWidth:state.ticket.width,singleLineupButton:state.lineupButtons,
    modalWidth:opened.dialogRect.width,firstClub:opened.title,switchedClub:switched.title,
    pitchOrPending:opened.hasPitch||opened.pending}));
  }
