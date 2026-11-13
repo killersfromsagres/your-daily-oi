@@ -9,10 +9,11 @@ import { MatchLineups } from "@/components/sports/MatchLineups";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
-  Clock3, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
+  Clock3, MapPin, Radio, RefreshCw, ShieldQuestion, Sparkles, Trophy, Tv, WifiOff,
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import "@/styles/jogos-center.css";
+import "@/styles/sports-match-tickets.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
@@ -42,97 +43,91 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
     <span className="zgame-crest">
       {src && !bad ? (
         <img src={src} alt={"Escudo do " + name} loading="lazy" decoding="async" onError={() => setBad(true)} />
-      ) : <span className="zgame-monogram" aria-label={"Escudo indisponível: " + name}>{initials || "FC"}</span>}
-    </span>
-  );
-}
-export function MatchCard({ game, onWatch, onExplore }: {
+      ) : <span className="zgame-monogram" aria-label={"Escudo indisponível: " + export function MatchCard({ game, onWatch, onExplore }: {
   game: JogoBrasileirao;
   onWatch: (id: string) => void;
   onExplore?: (() => void) | undefined;
 }) {
-  const active = game.status === "ao-vivo";
-  const hasScore = game.placarCasa !== null && game.placarFora !== null;
-  const watchable = Boolean(game.canalId);
-  const livePhase = game.fase === "intervalo" ? "INTERVALO" :
-    [game.faseRotulo || "Ao vivo", game.minuto].filter(Boolean).join(" · ").toUpperCase();
-  const scoreLabel = active ? livePhase : game.status === "encerrado" ? "FINAL" :
-    game.status === "adiado" ? "ADIADO" : "CONFRONTO";
-  const time = game.status === "encerrado" ? "ENCERRADO" :
-    game.status === "adiado" ? "ADIADO" : active
-      ? (game.fase === "intervalo" ? "INTERVALO" : (game.faseRotulo || "AO VIVO").toUpperCase() + (game.minuto ? " · " + game.minuto : ""))
-      : game.horarioLocal;
+  const active=game.status==="ao-vivo";
+  const watchable=Boolean(game.canalId);
+  const scored=game.placarCasa!==null&&game.placarFora!==null;
+  const dateParts=game.dataLocal.split("-");
+  const numberDay=dateParts[2]||"--";
+  const monthAbbrev=new Intl.DateTimeFormat("pt-BR",{month:"short",timeZone:"UTC"})
+    .format(new Date(game.dataLocal+"T12:00:00Z")).replace(".","").toUpperCase();
+  const statusLabel=active?(game.fase==="intervalo"?"INTERVALO":game.faseRotulo||"AO VIVO"):
+    game.status==="encerrado"?"ENCERRADO":
+    game.status==="adiado"?"ADIADO":"EM BREVE";
+  const displayTime=active&&scored
+    ?game.placarCasa+" – "+game.placarFora
+    :game.status==="adiado"?"ADIADO":game.horarioLocal;
+  const theme=game.grupo==="copas"||game.grupo==="champions"?"is-cup":"is-league";
+  const venue=game.estadio?.trim();
   return (
-    <article className={"zgame-card" + (active ? " is-live" : "") + (watchable ? " has-channel" : "") + (game.fase === "intervalo" ? " is-halftime" : "")}>
+    <article className={"zgame-card zf-ticket "+theme+(active?" is-live":"")+(watchable?" has-channel":"")}>
+      <div className="zf-ticket-watermark" aria-hidden="true">ZANG <span>FLIX</span></div>
       <button
-        type="button"
-        className="zgame-card-main"
+        type="button" className="zf-ticket-main"
         disabled={!watchable}
-        onClick={() => { if (game.canalId) onWatch(game.canalId); }}
+        onClick={()=>{if(game.canalId)onWatch(game.canalId);}}
         aria-label={watchable
-          ? "Assistir " + game.casa + " contra " + game.fora + " no canal " + game.canalNome
-          : "Transmissão ainda não confirmada"}
+          ?"Assistir "+game.casa+" contra "+game.fora+" no canal "+game.canalNome
+          :"Jogo "+game.casa+" contra "+game.fora+" — transmissão não confirmada"}
       >
-      <div className="zgame-card-header">
-        <span className="zgame-league">
-          <span className="zgame-league-emblem">
-            {game.ligaLogo ? <img src={game.ligaLogo} alt="" loading="lazy" /> : <CompetitionIcon size={19} />}
+        <div className="zf-ticket-masthead">
+          <span className="zf-ticket-date"><strong>{numberDay}</strong><small>{monthAbbrev}</small></span>
+          <span className="zf-ticket-league">
+            <span className="zf-ticket-league-crest">{game.ligaLogo?<img src={game.ligaLogo} alt="" loading="lazy"/>:<CompetitionIcon size={22}/>}</span>
+            <strong title={game.liga}>{game.liga}</strong>
           </span>
-          {game.liga}
-        </span>
-        <span className={"zgame-kickoff" + (active ? " is-live" : "")}>
-          {active && game.fase !== "intervalo" ? <Radio size={12} /> : <Clock3 size={12} />} {time}
-        </span>
-      </div>
-      {game.rodada && <span className="zgame-round">{game.rodada}</span>}
-      <div className="zgame-versus" aria-label={game.casa + " contra " + game.fora}>
-        <div className="zgame-team">
-          <TeamCrest src={game.escudoCasa} name={game.casa} />
-          <strong title={game.casa}>{game.casa}</strong>
+          <span className={"zf-ticket-status"+(active?" is-live":"")}>{active&&<Radio size={11}/>} {statusLabel}</span>
         </div>
-        <div className="zgame-score">
-          {hasScore ? (
-            <span className={"zgame-score-numbers"+(active?" is-live-score":"")} aria-live="polite"
-              aria-label={game.casa+" "+game.placarCasa+" a "+game.placarFora+" "+game.fora}>
-              {game.placarCasa}<small>:</small>{game.placarFora}
-            </span>
-          ) : (
-            <span className="zgame-score-vs">{active?"– : –":"X"}</span>
-          )}
-          <small className={active?"zgame-live-minute":undefined}>{active||hasScore?scoreLabel:"CONFRONTO"}</small>
-        </div>
-        <div className="zgame-team">
-          <TeamCrest src={game.escudoFora} name={game.fora} />
-          <strong title={game.fora}>{game.fora}</strong>
-        </div>
-      </div>
-      </button>
-      <div className="zgame-card-footer">
-        {watchable && game.canalId && game.canalNome ? (
-          <button className="zgame-watch" type="button" onClick={() => onWatch(game.canalId!)}>
-            <span className="zgame-watch-icon">{game.canalLogo
-              ? <img src={game.canalLogo} alt="" loading="lazy" />
-              : <Tv size={17} />}</span>
-            <span><small>{game.status === "encerrado" ? "TRANSMISSÃO IDENTIFICADA" : "ASSISTIR · CANAL CONFIRMADO"}</small><strong>{game.canalNome}</strong>{game.canaisTransmissao && game.canaisTransmissao.length > 1 && <small>Outras opções: {game.canaisTransmissao.filter(name => name !== game.canalNome).join(" · ")}</small>}</span>
-            <ArrowRight size={18} className="zgame-watch-arrow" />
-          </button>
-        ) : game.canaisTransmissao?.length ? (
-          <div className="zgame-announced">
-            <span className="zgame-announced-icon"><Tv size={18} /></span>
-            <span><small>ONDE ASSISTIR · BRASIL</small><strong>{game.canaisTransmissao.join(" · ")}</strong><em>Canal identificado na programação, mas sem reprodução vinculada aqui.</em></span>
+        <div className="zf-ticket-teams" aria-label={game.casa+" contra "+game.fora}>
+          <div className="zf-ticket-team"><TeamCrest name={game.casa} src={game.escudoCasa}/>
+            <strong title={game.casa}>{game.casa}</strong>
           </div>
-        ) : (
-          <div className="zgame-unconfirmed">
-            <span><ShieldQuestion size={17} /> Transmissão brasileira não confirmada para este jogo</span>
-            {onExplore && (
-              <button type="button" onClick={onExplore} title="Explorar canais esportivos disponíveis">
-                Explorar canais <ArrowRight size={14} />
-              </button>
-            )}
+          <span className="zf-ticket-vs">×</span>
+          <div className="zf-ticket-team"><TeamCrest name={game.fora} src={game.escudoFora}/>
+            <strong title={game.fora}>{game.fora}</strong>
+          </div>
+        </div>
+        <div className="zf-ticket-time-block">
+          <span className="zf-ticket-time-caption">{active?"PLACAR AO VIVO":"HORÁRIO DE BRASÍLIA"}</span>
+          <strong className="zf-ticket-time">{displayTime}</strong>
+          {active&&game.minuto&&<small className="zf-ticket-minute">{game.minuto}</small>}
+        </div>
+        <div className="zf-ticket-match-meta">
+          <span className="zf-ticket-round" title={game.rodada||game.faseRotulo||game.liga}>
+            {game.rodada||game.faseRotulo||"PARTIDA"}
+          </span>
+          {venue&&<span className="zf-ticket-stadium"><MapPin size={12}/> {venue}</span>}
+        </div>
+      </button>
+      <div className="zf-ticket-broadcast">
+        {watchable&&game.canalId&&game.canalNome?(
+          <button className="zf-ticket-watch" type="button" onClick={()=>onWatch(game.canalId!)}>
+            <Tv size={16}/>
+            <span><small>ASSISTIR NO CANAL</small><strong>{game.canalNome}</strong></span>
+            <ArrowRight size={16}/>
+          </button>
+        ):game.canaisTransmissao?.length?(
+          <div className="zf-ticket-identified"><Tv size={15}/>
+            <span>TRANSMISSÃO BRASIL · {game.canaisTransmissao.join(" · ")}</span>
+          </div>
+        ):(
+          <div className="zf-ticket-pending">
+            <ShieldQuestion size={15}/>
+            <span>Transmissão a confirmar</span>
+            {onExplore&&<button type="button" onClick={onExplore}>Canais <ArrowRight size={13}/></button>}
           </div>
         )}
       </div>
-      <MatchLineups game={game} />
+      <MatchLineups game={game}/>
+    </article>
+  );
+}
+
+<MatchLineups game={game} />
     </article>
   );
 }
