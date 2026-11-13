@@ -1,199 +1,187 @@
 "use client";
-// src/components/sports/MatchLineups.tsx — live lineup panel and 50/50 football pitch.
-import { useEffect, useId, useMemo, useState } from "react";
-import { ChevronDown, CircleHelp, RefreshCw, Shirt, UsersRound } from "lucide-react";
+// src/components/sports/MatchLineups.tsx — separate team buttons + full-size lineup dialog.
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ChevronLeft, ChevronRight, RefreshCw, Shirt, Users, X } from "lucide-react";
 import type { JogoBrasileirao } from "@/lib/jogos-match";
-import type { LineupPlayer, LineupTeam, MatchLineups, PlayerPosition } from "@/lib/football-lineups";
-import "@/styles/match-lineups.css";
+import type { MatchLineups } from "@/lib/football-lineups";
+import { selectLineupTeam, type TeamSide } from "@/lib/lineup-selection";
+import { TeamLineupBoard } from "./TeamLineupBoard";
+import "@/styles/sports-ticket-lineup.css";
 
 const cache = new Map<string,{data:MatchLineups;time:number}>();
-const LINES: {key:PlayerPosition;name:string}[] = [
-  {key:"GOL",name:"Goleiro"},{key:"DEF",name:"Defesa"},
-  {key:"MEI",name:"Meio-campo"},{key:"ATA",name:"Ataque"},
-];
-function PlayerAvatar({player}:{player:LineupPlayer}){
+function currentCache(id:string) {
+  const item=cache.get(id);
+  if(!item)return null;
+  const ttl=item.data.completa?30*60_000:item.data.disponivel?5*60_000:90_000;
+  return Date.now()-item.time<ttl?item.data:null;
+}
+function LocalCrest({src,name}:{src?:string|null;name:string}) {
   const [failed,setFailed]=useState(false);
-  useEffect(()=>setFailed(false),[player.photo]);
-  return <span className="zlineup-avatar">
-    <span className="zlineup-avatar-initial" aria-hidden="true">{player.name.charAt(0)}</span>
-    {player.photo && !failed && <img
-      src={player.photo} alt={player.name} loading="lazy" decoding="async"
-      onError={()=>setFailed(true)}/>}
+  useEffect(()=>setFailed(false),[src]);
+  return <span className="zf-lineup-crest">
+    {src&&!failed?<img src={src} alt={name} loading="lazy" onError={()=>setFailed(true)}/>:<Shirt size={20} aria-hidden="true"/>}
   </span>;
 }
-function PlayerDot({player}:{player:LineupPlayer}){
-  return <div className="zlineup-player" title={player.name+" · "+player.position}>
-    <PlayerAvatar player={player}/>
-    <span className="zlineup-player-label">{player.number && <b>{player.number}</b>}{player.name}</span>
-    <small>{player.position}</small>
-  </div>;
-}
-function TeamHalf({team,side,backupName,crest}:{team?:LineupTeam;side:"home"|"away";backupName:string;crest?:string}){
-  const lines=useMemo(()=>LINES.map(entry=>({
-    ...entry,players:(team?.starting||[]).filter(p=>p.group===entry.key),
-  })),[team]);
-  return <div className={"zlineup-half zlineup-half--"+side}>
-    <div className="zlineup-side-title">
-      {crest && <img src={crest} alt="" loading="lazy"/>}
-      <strong>{team?.name||backupName}</strong>
-      <span>{team?.formation||"Formação não divulgada"}</span>
-    </div>
-    <div className="zlineup-lanes" aria-label={"Titulares de "+(team?.name||backupName)}>
-      {lines.map(line=><div key={line.key} className={"zlineup-lane zlineup-lane-"+line.key}
-        aria-label={line.name}>
-        {line.players.map(player=><PlayerDot key={player.id} player={player}/>)}
-      </div>)}
-    </div>
-  </div>;
-}
-function Coach({team,backupName}:{team?:LineupTeam;backupName:string}){
-  const [failed,setFailed]=useState(false);
-  const photo=team?.coach?.photo;
-  useEffect(()=>setFailed(false),[photo]);
-  return <div className="zlineup-coach">
-    <span className="zlineup-coach-avatar">
-      {photo&&!failed?<img src={photo} alt="" loading="lazy" onError={()=>setFailed(true)}/>:<Shirt size={19}/>}
-    </span>
-    <span><small>TÉCNICO · {team?.name||backupName}</small>
-      <strong>{team?.coach?.name||"Ainda não informado"}</strong>
-    </span>
-  </div>;
-}
-function MiniTeamPreview({team,name}:{team?:LineupTeam;name:string}){
-  const players=team?.starting||[];
-  const visible=players.slice(0,3);
-  const surnames=players.slice(0,2).map(player=>{
-    const surname=player.name.split(" ").filter(Boolean).at(-1)||player.name;
-    return surname+" · "+player.group;
-  }).join(" / ");
-  return <span className="zlineup-mini-team" title={players.length?players.map(p=>p.name).join(", "):"Aguardando divulgação da escalação"}>
-    <span className="zlineup-mini-head">
-      <span className="zlineup-summary-dot" aria-hidden="true"/>
-      <strong>{name}</strong><small>{players.length?players.length+" confirmados":"Aguardando"}</small>
-    </span>
-    {visible.length>0&&<span className="zlineup-mini-line">
-      <span className="zlineup-mini-faces" aria-hidden="true">
-        {visible.map(player=><span key={player.id} className="zlineup-mini-face">
-          <PlayerAvatar player={player}/>
-        </span>)}
-      </span>
-      <span className="zlineup-mini-names">{surnames}</span>
-    </span>}
-  </span>;
-}
-function isNearMatch(game:JogoBrasileirao):boolean{
-  const at=Date.parse(game.inicioIso),now=Date.now();
-  return Number.isFinite(at)&&now>=at-90*60_000&&now<=at+5*60*60_000;
-}
-export function MatchLineups({game}:{game:JogoBrasileirao}){
-  const id=useId();
-  const [expanded,setExpanded]=useState(false);
-  const [data,setData]=useState<MatchLineups|null>(()=>cache.get(game.id)?.data||null);
+export function MatchLineups({game}:{game:JogoBrasileirao}) {
+  const [side,setSide]=useState<TeamSide|null>(null);
+  const [data,setData]=useState<MatchLineups|null>(()=>currentCache(game.id));
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState<string|null>(null);
-  const [refresh,setRefresh]=useState(0);
-  const near=isNearMatch(game);
+  const [version,setVersion]=useState(0);
+  const headingId=useId();
+  const closeRef=useRef<HTMLButtonElement>(null);
+  const previousFocus=useRef<HTMLElement|null>(null);
+  const opened=side!==null;
+  const homeTeam=selectLineupTeam(game,data,"home");
+  const awayTeam=selectLineupTeam(game,data,"away");
+  const selected=side?selectLineupTeam(game,data,side):null;
+  const selectedName=side==="away"?game.fora:game.casa;
+  const selectedCrest=side==="away"?game.escudoFora:game.escudoCasa;
 
-  // Preload only shortly before kickoff so the card can show real starters
-  // without forcing many requests on a week's worth of future fixtures.
   useEffect(()=>{
-    if(!expanded && !near)return;
-    const cached=cache.get(game.id);
-    const ttl=cached?.data.completa?30*60_000:cached?.data.disponivel?5*60_000:90_000;
-    if(cached && refresh===0 && Date.now()-cached.time<ttl){
-      setData(cached.data);return;
-    }
-    let cancelled=false;
-    const controller=new AbortController();
-    setLoading(true);
+    // Do not leave old team photos visible when navigating to a new fixture.
+    setData(currentCache(game.id));
     setError(null);
+  },[game.id]);
+
+  useEffect(()=>{
+    if(!opened)return;
+    const cached=currentCache(game.id);
+    if(cached&&version===0){setData(cached);return;}
+    const controller=new AbortController();
+    setLoading(true);setError(null);
     fetch("/api/jogos-escalacao?jogo="+encodeURIComponent(game.id),{
-      signal:controller.signal,headers:{Accept:"application/json"},cache:"no-store",
+      cache:"no-store",headers:{Accept:"application/json"},signal:controller.signal,
     }).then(async response=>{
-      if(!response.ok)throw new Error("A fonte de escalações não respondeu ("+response.status+")");
-      const result=await response.json() as MatchLineups;
-      if(!Array.isArray(result.equipes))throw new Error("Dados de escalação inválidos");
-      return result;
-    }).then(value=>{
-      if(cancelled)return;
-      cache.set(game.id,{data:value,time:Date.now()});
-      if(cache.size>100)cache.delete(cache.keys().next().value!);
-      setData(value);
-    }).catch(e=>{
-      if(cancelled)return;
-      setError(e instanceof Error?e.message:"Escalação indisponível");
-    }).finally(()=>{if(!cancelled)setLoading(false);});
-    return ()=>{cancelled=true;controller.abort();};
-  },[game.id,expanded,near,refresh]);
+      if(!response.ok)throw new Error("Escalação temporariamente indisponível ("+response.status+")");
+      const payload=await response.json() as MatchLineups;
+      if(!Array.isArray(payload.equipes))throw new Error("Escalação inválida");
+      return payload;
+    }).then(payload=>{
+      if(controller.signal.aborted)return;
+      cache.set(game.id,{data:payload,time:Date.now()});
+      if(cache.size>120)cache.delete(cache.keys().next().value!);
+      setData(payload);
+    }).catch(err=>{
+      if(controller.signal.aborted)return;
+      setError(err instanceof Error?err.message:"Falha ao carregar escalação");
+    }).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    return ()=>controller.abort();
+  },[game.id,opened,version]);
+
   useEffect(()=>{
-    if(!expanded||data?.completa)return;
+    if(!opened||data?.completa)return;
     const interval=window.setInterval(()=>{
-      if(document.visibilityState==="visible")setRefresh(n=>n+1);
+      if(document.visibilityState==="visible")setVersion(v=>v+1);
     },3*60_000);
     return ()=>window.clearInterval(interval);
-  },[expanded,data?.completa]);
+  },[opened,data?.completa]);
 
-  // Automatically discover newly published starting lineups near kickoff,
-  // even before the viewer opens the pitch. A completed XI stops polling.
   useEffect(()=>{
-    if(!near||expanded||data?.completa)return;
-    const interval=window.setInterval(()=>{
-      if(document.visibilityState==="visible")setRefresh(n=>n+1);
-    },3*60_000);
-    return ()=>window.clearInterval(interval);
-  },[near,expanded,data?.completa]);
+    if(!opened)return;
+    const previousOverflow=document.body.style.overflow;
+    previousFocus.current=document.activeElement instanceof HTMLElement
+      ?document.activeElement:null;
+    document.body.style.overflow="hidden";
+    closeRef.current?.focus();
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){event.preventDefault();setSide(null);}
+      if(event.key==="Tab"){
+        const modal=document.querySelector<HTMLElement>(".zf-lineup-dialog");
+        const focusables=modal?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]),[href],input:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        );
+        if(!focusables?.length)return;
+        const first=focusables[0],last=focusables[focusables.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+        if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+      }
+    };
+    document.addEventListener("keydown",onKey);
+    return ()=>{
+      document.body.style.overflow=previousOverflow;
+      document.removeEventListener("keydown",onKey);
+      previousFocus.current?.focus();
+    };
+  },[opened]);
 
-  const home=data?.equipes.find(t=>t.name.toLowerCase()===game.casa.toLowerCase())||
-    data?.equipes[0];
-  const away=data?.equipes.find(t=>t!==home&&t.name.toLowerCase()===game.fora.toLowerCase())||
-    data?.equipes.find(t=>t!==home);
+  const open=(next:TeamSide)=>{setSide(next);setError(null);};
+  const photoCount=(team:typeof selected)=>team?.starting.length||0;
+  const preview=(sideName:TeamSide)=>{
+    const team=sideName==="home"?homeTeam:awayTeam;
+    const name=sideName==="home"?game.casa:game.fora;
+    const crest=sideName==="home"?game.escudoCasa:game.escudoFora;
+    return <button key={sideName} type="button" className="zf-lineup-team-button"
+      onClick={()=>open(sideName)} aria-label={"Ver escalação do "+name}>
+      <LocalCrest name={name} src={crest}/>
+      <span><small>{sideName==="home"?"MANDANTE":"VISITANTE"}</small>
+        <strong>Escalação {name}</strong>
+        <em>{team?.starting.length?team.starting.length+" titulares divulgados":"Ver formação"}</em>
+      </span>
+      <ChevronRight size={17} aria-hidden="true"/>
+    </button>;
+  };
 
-  return <div className="zlineup-widget">
-    <div className="zlineup-summary" aria-label="Prévia das escalações">
-      <MiniTeamPreview name={game.casa} team={home}/>
-      <MiniTeamPreview name={game.fora} team={away}/>
+  return <>
+    <div className="zf-lineup-actions" aria-label="Escolher escalação de um time">
+      {preview("home")}
+      {preview("away")}
     </div>
-    <button type="button" className="zlineup-toggle" aria-expanded={expanded}
-      aria-controls={id} onClick={()=>setExpanded(value=>!value)}>
-      <UsersRound size={16} strokeWidth={1.8}/>
-      <span>{data?.completa?"Escalações confirmadas":data?.disponivel?"Ver escalação disponível":"Escalação dos times"}</span>
-      {data?.completa&&<span className="zlineup-confirmed">OFICIAL</span>}
-      <ChevronDown size={15} className={expanded?"is-expanded":""}/>
-    </button>
-    {expanded&&<section id={id} className="zlineup-expanded" aria-label={"Escalações de "+game.casa+" e "+game.fora}>
-      <div className="zlineup-expanded-head">
-        <div>
-          <small>ESCALAÇÕES · CAMPO TÁTICO</small>
-          <strong>{game.casa} <span>×</span> {game.fora}</strong>
-        </div>
-        <button className="zlineup-reload" type="button" disabled={loading}
-          onClick={()=>setRefresh(n=>n+1)} aria-label="Atualizar escalações">
-          <RefreshCw size={15} className={loading?"zlineup-loading":""}/>
-        </button>
-      </div>
-      {loading&&!data?<div className="zlineup-pending" role="status"><RefreshCw size={19} className="zlineup-loading"/> Consultando escalações oficiais…</div>
-      :error&&!data?<div className="zlineup-pending" role="alert"><CircleHelp size={18}/> {error}</div>
-      :!data?.disponivel?<div className="zlineup-pending" role="status">
-        <Shirt size={21}/>
-        <div><strong>Aguardando escalações</strong><span>O painel será atualizado quando os titulares forem divulgados pela fonte.</span></div>
-      </div>
-      :<>
-        <p className={"zlineup-source"+(!data.completa?" is-partial":"")}>
-          {data.completa?"Titulares informados pelo provedor.":"Escalação parcial — nomes não divulgados permanecem vazios."}
-          {" "}Fonte: {data.origem}
-        </p>
-        <div className="zlineup-pitch" aria-label="Campo de futebol, primeira metade mandante, segunda visitante">
-          <div className="zlineup-pitch-line" aria-hidden="true"/>
-          <div className="zlineup-pitch-circle" aria-hidden="true"/>
-          <TeamHalf team={home} side="home" backupName={game.casa} crest={game.escudoCasa}/>
-          <TeamHalf team={away} side="away" backupName={game.fora} crest={game.escudoFora}/>
-        </div>
-        <div className="zlineup-coaches">
-          <Coach team={home} backupName={game.casa}/>
-          <Coach team={away} backupName={game.fora}/>
-        </div>
-        <p className="zlineup-footnote">Jogadores distribuídos por posição; o posicionamento exato depende dos dados táticos publicados pela fonte.</p>
-      </>}
-    </section>}
-  </div>;
+    {opened&&typeof document!=="undefined"&&createPortal(
+      <div className="zf-lineup-overlay" onPointerDown={event=>{
+        if(event.target===event.currentTarget)setSide(null);
+      }}>
+        <section className="zf-lineup-dialog" role="dialog" aria-modal="true" aria-labelledby={headingId}>
+          <header className="zf-lineup-dialog-header">
+            <div className="zf-lineup-dialog-brand">
+              <span>ZANG <b>FLIX</b></span><small>FOOTBALL STUDIO / MATCH CENTER</small>
+            </div>
+            <button ref={closeRef} type="button" className="zf-lineup-close"
+              aria-label="Fechar escalação" onClick={()=>setSide(null)}><X size={20}/></button>
+          </header>
+          <div className="zf-lineup-dialog-club" id={headingId}>
+            <LocalCrest src={selectedCrest} name={selectedName}/>
+            <div>
+              <span>ESCALAÇÃO · {side==="home"?"MANDANTE":"VISITANTE"}</span>
+              <h2>{selectedName}</h2>
+              <p>{selected?.formation?"Formação "+selected.formation:"Formação não informada"} · {photoCount(selected)} titulares divulgados</p>
+            </div>
+            <button type="button" className="zf-lineup-refresh"
+              onClick={()=>setVersion(v=>v+1)} disabled={loading} aria-label="Atualizar escalação">
+              <RefreshCw size={17} className={loading?"is-spinning":""}/>
+            </button>
+          </div>
+          <nav className="zf-lineup-switch" aria-label="Alternar entre escalações">
+            <button type="button" className={side==="home"?"is-active":""}
+              aria-pressed={side==="home"} onClick={()=>setSide("home")}>
+              <ChevronLeft size={14}/>{game.casa}
+            </button>
+            <button type="button" className={side==="away"?"is-active":""}
+              aria-pressed={side==="away"} onClick={()=>setSide("away")}>
+              {game.fora}<ChevronRight size={14}/>
+            </button>
+          </nav>
+          <div className="zf-lineup-dialog-body">
+            {loading&&!data?<div className="zf-lineup-message" role="status">
+              <RefreshCw className="is-spinning" size={24}/> Consultando titulares…
+            </div>:
+            error&&!data?<div className="zf-lineup-message" role="alert">{error}
+              <button type="button" onClick={()=>setVersion(v=>v+1)}>Tentar novamente</button>
+            </div>:
+            !selected?.starting.length?<div className="zf-lineup-message" role="status">
+              <Shirt size={30}/><strong>Escalação ainda não divulgada</strong>
+              <p>{data?.mensagem||"Aguardando informações oficiais do provedor de futebol."}</p>
+              {error&&<small>{error}</small>}
+              <button type="button" onClick={()=>setVersion(v=>v+1)}>Atualizar escalação</button>
+            </div>:
+            <>
+              {!data?.completa&&<p className="zf-lineup-partial">Escalação parcial · apenas jogadores publicados pela fonte</p>}
+              <TeamLineupBoard team={selected}/>
+              <p className="zf-lineup-source">Fonte: {data?.origem} · Posições organizadas por setor. O posicionamento exato depende dos dados táticos disponíveis.</p>
+            </>}
+          </div>
+        </section>
+      </div>,document.body)}
+  </>;
 }
