@@ -11,7 +11,7 @@ export interface JogoBrasileirao {
   dataLocal: string;
   rodada: string | undefined;
   /** Optional stadium from the source — never inferred. */
-  estadio?: string;
+  estadio?: string | undefined;
   liga: string;
   ligaId: string;
   ligaLogo: string | null;
