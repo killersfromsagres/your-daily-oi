@@ -52,6 +52,9 @@ export function initialLiveMode(source: LiveSourceLike | undefined): LiveAccessM
   // a Referer/UA is provided for its *fallback* proxy route. The viewer's
   // residential connection often works when an edge/datacenter proxy gets 403.
   if (host.includes("s23-cloudfront-net.lat") || host.includes("s25-cloudfront-net.lat")) return "direct";
+  // 2026-11-13 parity audit: these origins returned valid manifests but no
+  // Access-Control-Allow-Origin to the browser. Try catalog proxy first.
+  if (host === "hls1.sua.tv" || host === "x1colegal.com") return "proxy";
   if (url.pathname.toLowerCase().endsWith(".txt")) return "proxy";
   if (host.includes("dadinhodetapioca.fun")) return "proxy";
   return "direct";
@@ -114,9 +117,17 @@ export function orderLiveSources<T extends LiveSourceLike>(sources: readonly T[]
       return host === "cdn13embed.xyz" || host.endsWith(".cdn13embed.xyz");
     } catch { return false; }
   };
-  // Se não houver alternativa, mantém a fonte original como única tentativa.
-  if (sources.length < 2 || sources.every(highRisk)) return [...sources];
-  return [...sources].sort((left, right) => Number(highRisk(left)) - Number(highRisk(right)));
+  // Reachable government broadcaster with wildcard CORS was observed to
+  // answer while another TV Câmara mirror timed out. Prefer the healthy
+  // origin but never remove alternatives or reorder an all-degraded list.
+  const highConfidence = (source: T): boolean => {
+    try { return new URL(source.url).hostname.toLowerCase() === "stream3.camara.gov.br"; }
+    catch { return false; }
+  };
+  if (sources.length < 2) return [...sources];
+  return [...sources].sort((left, right) =>
+    Number(highRisk(left)) - Number(highRisk(right)) ||
+    Number(highConfidence(right)) - Number(highConfidence(left)));
 }
 
 /**
