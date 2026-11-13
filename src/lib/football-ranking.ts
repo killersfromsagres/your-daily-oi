@@ -24,14 +24,40 @@ const LEAGUE_WEIGHT: Record<string, number> = {
   "conmebol.sudamericana": 320,
   "bra.2": 100,
 };
+// Editorial relevance is based on real fixtures. Never synthesize a Brazil game.
+const NATIONAL_TEAM_WEIGHTS: Record<string,number> = {
+  brasil:5000,brazil:5000,argentina:2800,franca:2550,france:2550,
+  inglaterra:2500,england:2500,espanha:2450,spain:2450,
+  portugal:2420,alemanha:2400,germany:2400,italia:2320,italy:2320,
+  holanda:2250,netherlands:2250,uruguai:2180,uruguay:2180,
+  japao:2050,japan:2050,belgica:2020,belgium:2020,
+  croacia:1900,croatia:1900,coreia:1850,"south korea":1850,
+  "republic of korea":1850,marrocos:1820,morocco:1820,
+};
+function nationalTeamWeight(name:string):number {
+  const normal=name.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"")
+    .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  return NATIONAL_TEAM_WEIGHTS[normal]||0;
+}
+function isNationalCompetition(name:string):boolean {
+  return /amistos|friendly|nations league|world cup|copa do mundo|eliminat|qualif|copa america|euro /i.test(name);
+}
+export function isBrazilFixture(game:Pick<JogoBrasileirao,"casa"|"fora">):boolean {
+  return nationalTeamWeight(game.casa)===5000 || nationalTeamWeight(game.fora)===5000;
+}
 export function matchImportance(match: JogoBrasileirao): number {
   const home = isFeaturedTeam(match.casa);
   const away = isFeaturedTeam(match.fora);
+  const international = isNationalCompetition(match.liga);
+  const priority = international ? Math.max(nationalTeamWeight(match.casa),nationalTeamWeight(match.fora)) : 0;
+  const second = international ? Math.min(nationalTeamWeight(match.casa),nationalTeamWeight(match.fora)) : 0;
   return (LEAGUE_WEIGHT[match.ligaId] ?? 60) +
+    priority + second * .1 +
     (home ? 120 : 0) + (away ? 120 : 0) +
     (home && away ? 75 : 0) +
-    (match.status === "ao-vivo" ? 220 : 0) +
-    (match.canalId ? 25 : 0);
+    (match.status === "ao-vivo" ? 2500 : 0) +
+    (match.status === "encerrado" ? -1700 : 0) +
+    (match.canalId ? 40 : 0);
 }
 /** Live score feed updates match state without discarding verified TV links from the agenda. */
 export function mergeFootballScores(
@@ -96,6 +122,8 @@ export function sortedFootballMatches(games: readonly JogoBrasileirao[]): JogoBr
  */
 export function featuredFootballMatches(games: readonly JogoBrasileirao[], limit=8): JogoBrasileirao[] {
   const featured = games.filter(g =>
+    isBrazilFixture(g) || (isNationalCompetition(g.liga) &&
+      (nationalTeamWeight(g.casa)>0 || nationalTeamWeight(g.fora)>0)) ||
     g.ligaId === "bra.1" || g.ligaId === "uefa.champions" ||
     g.ligaId === "uefa.nations" || g.ligaId === "fifa.worldq.uefa" ||
     isFeaturedTeam(g.casa) || isFeaturedTeam(g.fora)
