@@ -9,6 +9,7 @@ import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeS
 import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje, getJogosPlacares } from "./lib/jogos";
+import { getMatchLineups } from "./lib/football-lineups";
 import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
@@ -2046,6 +2047,20 @@ export default {
         const canal = url.searchParams.get("canal") || "";
         const data = await getCanalEPG(canal);
         return jsonResponse(data, 200, "public, max-age=900");
+      }
+      if (url.pathname === "/api/jogos-escalacao") {
+        if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
+        const jogo=url.searchParams.get("jogo") || "";
+        try {
+          const lineup=await getMatchLineups(jogo);
+          return jsonResponse(lineup, 200, lineup.completa
+            ? "public, max-age=900, stale-while-revalidate=300"
+            : "public, max-age=90, stale-while-revalidate=30");
+        } catch (error) {
+          if (error instanceof RangeError) return jsonResponse({ erro: "Partida inválida" }, 400);
+          console.warn("[Sports] Escalação indisponível",String(error).slice(0,180));
+          return jsonResponse({ erro: "Escalação temporariamente indisponível", jogo }, 503, "no-store");
+        }
       }
       if (url.pathname === "/api/jogos-placares") {
         if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
