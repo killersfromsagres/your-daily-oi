@@ -1,0 +1,145 @@
+/* ZANG FLIX Football Studio — ticket cards and individual tactical pitches.
+   Inspired by vertical match fixtures and full-size broadcast lineups.
+   No team/competition artwork is embedded or fabricated. */
+:root { --zf-sport-gold:#e6bb6a; --zf-pitch-ink:#0b2140; }
+.zf-lineup-actions {
+  position:relative;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;padding:0 12px 14px;margin-top:auto;
+}
+.zf-lineup-team-button {
+  display:flex;align-items:center;gap:7px;min-width:0;min-height:50px;padding:7px 8px;
+  border:1px solid rgba(237,231,220,.16);border-radius:11px;
+  background:linear-gradient(170deg,rgba(255,255,255,.09),rgba(255,255,255,.025));
+  color:#f7f6f3;cursor:pointer;text-align:left;
+  transition:border-color .2s,background .2s,transform .2s;
+}
+.zf-lineup-team-button:hover {background:rgba(255,255,255,.12);border-color:rgba(230,187,106,.49);}
+.zf-lineup-team-button:focus-visible,.zf-lineup-switch button:focus-visible,
+.zf-lineup-close:focus-visible,.zf-lineup-refresh:focus-visible {outline:2px solid var(--zf-sport-gold);outline-offset:2px;}
+.zf-lineup-team-button>.zf-lineup-crest {width:31px;height:31px;flex:0 0 31px;border-radius:8px;}
+.zf-lineup-team-button>span:nth-child(2) {display:flex;min-width:0;flex:1;flex-direction:column;gap:3px;}
+.zf-lineup-team-button small {font-size:8px;letter-spacing:.10em;color:rgba(255,255,255,.56);font-weight:800;}
+.zf-lineup-team-button strong {font-size:10px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.zf-lineup-team-button em {font-size:9px;font-style:normal;color:rgba(255,255,255,.65);}
+.zf-lineup-team-button>svg {flex:0 0 auto;color:var(--zf-sport-gold);}
+.zf-lineup-crest {display:grid;place-items:center;background:rgba(255,255,255,.065);}
+.zf-lineup-crest img {width:100%;height:100%;object-fit:contain;}
+.zf-lineup-crest>svg {color:#e9c988;}
+
+/* Accessible viewport overlay, rendered as a portal to avoid clipped cards. */
+.zf-lineup-overlay {
+  position:fixed;inset:0;z-index:30000;padding:clamp(8px,2.2vw,22px);
+  display:grid;place-items:center;overflow-y:auto;
+  background:rgba(3,7,14,.83);-webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
+}
+.zf-lineup-dialog {
+  width:min(720px,100%);max-height:calc(100dvh - 20px);overflow:auto;
+  border:1px solid rgba(221,237,255,.24);border-radius:24px;
+  background:linear-gradient(155deg,#172a45 0%,#0d1c33 42%,#081322 100%);
+  color:#f7f8fb;box-shadow:0 30px 95px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.14);
+  overscroll-behavior:contain;
+}
+.zf-lineup-dialog-header {display:flex;justify-content:space-between;align-items:center;padding:19px 21px 13px;border-bottom:1px solid rgba(255,255,255,.075);}
+.zf-lineup-dialog-brand {display:flex;flex-direction:column;gap:3px;}
+.zf-lineup-dialog-brand>span {font-size:16px;font-weight:950;letter-spacing:.035em;}
+.zf-lineup-dialog-brand b,.zf-formation-watermark b {color:#f3c672;}
+.zf-lineup-dialog-brand small {font-size:9px;letter-spacing:.15em;color:#8fa5c1;}
+.zf-lineup-close,.zf-lineup-refresh {display:grid;place-items:center;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);color:#fff;background:rgba(255,255,255,.075);cursor:pointer;border-radius:12px;}
+.zf-lineup-close {width:39px;height:39px;}
+.zf-lineup-refresh {width:38px;height:38px;margin-left:auto;}
+.zf-lineup-refresh:disabled {opacity:.55;cursor:default;}
+.zf-lineup-dialog-club {display:flex;align-items:center;gap:14px;padding:20px 23px 15px;}
+.zf-lineup-dialog-club>.zf-lineup-crest {width:65px;height:65px;flex:0 0 65px;border-radius:15px;padding:7px;border:1px solid rgba(255,255,255,.12);}
+.zf-lineup-dialog-club>div {min-width:0;}
+.zf-lineup-dialog-club>div>span {font-size:10px;letter-spacing:.17em;color:#e7bd6d;font-weight:800;}
+.zf-lineup-dialog-club h2 {font-size:clamp(20px,4vw,29px);line-height:1.2;margin:5px 0;letter-spacing:-.045em;overflow-wrap:anywhere;color:#fff;}
+.zf-lineup-dialog-club p {font-size:11px;color:#b3c3d8;margin:0;}
+.zf-lineup-switch {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;padding:0 22px 18px;}
+.zf-lineup-switch button {display:flex;align-items:center;justify-content:center;gap:5px;min-height:42px;padding:8px 9px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.055);color:#becbdd;font-weight:740;font-size:12px;cursor:pointer;}
+.zf-lineup-switch button.is-active {border-color:rgba(240,196,117,.58);color:#fff;background:rgba(225,174,89,.15);box-shadow:inset 0 1px rgba(255,255,255,.13);}
+.zf-lineup-dialog-body {padding:0 20px 23px;}
+.zf-lineup-partial {margin:0 0 8px;font-size:11px;color:#eec991;}
+.zf-lineup-source {margin:12px 0 0;color:rgba(216,229,244,.63);font-size:10px;line-height:1.55;}
+.zf-lineup-message {min-height:340px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:13px;text-align:center;padding:35px 20px;border:1px dashed rgba(241,247,255,.2);border-radius:17px;color:#d6e2f0;font-size:13px;}
+.zf-lineup-message strong {font-size:16px;}
+.zf-lineup-message p {max-width:355px;line-height:1.6;margin:0;color:#a9bdd3;}
+.zf-lineup-message button {padding:10px 14px;border-radius:10px;border:1px solid rgba(236,198,125,.34);background:rgba(232,186,107,.12);color:#f5cb80;cursor:pointer;}
+.is-spinning {animation:zf-pitch-spin 1s linear infinite;}
+@keyframes zf-pitch-spin {to{transform:rotate(360deg)}}
+
+/* Single-team orientation: goalkeeper top, defenders, midfielders, forwards. */
+.zf-formation-pitch {
+  position:relative;overflow:hidden;isolation:isolate;min-height:620px;
+  border-radius:18px;border:1px solid rgba(142,182,231,.38);
+  background:repeating-linear-gradient(180deg,
+    rgba(54,95,151,.11) 0%,rgba(54,95,151,.11) 12.5%,
+    rgba(7,24,49,.04) 12.5%,rgba(7,24,49,.04) 25%),
+    linear-gradient(155deg,#193b69 0%,#0e2a51 50%,#091d3c 100%);
+  box-shadow:inset 0 0 75px rgba(0,0,0,.28);
+}
+.zf-formation-pitch::before {
+  content:"";position:absolute;inset:5% 5%;z-index:0;pointer-events:none;
+  border:2px solid rgba(141,182,236,.25);border-radius:2px;
+}
+.zf-formation-top-box,.zf-formation-bottom-box {
+  position:absolute;left:29%;width:42%;height:17%;pointer-events:none;
+  border:2px solid rgba(132,180,235,.26);z-index:0;
+}
+.zf-formation-top-box {top:5%;border-top:0;}
+.zf-formation-bottom-box {bottom:5%;border-bottom:0;}
+.zf-formation-center-line {position:absolute;top:50%;left:5%;right:5%;height:2px;background:rgba(132,180,235,.23);pointer-events:none;}
+.zf-formation-center-circle {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24%;aspect-ratio:1;border:2px solid rgba(132,180,235,.22);border-radius:50%;pointer-events:none;}
+.zf-formation-watermark {position:absolute;right:15px;bottom:10px;color:rgba(255,255,255,.22);font-size:14px;letter-spacing:.13em;font-weight:950;pointer-events:none;z-index:2;text-shadow:0 2px 8px rgba(0,0,0,.30);}
+.zf-formation-watermark b {color:rgba(247,201,108,.34);}
+.zf-formation-players {position:relative;z-index:1;display:grid;grid-template-rows:repeat(4,1fr);gap:5px;min-height:620px;padding:24px 18px 38px;}
+.zf-formation-row {display:flex;align-items:center;justify-content:space-around;gap:7px;min-width:0;}
+.zf-formation-player {display:flex;flex:0 1 115px;min-width:0;flex-direction:column;align-items:center;text-align:center;gap:4px;text-shadow:0 2px 7px rgba(0,0,0,.84);}
+.zf-formation-portrait {display:grid;place-items:center;position:relative;width:clamp(44px,6vw,74px);height:clamp(44px,6vw,74px);
+  border:2px solid rgba(244,248,255,.92);border-radius:50%;overflow:hidden;background:linear-gradient(140deg,#edf4ff,#b3c6e4);
+  color:#4a6488;box-shadow:0 7px 20px rgba(0,0,0,.32),0 0 0 3px rgba(9,25,52,.26);}
+.zf-formation-portrait img {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 12%;}
+.zf-formation-player strong {display:block;max-width:100%;font-size:clamp(9px,1.5vw,12px);font-weight:800;line-height:1.16;overflow-wrap:anywhere;}
+.zf-formation-player strong span {color:#f2cd92;}
+.zf-formation-player small {display:block;max-width:100%;font-size:9px;color:#bfcee2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.zf-formation-extras {display:grid;gap:10px;margin-top:13px;}
+.zf-formation-coach {display:flex;align-items:center;gap:11px;min-height:63px;border-radius:13px;border:1px solid rgba(215,233,255,.12);background:rgba(255,255,255,.045);padding:11px;}
+.zf-formation-coach-photo>.zf-formation-portrait {width:42px;height:42px;border-radius:11px;border:1px solid rgba(255,255,255,.3);}
+.zf-formation-coach>div {display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;}
+.zf-formation-coach small,.zf-formation-bench h4 {font-size:10px;font-weight:800;letter-spacing:.10em;color:#a2b8d0;}
+.zf-formation-coach strong {font-size:13px;color:#fff;}
+.zf-formation-coach>svg {color:#d8bf8d;}
+.zf-formation-bench {border-radius:13px;border:1px solid rgba(215,233,255,.12);background:rgba(255,255,255,.045);padding:15px;}
+.zf-formation-bench h4 {display:flex;gap:7px;align-items:center;margin:0 0 13px;}
+.zf-formation-bench h4 span {font-size:11px;padding:2px 7px;background:rgba(255,255,255,.1);border-radius:999px;color:#fff;}
+.zf-formation-bench-list {display:flex;flex-wrap:wrap;gap:7px;}
+.zf-formation-bench-list>span {display:flex;gap:5px;align-items:center;max-width:100%;padding:7px 10px;border-radius:9px;background:rgba(255,255,255,.065);font-size:11px;}
+.zf-formation-bench-list b {color:#ebc582;}
+@media (max-width:700px) {
+  .zf-lineup-overlay {padding:0;align-items:end;}
+  .zf-lineup-dialog {width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 9px);border-radius:20px 20px 0 0;border-bottom:0;}
+  .zf-lineup-dialog-header {padding:13px 15px;}
+  .zf-lineup-dialog-club {padding:13px 15px;gap:10px;}
+  .zf-lineup-dialog-club>.zf-lineup-crest {width:47px;height:47px;flex-basis:47px;}
+  .zf-lineup-switch {padding:0 13px 12px;}
+  .zf-lineup-switch button {font-size:11px;}
+  .zf-lineup-dialog-body {padding:0 11px calc(16px + env(safe-area-inset-bottom,0px));}
+  .zf-formation-pitch,.zf-formation-players {min-height:510px;}
+  .zf-formation-players {padding:17px 5px 31px;}
+  .zf-formation-row {gap:2px;}
+  .zf-formation-player {flex-basis:72px;gap:4px;}
+  .zf-formation-portrait {width:clamp(38px,12vw,55px);height:clamp(38px,12vw,55px);}
+  .zf-formation-player strong {font-size:clamp(8px,2.2vw,10px);}
+  .zf-formation-player small {font-size:8px;}
+  .zf-formation-watermark {font-size:11px;}
+}
+@media (max-width:380px) {
+  .zf-lineup-actions {padding-inline:8px;gap:5px;}
+  .zf-lineup-team-button {padding:6px;gap:5px;}
+  .zf-lineup-team-button strong {font-size:9px;}
+  .zf-lineup-team-button>.zf-lineup-crest {width:26px;height:26px;flex-basis:26px;}
+  .zf-formation-pitch,.zf-formation-players {min-height:475px;}
+  .zf-formation-player {flex-basis:65px;}
+  .zf-formation-portrait {width:37px;height:37px;}
+}
+@media(prefers-reduced-motion:reduce){.is-spinning {animation:none}.zf-lineup-team-button {transition:none;}}
