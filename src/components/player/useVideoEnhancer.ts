@@ -290,14 +290,24 @@ export function useVideoEnhancer(
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, videoTexture);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        video
-      );
+      try {
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          video
+        );
+      } catch {
+        // Cross-origin video frames may play in <video> but be forbidden as GPU
+        // textures. Restore native playback instead of crashing the render loop.
+        setSupported(false);
+        setActive(false);
+        onPerformanceDowngrade?.();
+        cancelAnimationFrame(animId);
+        return;
+      }
 
       // PASSE 1: Upscale Catmull-Rom para o FBO intermediário
       gl.bindFramebuffer(gl.FRAMEBUFFER, fboPass1);
