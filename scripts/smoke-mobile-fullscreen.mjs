@@ -27,11 +27,11 @@ const evaluate=async expression=>{
 };
 const state=()=>evaluate(`(()=>{
  const p=document.querySelector('#player'),s=p?.querySelector('.zf-fullscreen-surface');
- return {active:p?.dataset.fullscreen==='true',native:!!document.fullscreenElement,theater:p?.classList.contains('is-theater'),
+ return {mode:new URL(location.href).searchParams.get('mode'),active:p?.dataset.fullscreen==='true',native:!!document.fullscreenElement,theater:p?.classList.contains('is-theater'),
  rotated:p?.classList.contains('is-landscape-fallback'),width:s?.clientWidth,height:s?.clientHeight,transform:s&&getComputedStyle(s).transform,
- locks:window.__locks||0,unlocks:window.__unlocks||0,nativeAtLock:window.__nativeAtLock,overflow:document.body.style.overflow};
+ locks:window.__locks||0,unlocks:window.__unlocks||0,nativeAtLock:window.__nativeAtLock,overflow:document.body?.style.overflow};
 })()`);
-const until=async fn=>{for(let i=0;i<70;i++){const s=await state();if(fn(s))return s;await sleep(100);}throw Error('Fullscreen state timeout: '+JSON.stringify(await state()));};
+const until=async fn=>{for(let i=0;i<70;i++){const s=await state().catch(()=>({}));if(fn(s))return s;await sleep(100);}throw Error('Fullscreen state timeout: '+JSON.stringify(await state()));};
 const click=async()=>{
  const point=await evaluate(`(()=>{const r=document.querySelector('#expand').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`);
  await send("Input.dispatchMouseEvent",{type:"mousePressed",button:"left",clickCount:1,...point});
@@ -74,7 +74,7 @@ try{
   await send('Emulation.setUserAgentOverride',{userAgent:desktop?'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0.0.0 Safari/537.36':'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36'});
   if(desktop)await send('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});else await viewport(false);
   await send('Page.navigate',{url:'http://127.0.0.1:4210/?mode='+mode});
-  await until(s=>s.width>0&&!s.active);await send('Page.bringToFront');await click();
+  await until(s=>s.mode===mode&&s.width>0&&!s.active);await send('Page.bringToFront');await click();
   let opened=await until(s=>s.active&&(mode==='pending'?s.locks===1:mode==='allow'?s.locks===1:mode==='desktop'?true:s.rotated));
   if(desktop&&(opened.locks||opened.rotated))throw Error('Desktop orientation was changed');
   if(!desktop&&mode!=='noapi'&&!opened.nativeAtLock)throw Error('Orientation requested before fullscreen entry');
