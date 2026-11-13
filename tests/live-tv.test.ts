@@ -25,6 +25,8 @@ describe("Formatos Saimo", () => {
     expect(nextLiveMode(source, "proxy", new Set(["direct", "proxy"] as const))).toBeNull();
     expect(initialLiveMode({ url: "https://d1.s25-cloudfront-net.lat/live/index.m3u8", agente: "UA" })).toBe("direct");
     expect(initialLiveMode({ url: "https://cdn.example/playlist.txt" })).toBe("proxy");
+    expect(initialLiveMode({ url: "https://hls1.sua.tv/channel/live.m3u8" })).toBe("proxy");
+    expect(initialLiveMode({ url: "https://x1colegal.com/stream/123.m3u8" })).toBe("proxy");
     expect(initialLiveMode({ url: "https://dadinhodetapioca.fun/live.m3u8" })).toBe("proxy");
     expect(initialLiveMode({ url: "http://cdn.example/stream.m3u8" })).toBe("proxy");
     expect(nextLiveMode({ url: "http://cdn.example/stream.m3u8" }, "proxy", new Set(["proxy"] as const))).toBeNull();
@@ -106,6 +108,12 @@ describe("Priorização de espelhos em canais fechados", () => {
   test("mantém o CDN original como último recurso, mesmo quando bloqueado em outra região", () => {
     const ordered = orderLiveSources([degraded]);
     expect(ordered).toEqual([degraded]);
+  });
+
+  test("prioriza a fonte oficial da TV Câmara em vez do espelho inacessível", () => {
+    const dead = { url: "http://45.162.64.114/live/camara.m3u8" };
+    const official = { url: "https://stream3.camara.gov.br/live/camara.m3u8" };
+    expect(orderLiveSources([dead, official])[0]).toBe(official);
   });
 
   test("não altera a ordem de fontes sem CDN problemático", () => {
