@@ -58,6 +58,7 @@ interface PlayerControlsProps {
   onNext?: () => void;
   hqSupported?: boolean;
   hqActive?: boolean;
+  hqMode?: "ai" | "loading" | "shader";
   onToggleHq?: () => void;
 }
 
@@ -86,6 +87,7 @@ export function PlayerControls({
   onNext,
   hqSupported,
   hqActive,
+  hqMode = "ai",
   onToggleHq,
 }: PlayerControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
@@ -307,7 +309,7 @@ export function PlayerControls({
             </div>
           )}
 
-          {/* Botão Upscaling HQ WebGL */}
+          {/* Neural IA 2x when WebGPU is available; WebGL HQ is visibly labeled. */}
           {hqSupported && (
             <button
               onClick={onToggleHq}
@@ -327,11 +329,12 @@ export function PlayerControls({
                 cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
-              title="HQ · Upscaling de imagem com nitidez adaptativa"
-              aria-label="Upscaling de imagem HQ"
+              title={hqMode === "shader" ? "HQ clássico: nitidez WebGL sem rede neural" : hqMode === "loading" ? "Carregando modelo neural WebGPU" : "IA 2×: super-resolução neural em tempo real com WebGPU"}
+              aria-label={hqMode === "shader" ? "Alternar HQ clássico" : "Alternar super-resolução IA 2 vezes"}
+              aria-pressed={Boolean(hqActive)}
             >
               <Sparkles size={14} style={{ color: hqActive ? "#e8b44a" : "currentColor" }} />
-              <span>HQ</span>
+              <span>{hqMode === "loading" ? "IA…" : hqMode === "shader" ? "HQ" : "IA 2×"}</span>
             </button>
           )}
 
