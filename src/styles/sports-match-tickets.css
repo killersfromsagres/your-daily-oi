@@ -1,0 +1,116 @@
+/* ZANG FLIX Match Ticket 2026 — reference-inspired vertical match tiles.
+   Genuine team badges, strong kickoff typography, round/venue information and
+   exclusive watermark. Shared by Jogos do Dia + the TV sports shelf. */
+.zgame-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+.zf-football-page .zf-football-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+.zgame-card.zf-ticket {
+  --zf-ticket-tint:rgba(8,35,30,.91);
+  --zf-ticket-edge:rgba(130,221,192,.25);
+  position:relative;display:flex;flex-direction:column;min-width:0;min-height:422px;
+  margin:0;padding:0;border-radius:17px;overflow:hidden;
+  border:1px solid var(--zf-ticket-edge);
+  background:
+    radial-gradient(ellipse at 92% -8%,rgba(255,255,255,.12),transparent 49%),
+    linear-gradient(165deg,rgba(27,83,68,.48),rgba(4,16,20,.38) 59%),
+    var(--zf-ticket-tint);
+  color:#f6f6f5;
+  -webkit-backdrop-filter:blur(18px) saturate(115%);
+  backdrop-filter:blur(18px) saturate(115%);
+  box-shadow:inset 0 1px rgba(255,255,255,.10),0 14px 38px rgba(0,0,0,.24);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.zgame-card.zf-ticket.is-cup {
+  --zf-ticket-tint:rgba(38,10,26,.92);
+  --zf-ticket-edge:rgba(225,144,159,.25);
+  background:
+    radial-gradient(ellipse at 92% -8%,rgba(217,112,120,.19),transparent 49%),
+    linear-gradient(170deg,rgba(71,20,40,.50),rgba(20,8,16,.27) 57%),
+    var(--zf-ticket-tint);
+}
+.zgame-card.zf-ticket.is-live {border-color:rgba(242,111,111,.50);}
+.zgame-card.zf-ticket::before {height:2px;background:linear-gradient(90deg,transparent,rgba(244,204,135,.85),transparent);opacity:.75;pointer-events:none;z-index:1;}
+.zgame-card.zf-ticket:hover {transform:translateY(-3px);border-color:rgba(234,192,125,.45);box-shadow:inset 0 1px rgba(255,255,255,.16),0 22px 45px rgba(0,0,0,.28);}
+.zf-ticket-watermark {position:absolute;pointer-events:none;right:11px;bottom:8px;
+  font-size:9px;letter-spacing:.17em;font-weight:950;color:rgba(255,255,255,.12);z-index:1;}
+.zf-ticket-watermark span {color:rgba(244,187,101,.24);}
+.zf-ticket-main {display:flex;flex:1 0 auto;flex-direction:column;gap:0;min-height:254px;
+  width:100%;padding:15px 14px 12px;background:transparent;border:0;
+  color:#f7f7f8!important;text-align:left;cursor:pointer;}
+.zf-ticket-main:disabled {opacity:1;cursor:default;}
+.zf-ticket-main:focus-visible {outline:2px solid #f2c87f;outline-offset:-3px;border-radius:13px;}
+.zf-ticket-masthead {display:flex;align-items:flex-start;gap:7px;min-height:52px;}
+.zf-ticket-date {display:flex;align-items:center;justify-content:center;flex:0 0 43px;flex-direction:column;
+  min-height:49px;border-radius:8px;background:linear-gradient(180deg,#9d2940,#6e1c30);
+  box-shadow:inset 0 1px rgba(255,255,255,.17),0 5px 18px rgba(0,0,0,.28);}
+.zf-ticket.is-league .zf-ticket-date {background:linear-gradient(180deg,#b44754,#812a35);}
+.zf-ticket-date strong {font-size:25px;font-variant-numeric:tabular-nums;line-height:1.12;font-weight:950;letter-spacing:-.055em;color:#fff;}
+.zf-ticket-date small {font-size:9px;letter-spacing:.11em;font-weight:900;color:#fff;}
+.zf-ticket-league {display:flex;flex:1;align-items:center;justify-content:center;gap:5px;min-width:0;margin-top:2px;padding:3px 0;
+  color:rgba(240,244,243,.85);}
+.zf-ticket-league-crest {display:grid;place-items:center;flex:0 0 24px;width:24px;height:28px;}
+.zf-ticket-league-crest img {width:100%;height:100%;object-fit:contain;}
+.zf-ticket-league-crest svg {color:#e4c9a5;}
+.zf-ticket-league strong {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  max-width:100%;overflow:hidden;font-size:9px;line-height:1.25;letter-spacing:.02em;font-weight:900;text-align:center;}
+.zf-ticket-status {flex:0 1 53px;max-width:53px;display:flex;align-items:center;justify-content:center;gap:2px;
+  padding:4px 3px;margin-top:2px;border-radius:5px;background:rgba(255,255,255,.08);
+  color:#bfcdca;font-size:8px;font-weight:850;line-height:1.25;text-align:center;text-transform:uppercase;}
+.zf-ticket-status.is-live {flex-basis:60px;max-width:60px;color:#fff;background:rgba(195,52,62,.38);}
+.zf-ticket-teams {display:grid;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);gap:6px;
+  align-items:center;flex:1;padding:17px 0 10px;min-height:124px;}
+.zf-ticket-team {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;text-align:center;}
+.zf-ticket-team .zgame-crest {display:flex;align-items:center;justify-content:center;width:clamp(48px,4.6vw,74px);height:clamp(48px,4.6vw,74px);
+  padding:6px;border:0;border-radius:8px;background:transparent;filter:drop-shadow(0 9px 13px rgba(0,0,0,.25));}
+.zf-ticket-team .zgame-crest img {width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;}
+.zf-ticket-team strong {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  min-height:26px;max-width:100%;overflow:hidden;font-size:11px;line-height:1.2;color:#fcfcfd;font-weight:850;overflow-wrap:anywhere;}
+.zf-ticket-vs {font-size:19px;line-height:1;color:#c4c0bd;text-align:center;font-weight:300;}
+.zf-ticket-time-block {position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  padding:6px 3px 9px;border-bottom:1px solid rgba(255,255,255,.13);}
+.zf-ticket-time-caption {font-size:9px;letter-spacing:.16em;color:rgba(232,235,235,.62);font-weight:900;}
+.zf-ticket-time {font-size:clamp(30px,3.4vw,41px);line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.05em;font-weight:930;color:#fff;}
+.zf-ticket-minute {position:absolute;right:3px;bottom:12px;color:#f3b6bb;font-size:10px;font-weight:850;}
+.zf-ticket-match-meta {display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:5px;
+  padding:10px 3px 2px;min-height:49px;}
+.zf-ticket-round {max-width:100%;font-size:9px;line-height:1.32;letter-spacing:.05em;color:rgba(232,235,235,.68);
+  font-weight:800;text-transform:uppercase;overflow-wrap:anywhere;}
+.zf-ticket-stadium {display:flex;align-items:center;gap:5px;max-width:100%;font-size:11px;line-height:1.3;
+  text-transform:uppercase;color:#f4f5f5;font-weight:900;overflow-wrap:anywhere;}
+.zf-ticket-stadium svg {flex:0 0 auto;color:#eacb94;}
+.zf-ticket-broadcast {position:relative;z-index:2;min-height:46px;border-top:1px solid rgba(255,255,255,.11);padding:9px 12px 8px;}
+.zf-ticket-watch {display:flex;align-items:center;gap:8px;width:100%;min-height:39px;padding:7px 10px;border:1px solid rgba(246,210,153,.28);
+  border-radius:9px;background:rgba(235,178,89,.12);color:#f6ddac;cursor:pointer;text-align:left;}
+.zf-ticket-watch:hover {background:rgba(235,178,89,.19);}
+.zf-ticket-watch>span {flex:1;display:flex;min-width:0;flex-direction:column;gap:2px;}
+.zf-ticket-watch small {font-size:8px;letter-spacing:.11em;font-weight:800;color:#cdb58e;}
+.zf-ticket-watch strong {font-size:11px;color:#fae8cc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.zf-ticket-watch>svg {flex:0 0 auto;}
+.zf-ticket-identified,.zf-ticket-pending {display:flex;align-items:center;gap:7px;min-height:32px;
+  color:#bbc8c4;font-size:10px;line-height:1.4;}
+.zf-ticket-identified span {overflow-wrap:anywhere;}
+.zf-ticket-pending span {flex:1;}
+.zf-ticket-pending button {display:flex;align-items:center;gap:3px;background:transparent;border:0;
+  color:#ebc582;font-weight:750;font-size:10px;cursor:pointer;padding:3px 0;}
+.zf-ticket-pending button:hover {text-decoration:underline;}
+.zf-ticket .zf-lineup-actions {padding:0 12px 13px;margin-top:0;}
+.zf-ticket .zf-lineup-team-button {min-height:47px;}
+.zf-ticket .zf-lineup-team-button .zf-lineup-crest {flex-basis:27px;width:27px;height:27px;}
+.zf-football-page .zf-football-match>.zf-ticket {height:100%;}
+@media(max-width:1250px) {
+  .zgame-grid,.zf-football-page .zf-football-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:950px) {
+  .zgame-grid,.zf-football-page .zf-football-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:610px) {
+  .zgame-grid,.zf-football-page .zf-football-grid {grid-template-columns:minmax(0,1fr);gap:13px;}
+  .zgame-card.zf-ticket {min-height:398px;}
+  .zf-ticket-main {padding:13px 16px 10px;}
+  .zf-ticket-teams {min-height:130px;}
+  .zf-ticket-team .zgame-crest {width:68px;height:68px;}
+  .zf-ticket-time {font-size:38px;}
+  .zf-ticket-team strong {font-size:12px;}
+  .zf-ticket-league strong {font-size:10px;}
+  .zf-ticket .zf-lineup-team-button {min-height:48px;}
+}
+@media (prefers-reduced-motion:reduce) {.zgame-card.zf-ticket {transition:none;}}
