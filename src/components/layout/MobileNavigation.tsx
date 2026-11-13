@@ -154,11 +154,6 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
           aria-current={mobileTabActive(pathname,"tv") ? "page" : undefined}>
           <Tv2 size={21} strokeWidth={1.9} /><span>TV</span>
         </Link>
-        <button type="button" className={"zf-mobile-search-fab" + (open ? " is-active" : "")}
-          onClick={() => onOpenChange(!open)} aria-expanded={open} aria-controls={panelId}
-          title="Pesquisar e explorar" aria-label={open ? "Fechar menu e pesquisa" : "Pesquisar e explorar o catálogo"}>
-          {open ? <X size={24} strokeWidth={1.8} /> : <Search size={24} strokeWidth={1.8} />}
-        </button>
       </nav>
 
       {open && (
