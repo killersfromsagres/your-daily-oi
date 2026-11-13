@@ -94,6 +94,9 @@ export function useNeuralVideoUpscaler(
     let timer: ReturnType<typeof setTimeout> | null = null;
     let rendered = 0;
     let slowSince = 0;
+    let lastFrameCompletedAt = 0;
+    let frameIntervalAvg = 0;
+    let promoted = false;
     let networkSize: "s" | "m" = "s";
     previousAvg.current = 0;
     const abortController = new AbortController();
@@ -162,8 +165,28 @@ export function useNeuralVideoUpscaler(
         previousAvg.current = previousAvg.current
           ? previousAvg.current * 0.85 + spent * 0.15 : spent;
         rendered++;
-        if (rendered === 1) setStatus("active"); // Never hide native video before first frame.
+        const completedAt = performance.now();
+        if (lastFrameCompletedAt) {
+          const gap = completedAt - lastFrameCompletedAt;
+          frameIntervalAvg = frameIntervalAvg ? frameIntervalAvg * .7 + gap * .3 : gap;
+        }
+        lastFrameCompletedAt = completedAt;
         if (rendered % 15 === 0) setAvgFrameMs(Math.round(previousAvg.current));
+        // Never hide the native video after a single neural frame.
+        // Prove near-real-time throughput before swapping the visible layer.
+        if (!promoted && rendered >= 8) {
+          if (previousAvg.current > 22 || frameIntervalAvg > 55) {
+            unavailable("Super-resolução abaixo da taxa de quadros necessária");
+            return;
+          }
+          promoted = true;
+          setStatus("active");
+        }
+        if (promoted && rendered > 15 &&
+            (previousAvg.current > 34 || frameIntervalAvg > 70)) {
+          unavailable("Queda de FPS detectada; mantendo o vídeo original");
+          return;
+        }
         // 48 ms for a few frames is normal while pipelines compile or the
         // GPU ramps up. Downgrade only after sustained severe pressure.
         if (previousAvg.current > 95) {
@@ -185,6 +208,10 @@ export function useNeuralVideoUpscaler(
             slowSince = 0;
             rendered = 0;
             previousAvg.current = 0;
+            promoted = false;
+            lastFrameCompletedAt = 0;
+            frameIntervalAvg = 0;
+            setStatus("loading");
           } else {
             unavailable("GPU abaixo do desempenho necessário para IA em tempo real");
             return;
