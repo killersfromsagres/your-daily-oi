@@ -22,7 +22,7 @@ describe("Street Fighter movie identity", () => {
     expect(fixed.streams).toBe(original.streams);
     expect(fixed.tmdbId).toBe(11667);
     expect(fixed.tmdb?.releaseYear).toBe(1994);
-    expect(fixed.posterUrl).toBe("");
+    expect(fixed.posterUrl).toContain("/6yh95dD2Y6uWAlPfWCZZygBM1ec.jpg");
   });
   test("respects a separately identified 2026 reboot", () => {
     const newer = make("Street Fighter (2026)");
