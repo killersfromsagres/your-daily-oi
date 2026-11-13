@@ -133,6 +133,16 @@ export function MatchLineups({game}:{game:JogoBrasileirao}){
     return ()=>window.clearInterval(interval);
   },[expanded,data?.completa]);
 
+  // Automatically discover newly published starting lineups near kickoff,
+  // even before the viewer opens the pitch. A completed XI stops polling.
+  useEffect(()=>{
+    if(!near||expanded||data?.completa)return;
+    const interval=window.setInterval(()=>{
+      if(document.visibilityState==="visible")setRefresh(n=>n+1);
+    },3*60_000);
+    return ()=>window.clearInterval(interval);
+  },[near,expanded,data?.completa]);
+
   const home=data?.equipes.find(t=>t.name.toLowerCase()===game.casa.toLowerCase())||
     data?.equipes[0];
   const away=data?.equipes.find(t=>t!==home&&t.name.toLowerCase()===game.fora.toLowerCase())||
