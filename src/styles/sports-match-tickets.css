@@ -156,3 +156,24 @@
   .zf-ticket-time {font-size:33px!important;}
   .zf-ticket-main {padding-inline:12px;}
 }
+
+/* Independently verified alternate broadcasters for the SAME event. */
+.zf-ticket-channel-panel {display:flex;flex-direction:column;gap:7px;}
+.zf-ticket-channel-choices {display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+.zf-ticket-channel-choices button {
+ display:inline-flex;align-items:center;justify-content:center;gap:6px;
+ max-width:100%;min-height:31px;padding:6px 9px;
+ border:1px solid rgba(225,204,162,.28);border-radius:9px;
+ color:#f3e5c9;background:rgba(237,202,141,.075);font-size:10px;
+ font-weight:750;line-height:1.2;cursor:pointer;touch-action:manipulation;
+}
+.zf-ticket-channel-choices button:hover,
+.zf-ticket-channel-choices button:focus-visible {
+ background:rgba(236,192,112,.18);border-color:rgba(247,213,151,.55);
+}
+.zf-ticket-channel-choices button img {width:16px;height:16px;object-fit:contain;}
+.zf-ticket-channel-choices button span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.zf-ticket-identified {color:rgba(255,255,255,.66);}
+@media(max-width:610px){
+ .zf-ticket-channel-choices button {min-height:35px;font-size:11px;}
+}
