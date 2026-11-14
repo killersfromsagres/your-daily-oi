@@ -222,13 +222,13 @@
   }
 }
 
-
 /*
- * ZANG FLIX mobile install shortcut under catalogue search.
- * The existing header install action still handles the verified Android APK
- * and the iOS home-screen instructions; only its placement changes.
- * Keep the CTA outside the bottom dock, aligned to the search control.
+ * ZANG FLIX · search + install actions
+ * Desktop retains the existing inline installation CTA. In mobile layouts,
+ * the download action shares the SEARCH BUTTON's positioning context, so it
+ * cannot vanish when the header collapses while scrolling.
  */
+.zf-search-install-stack { display: contents; }
 .zf-install-mobile-label { display: none; }
 
 @media (max-width: 1120px), (pointer: coarse) and (max-width: 1440px) {
@@ -236,33 +236,57 @@
     overflow: visible;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header {
-    position: absolute;
-    z-index: 4;
-    top: calc(100% + 9px);
-    right: 10px;
-    width: max-content;
-    max-width: calc(100vw - 24px);
+  html:not([data-zf-platform="tv"]) .ydo-header > .zf-search-install-stack {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 0;
+    height: 44px;
+    margin-left: auto;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack > .ydo-header-tools {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
     margin: 0;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-header-apk {
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack > .zf-install-header {
+    position: absolute;
+    z-index: 8;
+    display: flex;
+    top: calc(100% + 10px);
+    left: 50%;
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    margin: 0;
+    transform: translateX(-50%);
+  }
+
+  /* Exactly the same frosted-glass material, outline and depth as the lens. */
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     width: auto;
     min-width: 0;
-    min-height: 40px;
     height: 40px;
+    min-height: 40px;
     padding: 0 12px;
-    border: 1px solid rgba(255, 255, 255, .21);
-    border-radius: 14px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, .105), rgba(255, 255, 255, .025)), rgba(9, 11, 15, .56);
-    -webkit-backdrop-filter: blur(30px) saturate(145%) brightness(.82);
-    backdrop-filter: blur(30px) saturate(145%) brightness(.82);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 10px 28px rgba(0, 0, 0, .30);
-    color: rgba(255, 255, 255, .91);
+    border: 1px solid rgba(255, 255, 255, .26);
+    border-radius: 16px;
+    background: rgba(14, 19, 28, .25);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    box-shadow: inset 0 1px rgba(255, 255, 255, .13), 0 4px 16px #0003;
+    color: #fff;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: .01em;
@@ -270,29 +294,28 @@
     white-space: nowrap;
     text-decoration: none;
     touch-action: manipulation;
-    transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+    transition: background-color .18s ease, border-color .18s ease;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-header-apk:hover,
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-header-apk:focus-visible {
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk:hover,
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk:focus-visible {
     background: rgba(255, 255, 255, .16);
-    border-color: rgba(255, 255, 255, .32);
-    color: #fff;
+    border-color: rgba(255, 255, 255, .36);
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-header-apk svg {
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk svg {
     flex: 0 0 auto;
     width: 16px;
     height: 16px;
     stroke-width: 1.8;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-install-desktop-label,
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-install-tv-link {
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-desktop-label,
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-tv-link {
     display: none;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-install-mobile-label {
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-mobile-label {
     display: inline;
     max-width: none;
     font-size: 11px;
@@ -300,26 +323,39 @@
     white-space: nowrap;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header.is-searching > .zf-install-header {
+  /* The search field needs the available header width and must stay on top. */
+  html:not([data-zf-platform="tv"]) .ydo-header.is-searching > .zf-search-install-stack {
+    width: 100%;
+    flex: 1 1 100%;
+    margin: 0;
+  }
+
+  html:not([data-zf-platform="tv"]) .ydo-header.is-searching .zf-search-install-stack > .zf-install-header {
     display: none;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header .zf-install-help {
+  /* The scrolled header normally hides every direct child except tools.
+     Keep this shared tools wrapper visible, including its installer. */
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed > .zf-search-install-stack {
+    display: flex;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    margin: 0;
+  }
+
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed .zf-search-install-stack > .ydo-header-tools {
+    flex: 1 1 100%;
+    width: 100%;
+    height: 46px;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-help {
     top: calc(100% + 8px);
     right: 0;
   }
 }
 
-/* On compact tablets / landscape phones the separate menu sits to the right
-   of the search button; account for its footprint to stay under the lens. */
-@media (min-width: 768px) and (max-width: 1120px) {
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-install-header {
-    right: 91px;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .ydo-header > .zf-install-header .zf-header-apk {
-    transition: none !important;
-  }
+  .zf-search-install-stack .zf-header-apk { transition: none !important; }
 }
