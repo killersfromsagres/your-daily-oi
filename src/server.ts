@@ -14,6 +14,7 @@ import { getMatchLineups } from "./lib/football-lineups";
 import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
+import { boundedVodRange, isBoundedVodReply, VOD_RANGE_CHUNK_BYTES } from "./lib/vod-range";
 import { handleLiveFormatApi } from "./lib/live-probe";
 import { isLivePlaylistTarget, liveSourceFingerprint } from "./lib/live-source";
 import { APP_VERSION } from "./lib/version";
@@ -1282,7 +1283,14 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
   // Playlists must be fetched in full so child and key URLs can be rewritten.
   // A client Range on .m3u8 previously forced the segment code path and leaked
   // relative paths like /api/tv/tracks-v1a1/mono.m3u8 into Hls.js.
-  const clientRange = isLivePlaylistTarget(targetUrl) ? null : request.headers.get("range");
+  const playlistTarget = isLivePlaylistTarget(targetUrl);
+  const clientRange = playlistTarget ? null : request.headers.get("range");
+  const vodTransfer = url.searchParams.get("vod") === "1";
+  const upstreamVodRange = vodTransfer && !playlistTarget
+    ? boundedVodRange(clientRange, request.method === "HEAD") : clientRange;
+  if (vodTransfer && !playlistTarget && !upstreamVodRange) {
+    return new Response("Range inválido", { status: 416 });
+  }
   const clientAcceptEncoding = request.headers.get("accept-encoding");
 
   // Manifestos HLS variam a cada poucos segundos; servir uma versão antiga
@@ -1320,7 +1328,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
     const buildHeaders = (ref: string, orig: string, ua: string, bare?: boolean): Record<string, string> => {
       if (bare) {
         const h: Record<string, string> = { Accept: "*/*" };
-        if (clientRange) h["Range"] = clientRange;
+        if (upstreamVodRange) h["Range"] = upstreamVodRange;
         return h;
       }
       const h: Record<string, string> = {
@@ -1330,7 +1338,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       };
       if (ref) h["Referer"] = ref;
       if (orig) h["Origin"] = orig;
-      if (clientRange) h["Range"] = clientRange;
+      if (upstreamVodRange) h["Range"] = upstreamVodRange;
       if (clientAcceptEncoding) h["Accept-Encoding"] = clientAcceptEncoding;
       return h;
     };
@@ -1593,6 +1601,24 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
         return new Response("Falha na reescrita de MPD", {
           status: 502,
           headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
+    }
+
+    // For movies and episodes, avoid unbounded MP4/octet-stream pipes.
+    // Live television is explicitly excluded from this rule.
+    const vodMediaFile = vodTransfer && !isHls && !isMpd &&
+      (/(?:video\/(?!mp2t)|application\/octet-stream)/i.test(rawContentType) ||
+       /\.mp4(?:$|\?)/i.test(targetUrl));
+    if (vodMediaFile && request.method !== "HEAD") {
+      const length = Number(res.headers.get("content-length"));
+      const valid = res.status === 206
+        ? isBoundedVodReply(res, upstreamVodRange || undefined)
+        : res.status === 200 && Number.isFinite(length) && length > 0 && length <= VOD_RANGE_CHUNK_BYTES;
+      if (!valid) {
+        await res.body?.cancel();
+        return new Response("Servidor sem suporte confiável a faixas do vídeo", {
+          status: 502, headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" },
         });
       }
     }
