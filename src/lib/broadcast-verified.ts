@@ -8,6 +8,10 @@ export interface BroadcastEvidence {
   names: readonly string[];
   source: string;
   checkedAt: string;
+  /** Official broadcaster match page. Never an unverified IPTV stream. */
+  watchUrl?: string;
+  /** Independent editorial confirmation of exclusive Brazilian rights. */
+  exclusive?: boolean;
 }
 const REGION_ALIASES:Record<string,string> = {
   "atletico mineiro":"atletico mg","athletico paranaense":"athletico pr",
@@ -32,6 +36,16 @@ const verified:readonly {
       names:["TV Globo","SporTV","ge TV"],
       source:"https://www.cnnbrasil.com.br/esportes/futebol/selecao-brasileira/brasil-x-japao-horario-e-onde-assistir-ao-amistoso-da-selecao/",
       checkedAt:"2026-11-13",
+    },
+  },
+  {
+    date:"2026-11-14",teams:["mirassol","atletico mg"],
+    data:{
+      names:["Prime Video"],
+      source:"https://ge.globo.com/sp/tem-esporte/futebol/brasileirao-serie-a/noticia/2026/11/14/mirassol-x-atletico-mg-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+      checkedAt:"2026-11-14",
+      watchUrl:"https://www.primevideo.com/detail/0SAJWPZH2WON1C43SOHFWQBD4D",
+      exclusive:true,
     },
   },
 ];
