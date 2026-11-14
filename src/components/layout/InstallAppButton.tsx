@@ -36,8 +36,9 @@ export function InstallAppButton() {
           aria-expanded={help}
           onClick={() => setHelp(value => !value)}
         >
-          <Smartphone size={17} strokeWidth={1.9} aria-hidden="true" />
-          <span>Instalar no iPhone</span>
+          <Download size={17} strokeWidth={1.9} aria-hidden="true" />
+          <span className="zf-install-desktop-label">Instalar no iPhone</span>
+          <span className="zf-install-mobile-label">Baixar app</span>
         </button>
       ) : (
         <a
@@ -47,7 +48,8 @@ export function InstallAppButton() {
           title="Baixar APK Android, sem criar atalho no Chrome"
         >
           <Download size={17} strokeWidth={1.9} aria-hidden="true" />
-          <span>Baixar aplicativo</span>
+          <span className="zf-install-desktop-label">Baixar aplicativo</span>
+          <span className="zf-install-mobile-label">Baixar app</span>
         </a>
       )}
       {platform!=="tv"&&<a href="/tv-app" className="zf-install-tv-link" aria-label="Instalar ou conectar ZANG FLIX na TV"><Tv size={17}/></a>}
