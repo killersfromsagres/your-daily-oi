@@ -6,6 +6,7 @@ import { matchBrazilianBroadcastChannel } from "./broadcast-match";
 import { fetchSportsDbFixtures, mergeProviderFixtures } from "./football-backup";
 import { getBrazilianSportsDbBroadcasts } from "./football-broadcasts";
 import { sameBroadcastFixture, verifiedBroadcastEvidence } from "./broadcast-verified";
+import { applyVerifiedResult } from "./football-result-verified";
 import {
   LIGAS_FUTEBOL, addDaysUTC, brBroadcastsFromESPN, dataBrasilia, fixturePriority,
   isValidSportsDate, normalizeSoccerName, parseESPNFixture,
@@ -207,19 +208,24 @@ async function annotateBroadcasts(
         "|" + normalizeSoccerName(game.fora).replace(/ /g, "-")];
     const manual = (Array.isArray(configured) ? configured : configured ? [configured] : []);
     const verified = verifiedBroadcastEvidence(game);
-    const sourceNames = [...new Set([
+    // When a broadcaster holds verified EXCLUSIVE rights, ignore generic
+    // competition/EPG suggestions rather than linking the wrong TV channel.
+    const sourceNames = verified?.exclusive ? [...verified.names] : [...new Set([
       ...brBroadcastsFromESPN(fixture.raw),
       ...(detailedBroadcasts.get(game.id) || []),
       ...(backupBroadcasts.get(game.id) || []),
       ...(verified?.names || []),
       ...guideNamesForFixture(game,guide),
     ])];
-    // Store rights metadata independently of available player links.
-    const announced = manual.length ? manual : sourceNames;
-    const epgChannel = epg.get(game.id);
+    const announced = verified?.exclusive ? sourceNames : (manual.length ? manual : sourceNames);
+    const epgChannel = verified?.exclusive ? undefined : epg.get(game.id);
     const names = [...new Set([...announced, ...(epgChannel ? [epgChannel.nome] : [])]
       .map(name => name.trim()).filter(Boolean))];
     if (names.length) game.canaisTransmissao = names;
+    if (verified?.watchUrl) game.transmissaoUrl = verified.watchUrl;
+    // Prime Video is an external subscription service, not a local IPTV
+    // channel. Its verified match page is the correct action on this card.
+    if (verified?.exclusive && verified.watchUrl) continue;
 
     // Explicit match-level configuration > EPG > Brazil-only ESPN metadata.
     let resolved: { id: string; nome: string; logo?: string } | null = null;
@@ -283,7 +289,10 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
   const primary=[...deduped.values()];
   const combined=mergeProviderFixtures(primary.map(x=>x.item),backup||[]);
   const originalById=new Map(primary.map(x=>[x.item.id,x.raw]));
-  const fixtures=combined.map(item=>({item,raw:originalById.get(item.id)||({} as ESPNEvent)}));
+  const fixtures=combined.map(item=>({
+    item:applyVerifiedResult(item),
+    raw:originalById.get(item.id)||({} as ESPNEvent),
+  }));
   const brazilianBroadcasters=loadBrazilBroadcastDetails(primary);
   // TheSportsDB event IDs disappear when an identical ESPN fixture wins the
   // deduplication. Query the original backup IDs and transfer the broadcaster
@@ -391,10 +400,12 @@ export async function getJogosPlacares(
     const previous = new Map((fixtureCache.get(date)?.value.jogos || []).map(g => [g.id, g]));
     const byId = new Map<string, JogoBrasileirao>();
     for (const { event, liga, leagueLogo } of items) {
-      const parsed = parseESPNFixture(event, liga, date);
-      if (!parsed) continue;
+      const initial = parseESPNFixture(event, liga, date);
+      if (!initial) continue;
+      const parsed = applyVerifiedResult(initial);
       parsed.ligaLogo = leagueLogo;
       const older = previous.get(parsed.id);
+      if (older?.transmissaoUrl) parsed.transmissaoUrl = older.transmissaoUrl;
       if (older?.canalId) {
         parsed.canalId = older.canalId;
         parsed.canalNome = older.canalNome;
@@ -403,15 +414,23 @@ export async function getJogosPlacares(
         if (older.origemTransmissao) parsed.origemTransmissao = older.origemTransmissao;
       }
       const announced = brBroadcastsFromESPN(event);
-      parsed.canaisTransmissao = older?.canaisTransmissao?.length ?
-        older.canaisTransmissao : announced;
+      const proof = verifiedBroadcastEvidence(parsed);
+      parsed.canaisTransmissao = proof?.exclusive ? [...proof.names]
+        : older?.canaisTransmissao?.length ? older.canaisTransmissao : announced;
+      if (proof?.watchUrl) parsed.transmissaoUrl = proof.watchUrl;
+      if (proof?.exclusive && proof.watchUrl) {
+        parsed.canalId = null;
+        parsed.canalNome = null;
+        parsed.canalLogo = null;
+        parsed.transmissao = "nao-confirmada";
+      }
       byId.set(parsed.id, parsed);
     }
 
     // A fixture discovered on the fast feed can already carry BR-specific rights data.
     // Resolve only that explicit metadata; never assign a channel by league alone.
     const unresolved = [...byId.values()].filter(g =>
-      !g.canalId && g.canaisTransmissao && g.canaisTransmissao.length > 0
+      !g.canalId && !g.transmissaoUrl && g.canaisTransmissao && g.canaisTransmissao.length > 0
     );
     if (unresolved.length) {
       try {
