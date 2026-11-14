@@ -7,6 +7,11 @@ on:
       - 'src/components/catalog/HeroSection.tsx'
       - 'src/components/catalog/Friday13Edition.tsx'
       - 'src/components/catalog/ZangsPicks.tsx'
+      - 'src/components/catalog/MediaRow.tsx'
+      - 'src/components/catalog/MediaCarousel.tsx'
+      - 'src/lib/carousel-navigation.ts'
+      - 'src/styles/cards.css'
+      - 'tests/media-carousel.test.ts'
       - 'src/lib/zangs-picks.ts'
       - 'src/styles/home.css'
       - 'tests/zangs-picks.test.ts'
@@ -54,7 +59,7 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
       - name: Verify genre matching and hero source selection
-        run: bun test tests/backdrop-selection.test.ts tests/zangs-picks.test.ts tests/friday13-edition.test.ts tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts tests/reference-glass-dock.test.ts tests/mobile-catalog-filters.test.ts
+        run: bun test tests/media-carousel.test.ts tests/backdrop-selection.test.ts tests/zangs-picks.test.ts tests/friday13-edition.test.ts tests/genre-matching.test.ts tests/hero-images.test.ts tests/catalog-client.test.ts tests/liquid-glass-nav.test.ts tests/apple-glass-nav.test.ts tests/reference-glass-dock.test.ts tests/mobile-catalog-filters.test.ts
       - name: Audit icon consistency across every application screen
         run: node scripts/audit-iconography.mjs
       - name: Build site for visual browser checks

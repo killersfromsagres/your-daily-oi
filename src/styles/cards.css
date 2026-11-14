@@ -279,3 +279,119 @@
   margin-top: 4px;
   width: 50%;
 }
+
+
+/* ZANG FLIX glass rails: one control system for horror, movies, series, anime.
+   Gradients are non-interactive; posters and native touch swipe remain usable. */
+.zf-media-carousel {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  isolation: isolate;
+  --zf-rail-blue: #aee5ff;
+}
+.zf-media-carousel__track {
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+.zf-media-carousel__fade {
+  position: absolute;
+  top: 0;
+  bottom: 0.75rem;
+  width: clamp(44px, 6vw, 108px);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.zf-media-carousel__fade[data-visible="true"] { opacity: 1; }
+.zf-media-carousel__fade--left {
+  left: 0;
+  background: linear-gradient(90deg, rgba(8, 9, 18, .92), transparent);
+}
+.zf-media-carousel__fade--right {
+  right: 0;
+  background: linear-gradient(270deg, rgba(8, 9, 18, .92), transparent);
+}
+.zf-media-carousel__arrow {
+  position: absolute;
+  top: 47%;
+  z-index: 4;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid rgba(211, 241, 255, .3);
+  border-radius: 18px;
+  color: var(--zf-rail-blue);
+  background: linear-gradient(150deg, rgba(226, 245, 255, .14), rgba(118, 160, 187, .035) 75%),
+    rgba(10, 19, 30, .64);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16),
+    0 10px 32px rgba(0, 0, 0, .4);
+  transform: translateY(-50%);
+  transition: opacity 180ms ease, transform 180ms ease,
+    border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.zf-media-carousel__arrow--left { left: 14px; }
+.zf-media-carousel__arrow--right { right: 14px; }
+.zf-media-carousel__arrow svg {
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0 8px rgba(147, 218, 255, .38));
+}
+.zf-media-carousel__arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.zf-media-carousel__arrow:not(:disabled):hover {
+  color: #d4f2ff;
+  border-color: rgba(159, 222, 255, .65);
+  background-color: rgba(36, 63, 88, .73);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25),
+    0 12px 38px rgba(0, 0, 0, .44), 0 0 20px rgba(126, 207, 255, .17);
+  transform: translateY(-50%) scale(1.055);
+}
+.zf-media-carousel__arrow:not(:disabled):active {
+  transform: translateY(-50%) scale(.96);
+}
+.zf-media-carousel__arrow:focus-visible {
+  outline: 2px solid #c0ebff;
+  outline-offset: 3px;
+}
+.zf-media-carousel__track:focus-visible {
+  outline: 1px solid rgba(174, 229, 255, .58);
+  outline-offset: -1px;
+}
+@media (max-width: 1120px) {
+  .zf-media-carousel__arrow {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+  }
+  .zf-media-carousel__arrow--left { left: 8px; }
+  .zf-media-carousel__arrow--right { right: 8px; }
+  .zf-media-carousel__arrow svg { width: 21px; height: 21px; }
+  .zf-media-carousel__fade { width: 58px; }
+}
+@media (max-width: 480px) {
+  .zf-media-carousel__arrow {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+  }
+  .zf-media-carousel__arrow svg { width: 19px; height: 19px; }
+  .zf-media-carousel__fade { width: 46px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zf-media-carousel__track { scroll-behavior: auto; }
+  .zf-media-carousel__arrow,
+  .zf-media-carousel__fade { transition: none; }
+}

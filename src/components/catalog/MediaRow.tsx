@@ -1,4 +1,5 @@
 import { MediaCard } from "./MediaCard";
+import { MediaCarousel } from "./MediaCarousel";
 import type { CatalogItem } from "@/lib/types";
 
 interface MediaRowProps {
@@ -27,7 +28,7 @@ export function MediaRow({
           <h2 className="ydo-row-title">{title}</h2>
         </div>
       </div>
-      <div className="ydo-row-track">
+      <MediaCarousel label={title} itemCount={items.length}>
         {items.map((item, i) => (
           <MediaCard
             key={item.id}
@@ -37,7 +38,7 @@ export function MediaRow({
             rank={ranked ? i + 1 : undefined}
           />
         ))}
-      </div>
+      </MediaCarousel>
     </section>
   );
 }

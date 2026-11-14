@@ -1,5 +1,6 @@
 import type { CatalogItem } from "@/lib/types";
 import { MediaCard } from "./MediaCard";
+import { MediaCarousel } from "./MediaCarousel";
 
 interface Props {
   items:CatalogItem[];
@@ -14,10 +15,10 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
       <header className="zf-zangs-picks-heading">
         <h2 id="zangs-picks-title" className="zf-horror-title">Mais <span>terror</span> na sua noite</h2>
       </header>
-      <div className="ydo-row-track" role="region" aria-label="Mais terror na sua noite" tabIndex={0}>
+      <MediaCarousel label="Mais terror na sua noite" itemCount={items.length}>
         {items.map(item => <MediaCard key={item.id} item={item}
           isSaved={savedIds.has(item.id)} onToggleSaved={onToggleSaved}/>)}
-      </div>
+      </MediaCarousel>
     </section>
   );
 }
