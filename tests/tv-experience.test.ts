@@ -30,6 +30,7 @@ describe("Receiver source selection",()=>{
 describe("TV remote",()=>{
  test("normalizes Samsung, LG, Android Select and media keys",()=>{
   expect(remoteKey({key:"Unidentified",keyCode:10009})).toBe("BrowserBack");expect(remoteKey({key:"Unidentified",keyCode:461})).toBe("BrowserBack");
+  expect(remoteKey({key:"Unidentified",keyCode:37})).toBe("ArrowLeft");
   expect(remoteKey({key:"Unidentified",keyCode:23})).toBe("Enter");expect(remoteKey({key:"ArrowRight",keyCode:39})).toBe("ArrowRight");
   expect(remoteKey({key:"Unidentified",keyCode:10252})).toBe("MediaPlayPause");
  });

@@ -97,3 +97,12 @@ html[data-zf-platform="tv"] .ydo-tv-remote-indicator{display:none}
 html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-grid{grid-auto-columns:minmax(300px,340px)}
 html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{font-size:14px;min-height:34px}
 html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time{font-size:31px}
+/* Fixture names stay on two clean rows; the clock has its own measured column. */
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{grid-template-columns:minmax(0,1fr) 82px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-teams{display:flex;flex-direction:column;align-items:stretch;gap:7px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team{flex-direction:row;justify-content:flex-start;gap:7px;text-align:left}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team .zgame-crest{flex:0 0 28px;width:28px;height:28px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:0;text-align:left}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-vs{display:none}
+html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{grid-template-columns:minmax(0,1fr) 92px}
+html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{min-height:0}

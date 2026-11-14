@@ -38,7 +38,7 @@ const send=(method,params={})=>new Promise((resolve,reject)=>{
  pending.set(id,{resolve,reject,timeout});ws.send(JSON.stringify({id,method,params}));
 });
 const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,userGesture:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
-const state=()=>evaluate("(()=>{const v=document.querySelector('video');return {time:v?.currentTime||0,paused:v?.paused,volume:v?.volume,muted:v?.muted,controls:document.querySelector('.ydo-live-player-container')?.dataset.controlsVisible,panel:!!document.querySelector('.zf-volume-panel'),fullscreen:!!document.fullscreenElement,switches:document.querySelector('[data-channel-switches]')?.textContent,focus:document.activeElement?.getAttribute('aria-label')||document.activeElement?.textContent,bodyWidth:document.documentElement.scrollWidth,width:innerWidth};})()");
+const state=()=>evaluate("(()=>{const v=document.querySelector('video');return {time:v?.currentTime||0,paused:v?.paused,volume:v?.volume,muted:v?.muted,controls:document.querySelector('.ydo-live-player-container')?.dataset.controlsVisible,panel:!!document.querySelector('.zf-volume-panel'),fullscreen:!!document.fullscreenElement||!!document.querySelector('.ydo-live-player-container.is-theater'),nativeFullscreen:!!document.fullscreenElement,switches:document.querySelector('[data-channel-switches]')?.textContent,focus:document.activeElement?.getAttribute('aria-label')||document.activeElement?.textContent,bodyWidth:document.documentElement.scrollWidth,width:innerWidth};})()");
 const until=async fn=>{for(let n=0;n<400;n++){const s=await state().catch(()=>({}));if(fn(s))return s;await sleep(150);}throw Error('Player state timeout: '+JSON.stringify(await state()));};
 try{
  let port=0,logs='';
@@ -80,7 +80,7 @@ try{
   await evaluate("Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Trocar canal').click()");
   await until(s=>s.time>1&&!s.paused&&Math.abs(s.volume-.6)<.01);console.log(JSON.stringify({step:'channel-volume-restored',state:await state()}));
   if(!scenario.mobile){
-   await evaluate("document.querySelector('[aria-label=\"Assistir em tela cheia\"]').click()");await until(s=>s.fullscreen);
+   await evaluate("document.querySelector('[aria-label=\"Assistir em tela cheia\"]').click()");await until(s=>s.fullscreen);console.log(JSON.stringify({step:'fullscreen-entered',state:await state()}));
    await evaluate("document.querySelector('[aria-label=\"Ajustar volume\"]').focus()");
    await send('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});
    await send('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowRight',code:'ArrowRight',windowsVirtualKeyCode:39});

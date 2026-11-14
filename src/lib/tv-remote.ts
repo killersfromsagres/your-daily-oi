@@ -24,7 +24,7 @@ const SELECTOR = [
 ].join(",");
 
 export function remoteKey(event:Pick<KeyboardEvent,"key"|"keyCode">):string {
-  const codes:Record<number,string>={10009:"BrowserBack",461:"BrowserBack",4:"BrowserBack",13:"Enter",23:"Enter",415:"MediaPlay",19:"MediaPause",10252:"MediaPlayPause",403:"MediaPlayPause"};
+  const codes:Record<number,string>={37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",10009:"BrowserBack",461:"BrowserBack",4:"BrowserBack",13:"Enter",23:"Enter",415:"MediaPlay",19:"MediaPause",10252:"MediaPlayPause",403:"MediaPlayPause"};
   return codes[event.keyCode] || event.key;
 }
 function visibleElement(node: HTMLElement): boolean {
