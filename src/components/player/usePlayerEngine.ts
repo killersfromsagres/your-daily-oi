@@ -5,6 +5,7 @@ import type { StreamSource } from "@/lib/types";
 import { recordFailedSource } from "@/lib/player-storage";
 import { playbackFailureKind } from "@/lib/playback-start";
 import { portugueseAudioTrack } from "@/lib/dubbed-audio";
+import { looksLikeTruncatedFeature } from "@/lib/vod-playback-health";
 
 export type PlayerState = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 
@@ -22,6 +23,7 @@ export const isRelaySource = (url?: string | null): boolean => {
 export interface UsePlayerEngineOptions {
   dubbedOnly?:boolean;
   expectedRuntimeMin?: number | undefined;
+  contentType?: "movie" | "series" | "anime";
   /** Reject short advertisement-only files, not regular short-form content. */
   minContentSeconds?: number;
   attemptStage?: 0 | 1;
@@ -185,6 +187,10 @@ export function usePlayerEngine(
       }
       if (expectedMin && expectedMin >= 40 && Number.isFinite(d) && d > 0 && d < 65) {
         triggerGarbageDetected(`Clip incompatível com filme completo (${Math.round(d)}s)`);
+        return true;
+      }
+      if (looksLikeTruncatedFeature(options?.contentType ?? "series", d, expectedMin)) {
+        triggerGarbageDetected(`Prévia curta em vez do filme completo (${Math.round(d)}s)`);
         return true;
       }
 
@@ -433,7 +439,7 @@ export function usePlayerEngine(
       video.removeAttribute("src");
       video.load();
     };
-  }, [stream, options?.attemptStage, options?.expectedRuntimeMin, options?.minContentSeconds, options?.dubbedOnly]);
+  }, [stream, options?.attemptStage, options?.expectedRuntimeMin, options?.minContentSeconds, options?.dubbedOnly, options?.contentType]);
 
   const play = useCallback(async () => {
     const video = videoRef.current;
