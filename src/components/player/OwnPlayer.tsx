@@ -417,7 +417,7 @@ export function OwnPlayer({
     pendingPlayRef.current = null;
     lastProgressRef.current = null;
     setExhaustedSources(false);
-  }, [rawStream?.url, attemptStage]);
+  }, [rawStream?.url, attemptStage, recoveryNonce]);
 
   const recoverUnstartedSource = useCallback((): boolean => {
     if (!rawStream) return false;
@@ -484,6 +484,7 @@ export function OwnPlayer({
   const engine = usePlayerEngine(videoRef, currentStream, handleEnded, {
     dubbedOnly:true,
     expectedRuntimeMin,
+    contentType,
     attemptStage,
     minContentSeconds: contentType === "anime" ? 25 : 45,
   });
@@ -902,7 +903,9 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     const firstSeen = metadataFirstSeenRef.current.get(source.url) || Date.now();
     if (adaptive && Date.now() - firstSeen < 9000) return;
 
-    if(manualSelectionRef.current)return;
+    // A working film/episode must never be interrupted by speculative
+    // resolution upgrades. Source selection still happens before first play.
+    if(manualSelectionRef.current || hasEverPlayedRef.current)return;
     const betterMeasured=betterMeasuredVodSourceIndex(orderedStreams,sourceIndex,measuredHeightsRef.current,getFailedUrls());
     if(betterMeasured>=0){
       qualitySwitchesRef.current+=1;
@@ -952,7 +955,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
   // low-resolution stream was already accepted from the initial catalogue.
   useEffect(() => {
     const active = orderedStreams[sourceIndex];
-    if (!active || manualSelectionRef.current || qualitySwitchesRef.current >= 3) return;
+    if (!active || hasEverPlayedRef.current || manualSelectionRef.current || qualitySwitchesRef.current >= 3) return;
     const actualHeight = measuredHeightsRef.current.get(active.url);
     if (!actualHeight || actualHeight >= 2160) return;
     const next = nextVodSourceIndex(orderedStreams, sourceIndex,
