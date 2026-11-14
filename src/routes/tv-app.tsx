@@ -1,10 +1,20 @@
 import {createFileRoute,Link} from "@tanstack/react-router";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check} from "lucide-react";
+import {detectDeviceProfile} from "@/lib/device-profile";
 import {ANDROID_APK_URL} from "@/components/layout/InstallAppButton";
 export const Route=createFileRoute("/tv-app")({component:TvAppPage,head:()=>({meta:[{title:"ZANG FLIX na TV"}]})});
 function TvAppPage(){
  const [tv,setTv]=useState(()=>typeof document!=="undefined"&&document.documentElement.dataset["zfPlatform"]==="tv");
+ useEffect(()=>{
+  const synchronize=()=>{
+   let forced=false;try{forced=localStorage.getItem("zf-tv-mode")==="true";}catch{}
+   setTv(detectDeviceProfile({userAgent:navigator.userAgent,viewportWidth:innerWidth,
+    coarsePointer:matchMedia("(pointer:coarse)").matches,touchPoints:navigator.maxTouchPoints||0,tvMode:forced})==="tv");
+  };
+  synchronize();window.addEventListener("zf-tv-mode-change",synchronize);
+  return()=>window.removeEventListener("zf-tv-mode-change",synchronize);
+ },[]);
  const toggle=()=>{
   const next=!tv;try{localStorage.setItem("zf-tv-mode",String(next));}catch{}
   setTv(next);window.dispatchEvent(new Event("zf-tv-mode-change"));
