@@ -15,12 +15,17 @@ export function boundedVodRange(input: string | null, probe = false): string | n
   return `bytes=${start}-${Math.min(end, start + VOD_RANGE_CHUNK_BYTES - 1)}`;
 }
 
-export function isBoundedVodReply(response: Response): boolean {
+export function isBoundedVodReply(response: Response, requestedRange?: string): boolean {
   if (response.status !== 206) return false;
   const range = response.headers.get("content-range");
   const match = range && /^bytes\s+(\d+)-(\d+)\/(\d+|\*)$/i.exec(range);
   if (!match) return false;
   const start = Number(match[1]), end = Number(match[2]);
-  return Number.isSafeInteger(start) && Number.isSafeInteger(end) &&
-    end >= start && end - start + 1 <= VOD_RANGE_CHUNK_BYTES;
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) ||
+      end < start || end - start + 1 > VOD_RANGE_CHUNK_BYTES) return false;
+  if (requestedRange) {
+    const requested = /^bytes=(\d+)-(\d+)$/i.exec(requestedRange);
+    if (!requested || start !== Number(requested[1]) || end > Number(requested[2])) return false;
+  }
+  return true;
 }
