@@ -17,7 +17,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Testes de filmes, séries, animes, HLS e MP4
-        run: bun test tests/saimo-playback.test.ts tests/saimo-integration.test.ts tests/player-recovery.test.ts tests/vod-reliability.test.ts tests/vod-source-quality.test.ts tests/player-startup-recovery.test.ts
+        run: bun test tests/saimo-playback.test.ts tests/saimo-integration.test.ts tests/player-recovery.test.ts tests/vod-reliability.test.ts tests/vod-source-quality.test.ts tests/player-startup-recovery.test.ts tests/vod-range.test.ts tests/vod-playback-health.test.ts
       - name: Verificação TypeScript dos módulos VOD
         run: bun scripts/typecheck-vod.mjs
       - name: Build de produção
