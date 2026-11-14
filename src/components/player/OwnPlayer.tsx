@@ -189,7 +189,9 @@ export function OwnPlayer({
   const pausedByUserRef = useRef(false);
   const startupRef = useRef<{ url: string; stage: number; startedAt: number }>({url:"",stage:0,startedAt:0});
   const lastProgressRef = useRef<{ time: number; at: number } | null>(null);
-  const resolvedRelaysRef = useRef<Map<string, { finalUrl: string; isHls: boolean }>>(new Map());
+  const resolvedRelaysRef = useRef<Map<string, { finalUrl: string; isHls: boolean; resolvedAt: number }>>(new Map());
+  const retriedCurrentSourceRef = useRef(new Set<string>());
+  const [recoveryNonce, setRecoveryNonce] = useState(0);
 
   const [resolvedDirectUrl, setResolvedDirectUrl] = useState<string | null>(null);
   const [resolvedIsHls, setResolvedIsHls] = useState<boolean | null>(null);
@@ -383,6 +385,25 @@ export function OwnPlayer({
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
   const isRelay = isRelaySource(rawStream?.url);
+
+  // A short same-origin MP4 request can be reissued after an interrupted Range
+  // fetch. Resume from lastTimeRef, once per provider/transport, before marking
+  // a legitimate stream as broken and trying unrelated servers.
+  const retryCurrentSource = useCallback((): boolean => {
+    if (!rawStream) return false;
+    const routed = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format);
+    if (!routed.startsWith("/api/saimo-vod")) return false;
+    const key = rawStream.url + "|" + attemptStage;
+    if (retriedCurrentSourceRef.current.has(key)) return false;
+    retriedCurrentSourceRef.current.add(key);
+    resolvedRelaysRef.current.delete(rawStream.url);
+    setResolvedDirectUrl(null);
+    setResolvedIsHls(null);
+    setAutoSwitchMsg("Reconectando ao vídeo no ponto em que parou…");
+    setRecoveryNonce(value => value + 1);
+    return true;
+  }, [rawStream, attemptStage]);
+
   useEffect(()=>{
     setWebglFailed(false);
     setHqSourceSize({width:0,height:0});
@@ -409,10 +430,11 @@ export function OwnPlayer({
       setAttemptStage(1);
       return true;
     }
+    if (retryCurrentSource()) return true;
     recordFailedSource(rawStream.url);
     setAutoSwitchMsg("Conectando ao próximo servidor dublado…");
     return chooseNextApprovedSource();
-  }, [rawStream, attemptStage, chooseNextApprovedSource]);
+  }, [rawStream, attemptStage, chooseNextApprovedSource, retryCurrentSource]);
 
   // Pula estágio 0 (HLS probe) se este relay já falhou HLS na sessão
   useEffect(() => {
@@ -433,17 +455,25 @@ export function OwnPlayer({
       return {
         ...rawStream,
         format: resolvedIsHls === true ? "hls" : "auto",
-        url: getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined),
+        url: (() => {
+          const url = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
+          return url.startsWith("/api/saimo-vod") && recoveryNonce
+            ? url + (url.includes("?") ? "&" : "?") + "zf_recovery=" + recoveryNonce
+            : url;
+        })(),
       };
     }
-    const finalUrl = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
+    let finalUrl = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
+    if (finalUrl.startsWith("/api/saimo-vod") && recoveryNonce) {
+      finalUrl += (finalUrl.includes("?") ? "&" : "?") + "zf_recovery=" + recoveryNonce;
+    }
     const fmt = resolvedIsHls ? "hls" : rawStream.format;
     return {
       ...rawStream,
       format: fmt || "auto",
       url: finalUrl,
     };
-  }, [rawStream, attemptStage, isRelay, resolvedDirectUrl, resolvedIsHls]);
+  }, [rawStream, attemptStage, isRelay, resolvedDirectUrl, resolvedIsHls, recoveryNonce]);
 
   const handleEnded = useCallback(() => {
     onEnded?.();
@@ -484,16 +514,18 @@ export function OwnPlayer({
     if (!isDirect) return;
 
     const cached = resolvedRelaysRef.current.get(rawStream.url);
-    if (cached) {
+    if (cached && Date.now() - cached.resolvedAt < 40_000) {
       if (resolvedDirectUrl !== cached.finalUrl || resolvedIsHls !== cached.isHls) {
         setResolvedDirectUrl(cached.finalUrl);
         setResolvedIsHls(cached.isHls);
       }
       return;
     }
+    if (cached) resolvedRelaysRef.current.delete(rawStream.url);
 
     let active = true;
-    fetch(`/api/relay-resolve?url=${encodeURIComponent(rawStream.url)}`)
+    // A new signed redirect is essential after the previous CDN URL expires.
+    fetch(`/api/relay-resolve?url=${encodeURIComponent(rawStream.url)}${cached ? "&refresh=1" : ""}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data: { ok: boolean; finalUrl?: string; isHls?: boolean }) => {
         if (!active) return;
@@ -501,6 +533,7 @@ export function OwnPlayer({
           resolvedRelaysRef.current.set(rawStream.url, {
             finalUrl: data.finalUrl,
             isHls: !!data.isHls,
+            resolvedAt: Date.now(),
           });
           setResolvedDirectUrl(data.finalUrl);
           setResolvedIsHls(!!data.isHls);
@@ -540,8 +573,10 @@ export function OwnPlayer({
           return;
         }
 
-        // Após a segunda tentativa, passa para fontes de catálogo alternativas.
-        console.warn(`[OwnPlayer] Relay direto e proxy falharam para ${rawStream.url}. Próxima fonte...`);
+        // Refresh a failed same-origin partial stream once, before discarding
+        // a server that played successfully for several minutes.
+        if (retryCurrentSource()) return;
+        console.warn("[OwnPlayer] Relay direto e proxy falharam. Tentando outra fonte.");
         recordFailedSource(rawStream.url);
         autoSwitchCountRef.current++;
         if (autoSwitchCountRef.current > orderedStreams.length * 3) {
@@ -564,7 +599,8 @@ export function OwnPlayer({
         const currUrl = getStreamUrlForStage(rawStream.url, 0, rawStream.format);
         const nextUrl = getStreamUrlForStage(rawStream.url, 1, rawStream.format);
         if (currUrl === nextUrl) {
-          console.warn(`[OwnPlayer] Estágio 1 duplicado (${currUrl}). Avançando diretamente para próxima fonte...`);
+          if (retryCurrentSource()) return;
+          console.warn("[OwnPlayer] Conexão alternativa indisponível. Tentando outra fonte.");
           recordFailedSource(rawStream.url);
           autoSwitchCountRef.current++;
           if (autoSwitchCountRef.current > orderedStreams.length * 3) {
@@ -589,7 +625,9 @@ export function OwnPlayer({
         return;
       }
 
-      // Ambos os caminhos falharam para esta fonte: registra falha e avança (A3: escada circular)
+      // If the alternate is a same-origin VOD stream, re-open its Range
+      // connection once, then proceed to a different verified source.
+      if (retryCurrentSource()) return;
       recordFailedSource(rawStream.url);
 
       // Teto de tentativas por sessão para evitar ciclo sem fim
@@ -610,7 +648,7 @@ export function OwnPlayer({
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [engine.state, rawStream, attemptStage, orderedStreams.length, chooseNextApprovedSource]);
+  }, [engine.state, rawStream, attemptStage, orderedStreams.length, chooseNextApprovedSource, retryCurrentSource]);
 
   // O selo de troca automática some assim que qualquer fonte entra em reprodução
   useEffect(() => {
@@ -689,6 +727,7 @@ export function OwnPlayer({
                   setResolvedIsHls(null);
                   setAttemptStage(1);
                 } else {
+                  if (retryCurrentSource()) return;
                   recordFailedSource(rawStream.url);
                   if (!chooseNextApprovedSource()) {
                     // No usable source remains; do not toggle stage forever.
@@ -712,7 +751,7 @@ export function OwnPlayer({
       if (engine.needsUserGesture || pausedByUserRef.current) { pendingPlayRef.current = null; return; }
 
       // Caso 1: o play funcionou — vídeo tocando ou avançando o tempo → limpa o registro
-      if (engine.state === "playing" && engine.currentTime > 0.5) {
+      if (engine.state === "playing" && (videoRef.current?.currentTime ?? 0) > 0.5) {
         pendingPlayRef.current = null;
         return;
       }
@@ -734,7 +773,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [engine.state, engine.currentTime, engine.buffered, engine.needsUserGesture, rawStream, orderedStreams.length, attemptStage, chooseNextApprovedSource, exhaustedSources, recoverUnstartedSource]);
+  }, [engine.state, engine.needsUserGesture, rawStream, orderedStreams.length, attemptStage, chooseNextApprovedSource, exhaustedSources, recoverUnstartedSource, retryCurrentSource]);
 
   const handleVideoClick = () => {
     if (engine.muted) {
