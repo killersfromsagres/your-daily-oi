@@ -523,7 +523,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   const providersTask = resolveVodStreams({
     tipo,
     id,
-    tmdbId: effectiveTmdbId,
+    ...(effectiveTmdbId ? {tmdbId:effectiveTmdbId} : {}),
     title: effectiveTitle,
     season: temp,
     episode: ep,

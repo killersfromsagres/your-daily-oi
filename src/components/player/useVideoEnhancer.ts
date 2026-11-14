@@ -15,8 +15,8 @@ void main() {
   v_uv = (a_position + 1.) * .5;
 }`;
 
-// Five bilinear samples; source-adaptive local contrast without a second
-// framebuffer, giant 2x texture or neural inference on the decoding GPU.
+// One edge-aware pass: soften compression noise in flat areas, then sharpen
+// bounded detail without the ringing and dark halos of a plain unsharp mask.
 const SHARPEN = `#version 300 es
 precision highp float;
 in vec2 v_uv;
@@ -24,18 +24,25 @@ out vec4 outColor;
 uniform sampler2D u_video;
 uniform vec2 u_texel;
 void main() {
-  vec3 c = texture(u_video, v_uv).rgb;
-  vec3 n = texture(u_video, v_uv + vec2(0., u_texel.y)).rgb;
-  vec3 s = texture(u_video, v_uv - vec2(0., u_texel.y)).rgb;
-  vec3 e = texture(u_video, v_uv + vec2(u_texel.x, 0.)).rgb;
-  vec3 w = texture(u_video, v_uv - vec2(u_texel.x, 0.)).rgb;
-  vec3 blur = (n+s+e+w) * .25;
-  vec3 detail = c - blur;
-  float strength = clamp(length(detail) * 2.5, 0., 1.);
-  // Avoid ringing on already-sharp edges and amplify moderate texture.
-  vec3 result = clamp(c + detail * (.26 + .26 * strength), 0., 1.);
-  result = clamp((result - .5) * 1.035 + .5, 0., 1.);
-  outColor = vec4(result, 1.);
+  vec3 c=texture(u_video,v_uv).rgb;
+  vec3 n=texture(u_video,v_uv+vec2(0.,u_texel.y)).rgb;
+  vec3 s=texture(u_video,v_uv-vec2(0.,u_texel.y)).rgb;
+  vec3 e=texture(u_video,v_uv+vec2(u_texel.x,0.)).rgb;
+  vec3 w=texture(u_video,v_uv-vec2(u_texel.x,0.)).rgb;
+  vec3 nw=texture(u_video,v_uv+u_texel*vec2(-1.,1.)).rgb;
+  vec3 ne=texture(u_video,v_uv+u_texel).rgb;
+  vec3 sw=texture(u_video,v_uv-u_texel).rgb;
+  vec3 se=texture(u_video,v_uv+u_texel*vec2(1.,-1.)).rgb;
+  vec3 lo=min(c,min(min(n,s),min(e,w)));
+  vec3 hi=max(c,max(max(n,s),max(e,w)));
+  vec3 mean=(c*4.+n+s+e+w+(nw+ne+sw+se)*.5)/10.;
+  float edge=length(hi-lo);
+  float flat=1.-smoothstep(.035,.16,edge);
+  vec3 base=mix(c,mean,flat*.18);
+  vec3 detail=c-mean;
+  float gain=.48*(1.-smoothstep(.12,.4,edge));
+  vec3 result=clamp(base+detail*gain,lo-.012,hi+.012);
+  outColor=vec4(clamp(result,0.,1.),1.);
 }`;
 
 function compile(gl: WebGL2RenderingContext, type: number, src: string) {
@@ -146,11 +153,12 @@ export function useVideoEnhancer(
         if (sourceW !== lastSourceW || sourceH !== lastSourceH) {
           if (sourceW > 1280 || sourceH > 720) { fail("source exceeds real-time budget"); return; }
           const dpr=Math.min(window.devicePixelRatio || 1, 1.5);
-          const displayW=Math.min(1280, Math.max(sourceW, Math.round(video.clientWidth * dpr)));
+          const mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+          const displayW=Math.min(mobile?1280:1920, Math.max(sourceW, Math.round(video.clientWidth * dpr)));
           const renderW=Math.max(1,Math.min(sourceW*2,displayW));
           const renderH=Math.max(1,Math.round(renderW * sourceH / sourceW));
           // Preserve the decoded video aspect ratio when capping GPU pixels.
-          const fit=Math.min(1,720/renderH);
+          const fit=Math.min(1,(mobile?720:1080)/renderH);
           canvas.width=Math.max(1,Math.round(renderW*fit));
           canvas.height=Math.max(1,Math.round(renderH*fit));
           lastSourceW=sourceW;

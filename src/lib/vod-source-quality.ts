@@ -1,5 +1,6 @@
 // src/lib/vod-source-quality.ts — ranked VOD source selection, shared by player and providers.
 import type { StreamSource } from "./types";
+import { dubbedVodSources, isDubbedVodSource } from "./dubbed-audio";
 
 const BAD_CAPTURE = /(?:^|[^a-z0-9])(?:hdcam|camrip|cam|telesync|hdts|telecine|tc-rip|ts-rip|dublagem\s*(?:de|do)\s*cinema|som\s*(?:de|do)\s*cinema|cinema\s*(?:audio|rip|dub|dublagem|captur)|gravado\s*(?:no|em)\s*cinema|audio\s*(?:de|do)\s*cinema|mic\s*audio|line\s*audio|screener|dvdscr)(?:$|[^a-z0-9])/i;
 const AD_MARKERS = /(?:^|[^a-z0-9])(?:1xbet|xbet|22bet|bet365|stake\s*casino|betwinner|sportingbet|betano|pixbet|betfair|blaze\s*bet|casino\s*ads?|ad[-\s]?watermark|watermarked|marca\s*d.?agua\s*(?:xbet|bet|casino)|ads?\s*(?:inserted|embed|overlay)|propaganda\s*(?:de\s*)?apostas?)(?:$|[^a-z0-9])/i;
@@ -21,7 +22,7 @@ export function rejectedVodSourceReason(source: Pick<StreamSource,"url"|"name"|"
       }
     }
   } catch {
-    pathname = source.url.split("?")[0].toLowerCase();
+    pathname = (source.url.split("?")[0]||"").toLowerCase();
   }
   const evidence = details + " " + pathname.replace(/[._-]/g, " ");
   if (BAD_CAPTURE.test(evidence)) return "cinema";
@@ -56,6 +57,7 @@ export function vodSourceScore(source: StreamSource, options: VodSourceSelection
   if (options.excludedUrls?.has(source.url)) return -Infinity;
 
   const preferred = options.preferredAudio || "dub";
+  if(preferred === "dub" ? !isDubbedVodSource(source) : source.audio!==preferred) return -Infinity;
   // Prioritize Brazilian Portuguese dubbing over a high resolution subtitle-only version.
   let score = source.audio === preferred ? (source.audioDeclared === false ? 1600 : 7000) : 0;
   const observedHeight = options.observedHeights?.get(source.url);
@@ -76,7 +78,7 @@ export function vodSourceScore(source: StreamSource, options: VodSourceSelection
   if (source.format === "hls") score += 50; // adaptive bitrate when present
   // The direct catalogue entry is an actual media URL, unlike speculative relays.
   // Prefer it to untested providers of the same audio/quality tier.
-  if (/^Cat[aá]logo\b/i.test(source.name || "")) score += 950;
+  if (/^Cat[aá]logo\b/i.test(source.name || "")) score += 80;
   if (source.priority !== undefined) {
     const prio = Math.max(-25, Math.min(25, source.priority));
     score -= prio * 6;
@@ -118,6 +120,18 @@ export function nextVodSourceIndex(
   });
 }
 
+/** Restore a genuinely sharper working dub if a claimed upgrade delivers less. */
+export function betterMeasuredVodSourceIndex(streams:readonly StreamSource[],current:number,
+  observedHeights:ReadonlyMap<string,number>,failedUrls:ReadonlySet<string>=new Set()):number {
+  const height=observedHeights.get(streams[current]?.url||"");
+  if(!height)return -1;
+  const excluded=new Set(failedUrls);
+  for(const source of streams){
+    if((observedHeights.get(source.url)||0)<=height+80)excluded.add(source.url);
+  }
+  return bestVodSourceIndex(streams,{observedHeights,excludedUrls:excluded,preferredAudio:"dub"});
+}
+
 /** Group equivalent relay URLs, but keep true alternative hosts for failover. */
 export function vodSourceIdentity(source: Pick<StreamSource,"url">): string {
   try {
@@ -143,7 +157,7 @@ export function shortlistVodSources(sources: readonly StreamSource[], maxCount =
   if (!limit) return [];
   // Preserve only one entry per actual video source and per relay variant.
   // A different CDN/encoding is kept because it can be the only working fallback.
-  const sorted = playableVodSources(sources)
+  const sorted = dubbedVodSources(playableVodSources(sources))
     .sort((a,b) => vodSourceScore(b) - vodSourceScore(a));
   const unique: StreamSource[] = [];
   const seen = new Set<string>();
@@ -165,12 +179,9 @@ export function shortlistVodSources(sources: readonly StreamSource[], maxCount =
     const h = host(s);
     usedHosts.set(h,(usedHosts.get(h) || 0) + 1);
   };
-  // Reserve one alternate-audio option without letting a long list of
-  // low-quality subtitles displace the best Brazilian Portuguese dub.
+  // Every retained alternative must honor the dubbed-only playback policy.
   const firstDub = unique.find(s=>s.audio==="dub");
   if (firstDub) add(firstDub);
-  const firstLeg = unique.find(s=>s.audio==="leg");
-  if (firstLeg && limit > 1) add(firstLeg);
   for (const source of unique) {
     if (chosen.length >= limit) break;
     if ((usedHosts.get(host(source)) || 0) >= 3) continue;

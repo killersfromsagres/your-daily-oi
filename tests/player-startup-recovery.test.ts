@@ -36,14 +36,14 @@ describe("Video startup recovery", () => {
     expect(shouldChangeServerOnStartup(18_000,false,false,true)).toBe(false);
   });
 
-  test("server failover picks next healthy dubbed source before subtitles", () => {
+  test("server failover stops after dubbed sources fail and never plays subtitles", () => {
     const links = [
       source("https://video.example/dub-hq-1.mp4","dub","1080p"),
       source("https://video.example/leg-uhd.mp4","leg","4K"),
       source("https://video.example/dub-hq-2.mp4","dub","720p"),
     ];
     expect(nextVodSourceIndex(links,0,new Set(),{preferredAudio:"dub"})).toBe(2);
-    expect(nextVodSourceIndex(links,2,new Set([links[0]!.url]),{preferredAudio:"dub"})).toBe(1);
+    expect(nextVodSourceIndex(links,2,new Set([links[0]!.url]),{preferredAudio:"dub"})).toBe(-1);
     expect(nextVodSourceIndex(links,1,new Set([links[0]!.url,links[2]!.url]))).toBe(-1);
   });
 

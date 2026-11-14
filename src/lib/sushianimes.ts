@@ -570,7 +570,7 @@ export async function resolveSushiEpisodeStream(
       const response = await fetchSushi(`${SUSHI_BASE}/ajax/embed`, {
         method: "POST",
         headers: postHeaders,
-        body: new URLSearchParams({ id: btn.embedId, _token: token }),
+        body: new URLSearchParams({ id: btn.embedId, ...(token ? {_token:token} : {}) }),
       });
       if (!response.ok) return [] as StreamSource[];
       const text = await response.text();

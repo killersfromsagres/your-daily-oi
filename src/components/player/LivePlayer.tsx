@@ -1,4 +1,5 @@
 "use client";
+import "@/lib/browser-media";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
@@ -37,36 +38,6 @@ export interface LivePlayerProps {
   onLoadingChange?: (loading: boolean) => void;
   /** Older deployments expose /api/live-proxy but not /api/tv/stream. */
   proxyBackend?: "checking" | "catalog" | "legacy" | "unavailable";
-}
-
-declare global {
-  interface Window {
-    Hls?: {
-      new (config?: Record<string, unknown>): {
-        loadSource: (url: string) => void;
-        attachMedia: (el: HTMLVideoElement) => void;
-        destroy: () => void;
-        on: (event: string, cb: (...args: unknown[]) => void) => void;
-        liveSyncPosition?: number;
-      };
-      isSupported: () => boolean;
-      Events: { ERROR: string; MANIFEST_PARSED: string };
-      ErrorTypes: { NETWORK_ERROR: string; MEDIA_ERROR: string };
-      DefaultConfig?: { loader: any };
-    };
-    mpegts?: {
-      createPlayer: (config: Record<string, unknown>, options?: Record<string, unknown>) => {
-        attachMediaElement: (el: HTMLVideoElement) => void;
-        load: () => void;
-        play: () => Promise<void>;
-        pause: () => void;
-        unload: () => void;
-        destroy: () => void;
-      };
-      isSupported: () => boolean;
-    };
-    shaka?: any;
-  }
 }
 
 // Carregamento único por CDN, mesmo após trocar rapidamente de canal ou fonte.

@@ -1,0 +1,37 @@
+name: Verify dubbed-only playback and HQ
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/player/**'
+      - 'src/lib/dubbed-audio.ts'
+      - 'src/lib/browser-media.ts'
+      - 'src/lib/vod-source-quality.ts'
+      - 'src/lib/hq-*.ts'
+      - 'src/lib/saimo-stream.ts'
+      - 'src/styles/player.css'
+      - 'scripts/fixtures/dubbed-hq-harness.tsx'
+      - 'scripts/smoke-dubbed-hq.mjs'
+      - 'tests/dubbed-audio.test.ts'
+      - '.github/workflows/verify-dubbed-hq.yml'
+  workflow_dispatch:
+jobs:
+  playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bun scripts/typecheck-vod.mjs
+      - run: bun run build
+      - run: bun scripts/smoke-dubbed-hq.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dubbed-hq-browser
+          path: artifacts/dubbed-hq-*.png
+          if-no-files-found: warn
+          retention-days: 7

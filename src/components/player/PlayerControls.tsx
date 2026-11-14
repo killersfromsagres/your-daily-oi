@@ -18,7 +18,6 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-  ScanLine,
 } from "lucide-react";
 import type { PlayerState } from "./usePlayerEngine";
 
@@ -59,7 +58,7 @@ interface PlayerControlsProps {
   onNext?: () => void;
   hqSupported?: boolean;
   hqActive?: boolean;
-  hqMode?: "ai" | "loading" | "shader";
+  hqMode?: "ai" | "loading" | "shader" | "native";
   onToggleHq?: () => void;
 }
 
@@ -316,27 +315,14 @@ export function PlayerControls({
             <button
               onClick={onToggleHq}
               className={`ydo-ctrl-btn ydo-hq-btn ${hqActive ? "active" : ""}`}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "4px 10px",
-                borderRadius: "8px",
-                backgroundColor: hqActive ? "rgba(232, 180, 74, 0.2)" : "rgba(255, 255, 255, 0.05)",
-                border: hqActive ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.12)",
-                color: hqActive ? "#e8b44a" : "rgba(255, 255, 255, 0.75)",
-                fontSize: "0.78rem",
-                fontWeight: "800",
-                letterSpacing: "0.03em",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              title={hqMode === "loading" ? "HQ · preparando aprimoramento" : hqMode === "ai" ? "HQ · super-resolução quando suportada" : "HQ · melhoria de nitidez e imagem, otimizada para fluidez"}
+              data-mode={hqMode}
+              aria-busy={Boolean(hqActive && hqMode === "loading")}
+              title={!hqActive ? "HQ · melhorar imagem" : hqMode === "loading" ? "HQ · preparando aprimoramento" : hqMode === "ai" ? "HQ ativo · super-resolução por IA 2×" : hqMode === "native" ? "HQ compatível · ajuste visual leve" : "HQ ativo · nitidez adaptativa"}
               aria-label="Ativar ou desativar melhoria de imagem HQ"
               aria-pressed={Boolean(hqActive)}
             >
-              <ScanLine size={14} style={{ color: hqActive ? "#e8b44a" : "currentColor" }} />
-              <span>HQ</span>
+              <span className="zf-hq-symbol" aria-hidden="true"><span>HQ</span></span>
+              <span className="zf-hq-indicator" aria-hidden="true"/>
             </button>
           )}
 

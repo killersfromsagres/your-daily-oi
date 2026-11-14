@@ -8,16 +8,17 @@
  * 4. Fallback por IMDb ID via TMDB External IDs
  */
 
+import { dubbedVodSources } from "./dubbed-audio";
 import type { StreamSource, AudioTrack, StreamFormat } from "./types";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
 import { buildSaimoVodProxyUrl } from "./saimo-vod-url";
 import { advertisedVodResolution, playableVodSources, rejectedVodSourceReason } from "./vod-source-quality";
 
 const FENIX_BASE = "https://fenixflix.fenixhub.online";
-const CATALOG_BASE = process.env.SAIMO_VOD_PAGES || "https://filmes-saimo.pages.dev";
-const STREAM_API = process.env.SAIMO_STREAM_API || "https://saimo-tv.pages.dev/api/stream";
+const CATALOG_BASE = process.env["SAIMO_VOD_PAGES"] || "https://filmes-saimo.pages.dev";
+const STREAM_API = process.env["SAIMO_STREAM_API"] || "https://saimo-tv.pages.dev/api/stream";
 function catalogUrls(fileName: string): string[] {
-  return sourceUrls(process.env.SAIMO_VOD_MIRRORS, [CATALOG_BASE])
+  return sourceUrls(process.env["SAIMO_VOD_MIRRORS"], [CATALOG_BASE])
     .map((root) => `${root}/${fileName}`);
 }
 const BROWSER_UA =
@@ -46,7 +47,7 @@ const saimoStreamCache = new Map<string, { streams: StreamSource[]; expires: num
 
 export function isHlsUrl(url: string): boolean {
   if (!url) return false;
-  const clean = url.toLowerCase().split("?")[0];
+  const clean = (url.toLowerCase().split("?")[0]||"");
   return (
     clean.includes(".m3u8") ||
     clean.endsWith(".txt") ||
@@ -77,7 +78,7 @@ export async function getIndiceBases(): Promise<string[]> {
   try {
     const candidates = [
       ...catalogUrls("indice.txt"),
-      ...(process.env.SAIMO_VOD_RAW ? [`${process.env.SAIMO_VOD_RAW.replace(/\/$/, "")}/indice.txt`] : []),
+      ...(process.env["SAIMO_VOD_RAW"] ? [`${process.env["SAIMO_VOD_RAW"].replace(/\/$/, "")}/indice.txt`] : []),
     ];
     const { text } = await fetchFirstText(candidates, "índice de bases", { timeoutMs: 5000 });
     const bases: string[] = [];
@@ -267,22 +268,22 @@ async function queryFenixFlix(
       const data = (await res.json()) as { streams?: Array<Record<string, unknown>> };
       if (Array.isArray(data?.streams)) {
         for (const st of data.streams) {
-          const rawUrl = typeof st.url === "string" ? st.url.trim() : "";
+          const rawUrl = typeof st["url"] === "string" ? st["url"].trim() : "";
           if (!rawUrl || !rawUrl.startsWith("http")) continue;
 
           // Ignora redirects de domínios que estão temporariamente offline
           if (rawUrl.includes("fenixflix.fenixhub.online/r/")) continue;
 
-          const language = [st.audio, st.language, st.lang, st.name, st.title]
+          const language = [st["audio"], st["language"], st["lang"], st["name"], st["title"]]
             .filter(value => typeof value === "string").join(" ").toLowerCase();
           const isDub = /(?:^|[^a-z0-9])(?:dub|dublado|dublagem|pt-br|pt_br|brasil|brazilian)(?:$|[^a-z0-9])/i.test(language);
           const isLeg = /(?:^|[^a-z0-9])(?:leg|legendado|subtitle|subbed|original|english)(?:$|[^a-z0-9])/i.test(language);
           const audioDeclared = isDub !== isLeg;
           const audio: AudioTrack = isDub && !isLeg ? "dub" : "leg";
-          const quality = detectVodQuality(rawUrl, String(st.name || ""));
+          const quality = detectVodQuality(rawUrl, String(st["name"] || ""));
           const format: StreamFormat = isHlsUrl(rawUrl) ? "hls" : "mp4";
           const source: StreamSource = {
-            name: String(st.name || "FenixFlix"),
+            name: String(st["name"] || "FenixFlix"),
             url: rawUrl, audio, audioDeclared, quality, format, priority: 1,
           };
           if (!rejectedVodSourceReason(source)) sources.push(source);
@@ -525,8 +526,9 @@ export async function resolveSingleStreamRedirect(
   if (sources.length === 0) return null;
 
   const targetAudio = opts.versao === "leg" ? "leg" : "dub";
-  const matching = sources.filter((s) => s.audio === targetAudio);
-  const chosen = (matching.length > 0 ? matching[0] : sources[0]).url;
+  const matching = targetAudio === "dub" ? dubbedVodSources(sources) : sources.filter((s) => s.audio === targetAudio);
+  if (!matching.length) return null;
+  const chosen = matching[0]!.url;
 
   return chosen;
 }

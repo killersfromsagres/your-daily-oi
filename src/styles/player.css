@@ -612,35 +612,20 @@
   opacity: 1;
 }
 
-.ydo-hq-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+.ydo-ctrl-btn.ydo-hq-btn {
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  flex:0 0 auto;min-width:52px;width:auto;height:34px;padding:5px 8px;
+  border:1px solid #ffffff24;border-radius:8px;color:#e6e9ee;background:#ffffff08;
+  cursor:pointer;transition:color .16s,border-color .16s,background .16s;
 }
-
-.ydo-hq-btn:hover {
-  background-color: rgba(232, 180, 74, 0.25) !important;
-  border-color: #e8b44a !important;
-  color: #e8b44a !important;
-}
-
-.ydo-hq-btn.active {
-  background-color: rgba(232, 180, 74, 0.2) !important;
-  border-color: #e8b44a !important;
-  color: #e8b44a !important;
-  box-shadow: 0 0 10px rgba(232, 180, 74, 0.25);
-}
-
-
-
+.zf-hq-symbol {display:inline-flex;align-items:center;justify-content:center;font:850 12px/1 system-ui,sans-serif;letter-spacing:-.03em;}
+.zf-hq-indicator {width:4px;height:4px;border-radius:50%;background:#ffffff42;}
+.ydo-hq-btn.active {color:#f1ca87;border-color:#d9b87866;background:#d3a34814;}
+.ydo-hq-btn.active .zf-hq-indicator {background:#e5bd72;box-shadow:0 0 5px #e5bd7240;}
+.ydo-hq-btn[aria-busy="true"] .zf-hq-indicator {animation:zf-hq-ready 1.2s ease-in-out infinite;}
+.ydo-hq-btn:hover {border-color:#d9b87888;}
+@keyframes zf-hq-ready {50%{opacity:.35;}}
+@media(prefers-reduced-motion:reduce){.ydo-hq-btn[aria-busy="true"] .zf-hq-indicator{animation:none;}}
 
 /* Low-latency live mode switch: visible in the live player, compact on TV. */
 .ydo-live-latency-btn {

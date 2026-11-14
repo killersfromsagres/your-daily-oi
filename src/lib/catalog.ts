@@ -14,10 +14,10 @@ import { advertisedVodResolution } from "./vod-source-quality";
 import { correctClassicStreetFighter, isClassicStreetFighter } from "./movie-metadata-fixes";
 
 // As URLs de catálogo:
-const SAIMO_PAGES = (process.env.SAIMO_VOD_PAGES ?? "https://filmes-saimo.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
-const SAIMO_RAW = (process.env.SAIMO_VOD_RAW ?? "https://raw.githubusercontent.com/gabrielsaimo/SaimoPlayer/main/vod").replace(/\/$/, "");
-const SNAPSHOT_URL = (process.env.NEXT_PUBLIC_SNAPSHOT_URL ?? "").replace(/\/$/, "");
-const ANIMES_PAGES = (process.env.ANIMES_VOD_PAGES ?? "").replace(/\/$/, "");
+const SAIMO_PAGES = (process.env["SAIMO_VOD_PAGES"] ?? "https://filmes-saimo.pages.dev").replace(/\/vod\/?$/i, "").replace(/\/$/, "");
+const SAIMO_RAW = (process.env["SAIMO_VOD_RAW"] ?? "https://raw.githubusercontent.com/gabrielsaimo/SaimoPlayer/main/vod").replace(/\/$/, "");
+const SNAPSHOT_URL = (process.env["NEXT_PUBLIC_SNAPSHOT_URL"] ?? "").replace(/\/$/, "");
+const ANIMES_PAGES = (process.env["ANIMES_VOD_PAGES"] ?? "").replace(/\/$/, "");
 
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -145,7 +145,7 @@ function getCatalogUrls(fileName: string): string[] {
     urls.push(`${SNAPSHOT_URL}/${fileName}`);
   }
   // No Cloudflare Pages, a raiz JÁ É a pasta vod
-  for (const mirror of sourceUrls(process.env.SAIMO_VOD_MIRRORS, [SAIMO_PAGES])) {
+  for (const mirror of sourceUrls(process.env["SAIMO_VOD_MIRRORS"], [SAIMO_PAGES])) {
     urls.push(`${mirror}/${fileName}`);
   }
   // No GitHub Raw, os arquivos estão dentro da pasta vod/

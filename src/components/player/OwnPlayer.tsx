@@ -20,8 +20,9 @@ import {
 } from "@/lib/player-storage";
 import { APP_VERSION } from "@/lib/version";
 import { proxyUrlForSaimoRelay } from "@/lib/saimo-vod-url";
-import { bestVodSourceIndex, playableVodSources, nextVodSourceIndex, advertisedVodResolution } from "@/lib/vod-source-quality";
+import { bestVodSourceIndex, playableVodSources, nextVodSourceIndex, advertisedVodResolution, betterMeasuredVodSourceIndex } from "@/lib/vod-source-quality";
 import { shouldChangeServerOnStartup } from "@/lib/playback-start";
+import { dubbedVodSources } from "@/lib/dubbed-audio";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
 const stage0FailedRelays = new Map<string, number>();
@@ -29,21 +30,21 @@ const RELAY_FAILURE_TTL_MS = 90_000;
 
 interface OwnPlayerProps {
   streams: StreamSource[];
-  poster?: string;
-  title?: string;
-  subtitle?: string;
-  onBack?: () => void;
-  initialTime?: number;
-  onTimeUpdate?: (t: number, duration?: number) => void;
-  onEnded?: () => void;
-  preferredAudio?: "dub" | "leg";
-  expectedRuntimeMin?: number;
-  contentType?: "movie" | "series" | "anime";
-  onNextEpisode?: () => void;
-  nextEpisodeLabel?: string;
-  openingEndSeconds?: number;
-  openingStartSeconds?: number;
-  creditsStartSeconds?: number;
+  poster?: string | undefined;
+  title?: string | undefined;
+  subtitle?: string | undefined;
+  onBack?: () => void | undefined;
+  initialTime?: number | undefined;
+  onTimeUpdate?: (t: number, duration?: number) => void | undefined;
+  onEnded?: () => void | undefined;
+  preferredAudio?: "dub" | "leg" | undefined;
+  expectedRuntimeMin?: number | undefined;
+  contentType?: "movie" | "series" | "anime" | undefined;
+  onNextEpisode?: () => void | undefined;
+  nextEpisodeLabel?: string | undefined;
+  openingEndSeconds?: number | undefined;
+  openingStartSeconds?: number | undefined;
+  creditsStartSeconds?: number | undefined;
 }
 
 // 4b: Ordem de tentativa por tipo de relay
@@ -65,7 +66,7 @@ const getPreferredAttemptIsProxy = (url: string): boolean => {
 const isHlsStream = (url: string, format?: string): boolean => {
   if (format === "hls") return true;
   if (!url) return false;
-  const clean = url.split("?")[0].toLowerCase();
+  const clean = (url.split("?")[0]||"").toLowerCase();
   return (
     clean.endsWith(".m3u8") ||
     clean.endsWith(".txt") ||
@@ -157,7 +158,7 @@ export function OwnPlayer({
   // URL under the video element and caused unexpected playback restarts.
   const stableSourcesRef = useRef<StreamSource[]>([]);
   const orderedStreams = useMemo(() => {
-    const candidates = sortStreamsByHealth(playableVodSources(streams));
+    const candidates = sortStreamsByHealth(dubbedVodSources(playableVodSources(streams)));
     const urls = new Set(candidates.map(item => item.url));
     const retained = stableSourcesRef.current.filter(item => urls.has(item.url));
     const existing = new Set(retained.map(item => item.url));
@@ -299,8 +300,8 @@ export function OwnPlayer({
     setHqNotice("HQ: esta fonte bloqueia o processamento por GPU ou excedeu o limite de desempenho. Ajuste visual leve aplicado.");
   }, []);
 
-  // Mobile always keeps hardware-decoded native playback. CNN2x, even when
-  // available, competes with the video decoder for the same mobile GPU.
+  // Opt-in compact inference on capable devices; live throughput is checked
+  // before the enhanced layer can replace native playback.
   const neuralWanted = hqEnabled && hqStrategy === "neural";
   const neural = useNeuralVideoUpscaler(videoRef, neuralCanvasRef, neuralWanted, contentType);
   const enhancer = useVideoEnhancer(
@@ -367,6 +368,10 @@ export function OwnPlayer({
 
   const rawStream = orderedStreams[sourceIndex] ?? null;
   const isRelay = isRelaySource(rawStream?.url);
+  useEffect(()=>{
+    setWebglFailed(false);
+    setHqSourceSize({width:0,height:0});
+  },[rawStream?.url]);
 
   // Track every attempt from the moment the browser receives the source,
   // including autoplay before anyone presses Play.
@@ -420,7 +425,7 @@ export function OwnPlayer({
     const fmt = resolvedIsHls ? "hls" : rawStream.format;
     return {
       ...rawStream,
-      format: fmt,
+      format: fmt || "auto",
       url: finalUrl,
     };
   }, [rawStream, attemptStage, isRelay, resolvedDirectUrl, resolvedIsHls]);
@@ -432,6 +437,7 @@ export function OwnPlayer({
 
   // TDZ SAFE: Declarado antes de qualquer useEffect/handler que o cite
   const engine = usePlayerEngine(videoRef, currentStream, handleEnded, {
+    dubbedOnly:true,
     expectedRuntimeMin,
     attemptStage,
     minContentSeconds: contentType === "anime" ? 25 : 45,
@@ -588,6 +594,7 @@ export function OwnPlayer({
       }, 800);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [engine.state, rawStream, attemptStage, orderedStreams.length, chooseNextApprovedSource]);
 
   // O selo de troca automática some assim que qualquer fonte entra em reprodução
@@ -819,7 +826,18 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     const firstSeen = metadataFirstSeenRef.current.get(source.url) || Date.now();
     if (adaptive && Date.now() - firstSeen < 9000) return;
 
-    if (manualSelectionRef.current || height >= 700 || qualitySwitchesRef.current >= 3) return;
+    if(manualSelectionRef.current)return;
+    const betterMeasured=betterMeasuredVodSourceIndex(orderedStreams,sourceIndex,measuredHeightsRef.current,getFailedUrls());
+    if(betterMeasured>=0){
+      qualitySwitchesRef.current+=1;
+      rejectedDuringPlaybackRef.current.add(source.url);
+      rejectedDuringPlaybackRef.current.delete(orderedStreams[betterMeasured]!.url);
+      setSourceIndex(betterMeasured);setAttemptStage(0);
+      setResolvedDirectUrl(null);setResolvedIsHls(null);setDetectedQuality(null);
+      setAutoSwitchMsg("Restaurando a melhor imagem dublada verificada…");
+      return;
+    }
+    if (height >= 2160 || qualitySwitchesRef.current >= 3) return;
     if (rejectedDuringPlaybackRef.current.has(source.url)) return;
 
     const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
@@ -829,7 +847,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     if (next < 0) return;
     const candidate = orderedStreams[next];
     if (!candidate) return;
-    const claimedHeight = advertisedVodResolution(candidate);
+    const claimedHeight = measuredHeightsRef.current.get(candidate.url) || advertisedVodResolution(candidate);
+    if (height >= 700 && claimedHeight === null) return;
     if (source.audio === "dub" && candidate.audio !== "dub") return;
     // Try a declared HD alternative, or an unverified one if the actual
     // current video is clearly soft. Never switch to known lower resolution.
@@ -858,12 +877,13 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     const active = orderedStreams[sourceIndex];
     if (!active || manualSelectionRef.current || qualitySwitchesRef.current >= 3) return;
     const actualHeight = measuredHeightsRef.current.get(active.url);
-    if (!actualHeight || actualHeight >= 700) return;
+    if (!actualHeight || actualHeight >= 2160) return;
     const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
       preferredAudio, observedHeights: measuredHeightsRef.current,
       failedUrls: getFailedUrls(),
     });
     const candidate = next < 0 ? null : orderedStreams[next];
+    if (actualHeight >= 700 && candidate && advertisedVodResolution(candidate) === null) return;
     if (!candidate || (advertisedVodResolution(candidate) || 720) <= actualHeight) return;
     if (active.audio === "dub" && candidate.audio !== "dub") return;
     qualitySwitchesRef.current += 1;
@@ -883,8 +903,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     return {
       name: cleanName,
       audio: s.audio,
-      quality: s.quality,
-      format: fmt,
+      ...(s.quality ? {quality:s.quality} : {}),
+      format: fmt || "auto",
     };
   });
 
@@ -962,7 +982,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         className="ydo-player-video"
         poster={poster}
         playsInline
-        // @ts-expect-error atributos nativos de compatibilidade mobile & AirPlay
+        // Native compatibility attributes for mobile and AirPlay
         webkit-playsinline="true"
         x-webkit-airplay="allow"
         disableRemotePlayback={false}
@@ -975,7 +995,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           opacity: enhancedActive ? 0 : 1,
           // Hardware-accelerated color tuning: zero extra frame copies.
           // The light WebGL pass supplies edge sharpening on capable PCs.
-          filter: nativeHqFallback ? "contrast(1.09) saturate(1.06) brightness(1.015)" : "none",
+          filter: nativeHqFallback ? "contrast(1.025) saturate(1.025)" : "none",
           transition: "opacity 0.25s ease-in-out, filter 0.2s ease-in-out",
         }}
       />
@@ -1139,8 +1159,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       {orderedStreams.length === 0 && (
         <div className="ydo-player-overlay ydo-player-error-overlay">
           <AlertCircle size={38} aria-hidden style={{color:"#e8b44a"}} />
-          <h3>Sem servidor adequado disponível</h3>
-          <p>Não encontramos fontes adequadas para esta reprodução agora.</p>
+          <h3>Dublagem indisponível no momento</h3>
+          <p>Não encontramos uma fonte dublada adequada para este título. Tente novamente mais tarde.</p>
           {onBack && <button className="ydo-btn-secondary" onClick={onBack}>Voltar</button>}
         </div>
       )}
@@ -1234,7 +1254,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           onCast={engine.castToTv}
           hqSupported={true}
           hqActive={hqEnabled}
-          hqMode={hqBackend === "waiting" ? "loading" : hqBackend === "neural" ? "ai" : "shader"}
+          hqMode={hqBackend === "waiting" ? "loading" : hqBackend === "neural" ? "ai" : hqBackend === "webgl" ? "shader" : "native"}
           onToggleHq={toggleHq}
         />
       </div>

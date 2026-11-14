@@ -58,7 +58,7 @@ function WatchSeriesPage() {
       setSerie(item);
       const exact = item.seasons?.find(s => s.seasonNumber === Number(temp))
         ?.episodes.find(e => e.episodeNumber === Number(ep));
-      if (exact?.streams?.length) setLoading(false);
+      if (shortlistVodSources(exact?.streams||[]).length) setLoading(false);
     }).catch(error => {
       if (active && !controller.signal.aborted) console.warn("[WatchSerie] Ficha:", error);
     }).finally(finished);
@@ -71,7 +71,7 @@ function WatchSeriesPage() {
     }).then(data => {
       if (!active || !Array.isArray(data.sources)) return;
       setExtraStreams(data.sources);
-      if (data.sources.length) setLoading(false);
+      if (shortlistVodSources(data.sources).length) setLoading(false);
     }).catch(error => {
       if (active && !controller.signal.aborted) console.warn("[WatchSerie] Fontes:", error);
     }).finally(finished);
@@ -115,9 +115,9 @@ function WatchSeriesPage() {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <SeriesIcon size={48} style={{ color: "#e8b44a" }} />
-        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Episódio indisponível</h1>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Episódio dublado indisponível</h1>
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
-          Não encontramos fontes para a Temporada {temp}, Episódio {ep}.
+          Não encontramos fontes dubladas para a Temporada {temp}, Episódio {ep}.
         </p>
         <Link to="/serie/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
           <ArrowLeft size={16} /> Voltar para a Série

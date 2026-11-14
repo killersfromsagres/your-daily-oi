@@ -49,6 +49,13 @@ function loadVendor(): Promise<WebSRClass> {
   return vendorLoad;
 }
 
+function withinBudget<T>(promise:Promise<T>,ms:number):Promise<T> {
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error("Tempo de processamento HQ excedido")),ms);
+    promise.then(value=>{clearTimeout(timer);resolve(value);},error=>{clearTimeout(timer);reject(error);});
+  });
+}
+
 /** Avoid attempting a large 2x CNN on already-HD frames or tiny decoders. */
 export function eligibleForNeural2x(width: number, height: number): boolean {
   return width >= 160 && height >= 90 && width < 1920 && height < 1080;
@@ -159,7 +166,7 @@ export function useNeuralVideoUpscaler(
       }
       try {
         const startedAt = performance.now();
-        await engine.render(video);
+        await withinBudget(engine.render(video),900);
         if (cancelled) return;
         const spent = performance.now() - startedAt;
         previousAvg.current = previousAvg.current
@@ -245,7 +252,8 @@ export function useNeuralVideoUpscaler(
         }
         // Medium-capacity trained network on desktops with smaller source
         // frames; compact network on mobile and higher resolution sources.
-        networkSize = window.innerWidth >= 1024 && video.videoHeight <= 720 ? "m" : "s";
+        networkSize = !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) &&
+          navigator.hardwareConcurrency>=12 && video.videoHeight<=360 ? "m" : "s";
         const weightsUrl = "/models/websr/" +
           (contentType === "anime" ? "animation" : "real-life") + "-" + networkSize + ".json";
         const [WebSR, weightsResponse] = await Promise.all([
@@ -255,7 +263,7 @@ export function useNeuralVideoUpscaler(
         if (!weightsResponse.ok) throw new Error("Pesos do modelo indisponíveis");
         const weights = await weightsResponse.json() as unknown;
         if (cancelled) return;
-        const device = await WebSR.initWebGPU();
+        const device = await withinBudget(WebSR.initWebGPU(),3500);
         if (!device || cancelled) {
           unavailable("GPU sem suporte à inferência WebGPU");
           return;
@@ -273,6 +281,8 @@ export function useNeuralVideoUpscaler(
     })();
 
     const resetOnSwitch = () => {
+      rendered=0;promoted=false;slowSince=0;previousAvg.current=0;
+      lastFrameCompletedAt=0;frameIntervalAvg=0;
       if (!cancelled) setStatus(previous => previous === "active" ? "loading" : previous);
     };
     video.addEventListener("emptied", resetOnSwitch);

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { shortlistVodSources } from "@/lib/vod-source-quality";
 import type { StreamSource } from "@/lib/types";
 
 const BROWSER_USER_AGENT =
@@ -50,12 +51,12 @@ export const resolveVod = createServerFn({ method: "GET" })
   .handler(async ({ data: streams }) => {
     // Testa streams em paralelo
     const results = await Promise.all(
-      streams.map(async (s) => ({ ...s, alive: await isStreamAlive(s.url) }))
+      shortlistVodSources(streams).map(async (s) => ({ ...s, alive: await isStreamAlive(s.url) }))
     );
     const alive = results.filter((r) => r.alive);
     const dead = results.filter((r) => !r.alive);
     return {
-      stream: alive[0] ?? streams[0],
+      stream: alive[0] ?? undefined,
       alternatives: [...alive.slice(1), ...dead],
     };
   });

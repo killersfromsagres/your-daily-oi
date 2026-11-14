@@ -8,7 +8,6 @@ import type { CatalogItem, StreamSource } from "@/lib/types";
 import { shortlistVodSources } from "@/lib/vod-source-quality";
 import { catalogDisplayTitle } from "@/lib/catalog";
 import { saveProgress, getProgressById } from "@/lib/storage";
-import { buildSaimoVodProxyUrl } from "@/lib/saimo-vod-url";
 
 export const Route = createFileRoute("/assistir/filme/$id")({
   component: WatchMoviePage,
@@ -51,7 +50,7 @@ function WatchMoviePage() {
       .then((item) => {
         if (!active || !item?.id) return;
         setMovie(item);
-        if (item.streams?.length) setLoading(false);
+        if (shortlistVodSources(item.streams||[]).length) setLoading(false);
       })
       .catch((err: unknown) => {
         if (active) console.warn("[WatchMovie] Falha ao obter ficha:", err);
@@ -68,7 +67,7 @@ function WatchMoviePage() {
       .then((result) => {
         if (!active || !Array.isArray(result.sources)) return;
         setExtraStreams(result.sources);
-        if (result.sources.length) setLoading(false);
+        if (shortlistVodSources(result.sources).length) setLoading(false);
       })
       .catch((err: unknown) => {
         if (active) console.warn("[WatchMovie] Falha nas fontes complementares:", err);
@@ -86,18 +85,7 @@ function WatchMoviePage() {
   // fail before the working "Catálogo" source can start.
   const streams = useMemo<StreamSource[]>(() => {
     const candidates = [...(movie?.streams || []), ...extraStreams];
-    const preferred = shortlistVodSources(candidates, 6);
-    if (preferred.length) return preferred;
-    // Last resort for browser-only playback when the datacenter cannot resolve
-    // any provider; one dubbed relay is sufficient, without duplicating audio
-    // and direct/proxy entries in the server menu.
-    if (!movie?.tmdbId) return [];
-    return [{
-      url: buildSaimoVodProxyUrl({tipo:"movie",id:String(movie.tmdbId),versao:"dub"}),
-      name:"Reprodução alternativa",
-      audio:"dub", audioDeclared:false,
-      quality:"Auto", format:"auto", priority:30,
-    }];
+    return shortlistVodSources(candidates, 6);
   }, [movie?.streams, movie?.tmdbId, extraStreams]);
 
   if (loading) {
@@ -113,8 +101,8 @@ function WatchMoviePage() {
     return (
       <main style={{ width: "100vw", height: "100vh", backgroundColor: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", color: "#fff", textAlign: "center", padding: "20px" }}>
         <Film size={48} style={{ color: "#e8b44a" }} />
-        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Filme indisponível</h1>
-        <p style={{ color: "rgba(255,255,255,0.6)" }}>Não encontramos fontes ativas para este filme no catálogo.</p>
+        <h1 style={{ fontSize: "1.75rem", fontWeight: "800" }}>Filme dublado indisponível</h1>
+        <p style={{ color: "rgba(255,255,255,0.6)" }}>Não encontramos uma fonte dublada disponível para este filme.</p>
         <Link to="/" className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
           <ArrowLeft size={16} /> Voltar ao Início
         </Link>
@@ -143,7 +131,7 @@ function WatchMoviePage() {
       contentId: effectiveMovie.id,
       type: "f",
       title: catalogDisplayTitle(effectiveMovie),
-      posterUrl: effectiveMovie.posterUrl,
+      ...(effectiveMovie.posterUrl ? {posterUrl:effectiveMovie.posterUrl} : {}),
       currentTime,
       duration: duration || 0,
       updatedAt: Date.now(),

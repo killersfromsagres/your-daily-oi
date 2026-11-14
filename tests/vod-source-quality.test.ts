@@ -22,15 +22,16 @@ describe("Seleção automática do melhor servidor", () => {
     expect(bestVodSourceIndex(sources,{preferredAudio:"dub"})).toBe(1);
   });
 
-  test("catálogo direto dublado vence relays especulativos e mantém alternativas curtas", () => {
+  test("resolução dublada conhecida vence o rótulo Catálogo e mantém alternativas curtas", () => {
     const sources = [
       source("https://cdn.test/unknown-1080p.mp4","dub","1080p","Fonte genérica"),
       source("https://cdn.test/catalog.mp4","dub","Auto","Catálogo (DUB)"),
       source("https://cdn.test/720p.mp4","leg","720p","Legendas"),
     ];
-    expect(bestVodSourceIndex(sources)).toBe(1);
+    expect(bestVodSourceIndex(sources)).toBe(0);
     expect(shortlistVodSources(sources,2).length).toBe(2);
-    expect(shortlistVodSources(sources,2)[0]?.name).toBe("Catálogo (DUB)");
+    expect(shortlistVodSources(sources,2)[0]?.quality).toBe("1080p");
+    expect(shortlistVodSources(sources,6).every(s=>s.audio==="dub")).toBe(true);
   });
 
   test("melhor resolução dublada ganha mesmo se o relay é o primeiro na lista", () => {

@@ -1,8 +1,10 @@
 "use client";
+import "@/lib/browser-media";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StreamSource } from "@/lib/types";
 import { recordFailedSource } from "@/lib/player-storage";
 import { playbackFailureKind } from "@/lib/playback-start";
+import { portugueseAudioTrack } from "@/lib/dubbed-audio";
 
 export type PlayerState = "idle" | "loading" | "ready" | "playing" | "paused" | "error";
 
@@ -18,7 +20,8 @@ export const isRelaySource = (url?: string | null): boolean => {
 };
 
 export interface UsePlayerEngineOptions {
-  expectedRuntimeMin?: number;
+  dubbedOnly?:boolean;
+  expectedRuntimeMin?: number | undefined;
   /** Reject short advertisement-only files, not regular short-form content. */
   minContentSeconds?: number;
   attemptStage?: 0 | 1;
@@ -43,33 +46,6 @@ interface PlayerEngine {
   setPlaybackRate: (r: number) => void;
   requestPiP: () => void;
   castToTv: () => void;
-}
-
-declare global {
-  interface Window {
-    Hls?: {
-      new (config?: Record<string, unknown>): {
-        loadSource: (url: string) => void;
-        attachMedia: (el: HTMLVideoElement) => void;
-        destroy: () => void;
-        on: (event: string, cb: (...args: unknown[]) => void) => void;
-      };
-      isSupported: () => boolean;
-      Events: { ERROR: string; MANIFEST_PARSED: string };
-      ErrorTypes: { NETWORK_ERROR: string; MEDIA_ERROR: string };
-    };
-    mpegts?: {
-      createPlayer: (config: Record<string, unknown>) => {
-        attachMediaElement: (el: HTMLVideoElement) => void;
-        load: () => void;
-        play: () => Promise<void>;
-        pause: () => void;
-        unload: () => void;
-        destroy: () => void;
-      };
-      isSupported: () => boolean;
-    };
-  }
 }
 
 // The production VOD player uses locally bundled engines, like LivePlayer.
@@ -132,6 +108,23 @@ export function usePlayerEngine(
     let frozenCheckInterval: ReturnType<typeof setInterval> | null = null;
     let playingSince: number | null = null;
     let hasStartedPlaying = false;
+    let rejectedAudio=false;
+    const rejectForeignAudio=()=>{
+      if(cancelled||rejectedAudio)return;
+      rejectedAudio=true;
+      video.pause();
+      setState("error");
+      setError("Esta fonte não tem áudio em português. Buscando outro servidor dublado…");
+      recordFailedSource(stream.url);
+    };
+    const selectNativeAudio=()=>{
+      if(!options?.dubbedOnly)return;
+      const tracks=(video as HTMLVideoElement&{audioTracks?:ArrayLike<{language?:string;label?:string;enabled:boolean}>}).audioTracks;
+      if(!tracks?.length)return;
+      const list=Array.from(tracks),choice=portugueseAudioTrack(list);
+      if(choice.index>=0)list.forEach((track,index)=>{track.enabled=index===choice.index;});
+      else if(choice.foreign)rejectForeignAudio();
+    };
 
     const isRelay = isRelaySource(stream.url);
 
@@ -143,7 +136,7 @@ export function usePlayerEngine(
       stream.url.includes("/api/hls-proxy") ||
       stream.url.includes("embedplayer2.xyz") ||
       stream.url.includes("dadinhodetapioca.fun") ||
-      stream.url.split("?")[0].toLowerCase().endsWith(".txt");
+      (stream.url.split("?")[0]||"").toLowerCase().endsWith(".txt");
 
     // Timeout de metadata: 6s para relay HLS probe, 8s para as demais fontes
     const timeoutDuration = isRelay && isHls ? 9000 : 14000;
@@ -197,6 +190,7 @@ export function usePlayerEngine(
     };
 
     const onLoadedMetadata = () => {
+      selectNativeAudio();
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
       validateStreamHealth();
@@ -212,6 +206,8 @@ export function usePlayerEngine(
       validateStreamHealth();
     };
     const onPlaying = () => {
+      selectNativeAudio();
+      if(rejectedAudio){video.pause();return;}
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
       hasStartedPlaying = true;
@@ -305,6 +301,15 @@ export function usePlayerEngine(
           if (cancelled) return;
           if (Hls?.isSupported()) {
             const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+            const selectAudio=()=>{
+              if(!options?.dubbedOnly)return;
+              hls.subtitleTrack=-1;
+              const choice=portugueseAudioTrack(hls.audioTracks||[]);
+              if(choice.index>=0)hls.audioTrack=choice.index;
+              else if(choice.foreign){rejectForeignAudio();hls.destroy();}
+            };
+            hls.on(Hls.Events.MANIFEST_PARSED,selectAudio);
+            hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,selectAudio);
             hls.loadSource(url);
             hls.attachMedia(video);
             hls.on(Hls.Events.ERROR, (_, data: any) => {
@@ -334,7 +339,7 @@ export function usePlayerEngine(
           video.load();
         }
 
-        if (!cancelled) {
+        if (!cancelled && !rejectedAudio) {
           try {
             await video.play();
           } catch (playError) {
@@ -396,7 +401,7 @@ export function usePlayerEngine(
       video.removeAttribute("src");
       video.load();
     };
-  }, [stream, options?.attemptStage, options?.expectedRuntimeMin, options?.minContentSeconds]);
+  }, [stream, options?.attemptStage, options?.expectedRuntimeMin, options?.minContentSeconds, options?.dubbedOnly]);
 
   const play = useCallback(async () => {
     const video = videoRef.current;
