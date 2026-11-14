@@ -223,146 +223,209 @@
 }
 
 /*
- * ZANG FLIX · search + install actions
- * Desktop retains the existing inline installation CTA. In mobile layouts,
- * the download action shares the SEARCH BUTTON's positioning context, so it
- * cannot vanish when the header collapses while scrolling.
+ * Mobile search + APK installation actions.
+ * This island is portaled to document.body and is not a child of the header:
+ * header hide/collapse, transforms, and blur cannot make the controls disappear.
  */
 .zf-search-install-stack { display: contents; }
+.zf-mobile-floating-actions { display: none; }
 .zf-install-mobile-label { display: none; }
 
 @media (max-width: 1120px), (pointer: coarse) and (max-width: 1440px) {
+  /* Mobile has a clean cinematic canvas, not a duplicate header bar. */
   html:not([data-zf-platform="tv"]) .ydo-header {
-    overflow: visible;
+    display: none !important;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header > .zf-search-install-stack {
-    position: relative;
-    z-index: 5;
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions {
+    position: fixed;
+    z-index: 1450;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 44px;
-    width: 44px;
-    min-width: 0;
-    height: 44px;
-    margin-left: auto;
-  }
-
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack > .ydo-header-tools {
-    flex: 1 1 100%;
-    width: 100%;
-    min-width: 0;
-    margin: 0;
-  }
-
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack > .zf-install-header {
-    position: absolute;
-    z-index: 8;
-    display: flex;
-    top: calc(100% + 10px);
-    left: 50%;
-    right: auto;
+    align-items: flex-end;
+    flex-direction: column;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    right: 12px;
     width: max-content;
     max-width: calc(100vw - 24px);
-    margin: 0;
-    transform: translateX(-50%);
+    padding: 0;
+    pointer-events: none;
+    isolation: isolate;
   }
 
-  /* Exactly the same frosted-glass material, outline and depth as the lens. */
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: auto;
-    min-width: 0;
-    height: 40px;
-    min-height: 40px;
-    padding: 0 12px;
-    border: 1px solid rgba(255, 255, 255, .26);
-    border-radius: 16px;
-    background: rgba(14, 19, 28, .25);
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
-    box-shadow: inset 0 1px rgba(255, 255, 255, .13), 0 4px 16px #0003;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .01em;
-    line-height: 1;
-    white-space: nowrap;
-    text-decoration: none;
-    touch-action: manipulation;
-    transition: background-color .18s ease, border-color .18s ease;
-  }
-
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk:hover,
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk:focus-visible {
-    background: rgba(255, 255, 255, .16);
-    border-color: rgba(255, 255, 255, .36);
-  }
-
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-header-apk svg {
-    flex: 0 0 auto;
-    width: 16px;
-    height: 16px;
-    stroke-width: 1.8;
-  }
-
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-desktop-label,
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-tv-link {
-    display: none;
-  }
-
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-mobile-label {
-    display: inline;
-    max-width: none;
-    font-size: 11px;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  /* The search field needs the available header width and must stay on top. */
-  html:not([data-zf-platform="tv"]) .ydo-header.is-searching > .zf-search-install-stack {
-    width: 100%;
-    flex: 1 1 100%;
-    margin: 0;
-  }
-
-  html:not([data-zf-platform="tv"]) .ydo-header.is-searching .zf-search-install-stack > .zf-install-header {
-    display: none;
-  }
-
-  /* The scrolled header normally hides every direct child except tools.
-     Keep this shared tools wrapper visible, including its installer. */
-  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed > .zf-search-install-stack {
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions > .zf-search-install-stack {
     display: flex;
+    position: relative;
+    z-index: 1;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-header-tools {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     flex: 0 0 46px;
     width: 46px;
     height: 46px;
     margin: 0;
   }
 
-  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed .zf-search-install-stack > .ydo-header-tools {
-    flex: 1 1 100%;
-    width: 100%;
+  /* Shared smoke-glass finish for BOTH controls. */
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-trigger-btn,
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-header-apk {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 46px;
     height: 46px;
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 16px;
+    background: linear-gradient(165deg, rgba(255,255,255,.085), rgba(255,255,255,.018)), rgba(9,11,15,.54);
+    -webkit-backdrop-filter: blur(24px) saturate(130%);
+    backdrop-filter: blur(24px) saturate(130%);
+    box-shadow: inset 0 1px rgba(255,255,255,.17), 0 8px 25px rgba(0,0,0,.34);
+    color: #fff;
+    text-decoration: none;
+    font-family: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color .18s ease, border-color .18s ease;
   }
 
-  /* If the user opens search while scrolled, expand the whole search row. */
-  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed.is-searching > .zf-search-install-stack {
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-trigger-btn {
+    flex: 0 0 46px;
+    width: 46px;
+    min-width: 46px;
+    padding: 0;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-trigger-btn svg {
+    display: block;
+    width: 21px;
+    height: 21px;
+    flex: 0 0 21px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    opacity: 1;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-install-header {
+    display: flex;
+    position: relative;
+    z-index: 2;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-header-apk {
+    width: auto;
+    min-width: 0;
+    padding: 0 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-header-apk svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    stroke-width: 1.9;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-install-desktop-label,
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-install-tv-link {
+    display: none !important;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-install-mobile-label {
+    display: inline !important;
+    width: auto;
+    max-width: none;
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-trigger-btn:hover,
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-header-apk:hover,
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-trigger-btn:focus-visible,
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-header-apk:focus-visible {
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.38);
+    color: #fff;
+  }
+
+  /* Expanded search occupies the viewport width but keeps existing semantics. */
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions.is-searching {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions.is-searching > .zf-search-install-stack,
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions.is-searching .ydo-header-tools {
     width: 100%;
-    flex: 1 1 100%;
   }
 
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions.is-searching .zf-install-header {
+    display: none;
+  }
 
-  html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-help {
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-expand {
+    display: flex;
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    height: 46px;
+    padding: 0 8px 0 13px;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 16px;
+    background: rgba(12,16,24,.94);
+    box-shadow: 0 10px 30px rgba(0,0,0,.37);
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .ydo-search-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-search-suggestions {
     top: calc(100% + 8px);
     right: 0;
+    width: min(440px, calc(100vw - 24px));
+    max-height: min(65dvh, 500px);
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-mobile-floating-actions .zf-install-help {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(328px, calc(100vw - 24px));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zf-search-install-stack .zf-header-apk { transition: none !important; }
+  .zf-mobile-floating-actions .ydo-search-trigger-btn,
+  .zf-mobile-floating-actions .zf-header-apk {
+    transition: none !important;
+  }
 }
