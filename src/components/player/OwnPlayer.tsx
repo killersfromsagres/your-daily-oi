@@ -125,6 +125,14 @@ const getStreamUrlForStage = (
   return resolvedDirectUrl || rawUrl;
 };
 
+// Explicitly mark movie/episode proxy traffic. Live television must continue
+// streaming without artificial byte limits; long MP4 VOD requests should not.
+const markVodProxyUrl = (url: string, format?: string): string => {
+  if (format === "ts" || /\.ts(?:\?|$)/i.test(url.split("&url=")[0] || "")) return url;
+  if (!url.startsWith("/api/live-proxy?") && !url.startsWith("/api/proxy-stream?")) return url;
+  return url + (url.includes("?") ? "&" : "?") + "vod=1";
+};
+
 /** Backward compatible selector for existing UI and tests. */
 export function pickBestSourceIndex(streams: StreamSource[], preferredAudio: "dub" | "leg" = "dub"): number {
   const index = bestVodSourceIndex(streams, {preferredAudio, failedUrls: getFailedUrls()});
@@ -459,7 +467,7 @@ export function OwnPlayer({
           const url = getStreamUrlForStage(rawStream.url, attemptStage, rawStream.format, resolvedDirectUrl || undefined);
           return url.startsWith("/api/saimo-vod") && recoveryNonce
             ? url + (url.includes("?") ? "&" : "?") + "zf_recovery=" + recoveryNonce
-            : url;
+            : markVodProxyUrl(url, rawStream.format);
         })(),
       };
     }
@@ -471,7 +479,7 @@ export function OwnPlayer({
     return {
       ...rawStream,
       format: fmt || "auto",
-      url: finalUrl,
+      url: markVodProxyUrl(finalUrl, fmt || "auto"),
     };
   }, [rawStream, attemptStage, isRelay, resolvedDirectUrl, resolvedIsHls, recoveryNonce]);
 
