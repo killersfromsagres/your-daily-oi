@@ -17,6 +17,7 @@ import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { boundedVodRange, isBoundedVodReply, VOD_RANGE_CHUNK_BYTES } from "./lib/vod-range";
 import { handleLiveFormatApi } from "./lib/live-probe";
 import { isLivePlaylistTarget, liveSourceFingerprint } from "./lib/live-source";
+import { liveMediaHeaders, isLiveHlsMime, isContinuousTs, finiteLiveBody } from "./lib/live-proxy-transport";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { isFriday13EditionActive, selectFriday13Movies } from "./lib/friday13-edition";
@@ -1078,8 +1079,7 @@ async function handleHlsProxyApi(request: Request, url: URL): Promise<Response> 
     const contentType = rawContentType || "video/mp2t";
     responseHeaders.set("Content-Type", contentType);
 
-    const contentLength = res.headers.get("content-length");
-    if (contentLength) responseHeaders.set("Content-Length", contentLength);
+    // No unverified Content-Length: browser receives a chunked body.
 
     const contentRange = res.headers.get("content-range");
     if (contentRange && res.status === 206) {
@@ -1291,7 +1291,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
   if (vodTransfer && !playlistTarget && !upstreamVodRange) {
     return new Response("Range inválido", { status: 416 });
   }
-  const clientAcceptEncoding = request.headers.get("accept-encoding");
+  // Live media should not inherit Accept-Encoding: gzip/br from the browser.
 
   // Manifestos HLS variam a cada poucos segundos; servir uma versão antiga
   // pode congelar permanentemente o player ao tentar novos segmentos.
@@ -1339,7 +1339,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       if (ref) h["Referer"] = ref;
       if (orig) h["Origin"] = orig;
       if (upstreamVodRange) h["Range"] = upstreamVodRange;
-      if (clientAcceptEncoding) h["Accept-Encoding"] = clientAcceptEncoding;
+      h["Accept-Encoding"] = "identity";
       return h;
     };
 
@@ -1403,6 +1403,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
             if (isBlockedTargetUrl(next.href)) throw new Error("Destino interno ou protocolo inseguro");
             if (next.hostname !== new URL(currentUrl).hostname) cookieJar.clear();
             currentUrl = next.toString();
+            await hopRes.body?.cancel().catch(() => {});
             continue;
           }
         }
@@ -1423,6 +1424,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
         try {
           const res = await fetchWithRedirects(headersBuilder);
           if (res.status >= 500 && res.status < 600 && attempts < 3) {
+            await res.body?.cancel().catch(() => {});
             await new Promise((r) => setTimeout(r, 300));
             continue;
           }
@@ -1453,6 +1455,7 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
     }
 
     if (!res || res.status === 403 || res.status === 404) {
+      await res?.body?.cancel().catch(() => {});
       const rescueHeaders = [
         // A canonical Referer/Origin is a fallback only, not an invented default.
         () => buildHeaders(defaultReferer, defaultOrigin, defaultUa),
@@ -1526,12 +1529,9 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       cleanTarget.endsWith(".mpd") ||
       targetUrl.includes(".mpd");
 
-    const isHls =
-      rawContentType.includes("application/vnd.apple.mpegurl") ||
-      rawContentType.includes("audio/mpegurl") ||
-      cleanTarget.endsWith(".m3u8") ||
-      cleanTarget.endsWith(".txt") ||
-      targetUrl.includes(".m3u8");
+    const isHls = isLiveHlsMime(rawContentType) ||
+      /\.(?:m3u8?|txt)$/.test(cleanTarget) ||
+      /\.(?:m3u8?|txt)(?:\?|$)/i.test(targetUrl);
 
     const isSegment =
       Boolean(clientRange) ||
@@ -1623,31 +1623,10 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       }
     }
 
-    // Segmento binário (.ts, .m4s, áudio/vídeo puro): streaming pipe
-    const responseHeaders = new Headers();
-    responseHeaders.set("Access-Control-Allow-Origin", "*");
-    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-    responseHeaders.set("Access-Control-Allow-Headers", "*");
-    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
-
-    const contentType = rawContentType || "video/mp2t";
-    responseHeaders.set("Content-Type", contentType);
-
-    const contentLength = res.headers.get("content-length");
-    if (contentLength) responseHeaders.set("Content-Length", contentLength);
-
-    const contentRange = res.headers.get("content-range");
-    if (contentRange && res.status === 206) {
-      responseHeaders.set("Content-Range", contentRange);
-    }
-
-    const acceptRanges = res.headers.get("accept-ranges") || (res.status === 206 ? "bytes" : "bytes");
-    responseHeaders.set("Accept-Ranges", acceptRanges);
-
-    return new Response(request.method === "HEAD" ? null : res.body, {
-      status: res.status,
-      headers: responseHeaders,
-    });
+    const responseHeaders = liveMediaHeaders(res.headers, res.status, rawContentType || "video/mp2t");
+    const output = request.method === "HEAD" ? null :
+      (res.body && isContinuousTs(res, clientRange) ? finiteLiveBody(res.body) : res.body);
+    return new Response(output, { status: res.status, headers: responseHeaders });
   } catch (err) {
     console.error("Erro no live-proxy:", err);
     return new Response("Erro no proxy de transmissão ao vivo", {
@@ -1745,10 +1724,7 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
     }
     if (upstreamVodRange) upstreamHeaders["Range"] = upstreamVodRange;
 
-    const clientAcceptEncoding = request.headers.get("accept-encoding");
-    if (clientAcceptEncoding) {
-      upstreamHeaders["Accept-Encoding"] = clientAcceptEncoding;
-    }
+    upstreamHeaders["Accept-Encoding"] = "identity";
 
     // 1. Se for o relay do Saimo TV, primeiro resolve o redirect 302 sem Range para obter a URL final real do CDN
     if (targetUrl.includes("saimo-tv.pages.dev/api/stream")) {
@@ -1863,20 +1839,11 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
       }
     }
 
-    const responseHeaders = new Headers();
-    responseHeaders.set("Access-Control-Allow-Origin", "*");
-    responseHeaders.set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-    responseHeaders.set("Access-Control-Allow-Headers", "*");
-    responseHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
-
     const contentType = res.headers.get("content-type") || "video/mp4";
     if (contentType.toLowerCase().includes("text/html")) {
-      console.warn(`[ProxyStream] Upstream retornou HTML em vez de vídeo para ${targetUrl}`);
-      return new Response("Erro upstream html", {
-        status: 502,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      });
+      return new Response("Erro upstream html", { status: 502, headers: { "Access-Control-Allow-Origin":"*" } });
     }
+    const responseHeaders = liveMediaHeaders(res.headers, res.status, contentType);
     // Avoid proxying an entire movie in a single long-lived Vercel invocation.
     const vodMediaFile = vodTransfer &&
       (/(?:video\/(?!mp2t)|application\/octet-stream)/i.test(contentType) ||
@@ -1893,23 +1860,9 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         });
       }
     }
-    responseHeaders.set("Content-Type", contentType);
-
-    const contentLength = res.headers.get("content-length");
-    if (contentLength) responseHeaders.set("Content-Length", contentLength);
-
-    const contentRange = res.headers.get("content-range");
-    if (contentRange && res.status === 206) {
-      responseHeaders.set("Content-Range", contentRange);
-    }
-
-    const acceptRanges = res.headers.get("accept-ranges") || (res.status === 206 ? "bytes" : "none");
-    responseHeaders.set("Accept-Ranges", acceptRanges);
-
-    return new Response(request.method === "HEAD" ? null : res.body, {
-      status: res.status,
-      headers: responseHeaders,
-    });
+    const output = request.method === "HEAD" ? null :
+      (res.body && isContinuousTs(res, clientRange) ? finiteLiveBody(res.body) : res.body);
+    return new Response(output, { status: res.status, headers: responseHeaders });
   } catch (err) {
     console.error("Erro no proxy-stream:", err);
     return new Response("Erro no proxy de vídeo", { status: 502 });

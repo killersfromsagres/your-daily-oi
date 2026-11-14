@@ -98,47 +98,31 @@ async function ensureShaka() {
 }
 
 const LIVE_VOL_KEY = LIVE_VOLUME_KEY;
-const SEM_CORS_KEY = "zangflix:sem-cors";
-
-function getHostsSemCors(): string[] {
-  if (typeof window === "undefined") return [];
+// A network interruption is not proof of permanent CORS failure. Old
+// localStorage blacklists previously forced unrelated channels on the same
+// CDN into a broken proxy for days. Keep only a short memory-only cooldown.
+const directHostCooldown = new Map<string,number>();
+const HOST_RETRY_MS = 90_000;
+function hostSemCors(url:string):boolean {
   try {
-    const raw = localStorage.getItem(SEM_CORS_KEY);
-    if (raw) return JSON.parse(raw) as string[];
-  } catch {}
-  return [];
+    const host=new URL(url).hostname.toLowerCase();
+    const until=directHostCooldown.get(host)||0;
+    if (until<Date.now()) {directHostCooldown.delete(host);return false;}
+    return true;
+  } catch {return false;}
 }
-
-function hostSemCors(url: string): boolean {
+function marcarSemCors(url:string) {
   try {
-    const host = new URL(url).hostname.toLowerCase();
-    return getHostsSemCors().includes(host);
-  } catch {
-    return false;
-  }
-}
-
-function marcarSemCors(url: string) {
-  try {
-    const host = new URL(url).hostname.toLowerCase();
-    const current = getHostsSemCors();
-    if (!current.includes(host)) {
-      const updated = [host, ...current].slice(0, 100);
-      localStorage.setItem(SEM_CORS_KEY, JSON.stringify(updated));
-    }
+    const host=new URL(url).hostname.toLowerCase();
+    directHostCooldown.set(host,Date.now()+HOST_RETRY_MS);
   } catch {}
 }
-
 function limparHostsSemCors() {
-  try {
-    localStorage.removeItem(SEM_CORS_KEY);
-  } catch {}
+  directHostCooldown.clear();
+  try {localStorage.removeItem("zangflix:sem-cors");}catch{}
 }
-
-const initialModeFor = (f: FonteTV | undefined): LiveAccessMode => {
-  if (!f) return "proxy";
-  return hostSemCors(f.url) ? "proxy" : initialLiveMode(f);
-};
+const initialModeFor = (f: FonteTV | undefined): LiveAccessMode =>
+  !f ? "proxy" : hostSemCors(f.url) ? "proxy" : initialLiveMode(f);
 
 // Corrige caminhos em proxies de terceiros que aninham o stream no parâmetro url=
 function fixNestedPath(parentUrl: string, childUrl: string): string {
@@ -639,6 +623,11 @@ export function LivePlayer({
               isLive: true,
               cors: true,
             }, mpegtsLatencyOptions(latencyMode));
+            player.on?.(mpegts.Events?.ERROR || "error", (...details: unknown[]) => {
+              if (cancelled) return;
+              console.warn("[LivePlayer] Falha MPEG-TS; iniciando recuperação", details[0]);
+              handleFatalError(true);
+            });
             player.attachMediaElement(video);
             player.load();
             void player.play().catch(() => {

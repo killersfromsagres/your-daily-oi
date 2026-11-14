@@ -24,8 +24,10 @@ declare global {
       createPlayer:(config:Record<string,unknown>,options?:Record<string,unknown>)=>{
         attachMediaElement:(video:HTMLVideoElement)=>void;
         load:()=>void;play:()=>Promise<void>;pause:()=>void;unload:()=>void;destroy:()=>void;
+        on?:(event:string, callback:(...args:any[])=>void)=>void;
       };
       isSupported:()=>boolean;
+      Events?:{ ERROR?:string };
     };
     shaka?:any;
   }
