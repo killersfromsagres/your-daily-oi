@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Download, Smartphone, X } from "lucide-react";
+import { Download, Smartphone, Tv, X } from "lucide-react";
 
 // Direct, publicly accessible Android package. GitHub serves the binary with
 // Content-Disposition: attachment so Chrome downloads the .apk on tap.
@@ -12,12 +12,14 @@ export const ANDROID_APK_URL =
  * Android controls user confirmation of side-loaded APK installation.
  */
 export function InstallAppButton() {
-  const [platform, setPlatform] = useState<"android" | "ios" | "other" | "native">("other");
+  const [platform, setPlatform] = useState<"android" | "ios" | "other" | "native" | "tv">("other");
   const [help, setHelp] = useState(false);
 
   useEffect(() => {
     const agent = navigator.userAgent;
-    if (agent.includes("ZangFlixAndroid/")) setPlatform("native");
+    if(agent.includes("ZangFlixTV/"))setPlatform("native");
+    else if(/smart.?tv|tizen|webos|web0s|android.?tv|googletv|aft[a-z0-9]+/i.test(agent))setPlatform("tv");
+    else if (agent.includes("ZangFlixAndroid/")) setPlatform("native");
     else if (/iPad|iPhone|iPod/i.test(agent)) setPlatform("ios");
     else if (/Android/i.test(agent)) setPlatform("android");
     else setPlatform("other");
@@ -27,7 +29,7 @@ export function InstallAppButton() {
 
   return (
     <div className="zf-install-header">
-      {platform === "ios" ? (
+      {platform === "tv" ? <a href="/tv-app" className="zf-header-apk"><Tv size={17}/><span>Aplicativo para TV</span></a> : platform === "ios" ? (
         <button
           type="button" className="zf-header-apk"
           aria-label="Como adicionar ZANG FLIX ao iPhone"
@@ -48,6 +50,7 @@ export function InstallAppButton() {
           <span>Baixar aplicativo</span>
         </a>
       )}
+      {platform!=="tv"&&<a href="/tv-app" className="zf-install-tv-link" aria-label="Instalar ou conectar ZANG FLIX na TV"><Tv size={17}/></a>}
       {help && platform === "ios" && (
         <div className="zf-install-help" role="dialog" aria-label="Adicionar ao iPhone">
           <div className="zf-install-help-head">

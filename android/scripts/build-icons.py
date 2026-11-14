@@ -1,6 +1,6 @@
 # android/scripts/build-icons.py — create branded Android launcher assets from the site's existing ZANG FLIX logo.
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "android/app/src/main/res"
@@ -36,3 +36,14 @@ for folder, side in (
     rounded.putalpha(mask)
     rounded.save(folder_path / "ic_launcher_round.png")
 print(f"Built ZANG FLIX launcher icons from {SOURCE.name}")
+
+# Android TV launcher requires a real xhdpi 320 x 180 banner.
+folder=OUTPUT / "drawable-xhdpi"
+folder.mkdir(parents=True,exist_ok=True)
+banner=Image.new("RGBA",(320,180),(10,11,20,255))
+mark=logo.copy();mark.thumbnail((92,74),Image.Resampling.LANCZOS)
+banner.alpha_composite(mark,((320-mark.width)//2,22))
+draw=ImageDraw.Draw(banner)
+font=ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",27)
+draw.text((160,119),"ZANG FLIX",font=font,fill=(236,195,112,255),anchor="mm")
+banner.save(folder / "tv_banner.png")

@@ -47,7 +47,9 @@ jobs:
           test -s android/app/build/outputs/apk/debug/app-debug.apk
           mkdir -p dist
           cp android/app/build/outputs/apk/debug/app-debug.apk dist/ZANG-FLIX-Android.apk
-          sha256sum dist/ZANG-FLIX-Android.apk | tee dist/SHA256SUMS.txt
+          cp dist/ZANG-FLIX-Android.apk dist/ZANG-FLIX-TV.apk
+          "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-TV.apk | grep -F "leanback-launchable-activity"
+          sha256sum dist/ZANG-FLIX-Android.apk dist/ZANG-FLIX-TV.apk | tee dist/SHA256SUMS.txt
           "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose dist/ZANG-FLIX-Android.apk
       - name: Keep build artifact available for diagnostics
         uses: actions/upload-artifact@v4
@@ -55,6 +57,7 @@ jobs:
           name: ZANG-FLIX-Android-APK
           path: |
             dist/ZANG-FLIX-Android.apk
+            dist/ZANG-FLIX-TV.apk
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
@@ -63,9 +66,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view android-latest >/dev/null 2>&1; then
-            gh release upload android-latest dist/ZANG-FLIX-Android.apk dist/SHA256SUMS.txt --clobber
+            gh release upload android-latest dist/ZANG-FLIX-Android.apk dist/ZANG-FLIX-TV.apk dist/SHA256SUMS.txt --clobber
           else
-            gh release create android-latest dist/ZANG-FLIX-Android.apk dist/SHA256SUMS.txt \
+            gh release create android-latest dist/ZANG-FLIX-Android.apk dist/ZANG-FLIX-TV.apk dist/SHA256SUMS.txt \
               --title "ZANG FLIX — aplicativo Android (APK)" \
               --notes "APK Android nativo com o site ZANG FLIX integrado. Arquivo assinado com a chave de depuração do GitHub Actions; esta distribuição inicial não tem assinatura de publicação permanente. Android pedirá confirmação para instalar aplicativos externos."
           fi

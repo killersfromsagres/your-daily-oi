@@ -5,6 +5,8 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import type { ProgramaEPG } from "@/lib/epg";
+import { LiveVolumeControl } from "./LiveVolumeControl";
+import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
 import { CastControl } from "./CastControl";
 import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, type LiveLatencyMode } from "@/lib/live-latency";
 import { usePlayerFullscreen } from "./usePlayerFullscreen";
@@ -95,7 +97,7 @@ async function ensureShaka() {
   return window.shaka;
 }
 
-const LIVE_VOL_KEY = "zangflix:live-volume";
+const LIVE_VOL_KEY = LIVE_VOLUME_KEY;
 const SEM_CORS_KEY = "zangflix:sem-cors";
 
 function getHostsSemCors(): string[] {
@@ -213,8 +215,7 @@ export function LivePlayer({
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(() => {
     if (typeof window === "undefined") return 1;
-    const saved = localStorage.getItem(LIVE_VOL_KEY);
-    return saved !== null ? Number(saved) : 1;
+    try{return clampVolume(localStorage.getItem(LIVE_VOL_KEY));}catch{return 1;}
   });
   const [isLiveEdge, setIsLiveEdge] = useState(true);
   const [latencyMode, setLatencyMode] = useState<LiveLatencyMode>(() => {
@@ -223,6 +224,11 @@ export function LivePlayer({
   });
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [volumeHardwareOnly,setVolumeHardwareOnly]=useState(false);
+  const [volumeOpen,setVolumeOpen]=useState(false);
+  const onVolumeDialogChange=useCallback((open:boolean)=>setVolumeOpen(open),[]);
+  const volumeRef=useRef(volume);
+  const lastAudibleVolume=useRef(volume>0?volume:.6);
   const [castOpen, setCastOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const onCastDialogChange = useCallback((open: boolean) => {
@@ -281,15 +287,14 @@ export function LivePlayer({
   const showControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (sourcesOpen || castOpen) return;
-    hideTimerRef.current = setTimeout(() => setControlsVisible(false), 3500);
-  }, [sourcesOpen, castOpen]);
+    if (sourcesOpen || castOpen || volumeOpen || loading || error) return;
+    hideTimerRef.current = setTimeout(() => setControlsVisible(false), isFullscreen?1600:3000);
+  }, [sourcesOpen, castOpen, volumeOpen, loading, error, isFullscreen]);
 
-  useEffect(() => {
-    if (!sourcesOpen && !castOpen) return;
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    setControlsVisible(true);
-  }, [sourcesOpen, castOpen]);
+  useEffect(()=>{
+    showControls();
+    return()=>{if(hideTimerRef.current)clearTimeout(hideTimerRef.current);};
+  },[showControls]);
 
   // O modo "Menor atraso" prefere o live edge, com margem de buffer
   // suficiente para evitar reconexões constantes em redes instáveis.
@@ -760,32 +765,32 @@ export function LivePlayer({
     };
   }, [streamUrl, sourceIndex, attemptMode, playNonce, handleFatalError, latencyMode]);
 
-  // Ao vivo não pausa: clique no vídeo muta ou desmuta o áudio
-  const handleToggleMute = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const nextMuted = !video.muted;
-    video.muted = nextMuted;
-    setMuted(nextMuted);
-    if (!nextMuted) {
-      setUnmuteNotice(false);
-    }
-  }, []);
-
-  const handleVolumeChange = useCallback((newVol: number) => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.volume = newVol;
-    setVolume(newVol);
-    if (newVol > 0 && video.muted) {
-      video.muted = false;
-      setMuted(false);
-      setUnmuteNotice(false);
-    }
-    localStorage.setItem(LIVE_VOL_KEY, String(newVol));
-  }, []);
-
-
+  // Source changes and browser/native volume events share the same persisted level.
+  useEffect(()=>{
+    const video=videoRef.current;if(!video)return;
+    video.volume=volumeRef.current;
+    const synchronize=()=>{
+      const level=clampVolume(video.volume);volumeRef.current=level;setVolume(level);setMuted(video.muted);
+      if(level>0)lastAudibleVolume.current=level;
+      try{localStorage.setItem(LIVE_VOL_KEY,String(level));}catch{/* Storage may be unavailable. */}
+    };
+    video.addEventListener("volumechange",synchronize);
+    return()=>video.removeEventListener("volumechange",synchronize);
+  },[streamUrl,playNonce]);
+  const handleVolumeChange = useCallback((requested:number)=>{
+    const video=videoRef.current;if(!video)return;
+    const level=clampVolume(requested);video.volume=level;
+    if(Math.abs(video.volume-level)>.01){setVolumeHardwareOnly(true);setVolume(video.volume);return;}
+    volumeRef.current=level;setVolume(level);
+    if(level>0){lastAudibleVolume.current=level;video.muted=false;setMuted(false);setUnmuteNotice(false);}
+    else {video.muted=true;setMuted(true);}
+    try{localStorage.setItem(LIVE_VOL_KEY,String(level));}catch{}
+  },[]);
+  const handleToggleMute = useCallback(()=>{
+    const video=videoRef.current;if(!video)return;
+    if(video.muted||video.volume===0){handleVolumeChange(video.volume>0?video.volume:lastAudibleVolume.current);}
+    else{video.muted=true;setMuted(true);}
+  },[handleVolumeChange]);
 
   const handlePiPToggle = useCallback(() => {
     const video = videoRef.current;
@@ -797,9 +802,15 @@ export function LivePlayer({
     }
   }, []);
 
+  useEffect(()=>{
+    document.addEventListener("zf-reveal-player-controls",showControls);
+    return()=>document.removeEventListener("zf-reveal-player-controls",showControls);
+  },[showControls]);
+
   // Atalhos de teclado
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if(e.defaultPrevented)return;
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
@@ -807,7 +818,13 @@ export function LivePlayer({
         return;
       }
 
-      if (e.key === "ArrowUp") {
+      const tv=document.documentElement.dataset["zfPlatform"]==="tv";
+      if(tv&&["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){showControls();return;}
+      if(e.key==="+"||e.key==="="||e.key==="AudioVolumeUp"){
+        e.preventDefault();handleVolumeChange(stepVolume(volumeRef.current,1));
+      }else if(e.key==="-"||e.key==="AudioVolumeDown"){
+        e.preventDefault();handleVolumeChange(stepVolume(volumeRef.current,-1));
+      }else if (e.key === "ArrowUp") {
         e.preventDefault();
         onPrevCanal?.();
       } else if (e.key === "ArrowDown") {
@@ -828,7 +845,7 @@ export function LivePlayer({
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onPrevCanal, onNextCanal, handleToggleMute, handleFullscreenToggle, onToggleGuide, showControls]);
+  }, [onPrevCanal, onNextCanal, handleToggleMute, handleFullscreenToggle, onToggleGuide, showControls, handleVolumeChange]);
 
   return (
     <div
@@ -837,6 +854,7 @@ export function LivePlayer({
       data-controls-visible={controlsVisible}
       onMouseMove={showControls}
       onTouchStart={showControls}
+      onFocusCapture={showControls}
     >
       <div className="zf-fullscreen-surface">
       <video
@@ -948,12 +966,8 @@ export function LivePlayer({
       <div className={"zf-player-toolbar" + (controlsVisible ? " is-visible" : "")}
         role="toolbar" aria-label="Controles da TV ao vivo">
         <div className="zf-player-tools-start">
-          <button type="button" className="zf-player-action"
-            onClick={handleToggleMute}
-            aria-label={muted || volume === 0 ? "Ativar som" : "Desativar som"}
-            title={muted || volume === 0 ? "Ativar som" : "Desativar som"}>
-            {muted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
+          <LiveVolumeControl volume={volume} muted={muted} onVolume={handleVolumeChange} onMute={handleToggleMute}
+            onDialogChange={onVolumeDialogChange} hardwareOnly={volumeHardwareOnly} otherOpen={sourcesOpen||castOpen}/>
           <button type="button"
             className={"zf-player-live" + (isLiveEdge ? " is-live" : "")}
             onClick={syncToLiveEdge}
@@ -975,7 +989,7 @@ export function LivePlayer({
             </button>
             {sourcesOpen && (
               <div className="zf-player-menu" role="dialog" aria-label="Qualidade e ajustes de reprodução">
-                <div className="zf-player-menu-header">Ajustes do player</div>
+                <div className="zf-player-menu-header">Ajustes do player<button type="button" aria-label="Fechar ajustes" onClick={()=>setSourcesOpen(false)}>×</button></div>
                 <label className="zf-player-volume-control">
                   <span>Volume</span>
                   <input type="range" min={0} max={1} step={0.05}
@@ -1017,7 +1031,7 @@ export function LivePlayer({
             )}
           </div>
           <CastControl videoRef={videoRef} source={rawFonte}
-            streamUrl={streamUrl} channelName={canal.nome}
+            streamUrl={streamUrl} channelName={canal.nome} channelId={canal.id} sources={canal.fontes}
             onDialogChange={onCastDialogChange} settingsOpen={sourcesOpen} />
           <button type="button" className="zf-player-action"
             onClick={handleFullscreenToggle}

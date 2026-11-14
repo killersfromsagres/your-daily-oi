@@ -1,0 +1,44 @@
+name: Verify TV app volume and remote experience
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/player/**'
+      - 'src/components/layout/**'
+      - 'src/components/tv/JogosShelf.tsx'
+      - 'src/lib/live-volume.ts'
+      - 'src/lib/cast-source.ts'
+      - 'src/lib/tv-remote.ts'
+      - 'src/lib/football-tv-guide.ts'
+      - 'src/styles/tv-experience.css'
+      - 'src/routes/tv-app.tsx'
+      - 'scripts/fixtures/tv-experience-harness.tsx'
+      - 'scripts/smoke-tv-experience.mjs'
+      - 'tests/tv-experience.test.ts'
+      - '.github/workflows/verify-tv-experience.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bun run build
+      - name: Install synthetic media dependency
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - run: bun scripts/smoke-tv-experience.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-tv-experience-browser
+          path: artifacts/live-tv-*.png
+          if-no-files-found: warn
+          retention-days: 7

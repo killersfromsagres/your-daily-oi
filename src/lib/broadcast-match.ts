@@ -12,7 +12,7 @@ export function normalizeTvChannelIdentity(value:string):string {
     .replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
 }
 const aliases:Record<string,string> = {
-  "espn brasil":"espn","pfc":"premiere","tv globo":"globo","rede globo":"globo",
+  "espn brasil":"espn","premiere fc":"premiere clubes","pfc":"premiere","tv globo":"globo","rede globo":"globo",
   "globo tv":"globo","tv ge":"getv","ge tv":"getv","prime video":"amazon prime video",
 };
 export const canonicalTvChannelIdentity=(name:string):string=>{

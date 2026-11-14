@@ -10,6 +10,9 @@ export interface BroadcastEvidence {
   checkedAt: string;
 }
 const REGION_ALIASES:Record<string,string> = {
+  "atletico mineiro":"atletico mg","athletico paranaense":"athletico pr",
+  "man united":"manchester united","psg":"paris saint germain",
+  "bayern munich":"bayern munchen","inter milan":"internazionale",
   brazil:"brasil",japan:"japao",japanese:"japao",
   england:"inglaterra",france:"franca",germany:"alemanha",
   italy:"italia",spain:"espanha",netherlands:"holanda",

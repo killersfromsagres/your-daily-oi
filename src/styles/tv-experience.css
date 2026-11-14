@@ -1,0 +1,66 @@
+/* One local display face; the section stays searchable and accessible text. */
+@font-face{font-family:ZangHorror;src:url('/fonts/bebas-neue.ttf') format('truetype');font-weight:400;font-display:swap}
+.zf-zangs-picks{border-top:0;background:none;padding-top:22px}
+.zf-zangs-picks .zf-horror-title{font-family:ZangHorror,'Arial Narrow',sans-serif;font-size:clamp(32px,4vw,49px);font-weight:400;letter-spacing:.025em;line-height:1.2;color:#e7d6d4;text-shadow:0 2px #4b1119,0 4px 12px #60061130}
+.zf-zangs-picks .zf-horror-title span{position:relative;color:#dc4d53;background:linear-gradient(#f0918d 0%,#e4464c 48%,#7b101e 100%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.zf-horror-title span::before,.zf-horror-title span::after{content:'';position:absolute;top:78%;width:2px;background:linear-gradient(#b12532,#700c1a);border-radius:0 0 3px 3px;pointer-events:none}
+.zf-horror-title span::before{left:29%;height:12px}.zf-horror-title span::after{left:73%;height:7px;width:3px}
+/* Mobile has exactly the floating search and the existing bottom glass dock. */
+@media(max-width:1120px),(pointer:coarse) and (max-width:1440px){
+ html:not([data-zf-platform="tv"]) .ydo-header:not(.is-searching){left:auto!important;right:12px!important;width:46px!important;max-width:46px;height:46px;min-height:46px;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+ html:not([data-zf-platform="tv"]) .ydo-header::before{display:none!important}
+ html:not([data-zf-platform="tv"]) .ydo-header>:not(.ydo-header-tools){display:none!important}
+ html:not([data-zf-platform="tv"]) .ydo-header .ydo-header-tools{margin:0!important;width:100%}
+ html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn{width:46px;height:46px;background:#0e131c36;border:1px solid #ffffff38;border-radius:16px;backdrop-filter:blur(18px)}
+}
+.zf-install-tv-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;color:#c4cbd2;border-radius:50%}
+.zf-install-tv-link:hover{background:#ffffff12;color:#fff}
+.zf-install-header{display:flex;align-items:center;gap:5px}
+/* An explicit audio panel remains reachable by touch, keyboard and D-pad. */
+.zf-live-volume{position:relative;display:flex;align-items:center}
+.zf-volume-indicator{position:absolute;right:-1px;bottom:0;font-size:8px;line-height:1;color:#e4c58d}
+.zf-volume-panel{position:absolute;bottom:calc(100% + 10px);left:0;width:270px;max-width:calc(100vw - 24px);padding:14px;border:1px solid #ffffff26;background:#101720f5;border-radius:15px;box-shadow:0 15px 50px #0008;z-index:90;color:#f5f6f8;font-size:13px}
+.zf-volume-panel header{display:flex;align-items:center;gap:12px}.zf-volume-panel header output{margin-left:auto;color:#e8c88d;font-variant-numeric:tabular-nums}
+.zf-volume-panel button{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;border-radius:8px;border:1px solid #ffffff12;background:#ffffff08;color:#eee;cursor:pointer}
+.zf-volume-slider{display:flex;gap:8px;align-items:center;margin:12px 0}
+.zf-volume-slider input{width:100%;min-width:0;height:36px;accent-color:#e6bd78;touch-action:pan-x}
+.zf-volume-panel .zf-volume-mute{gap:8px;width:100%;font-size:12px}
+.zf-player-menu-header{display:flex;justify-content:space-between;align-items:center}
+.zf-player-menu-header button{font-size:20px;color:#fff;border:0;background:none;min-height:32px;min-width:32px}
+.zf-volume-panel button:focus-visible,.zf-volume-slider input:focus-visible{outline:2px solid #f0c487;outline-offset:2px}
+/* Smaller sports shelf leaves the channel browser close to the player. */
+.zgame-center.is-compact{padding:20px 20px 24px;margin-block:22px;border-radius:18px}
+.zgame-center.is-compact .zgame-header{margin-bottom:14px;gap:12px;align-items:center}
+.zgame-center.is-compact .zgame-kicker,.zgame-center.is-compact .zgame-toolbar-label,.zgame-center.is-compact .zgame-timezone,.zgame-center.is-compact .zf-featured-summary,.zgame-center.is-compact .zgame-section-kicker{display:none}
+.zgame-center.is-compact .zgame-header h2{font-size:clamp(24px,3vw,34px);margin:0 0 5px}
+.zgame-center.is-compact .zgame-header-copy{padding:0}.zgame-center.is-compact .zf-football-inline-link{font-size:11px}
+.zgame-center.is-compact .zgame-toolbar{padding:8px 0;margin-bottom:10px;border:0;background:none;min-height:0}
+.zgame-center.is-compact .zgame-days{width:100%;max-width:620px;gap:5px}
+.zgame-center.is-compact .zgame-day{height:auto;min-height:42px;min-width:62px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:10px}
+.zgame-center.is-compact .zgame-day span{font-size:9px}.zgame-center.is-compact .zgame-day strong{font-size:16px}.zgame-center.is-compact .zgame-day small{display:none}
+.zgame-center.is-compact .zgame-section-head{margin:6px 0 12px}.zgame-center.is-compact .zgame-section-head h3{font-size:13px}.zgame-center.is-compact .zgame-summary{font-size:10px}
+.zgame-center.is-compact .zgame-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,290px);grid-template-columns:none;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding:4px;padding:4px 4px 12px}
+.zgame-center.is-compact .zf-ticket{min-height:280px;scroll-snap-align:start;border-radius:14px;backdrop-filter:none}
+.zgame-center.is-compact .zf-ticket-main{padding:12px;min-height:0;gap:10px}
+.zgame-center.is-compact .zf-ticket-date{display:none}.zgame-center.is-compact .zf-ticket-league-crest{width:24px;height:24px}.zgame-center.is-compact .zf-ticket-status{font-size:8px}
+.zgame-center.is-compact .zf-ticket-teams{gap:10px;margin:8px 0}.zgame-center.is-compact .zgame-crest{width:36px;height:36px}.zgame-center.is-compact .zf-ticket-team strong{font-size:12px}
+.zgame-center.is-compact .zf-ticket-time{font-size:28px;line-height:1.1}.zgame-center.is-compact .zf-ticket-time-caption{display:none}.zgame-center.is-compact .zf-ticket-match-meta{font-size:9px;margin-top:0}
+.zgame-center.is-compact .zf-ticket-broadcast{padding:0 10px 10px}.zgame-center.is-compact .zf-ticket-watch{min-height:38px;padding:7px 9px}.zgame-center.is-compact .zf-ticket-watch small{display:none}
+.zf-ticket-channels-toggle{display:flex;align-items:center;justify-content:center;gap:6px;background:#ffffff09;border:1px solid #ffffff18;border-radius:7px;color:#dce8e0;padding:6px 10px;margin-top:5px;width:100%;font-size:11px;cursor:pointer}.zf-ticket-channels-toggle span{opacity:.6}
+.zgame-center.is-compact .zf-ticket-channel-choices{max-height:120px;overflow-y:auto}
+.zf-tv-app-page{max-width:1440px;padding:130px 5vw 110px;margin:auto;color:#f3f2ef;min-height:100dvh}
+.zf-tv-app-back{display:inline-flex;gap:6px;align-items:center;color:#b6becb;font-size:13px;margin-bottom:28px}
+.zf-tv-app-intro>span{font-size:11px;letter-spacing:.24em;color:#d7b77c}.zf-tv-app-intro h1{font-size:clamp(38px,5vw,72px);line-height:1.05;letter-spacing:-.05em;margin:16px 0}.zf-tv-app-intro p{color:#aab3c1}
+.zf-tv-install-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin-top:42px}
+.zf-tv-install-grid section{border-top:1px solid #ffffff20;padding-top:24px;min-width:0}.zf-tv-install-grid section>svg{color:#d9b779}.zf-tv-install-grid h2{font-size:22px;margin:14px 0 8px}.zf-tv-install-grid p,.zf-tv-install-grid li{font-size:14px;line-height:1.6;color:#b8c0cb}.zf-tv-install-grid small{display:block;font-size:11px;line-height:1.6;color:#87919f;margin-top:18px}.zf-tv-install-grid ol{padding-left:20px;margin-top:22px}.zf-tv-install-grid .ydo-btn-primary,.zf-tv-install-grid .ydo-btn-secondary{font-size:13px;margin-top:14px}
+html[data-zf-platform="tv"] .zf-tv-app-page{padding-top:150px}
+html[data-zf-platform="tv"] :is(.ydo-live-player-container,.ydo-player-container){outline-offset:6px}
+html[data-zf-platform="tv"] .zf-player-toolbar{--zf-toolbar-icon:48px;padding:14px 22px}
+html[data-zf-platform="tv"] .zf-volume-panel{width:340px;font-size:17px;padding:20px}
+html[data-zf-platform="tv"] .zf-volume-panel button{min-width:46px;min-height:46px}
+html[data-zf-platform="tv"] .zf-volume-slider input{height:46px}
+html[data-zf-platform="tv"] .ydo-controls-row button{min-width:44px;min-height:44px}
+html[data-zf-platform="tv"] :is(.zf-player-menu,.zang-cast-menu){backdrop-filter:none;background:#121923}
+@media(max-width:740px){.zf-tv-app-page{padding-top:86px}.zf-tv-install-grid{grid-template-columns:1fr;gap:24px}.zgame-center.is-compact{padding:16px 10px;margin-inline:0}.zgame-center.is-compact .zgame-summary{display:none}.zgame-center.is-compact .zgame-header-actions{gap:5px}.zgame-center.is-compact .zgame-refresh{font-size:0;min-width:36px;padding:8px}.zgame-center.is-compact .zgame-days-scroll{gap:5px}.zgame-center.is-compact .zgame-day{min-width:57px}}
+.zang-receiver-volume{border-top:1px solid #ffffff15;border-bottom:1px solid #ffffff15;padding:12px 2px;margin:8px 0}.zang-receiver-volume>strong{display:block;color:#efd1a0;font-size:13px;margin-bottom:12px}.zang-receiver-volume label{font-size:12px;display:block}.zang-receiver-volume output{float:right;color:#e4c58d}.zang-receiver-volume input{width:100%;height:36px;accent-color:#e4bd7b}.zang-receiver-volume button{display:flex;gap:8px;align-items:center;color:#dbe2e8;background:#ffffff0b;border:1px solid #ffffff18;border-radius:8px;padding:9px 12px;font-size:12px}.zang-cast-install{display:block;margin:14px 0 2px;font-size:12px;color:#e6c287;padding:8px 0}
+.zf-volume-hardware{font-size:11px;line-height:1.4;color:#d6b783;margin:8px 0}

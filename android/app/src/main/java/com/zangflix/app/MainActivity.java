@@ -1,6 +1,10 @@
 package com.zangflix.app;
 
 import android.app.Activity;
+import android.app.UiModeManager;
+import android.content.res.Configuration;
+import android.media.AudioManager;
+import android.view.KeyEvent;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
@@ -22,11 +26,16 @@ public final class MainActivity extends Activity {
   private static final String HOME = "https://zangflix.vercel.app/";
   @Override public void onCreate(Bundle state) {
     super.onCreate(state);
+    UiModeManager mode=(UiModeManager)getSystemService(UI_MODE_SERVICE);
+    boolean television=mode!=null && mode.getCurrentModeType()==Configuration.UI_MODE_TYPE_TELEVISION;
+    setVolumeControlStream(AudioManager.STREAM_MUSIC);
+    if(television)setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     web = new WebView(this);
+    web.setFocusable(true);web.setFocusableInTouchMode(true);web.requestFocus();
     web.setBackgroundColor(0xff090a10);
     web.getSettings().setJavaScriptEnabled(true);
     // Identify the actual installed Android APK, not a Chrome PWA shortcut.
-    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/1.0");
+    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/1.1" + (television?" ZangFlixTV/1.1":""));
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(false);
     web.getSettings().setAllowFileAccess(false);
@@ -67,8 +76,29 @@ public final class MainActivity extends Activity {
   }
   @Override public void onBackPressed() {
     if (customView != null) { web.getWebChromeClient().onHideCustomView(); return; }
-    if (web.canGoBack()) { web.goBack(); return; }
-    super.onBackPressed();
+    if(web==null){super.onBackPressed();return;}
+    // Let the visible dialog/player consume Back before leaving its page.
+    web.evaluateJavascript("document.dispatchEvent(new KeyboardEvent('keydown',{key:'BrowserBack',bubbles:true,cancelable:true}))", result -> {
+      if("false".equals(result))return;
+      if(web!=null && web.canGoBack())web.goBack();else finish();
+    });
   }
+  @Override public boolean dispatchKeyEvent(KeyEvent event){
+    String key=null;
+    if(event.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)key="MediaPlayPause";
+    else if(event.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PLAY)key="MediaPlay";
+    else if(event.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PAUSE || event.getKeyCode()==KeyEvent.KEYCODE_MEDIA_STOP)key="MediaPause";
+    if(key!=null && web!=null){
+      if(event.getAction()==KeyEvent.ACTION_DOWN && event.getRepeatCount()==0)
+        web.evaluateJavascript("document.dispatchEvent(new KeyboardEvent('keydown',{key:'"+key+"',bubbles:true,cancelable:true}))",null);
+      return true;
+    }
+    return super.dispatchKeyEvent(event);
+  }
+  @Override protected void onPause(){
+    if(web!=null){web.evaluateJavascript("document.querySelectorAll('video').forEach(v=>v.pause())",null);web.onPause();}
+    super.onPause();
+  }
+  @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();}
   @Override protected void onDestroy() { if (web != null) { web.destroy(); web = null; } super.onDestroy(); }
 }

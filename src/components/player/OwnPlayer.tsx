@@ -825,9 +825,16 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     onBack?.();
   };
 
+  useEffect(()=>{
+    document.addEventListener("zf-reveal-player-controls",showControls);
+    return()=>document.removeEventListener("zf-reveal-player-controls",showControls);
+  },[showControls]);
+
   // Atalhos de teclado
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if(e.defaultPrevented)return;
+      if(document.documentElement.dataset["zfPlatform"]==="tv"&&["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)){showControls();return;}
       if (!containerRef.current?.contains(document.activeElement) && document.activeElement?.tagName !== "BODY") return;
       if (e.key === " " || e.key === "k") { e.preventDefault(); engine.state === "playing" ? handlePause() : handlePlay(); }
       if (e.key === "ArrowRight") { e.preventDefault(); engine.seek(engine.currentTime + 10); }

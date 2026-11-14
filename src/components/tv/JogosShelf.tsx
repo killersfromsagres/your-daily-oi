@@ -53,6 +53,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
   onWatch: (id: string) => void;
   onExplore?: (() => void) | undefined;
 }) {
+  const [channelsExpanded,setChannelsExpanded]=useState(false);
   const active=game.status==="ao-vivo";
   const watchable=Boolean(game.canalId);
   const scored=game.placarCasa!==null&&game.placarFora!==null;
@@ -117,8 +118,9 @@ export function MatchCard({ game, onWatch, onExplore }: {
               <span><small>ASSISTIR NO CANAL</small><strong>{game.canalNome}</strong></span>
               <ArrowRight size={16}/>
             </button>
-            {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).length>0&&
-              <div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
+            {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).length>0&&<button type="button" className="zf-ticket-channels-toggle"
+              aria-expanded={channelsExpanded} onClick={()=>setChannelsExpanded(value=>!value)}>Canais <span>{game.canaisDisponiveis?.length}</span></button>}
+            {channelsExpanded&&<div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
                 {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).map(ch=>
                   <button key={ch.id} type="button" onClick={()=>onWatch(ch.id)}
                     aria-label={"Assistir também em "+ch.nome}>
@@ -256,14 +258,14 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   };
 
   return (
-    <section className="zgame-center" id="ztv-jogos" aria-label="Central de futebol com jogos do dia">
+    <section className="zgame-center is-compact" id="ztv-jogos" aria-label="Central de futebol com jogos do dia">
       <div className="zgame-ambient" aria-hidden="true" />
       <header className="zgame-header">
         <div className="zgame-header-copy">
           <div className="zgame-kicker"><Activity size={14} /><span>AGENDA ESPORTIVA</span><span className="zgame-kicker-line" /><span>FUTEBOL AO VIVO</span></div>
           <h2>Hoje tem <em>jogo.</em></h2>
           <Link to="/futebol" className="zf-football-inline-link"><FootballIcon size={16}/> Central completa de futebol <ArrowRight size={14}/></Link>
-          <p>Jogos, placares e onde assistir. Brasileirão Série A em destaque, com atualização automática da agenda.</p>
+
         </div>
         <div className="zgame-header-actions">
           {live > 0 && <span className="zgame-live-flag"><span /> {live} EM ANDAMENTO</span>}
@@ -342,11 +344,8 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
           ) : null}
         </div>
       )}
-      <div className="zgame-standings-entry"><LeagueStandings /></div>
-      <footer className="zgame-footer">
-        <span><RefreshCw size={15} /> Datas e placares de fonte esportiva; atualizações automáticas.</span>
-        <span>Os canais são vinculados apenas quando a transmissão específica é identificada. A disponibilidade pode variar.</span>
-      </footer>
+
+
     </section>
   );
 }

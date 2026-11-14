@@ -1,4 +1,5 @@
 // src/lib/jogos.ts — server, ESPN scoreboard fixtures + verified Brazilian broadcasts.
+import { getGuideBroadcasts,guideNamesForFixture } from "./football-tv-guide";
 import { loadCanais } from "./canais";
 import { localizarJogosNaGradeEPG } from "./epg";
 import { matchBrazilianBroadcastChannel } from "./broadcast-match";
@@ -174,6 +175,7 @@ async function annotateBroadcasts(
   const matches = fixtures.map(x => x.item);
   if (!matches.length) return matches;
   const config = getConfiguredBroadcasters();
+  const guideTask=getGuideBroadcasts(date);
   let available: Awaited<ReturnType<typeof loadCanais>>["canais"] = [];
   let epg = new Map<string, { id: string; nome: string; logo?: string }>();
   // EPG and ESPN match summaries are independent and should not queue sequentially.
@@ -191,9 +193,10 @@ async function annotateBroadcasts(
       console.warn("[Sports] EPG ou catálogo indisponível", error);
     }
   })();
-  const [detailedBroadcasts,backupBroadcasts]=await Promise.all([
+  const [detailedBroadcasts,backupBroadcasts,guide]=await Promise.all([
     detailedBroadcastsTask.catch(()=>new Map<string,string[]>()),
     backupBroadcastsTask.catch(()=>new Map<string,string[]>()),
+    guideTask,
   ]);
   await epgTask;
 
@@ -209,6 +212,7 @@ async function annotateBroadcasts(
       ...(detailedBroadcasts.get(game.id) || []),
       ...(backupBroadcasts.get(game.id) || []),
       ...(verified?.names || []),
+      ...guideNamesForFixture(game,guide),
     ])];
     // Store rights metadata independently of available player links.
     const announced = manual.length ? manual : sourceNames;
@@ -306,7 +310,7 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
     fontesConsultadas: successes + (backup === null ? 0 : 1),
     ligasIndisponiveis: failed,
     parcial: failed.length > 0 || backup === null,
-    origem: "ESPN Soccer + TheSportsDB + EPG Brasil",
+    origem: "ESPN Soccer + TheSportsDB + EPG Brasil + Futebol na TV",
   };
 }
 

@@ -12,13 +12,9 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
   return (
     <section className="zf-zangs-picks" aria-labelledby="zangs-picks-title">
       <header className="zf-zangs-picks-heading">
-        <div>
-          <p className="zf-zangs-picks-eyebrow">CURADORIA ZANG FLIX</p>
-          <h2 id="zangs-picks-title">Escolha do <span>Zangs</span></h2>
-        </div>
-        <p className="zf-zangs-picks-description">Do sobrenatural ao terror psicológico.<br/>Uma seleção para continuar a noite.</p>
+        <h2 id="zangs-picks-title" className="zf-horror-title">Mais <span>terror</span> na sua noite</h2>
       </header>
-      <div className="ydo-row-track" role="region" aria-label="Filmes da Escolha do Zangs" tabIndex={0}>
+      <div className="ydo-row-track" role="region" aria-label="Mais terror na sua noite" tabIndex={0}>
         {items.map(item => <MediaCard key={item.id} item={item}
           isSaved={savedIds.has(item.id)} onToggleSaved={onToggleSaved}/>)}
       </div>

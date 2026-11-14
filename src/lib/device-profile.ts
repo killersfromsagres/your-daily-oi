@@ -3,6 +3,7 @@ export type DeviceProfile = "mobile" | "web" | "tv";
 
 export interface DeviceSignals {
   userAgent: string;
+  tvMode?: boolean;
   viewportWidth: number;
   coarsePointer: boolean;
   touchPoints: number;
@@ -16,7 +17,7 @@ const MOBILE_IDENTIFIERS = /(?:mobile|iphone|ipod|ipad|tablet|kindle|silk|opera 
 export function detectDeviceProfile(signals: DeviceSignals): DeviceProfile {
   const width = Number.isFinite(signals.viewportWidth) && signals.viewportWidth > 0
     ? signals.viewportWidth : 1280;
-  if (TV_IDENTIFIERS.test(signals.userAgent)) return "tv";
+  if (signals.tvMode || /ZangFlixTV\//i.test(signals.userAgent) || TV_IDENTIFIERS.test(signals.userAgent)) return "tv";
   if (width <= 1120) return "mobile";
   if (MOBILE_IDENTIFIERS.test(signals.userAgent) && width < 1440) return "mobile";
   if (signals.coarsePointer && signals.touchPoints > 0 && width <= 1440) return "mobile";

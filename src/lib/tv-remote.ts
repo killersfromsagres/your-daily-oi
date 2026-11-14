@@ -23,67 +23,80 @@ const SELECTOR = [
   "[role=button][tabindex]", "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
+export function remoteKey(event:Pick<KeyboardEvent,"key"|"keyCode">):string {
+  const codes:Record<number,string>={10009:"BrowserBack",461:"BrowserBack",4:"BrowserBack",13:"Enter",23:"Enter",415:"MediaPlay",19:"MediaPause",10252:"MediaPlayPause",403:"MediaPlayPause"};
+  return codes[event.keyCode] || event.key;
+}
 function visibleElement(node: HTMLElement): boolean {
-  if (node.closest("[inert], [aria-hidden='true']")) return false;
-  if (!node.getClientRects().length) return false;
-  const style = window.getComputedStyle(node);
-  if (style.visibility === "hidden" || style.display === "none" || style.pointerEvents === "none") return false;
-  const r = node.getBoundingClientRect();
-  return r.width > 1 && r.height > 1;
+  if (node.closest("[inert], [aria-hidden='true']") || !node.getClientRects().length) return false;
+  let parent:HTMLElement|null=node;
+  while(parent){
+    const style=window.getComputedStyle(parent);
+    if(style.visibility==="hidden"||style.display==="none"||style.opacity==="0")return false;
+    parent=parent.parentElement;
+  }
+  const r=node.getBoundingClientRect();return r.width>1&&r.height>1;
 }
-
-function asRect(rect: DOMRect): FocusRect {
-  return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-}
-
+const rect=(r:DOMRect):FocusRect=>({left:r.left,top:r.top,width:r.width,height:r.height});
+const editable=(target:EventTarget|null)=>target instanceof HTMLElement && !!target.closest("input,textarea,select,[contenteditable='true'],[role='slider'],[data-native-arrows]");
 export function installTvRemoteNavigation(): () => void {
-  const handler = (event: KeyboardEvent) => {
-    if (event.defaultPrevented || event.ctrlKey || event.altKey || event.metaKey) return;
-    const direction: RemoteDirection | null = event.key === "ArrowUp" ? "up"
-      : event.key === "ArrowDown" ? "down" : event.key === "ArrowLeft" ? "left"
-      : event.key === "ArrowRight" ? "right" : null;
-    if (document.fullscreenElement) return;
-    if ((event.key === "Escape" || event.key === "BrowserBack" || event.key === "Backspace") &&
-      !(event.target as HTMLElement | null)?.closest("input,textarea,select,[contenteditable='true']")) {
-      const modal = [...document.querySelectorAll<HTMLElement>("[role='dialog'][aria-modal='true']")]
-        .filter(visibleElement).at(-1);
-      const close = modal?.querySelector<HTMLButtonElement>('button[aria-label^="Fechar"]');
-      if (close) { event.preventDefault(); close.click(); return; }
+  let frame=0;
+  const handler=(event:KeyboardEvent)=>{
+    if(event.defaultPrevented||event.ctrlKey||event.altKey||event.metaKey)return;
+    const key=remoteKey(event);
+    if(editable(event.target)&&!["BrowserBack","Escape"].includes(key))return;
+    const modal=[...document.querySelectorAll<HTMLElement>("[role='dialog']")].filter(visibleElement).at(-1);
+    const player=document.querySelector<HTMLElement>(".ydo-player-container,.ydo-live-player-container");
+    const fullscreen=!!document.fullscreenElement||!!document.querySelector(".is-theater");
+    if(key==="BrowserBack"||key==="Escape"||key==="Backspace"&&!editable(event.target)){
+      const close=modal?.querySelector<HTMLElement>('button[aria-label^="Fechar"]');
+      if(close){event.preventDefault();close.click();return;}
+      const searchClose=document.querySelector<HTMLButtonElement>(".ydo-header.is-searching .ydo-search-close");
+      if(searchClose){event.preventDefault();searchClose.click();return;}
+      if(editable(event.target)&&key==="Escape")return;
+      const back=player?.querySelector<HTMLButtonElement>(".ydo-player-back-btn");
+      if(back){event.preventDefault();back.click();return;}
+      if(fullscreen&&document.exitFullscreen){event.preventDefault();void document.exitFullscreen().catch(()=>{});return;}
+      if(history.length>1){event.preventDefault();history.back();}return;
     }
-    if (!direction) return;
-    const target = event.target as HTMLElement | null;
-    if (target?.closest("input,textarea,select,[contenteditable='true'],[role='slider'],[data-native-arrows]")) return;
-    // Modal dialogues (movie/series/anime, EPG etc.) own the D-pad while open.
-    const modal = [...document.querySelectorAll<HTMLElement>("[role='dialog'][aria-modal='true']")]
-      .filter(visibleElement).at(-1);
-    const focusRoot: Document | HTMLElement = modal ?? document;
-    const focusable = [...focusRoot.querySelectorAll<HTMLElement>(SELECTOR)]
-      .filter(visibleElement);
-    if (!focusable.length) return;
-    const current = document.activeElement instanceof HTMLElement &&
-      visibleElement(document.activeElement) ? document.activeElement : null;
-    if (!current || !focusable.includes(current)) {
+    if(["MediaPlay","MediaPause","MediaPlayPause"].includes(key)){
+      const video=player?.querySelector("video");if(!video)return;
       event.preventDefault();
-      (focusable.find(node => node.closest(".ydo-header")) || focusable[0])?.focus({ preventScroll:true });
+      if(key==="MediaPause"||key==="MediaPlayPause"&&!video.paused)video.pause();
+      else void video.play().catch(()=>{});
       return;
     }
-    const rect = asRect(current.getBoundingClientRect());
-    let best: HTMLElement | null = null;
-    let bestScore = Number.POSITIVE_INFINITY;
-    for (const candidate of focusable) {
-      if (candidate === current) continue;
-      const score = spatialFocusScore(rect, asRect(candidate.getBoundingClientRect()), direction);
-      if (score !== null && score < bestScore) {
-        bestScore = score;
-        best = candidate;
+    // Some TV remotes send Select rather than a browser-native Enter click.
+    if(key==="Select"||(key==="Enter"&&(event.key!=="Enter"||event.keyCode===23))){
+      const current=document.activeElement as HTMLElement|null;
+      if(current&&current!==document.body){event.preventDefault();current.click();}return;
+    }
+    const direction:RemoteDirection|null=key==="ArrowUp"?"up":key==="ArrowDown"?"down":key==="ArrowLeft"?"left":key==="ArrowRight"?"right":null;
+    if(!direction)return;
+    if(player && (fullscreen||player.contains(document.activeElement))){
+      document.dispatchEvent(new Event("zf-reveal-player-controls"));
+      if(player.dataset["controlsVisible"]==="false"){
+        event.preventDefault();cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{
+          player.querySelector<HTMLElement>(".zf-player-toolbar button,.ydo-controls button")?.focus();
+        });return;
       }
     }
-    if (best) {
-      event.preventDefault();
-      best.focus({ preventScroll:true });
-      best.scrollIntoView({ block:"nearest", inline:"nearest", behavior:"smooth" });
+    const root:Document|HTMLElement=modal||(fullscreen&&player?player:document);
+    const nodes=[...root.querySelectorAll<HTMLElement>(SELECTOR)].filter(visibleElement);
+    if(!nodes.length)return;
+    const current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    if(!current||!nodes.includes(current)){
+      event.preventDefault();(nodes.find(node=>node.matches("[data-tv-initial-focus]"))||nodes[0])?.focus({preventScroll:true});return;
     }
+    let best:HTMLElement|null=null,bestScore=Infinity;
+    for(const candidate of nodes){
+      if(candidate===current)continue;
+      const score=spatialFocusScore(rect(current.getBoundingClientRect()),rect(candidate.getBoundingClientRect()),direction);
+      if(score!==null&&score<bestScore){best=candidate;bestScore=score;}
+    }
+    if(best){event.preventDefault();best.focus({preventScroll:true});best.scrollIntoView({block:"nearest",inline:"nearest",behavior:"auto"});}
+    else if(fullscreen||modal)event.preventDefault();
   };
-  document.addEventListener("keydown", handler);
-  return () => document.removeEventListener("keydown", handler);
+  document.addEventListener("keydown",handler);
+  return()=>{cancelAnimationFrame(frame);document.removeEventListener("keydown",handler);};
 }

@@ -87,6 +87,7 @@ export function Header({ onSearch }: HeaderProps) {
     const synchronize = () => {
       const device = detectDeviceProfile({
         userAgent: navigator.userAgent,
+        tvMode: (()=>{try{return localStorage.getItem("zf-tv-mode")==="true";}catch{return false;}})(),
         viewportWidth: window.innerWidth,
         coarsePointer: coarse?.matches ?? false,
         touchPoints: navigator.maxTouchPoints || 0,
@@ -101,12 +102,14 @@ export function Header({ onSearch }: HeaderProps) {
     synchronize();
     window.addEventListener("resize", request, { passive:true });
     window.addEventListener("orientationchange", request);
+    window.addEventListener("zf-tv-mode-change",request);
     if (coarse && typeof coarse.addEventListener === "function") coarse.addEventListener("change", request);
     else coarse?.addListener?.(request);
     return () => {
       window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("resize", request);
       window.removeEventListener("orientationchange", request);
+      window.removeEventListener("zf-tv-mode-change",request);
       if (coarse && typeof coarse.removeEventListener === "function") coarse.removeEventListener("change", request);
       else coarse?.removeListener?.(request);
     };
@@ -146,7 +149,7 @@ export function Header({ onSearch }: HeaderProps) {
 
   // Remote D-pad focus navigation is activated only for recognizable TVs.
   useEffect(() => {
-    if (platform !== "tv" || isWatchRoute(pathname)) return;
+    if (platform !== "tv") return;
     return installTvRemoteNavigation();
   }, [platform, pathname]);
 
@@ -276,7 +279,7 @@ export function Header({ onSearch }: HeaderProps) {
     {!isWatchRoute(pathname) && (
     <header
       className={"ydo-header" + (searchOpen ? " is-searching" : "") +
-        (mobileCollapsed ? " is-mobile-collapsed" : "")}
+        (platform === "mobile" || mobileCollapsed ? " is-mobile-collapsed" : "")}
       style={{
         opacity: visible ? 1 : 0,
         transform: platform === "mobile"
