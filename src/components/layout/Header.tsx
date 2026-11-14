@@ -254,7 +254,6 @@ export function Header({ onSearch }: HeaderProps) {
   // so scroll-collapse and glass effects cannot hide or clip either action.
   const searchActions = (
       <div className="zf-search-install-stack">
-        {platform === "mobile" && <InstallAppButton />}
         {/* Busca do catálogo */}
         <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Sistema de Busca Minimalista e Profissional */}
@@ -334,6 +333,7 @@ export function Header({ onSearch }: HeaderProps) {
           />
         )}
         </div>
+        {platform === "mobile" && <InstallAppButton />}
       </div>
   );
 
