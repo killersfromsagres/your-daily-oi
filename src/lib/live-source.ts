@@ -105,16 +105,18 @@ export function buildLiveProxyPath(
 }
 
 /**
- * Resultado da auditoria pública: as três origens *.cdn13embed.xyz responderam
- * HTTP 403 nas 137 fontes sondadas via datacenter. Não são excluídas, porque
- * podem funcionar em outra rede; ficam apenas atrás de espelhos alternativos.
- * URLs e tokens permanecem intactos.
+ * Audit 2026-11-14: 137 catalog entries served by *.cdn8embed.xyz returned
+ * HTTP 403 from the US test runner. Previous audits flagged *.cdn13embed.xyz.
+ * These hosts are not removed: network/region access may differ. Prefer a
+ * separate origin for the SAME channel and leave the degraded host as fallback.
+ * Source URLs, tokens, declared headers, and channel identities are untouched.
  */
 export function orderLiveSources<T extends LiveSourceLike>(sources: readonly T[]): T[] {
   const highRisk = (source: T): boolean => {
     try {
       const host = new URL(source.url).hostname.toLowerCase();
-      return host === "cdn13embed.xyz" || host.endsWith(".cdn13embed.xyz");
+      return host === "cdn13embed.xyz" || host.endsWith(".cdn13embed.xyz") ||
+        host === "cdn8embed.xyz" || host.endsWith(".cdn8embed.xyz");
     } catch { return false; }
   };
   // Reachable government broadcaster with wildcard CORS was observed to
