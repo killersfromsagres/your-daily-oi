@@ -1,10 +1,67 @@
-/* One local display face; the section stays searchable and accessible text. */
-@font-face{font-family:ZangHorror;src:url('/fonts/bebas-neue.ttf') format('truetype');font-weight:400;font-display:swap}
-.zf-zangs-picks{border-top:0;background:none;padding-top:22px}
-.zf-zangs-picks .zf-horror-title{font-family:ZangHorror,'Arial Narrow',sans-serif;font-size:clamp(32px,4vw,49px);font-weight:400;letter-spacing:.025em;line-height:1.2;color:#e7d6d4;text-shadow:0 2px #4b1119,0 4px 12px #60061130}
-.zf-zangs-picks .zf-horror-title span{position:relative;color:#dc4d53;background:linear-gradient(#f0918d 0%,#e4464c 48%,#7b101e 100%);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.zf-horror-title span::before,.zf-horror-title span::after{content:'';position:absolute;top:78%;width:2px;background:linear-gradient(#b12532,#700c1a);border-radius:0 0 3px 3px;pointer-events:none}
-.zf-horror-title span::before{left:29%;height:12px}.zf-horror-title span::after{left:73%;height:7px;width:3px}
+/* Cinematic horror editorial: restrained bone-white type and weathered oxblood ink.
+   Keep real selectable text (no image-based heading or cartoon blood drips). */
+@font-face {
+  font-family: ZangHorror;
+  src: url('/fonts/bebas-neue.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+.zf-zangs-picks { border-top: 0; background: none; padding-top: 22px; }
+.zf-zangs-picks .zf-zangs-picks-heading {
+  position: relative;
+  isolation: isolate;
+}
+.zf-zangs-picks .zf-horror-title {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  font-family: ZangHorror, 'Arial Narrow', Impact, sans-serif;
+  font-size: clamp(30px, 4.1vw, 50px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: .026em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: #eee4d9;
+  text-shadow: 0 1px 0 #2a1818, 0 3px 12px rgba(0, 0, 0, .48);
+}
+.zf-zangs-picks .zf-horror-title span {
+  position: relative;
+  display: inline;
+  color: #a42d33;
+  /* Stained letterpress texture, not a bright plastic gradient. */
+  background-image:
+    radial-gradient(ellipse .09em .025em at 20% 34%, rgba(18, 3, 5, .46) 0 60%, transparent 90%),
+    radial-gradient(ellipse .045em .075em at 56% 69%, rgba(29, 5, 7, .39) 0 60%, transparent 90%),
+    radial-gradient(ellipse .06em .024em at 84% 25%, rgba(241, 198, 183, .22) 0 60%, transparent 90%),
+    linear-gradient(180deg, #bd5755 0%, #a93739 36%, #8b222b 78%, #721b25 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+/* A subtle hand-printed ink trace replaces the dangling artificial drips. */
+.zf-zangs-picks .zf-horror-title span::before {
+  content: '';
+  position: absolute;
+  left: .045em;
+  right: .035em;
+  bottom: -.035em;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(137, 35, 43, .74) 14%,
+    rgba(137, 35, 43, .42) 82%, transparent);
+  transform: rotate(-.5deg);
+  pointer-events: none;
+}
+.zf-zangs-picks .zf-horror-title span::after { content: none; }
+@media (max-width: 640px) {
+  .zf-zangs-picks .zf-horror-title {
+    font-size: clamp(27px, 7.6vw, 40px);
+    letter-spacing: .017em;
+    line-height: 1.12;
+  }
+}
 /* Mobile has exactly the floating search and the existing bottom glass dock. */
 @media(max-width:1120px),(pointer:coarse) and (max-width:1440px){
  html:not([data-zf-platform="tv"]) .ydo-header:not(.is-searching){left:auto!important;right:12px!important;width:46px!important;max-width:46px;height:46px;min-height:46px;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
