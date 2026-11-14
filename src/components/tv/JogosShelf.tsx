@@ -10,7 +10,7 @@ import { MatchLineups } from "@/components/sports/MatchLineups";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
-  Clock3, MapPin, Radio, RefreshCw, ShieldQuestion, Trophy, WifiOff,
+  Clock3, ExternalLink, MapPin, Radio, RefreshCw, ShieldQuestion, Trophy, WifiOff,
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import "@/styles/jogos-center.css";
@@ -56,6 +56,14 @@ export function MatchCard({ game, onWatch, onExplore }: {
   const [channelsExpanded,setChannelsExpanded]=useState(false);
   const active=game.status==="ao-vivo";
   const watchable=Boolean(game.canalId);
+  const officialUrl=(()=>{
+    try {
+      if(!game.transmissaoUrl)return null;
+      const url=new URL(game.transmissaoUrl);
+      return url.protocol==="https:" && url.hostname==="www.primevideo.com" &&
+        url.pathname.startsWith("/detail/") ? url.href : null;
+    } catch {return null;}
+  })();
   const scored=game.placarCasa!==null&&game.placarFora!==null;
   const dateParts=game.dataLocal.split("-");
   const numberDay=dateParts[2]||"--";
@@ -64,9 +72,10 @@ export function MatchCard({ game, onWatch, onExplore }: {
   const statusLabel=active?(game.fase==="intervalo"?"INTERVALO":game.faseRotulo||"AO VIVO"):
     game.status==="encerrado"?"ENCERRADO":
     game.status==="adiado"?"ADIADO":"EM BREVE";
-  const displayTime=active&&scored
+  const showScore=scored&&(active||game.status==="encerrado");
+  const displayTime=showScore
     ?game.placarCasa+" – "+game.placarFora
-    :game.status==="adiado"?"ADIADO":game.horarioLocal;
+    :game.status==="adiado"?"ADIADO":game.status==="encerrado"?"ENCERRADO":game.horarioLocal;
   const theme=game.grupo==="copas"||game.grupo==="champions"?"is-cup":"is-league";
   const brazilFeatured=isBrazilFixture(game);
   const venue=game.estadio?.trim();
@@ -99,7 +108,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
           </div>
         </div>
         <div className="zf-ticket-time-block">
-          <span className="zf-ticket-time-caption">{active?"PLACAR AO VIVO":"HORÁRIO DE BRASÍLIA"}</span>
+          <span className="zf-ticket-time-caption">{active?"PLACAR AO VIVO":game.status==="encerrado"?"RESULTADO FINAL":"HORÁRIO DE BRASÍLIA"}</span>
           <strong className="zf-ticket-time">{displayTime}</strong>
           {active&&game.minuto&&<small className="zf-ticket-minute">{game.minuto}</small>}
         </div>
@@ -129,6 +138,13 @@ export function MatchCard({ game, onWatch, onExplore }: {
                   </button>)}
               </div>}
           </div>
+        ):officialUrl?(
+          <a className="zf-ticket-watch zf-ticket-watch-external" href={officialUrl}
+            target="_blank" rel="noopener noreferrer" aria-label={"Abrir transmissão oficial de "+game.casa+" contra "+game.fora+" no Prime Video"}>
+            <ExternalLink size={16}/>
+            <span><small>TRANSMISSÃO OFICIAL</small><strong>{game.canaisTransmissao?.[0]||"Prime Video"}</strong></span>
+            <ArrowRight size={16}/>
+          </a>
         ):game.canaisTransmissao?.length?(
           <div className="zf-ticket-identified"><Tv size={15}/>
             <span>TRANSMISSÃO INFORMADA · {game.canaisTransmissao.join(" · ")} · canais não vinculados ao catálogo</span>
@@ -243,7 +259,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   const filtered = useMemo(() => featuredFootballMatches(allGames, 8), [allGames]);
 
   const live = allGames.filter(game=>game.status==="ao-vivo").length;
-  const linked = allGames.filter(game=>game.canalId).length;
+  const linked = allGames.filter(game=>game.canalId||game.transmissaoUrl).length;
   const selectChannel = useCallback((id: string) => {
     onSelectCanalId(id);
     // Player is rendered above this match center in Zang Live.
