@@ -310,7 +310,7 @@ try{
     await send("Emulation.setUserAgentOverride",{userAgent:scenario.ua});
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
     await send("Page.navigate",{url:BASE+"/"});
-    const edition=await waitEdition(s=>s.active==="friday13"&&s.hero&&s.collection&&s.title==="Sexta-Feira 13"&&s.imageWidth>=3840&&s.imageHeight>=2160&&s.picks.length===7);
+    const edition=await waitEdition(s=>s.active==="friday13"&&s.hero&&s.collection&&s.title==="Sexta-Feira 13"&&s.imageWidth>=3840&&s.imageHeight>=2160&&s.picks.length===8);
     if(edition.bodyWidth>scenario.width+1||edition.mastBottom+12>edition.top)
       throw Error('Campaign layout overlaps/overflows: '+JSON.stringify(edition));
     if(edition.animation!=="none"||edition.orbit!=="none")throw Error("Campaign ignores reduced motion");
@@ -318,7 +318,11 @@ try{
       edition.mark?.color!=="rgb(255, 255, 255)"||edition.mark?.background!=="rgba(0, 0, 0, 0)")
       throw Error("Number 13 must be white without a box or weapon: "+JSON.stringify(edition.mark));
     if(!edition.afterCollection||edition.titlePicks!=="Mais terror na sua noite"||
-      !edition.picks[0]?.includes("/filme/invocacao do mal")||!edition.picks[6]?.includes("/filme/midsommar"))
+      !edition.picks[0]?.includes("/filme/sextafeira 13 1980")||
+       !edition.picks[1]?.includes("/filme/sextafeira 13")||
+       !edition.picks[2]?.includes("/filme/invocacao do mal")||
+       !edition.picks[7]?.includes("/filme/midsommar")||
+       edition.picks.some(href=>href.includes("/filme/hereditario")))
       throw Error("Curated movie selection or placement is incorrect");
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
     if((await editionState()).orbit!=="zf-friday13-orbit")throw Error("Red orbit is not animated");
@@ -367,7 +371,7 @@ try{
     await waitEdition(s=>s.active==="friday13"&&s.hero);
     await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T06:00:00Z"))');
     const expired=await waitEdition(s=>s.active===null&&!s.hero&&!s.collection&&s.title==="Destaque habitual");
-    if(expired.reads!==1||expired.picks.length!==7)throw Error("Expiry must preserve curated films without reloading the catalog");
+    if(expired.reads!==1||expired.picks.length!==8)throw Error("Expiry must preserve curated films without reloading the catalog");
     // The last 250ms must expire through the real timer, without another event.
     await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T06:00:00Z")-250)');
     await waitEdition(s=>s.active==="friday13"&&s.hero);
