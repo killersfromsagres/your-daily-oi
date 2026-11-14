@@ -14,7 +14,9 @@ export interface BroadcastEvidence {
   exclusive?: boolean;
 }
 const REGION_ALIASES:Record<string,string> = {
-  "atletico mineiro":"atletico mg","athletico paranaense":"athletico pr",
+  "atletico mineiro":"atletico mg","clube atletico mineiro":"atletico mg",
+  "mirassol fc":"mirassol","mirassol futebol clube":"mirassol",
+  "athletico paranaense":"athletico pr",
   "man united":"manchester united","psg":"paris saint germain",
   "bayern munich":"bayern munchen","inter milan":"internazionale",
   brazil:"brasil",japan:"japao",japanese:"japao",
