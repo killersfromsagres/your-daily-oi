@@ -427,6 +427,31 @@ export async function getJogosPlacares(
       byId.set(parsed.id, parsed);
     }
 
+    // ESPN sometimes continues returning a pre-match snapshot after kickoff.
+    // Ask the independent provider for corroborating live/final scores only
+    // when at least one fixture is overdue, never fabricate scores by elapsed time.
+    const lagging=[...byId.values()].filter(game=>
+      game.status==="agendado" && Number.isFinite(Date.parse(game.inicioIso)) &&
+      Date.now()-Date.parse(game.inicioIso)>90*60_000
+    );
+    if (lagging.length) {
+      try {
+        const alternatives=await fetchSportsDbFixtures(date);
+        for (const old of lagging) {
+          const source=alternatives.find(game=>sameBroadcastFixture(old,game) &&
+            (game.status==="ao-vivo"||game.status==="encerrado") &&
+            game.placarCasa!==null && game.placarFora!==null);
+          if (!source) continue;
+          const merged=mergeProviderFixtures([old],[source]);
+          const upgraded=merged[0];
+          if(upgraded)byId.set(old.id,applyVerifiedResult(upgraded));
+        }
+      } catch(error) {
+        console.warn("[Sports] Provedor auxiliar de placares indisponível",
+          error instanceof Error ? error.name : "network");
+      }
+    }
+
     // A fixture discovered on the fast feed can already carry BR-specific rights data.
     // Resolve only that explicit metadata; never assign a channel by league alone.
     const unresolved = [...byId.values()].filter(g =>
