@@ -187,17 +187,24 @@ try{
   if(device.mobile){
     await evaluate('window.scrollTo(0,400)');
     await sleep(150);
-    const collapsed=await evaluate(`(()=>{
+    const floating=await evaluate(`(()=>{
       const header=document.querySelector(".ydo-header");
-      return {collapsed:header.classList.contains("is-mobile-collapsed"),
-       width:header.getBoundingClientRect().width,
-       logo:getComputedStyle(header.querySelector(".ydo-logo")).display,
-       apk:getComputedStyle(header.querySelector(".zf-install-header")).display};
+      const group=document.querySelector(".zf-mobile-floating-actions");
+      const search=group?.querySelector(".ydo-search-trigger-btn");
+      const install=group?.querySelector(".zf-install-header");
+      const rect=search?.getBoundingClientRect();
+      return {
+        headerHidden:!!header&&getComputedStyle(header).display==="none",
+        searchVisible:!!search&&getComputedStyle(search).display!=="none",
+        installVisible:!!install&&getComputedStyle(install).display!=="none",
+        searchRight:rect?.right,searchLeft:rect?.left,
+      };
     })()`);
-    if(!collapsed.collapsed||collapsed.width>47||collapsed.logo!=="none"||collapsed.apk!=="none")
-      throw new Error("Mobile header did not collapse: "+JSON.stringify(collapsed));
+    if(!floating.headerHidden||!floating.searchVisible||!floating.installVisible||
+      floating.searchRight>device.width+1||floating.searchLeft<0)
+      throw new Error("Floating search/download missing: "+JSON.stringify(floating));
     await screenshot(device.name+"-collapsed-search");
-    await evaluate('document.querySelector(".ydo-search-trigger-btn").click()');
+    await evaluate('document.querySelector(".zf-mobile-floating-actions .ydo-search-trigger-btn").click()');
     await sleep(150);
     const search=await evaluate(`(()=>{
       const input=document.querySelector(".ydo-search-input"),form=input?.closest("form");
@@ -216,7 +223,12 @@ try{
     await waitFor(x=>x.cards>0&&x.lineupButtons===1);
     await evaluate('window.scrollTo(0,0)');
     await sleep(150);
-    const restored=await evaluate('document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")&&getComputedStyle(document.querySelector(".ydo-logo")).display==="none"');
+    const restored=await evaluate(`(()=>{
+      const group=document.querySelector(".zf-mobile-floating-actions");
+      const button=group?.querySelector(".ydo-search-trigger-btn");
+      return !!button && getComputedStyle(button).display!=="none" &&
+        button.getBoundingClientRect().right<=innerWidth+1;
+    })()`);
     if(!restored)throw new Error("Mobile search must remain floating at the top");
   }else{
     const collapsed=await evaluate('document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")');
