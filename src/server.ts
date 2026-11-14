@@ -1736,10 +1736,14 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
       upstreamHeaders["User-Agent"] = customUa;
     }
 
+    const vodTransfer = url.searchParams.get("vod") === "1";
     const clientRange = request.headers.get("range");
-    if (clientRange) {
-      upstreamHeaders["Range"] = clientRange;
+    const upstreamVodRange = vodTransfer && !isLivePlaylistTarget(targetUrl)
+      ? boundedVodRange(clientRange, request.method === "HEAD") : clientRange;
+    if (vodTransfer && !isLivePlaylistTarget(targetUrl) && !upstreamVodRange) {
+      return new Response("Range inválido", { status: 416 });
     }
+    if (upstreamVodRange) upstreamHeaders["Range"] = upstreamVodRange;
 
     const clientAcceptEncoding = request.headers.get("accept-encoding");
     if (clientAcceptEncoding) {
@@ -1872,6 +1876,22 @@ async function handleProxyStreamApi(request: Request, url: URL): Promise<Respons
         status: 502,
         headers: { "Access-Control-Allow-Origin": "*" },
       });
+    }
+    // Avoid proxying an entire movie in a single long-lived Vercel invocation.
+    const vodMediaFile = vodTransfer &&
+      (/(?:video\/(?!mp2t)|application\/octet-stream)/i.test(contentType) ||
+        /\.mp4(?:$|\?)/i.test(targetUrl));
+    if (vodMediaFile && request.method !== "HEAD") {
+      const length = Number(res.headers.get("content-length"));
+      const valid = res.status === 206
+        ? isBoundedVodReply(res, upstreamVodRange || undefined)
+        : res.status === 200 && Number.isFinite(length) && length > 0 && length <= VOD_RANGE_CHUNK_BYTES;
+      if (!valid) {
+        await res.body?.cancel();
+        return new Response("Servidor sem suporte confiável a faixas do vídeo", {
+          status: 502, headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" },
+        });
+      }
     }
     responseHeaders.set("Content-Type", contentType);
 
