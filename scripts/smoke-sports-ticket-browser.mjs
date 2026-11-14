@@ -216,8 +216,8 @@ try{
     await waitFor(x=>x.cards>0&&x.lineupButtons===1);
     await evaluate('window.scrollTo(0,0)');
     await sleep(150);
-    const restored=await evaluate('!document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")');
-    if(!restored)throw new Error("Header did not return at top");
+    const restored=await evaluate('document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")&&getComputedStyle(document.querySelector(".ydo-logo")).display==="none"');
+    if(!restored)throw new Error("Mobile search must remain floating at the top");
   }else{
     const collapsed=await evaluate('document.querySelector(".ydo-header").classList.contains("is-mobile-collapsed")');
     if(collapsed)throw new Error("Desktop header must not collapse on scroll");

@@ -71,3 +71,29 @@ html[data-zf-platform="tv"] .ydo-nav-link,html[data-zf-platform="tv"] .ydo-dropd
 html[data-zf-platform="tv"] .ydo-tv-remote-indicator{display:none}
 
 @media(max-width:1100px){html[data-zf-platform="tv"] .ydo-logo-text{display:none}html[data-zf-platform="tv"] .ydo-logo-img{max-width:54px;height:30px}html[data-zf-platform="tv"] .ydo-nav-link{font-size:11px;padding-inline:5px}}
+/* Specific enough to retain compact geometry when route ticket styles load later. */
+.zgame-center.is-compact{scroll-margin-top:110px}
+.zgame-center.is-compact .zgame-card.zf-ticket{min-height:0;align-self:stretch}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{display:grid;grid-template-columns:minmax(0,1fr) 66px;grid-template-areas:'mast mast' 'teams time';flex:0 0 auto;min-height:0;padding:12px;gap:10px;align-items:center}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-masthead{grid-area:mast;min-height:24px;padding:0}
+.zgame-center.is-compact .zgame-card.zf-ticket.is-brazil .zf-ticket-masthead::after{display:none}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-teams{grid-area:teams;flex:none;min-height:0;padding:0;margin:0;gap:6px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team{gap:5px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team .zgame-crest{width:36px;height:36px;padding:2px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{font-size:11px;min-height:27px;line-height:1.2}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time-block{grid-area:time;min-height:0;gap:3px;padding:0;border:0;margin:0}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time{font-size:25px;line-height:1.1}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-minute{position:static;font-size:9px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-match-meta{display:none}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-broadcast{margin-top:auto;min-height:0;padding:0 10px 8px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-watch{min-height:36px;padding:6px 8px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-pending,.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-identified{min-height:38px;padding:6px;font-size:9px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-actions{padding:0 10px 10px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-single-button{min-height:38px;padding:7px 10px;gap:8px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-single-copy small{display:none}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-single-copy strong{font-size:11px}
+.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-pair-crests{display:none}
+.zgame-center.is-compact .zgame-header{min-height:0;padding:0 0 12px;margin:0;align-items:center;flex-wrap:nowrap}
+html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-grid{grid-auto-columns:minmax(300px,340px)}
+html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{font-size:14px;min-height:34px}
+html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time{font-size:31px}
