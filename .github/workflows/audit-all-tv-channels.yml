@@ -35,6 +35,17 @@ jobs:
         env:
           PARITY_CONCURRENCY: '6'
           PARITY_TIMEOUT_MS: '5500'
+      # Probe whether the actual HTML video clock advances in Chromium.
+      # Third-party availability varies by region; snapshots are diagnostic,
+      # not an assertion that a protected origin must be unlocked.
+      - name: Build the real TV player
+        run: bun run build
+      - name: Browser playback diagnostics (Band and SBT)
+        run: |
+          LIVE_TEST_CHANNEL=band bun scripts/diagnose-live-browser.mjs
+          LIVE_TEST_CHANNEL=sbt bun scripts/diagnose-live-browser.mjs
+      - name: Browser playback diagnostics (TV Câmara)
+        run: LIVE_TEST_CHANNEL=tv-camara bun scripts/diagnose-live-browser.mjs
       - name: Save full per-channel and per-source reports, without stream tokens
         uses: actions/upload-artifact@v4
         if: always()
