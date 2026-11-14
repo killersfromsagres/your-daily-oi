@@ -249,10 +249,11 @@ html[data-zf-platform="tv"] .zf-media-carousel__fade,
     padding-top: 19px;
   }
 }
-/* Respect app installation even if the webview presents a desktop viewport. */
-.zf-media-carousel--installed .zf-media-carousel__track {
-  scroll-snap-type: x proximity;
-  overscroll-behavior-x: contain;
+/* Wide installed apps also retain native horizontal scrolling. */
+@media (min-width: 1121px) {
+  .zf-media-carousel--installed .zf-media-carousel__track {
+    overscroll-behavior-x: contain;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .zf-media-carousel__track { scroll-behavior: auto; }
