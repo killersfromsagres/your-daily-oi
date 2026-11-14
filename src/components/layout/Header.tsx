@@ -491,9 +491,10 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
       </nav>
 
-      <InstallAppButton />
-            {/* Busca do catálogo */}
-      <div className="ydo-header-tools" ref={searchContainerRef}>
+      <div className="zf-search-install-stack">
+        <InstallAppButton />
+        {/* Busca do catálogo */}
+        <div className="ydo-header-tools" ref={searchContainerRef}>
         {/* Sistema de Busca Minimalista e Profissional */}
         {searchOpen ? (
           <form onSubmit={handleSearchSubmit} className="ydo-search-expand" role="search">
@@ -570,6 +571,7 @@ export function Header({ onSearch }: HeaderProps) {
             onViewAll={submitSearch}
           />
         )}
+        </div>
       </div>
       <button type="button" className="ydo-mobile-menu-trigger"
         aria-expanded={mobileMenuOpen} aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
