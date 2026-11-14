@@ -2,6 +2,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Search, X, ChevronDown, Heart, Menu, Monitor, Trophy } from "lucide-react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createPortal } from "react-dom";
 import { getSavedList } from "@/lib/storage";
 import { MobileNavigation } from "@/components/layout/MobileNavigation";
 import { InstallAppButton } from "@/components/layout/InstallAppButton";
@@ -57,7 +58,6 @@ const CATEGORIAS_ANIMES: CategoryItem[] = [
 
 export function Header({ onSearch }: HeaderProps) {
   const [visible, setVisible] = useState(true);
-  const [mobileCollapsed, setMobileCollapsed] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [moviesHover, setMoviesHover] = useState(false);
   const [seriesHover, setSeriesHover] = useState(false);
@@ -122,30 +122,6 @@ export function Header({ onSearch }: HeaderProps) {
   useEffect(() => {
     if (platform !== "mobile") setMobileMenuOpen(false);
   }, [platform]);
-
-  // Keep search reachable while freeing the screen for content. Hysteresis
-  // avoids flicker around the collapse point, including mobile overscroll.
-  useEffect(() => {
-    if (platform !== "mobile") {
-      setMobileCollapsed(false);
-      return;
-    }
-    let frame = 0;
-    const synchronize = () => {
-      frame = 0;
-      const y = Math.max(0, window.scrollY);
-      setMobileCollapsed(previous => previous ? y > 24 : y > 80);
-    };
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(synchronize);
-    };
-    synchronize();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.cancelAnimationFrame(frame);
-    };
-  }, [platform, pathname]);
 
   // Remote D-pad focus navigation is activated only for recognizable TVs.
   useEffect(() => {
@@ -274,12 +250,98 @@ export function Header({ onSearch }: HeaderProps) {
     onSearch?.(value);
   };
 
+  // Single search UI. On phones it is rendered outside the transformed header
+  // so scroll-collapse and glass effects cannot hide or clip either action.
+  const searchActions = (
+      <div className="zf-search-install-stack">
+        {platform === "mobile" && <InstallAppButton />}
+        {/* Busca do catálogo */}
+        <div className="ydo-header-tools" ref={searchContainerRef}>
+        {/* Sistema de Busca Minimalista e Profissional */}
+        {searchOpen ? (
+          <form onSubmit={handleSearchSubmit} className="ydo-search-expand" role="search">
+            <Search size={15} className="ydo-search-icon" aria-hidden />
+            <input
+              ref={searchRef}
+              type="search"
+              value={query}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Filmes, séries e animes…"
+              aria-label="Buscar títulos e ver sugestões"
+              aria-autocomplete="list"
+              aria-controls={query.trim() ? suggestionsId : undefined}
+              aria-expanded={Boolean(query.trim())}
+              aria-activedescendant={activeSuggestion >= 0 && suggestions[activeSuggestion] ?
+                suggestionsId + "-option-" + activeSuggestion : undefined}
+              autoComplete="off"
+              className="ydo-search-input"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setActiveSuggestion(-1);
+                  onSearch?.("");
+                  searchRef.current?.focus();
+                }}
+                className="ydo-search-clear"
+                aria-label="Limpar texto"
+              >
+                <X size={13} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setSearchOpen(false);
+                setQuery("");
+                setActiveSuggestion(-1);
+                onSearch?.("");
+              }}
+              className="ydo-search-close"
+              aria-label="Fechar busca"
+            >
+              <X size={15} />
+            </button>
+          </form>
+        ) : (
+          <button
+            className="ydo-search-trigger-btn"
+            onClick={() => {
+              setSearchOpen(true);
+              setTimeout(() => searchRef.current?.focus(), 80);
+            }}
+            type="button"
+            aria-label='Buscar filmes, séries e animes (atalho: "/")'
+            aria-expanded={searchOpen}
+            title='Buscar (Atalho: "/")'
+          >
+            <Search size={16} />
+          </button>
+        )}
+        {searchOpen && Boolean(query.trim()) && (
+          <SearchSuggestionList
+            id={suggestionsId}
+            query={query}
+            items={suggestions}
+            status={suggestionStatus}
+            activeIndex={activeSuggestion}
+            onActiveChange={setActiveSuggestion}
+            onChoose={chooseSuggestion}
+            onViewAll={submitSearch}
+          />
+        )}
+        </div>
+      </div>
+  );
+
   return (
     <>
     {!isWatchRoute(pathname) && (
     <header
-      className={"ydo-header" + (searchOpen ? " is-searching" : "") +
-        (platform === "mobile" || mobileCollapsed ? " is-mobile-collapsed" : "")}
+      className={"ydo-header" + (searchOpen ? " is-searching" : "")}
       style={{
         opacity: visible ? 1 : 0,
         transform: platform === "mobile"
@@ -491,88 +553,7 @@ export function Header({ onSearch }: HeaderProps) {
         </Link>
       </nav>
 
-      <div className="zf-search-install-stack">
-        <InstallAppButton />
-        {/* Busca do catálogo */}
-        <div className="ydo-header-tools" ref={searchContainerRef}>
-        {/* Sistema de Busca Minimalista e Profissional */}
-        {searchOpen ? (
-          <form onSubmit={handleSearchSubmit} className="ydo-search-expand" role="search">
-            <Search size={15} className="ydo-search-icon" aria-hidden />
-            <input
-              ref={searchRef}
-              type="search"
-              value={query}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Filmes, séries e animes…"
-              aria-label="Buscar títulos e ver sugestões"
-              aria-autocomplete="list"
-              aria-controls={query.trim() ? suggestionsId : undefined}
-              aria-expanded={Boolean(query.trim())}
-              aria-activedescendant={activeSuggestion >= 0 && suggestions[activeSuggestion] ?
-                suggestionsId + "-option-" + activeSuggestion : undefined}
-              autoComplete="off"
-              className="ydo-search-input"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery("");
-                  setActiveSuggestion(-1);
-                  onSearch?.("");
-                  searchRef.current?.focus();
-                }}
-                className="ydo-search-clear"
-                aria-label="Limpar texto"
-              >
-                <X size={13} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setSearchOpen(false);
-                setQuery("");
-                setActiveSuggestion(-1);
-                onSearch?.("");
-              }}
-              className="ydo-search-close"
-              aria-label="Fechar busca"
-            >
-              <X size={15} />
-            </button>
-          </form>
-        ) : (
-          <button
-            className="ydo-search-trigger-btn"
-            onClick={() => {
-              setSearchOpen(true);
-              setTimeout(() => searchRef.current?.focus(), 80);
-            }}
-            type="button"
-            aria-label='Buscar filmes, séries e animes (atalho: "/")'
-            aria-expanded={searchOpen}
-            title='Buscar (Atalho: "/")'
-          >
-            <Search size={16} />
-          </button>
-        )}
-        {searchOpen && Boolean(query.trim()) && (
-          <SearchSuggestionList
-            id={suggestionsId}
-            query={query}
-            items={suggestions}
-            status={suggestionStatus}
-            activeIndex={activeSuggestion}
-            onActiveChange={setActiveSuggestion}
-            onChoose={chooseSuggestion}
-            onViewAll={submitSearch}
-          />
-        )}
-        </div>
-      </div>
+      {platform !== "mobile" && searchActions}
       <button type="button" className="ydo-mobile-menu-trigger"
         aria-expanded={mobileMenuOpen} aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
         onClick={() => setMobileMenuOpen(value => !value)}>
@@ -584,6 +565,13 @@ export function Header({ onSearch }: HeaderProps) {
       </span>
     </header>
     )}
+    {platform === "mobile" && !isWatchRoute(pathname) && typeof document !== "undefined" &&
+      createPortal(
+        <div className={"zf-mobile-floating-actions" + (searchOpen ? " is-searching" : "")}>
+          {searchActions}
+        </div>,
+        document.body,
+      )}
     {!isWatchRoute(pathname) && (
       <MobileNavigation open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} savedCount={savedCount} />
     )}
