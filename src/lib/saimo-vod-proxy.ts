@@ -181,7 +181,7 @@ export async function handleSaimoVodProxy(request: Request, requestUrl = new URL
       // An upstream that ignores Range cannot offer reliable seeking via this
       // endpoint. Never masquerade a full 200 body as partial media or keep
       // a 2-hour file flowing through one short-lived serverless invocation.
-      if (res.status === 206 && !isBoundedVodReply(res)) {
+      if (res.status === 206 && !isBoundedVodReply(res, range)) {
         await res.body?.cancel();
         return errorResponse("Faixa de vídeo inválida na origem", 502);
       }
