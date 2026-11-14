@@ -140,7 +140,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
           </div>
         ):officialUrl?(
           <a className="zf-ticket-watch zf-ticket-watch-external" href={officialUrl}
-            target="_blank" rel="noopener noreferrer" aria-label={"Abrir transmissão oficial de "+game.casa+" contra "+game.fora+" no Prime Video"}>
+            target="_self" rel="noopener noreferrer" aria-label={"Abrir transmissão oficial de "+game.casa+" contra "+game.fora+" no Prime Video"}>
             <ExternalLink size={16}/>
             <span><small>TRANSMISSÃO OFICIAL</small><strong>{game.canaisTransmissao?.[0]||"Prime Video"}</strong></span>
             <ArrowRight size={16}/>
