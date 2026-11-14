@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const folder=mkdtempSync(join(tmpdir(),'zf-dub-hq-')),media=join(folder,'clip.mp4');
 const generated=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=640x360:rate=24','-t','65','-an','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-movflags','+faststart',media],{encoding:'utf8'});
-if(generated.status!==0)throw Error('Test clip generation failed: '+generated.stderr);
+if(generated.status!==0)throw Error('Test clip generation failed: '+(generated.error?.message||generated.stderr));
 const video=readFileSync(media),requests=[];
 const bundle=await Bun.build({entrypoints:['scripts/fixtures/dubbed-hq-harness.tsx'],bundle:true,target:'browser',format:'esm',write:false,define:{'process.env.NODE_ENV':'"production"'}});
 if(!bundle.success)throw Error(bundle.logs.join('\n'));
