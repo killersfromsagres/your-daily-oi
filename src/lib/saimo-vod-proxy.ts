@@ -1,5 +1,6 @@
 // src/lib/saimo-vod-proxy.ts — Cloudflare/TanStack server; media streaming with Range and HLS fallback.
 import { parseSaimoVodParams } from "./saimo-vod-url";
+import { boundedVodRange, isBoundedVodReply, VOD_RANGE_CHUNK_BYTES } from "./vod-range";
 
 const SAIMO_STREAM_API = "https://saimo-tv.pages.dev/api/stream";
 const TIMEOUT_MS = 12_000;
@@ -91,8 +92,10 @@ export async function handleSaimoVodProxy(request: Request, requestUrl = new URL
   }
 
   const probeOnly = requestUrl.searchParams.get("probe") === "1";
-  const range = request.headers.get("range") || (probeOnly || request.method === "HEAD" ? "bytes=0-1" : null);
-  if (range && !/^bytes=\d+-\d*$/.test(range)) return errorResponse("Range inválido", 416);
+  // Every non-HLS MP4 request is finite. Long-lived open-ended requests were
+  // vulnerable to Vercel invocation limits and silently stopped mid-film.
+  const range = boundedVodRange(request.headers.get("range"), probeOnly || request.method === "HEAD");
+  if (!range) return errorResponse("Range inválido", 416);
 
   let current = upstream;
   const seen = new Set<string>();
@@ -175,12 +178,28 @@ export async function handleSaimoVodProxy(request: Request, requestUrl = new URL
         });
       }
 
+      // An upstream that ignores Range cannot offer reliable seeking via this
+      // endpoint. Never masquerade a full 200 body as partial media or keep
+      // a 2-hour file flowing through one short-lived serverless invocation.
+      if (res.status === 206 && !isBoundedVodReply(res)) {
+        await res.body?.cancel();
+        return errorResponse("Faixa de vídeo inválida na origem", 502);
+      }
+      if (res.status === 200 && (
+        !Number.isFinite(Number(res.headers.get("content-length"))) ||
+        Number(res.headers.get("content-length")) <= 0 ||
+        Number(res.headers.get("content-length")) > VOD_RANGE_CHUNK_BYTES
+      )) {
+        await res.body?.cancel();
+        return errorResponse("Servidor sem suporte a reprodução por partes", 502);
+      }
+
       const out = new Headers({ "Content-Type": rawType || "video/mp4", "Cache-Control": "no-store" });
       for (const header of ["content-range", "content-length", "accept-ranges", "etag", "last-modified"]) {
         const value = res.headers.get(header);
         if (value) out.set(header, value);
       }
-      if (!out.has("accept-ranges")) out.set("Accept-Ranges", "bytes");
+      if (res.status === 206) out.set("Accept-Ranges", "bytes");
       if (request.method === "HEAD") {
         await res.body?.cancel();
         return new Response(null, { status: 200, headers: out });
