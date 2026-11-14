@@ -165,6 +165,9 @@ export function useNeuralVideoUpscaler(
         return;
       }
       try {
+        if(!eligibleForNeural2x(video.videoWidth,video.videoHeight)){
+          unavailable("Resolução aumentou; preservando a reprodução em alta definição");return;
+        }
         const startedAt = performance.now();
         await withinBudget(engine.render(video),900);
         if (cancelled) return;

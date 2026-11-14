@@ -38,7 +38,7 @@ const send=(method,params={})=>new Promise((resolve,reject)=>{
 });
 const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
 const state=()=>evaluate("(()=>{const v=document.querySelector('video'),hq=document.querySelector('.ydo-hq-btn');return {time:v?.currentTime||0,paused:v?.paused,src:v?.currentSrc,hq:hq?.getAttribute('aria-pressed'),mode:hq?.dataset.mode,notice:document.body.innerText.includes('Dublagem indisponível'),sources:Array.from(document.querySelectorAll('.zf-server-audio')).map(x=>x.textContent),width:innerWidth,bodyWidth:document.documentElement.scrollWidth};})()");
-const until=async fn=>{for(let n=0;n<160;n++){const s=await state().catch(()=>({}));if(fn(s))return s;await sleep(150);}throw Error('Player state timeout: '+JSON.stringify(await state()));};
+const until=async fn=>{for(let n=0;n<400;n++){const s=await state().catch(()=>({}));if(fn(s))return s;await sleep(150);}throw Error('Player state timeout: '+JSON.stringify(await state()));};
 try{
  let port=0,logs='';
  for(let attempt=0;attempt<3&&!port;attempt++){

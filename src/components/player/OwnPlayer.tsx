@@ -334,8 +334,10 @@ export function OwnPlayer({
     const next = !hqEnabled;
     setHqEnabled(next);
     if (next) {
+      const video=videoRef.current;
+      if(video?.videoWidth&&video.videoHeight)setHqSourceSize({width:video.videoWidth,height:video.videoHeight});
       setWebglFailed(false); // Retry on demand, never restart the video.
-      setHqNotice(hqStrategy === "native" ? "HQ ligado · reprodução fluida preservada" : "HQ ligado · aprimorando nitidez…");
+      setHqNotice("HQ ligado · preparando melhoria de imagem…");
     } else {
       setHqNotice(null);
     }
@@ -991,6 +993,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         onClick={handleOverlayClick}
         onLoadedMetadata={measureAndImproveQuality}
         onCanPlay={measureAndImproveQuality}
+        onResize={measureAndImproveQuality}
         style={{
           opacity: enhancedActive ? 0 : 1,
           // Hardware-accelerated color tuning: zero extra frame copies.
