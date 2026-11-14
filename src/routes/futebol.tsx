@@ -68,7 +68,7 @@ function FootballPage() {
   const brazilGames=useMemo(()=>games.filter(isBrazilFixture),[games]);
   const liveGames=useMemo(()=>games.filter(g=>g.status==="ao-vivo"&&!isBrazilFixture(g)),[games]);
   const remainingGames=useMemo(()=>games.filter(g=>g.status!=="ao-vivo"&&!isBrazilFixture(g)),[games]);
-  const linked=games.filter(g=>Boolean(g.canalId)).length;
+  const linked=games.filter(g=>Boolean(g.canalId || g.transmissaoUrl)).length;
   const live=games.filter(g=>g.status==="ao-vivo").length;
   const availableLeagues=[...new Set(games.map(g=>g.ligaId))].length;
   const scoresUpdated = scores?.dataLocal===day && Number.isFinite(Date.parse(scores.atualizadoEm)) ?
