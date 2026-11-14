@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { carouselEdges, nextCarouselPosition, type CarouselDirection } from "@/lib/carousel-navigation";
+import { detectInstalledZangFlixRuntime } from "@/lib/app-runtime";
 
 interface Props {
   children: ReactNode;
@@ -17,6 +18,16 @@ export function MediaCarousel({ children, label, itemCount }: Props) {
   const id = useId();
   const trackRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ canLeft: false, canRight: false });
+  const [installedApp, setInstalledApp] = useState(false);
+
+  // Android APK, standalone PWA and iOS Home Screen never show desktop
+  // carousel controls even in landscape or unusually wide webviews.
+  useEffect(() => {
+    const checkRuntime = () => setInstalledApp(detectInstalledZangFlixRuntime());
+    checkRuntime();
+    window.addEventListener("pageshow", checkRuntime);
+    return () => window.removeEventListener("pageshow", checkRuntime);
+  }, []);
 
   const updateEdges = useCallback(() => {
     const el = trackRef.current;
@@ -49,7 +60,9 @@ export function MediaCarousel({ children, label, itemCount }: Props) {
     const wheel = (event: WheelEvent) => {
       if (event.ctrlKey || event.defaultPrevented ||
           Math.abs(event.deltaY) <= Math.abs(event.deltaX) ||
-          !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+          !window.matchMedia("(min-width: 1121px) and (hover: hover) and (pointer: fine)").matches ||
+          document.documentElement.dataset.zfPlatform !== "web" ||
+          detectInstalledZangFlixRuntime()) return;
       const direction = event.deltaY > 0 ? "right" : "left";
       const available = carouselEdges(el);
       if (!(direction === "right" ? available.canRight : available.canLeft)) return;
@@ -82,7 +95,7 @@ export function MediaCarousel({ children, label, itemCount }: Props) {
   };
 
   return (
-    <div className="zf-media-carousel">
+    <div className={"zf-media-carousel" + (installedApp ? " zf-media-carousel--installed" : "")}>
       <div
         id={id}
         ref={trackRef}
