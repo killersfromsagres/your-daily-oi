@@ -714,7 +714,9 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
 
   const now = Date.now();
   const cached = relayResolveCache.get(targetUrl);
-  if (cached && cached.expires > now) {
+  // Signed CDN URLs may expire during a movie. Allow explicit refresh after
+  // stalling and keep even successful resolutions short-lived.
+  if (url.searchParams.get("refresh") !== "1" && cached && cached.expires > now) {
     return jsonResponse(cached.data, 200, "no-store");
   }
 
@@ -739,6 +741,7 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
               "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             Referer: "https://saimo-tv.pages.dev/",
             Accept: "*/*",
+            Range: "bytes=0-1",
           },
           redirect: "manual",
           signal: ctrl.signal,
@@ -747,6 +750,7 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
 
         if (res.status === 403) {
           isBlocked = true;
+          await res.body?.cancel();
           break;
         }
 
@@ -760,6 +764,7 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
           }
           currentUrl = nextUrl;
           finalUrl = nextUrl;
+          await res.body?.cancel();
           continue;
         }
 
@@ -769,6 +774,7 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
         if (contentType.includes("text/html")) {
           isBlocked = true;
         }
+        await res.body?.cancel();
         break;
       } catch {
         clearTimeout(timer);
@@ -823,10 +829,10 @@ async function handleRelayResolveApi(url: URL): Promise<Response> {
       finalUrl,
       contentType: contentType || (isHls ? "application/vnd.apple.mpegurl" : "video/mp4"),
     };
-    relayResolveCache.set(targetUrl, { data: result, expires: now + 5 * 60 * 1000 });
+    relayResolveCache.set(targetUrl, { data: result, expires: now + 45_000 });
     return jsonResponse(result, 200, "no-store");
   } catch (err) {
-    console.warn(`[RelayResolve] Falha ao resolver ${targetUrl}:`, err);
+    console.warn("[RelayResolve] Falha ao resolver origem:", err instanceof Error ? err.name : "network");
     return jsonResponse({ ok: false, reason: "blocked" }, 200, "no-store");
   }
 }
