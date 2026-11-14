@@ -106,6 +106,8 @@ export function usePlayerEngine(
     let cancelled = false;
     let garbageTimer: ReturnType<typeof setTimeout> | null = null;
     let frozenCheckInterval: ReturnType<typeof setInterval> | null = null;
+    let stalledTimer: ReturnType<typeof setTimeout> | null = null;
+    let stalledAt = 0;
     let playingSince: number | null = null;
     let hasStartedPlaying = false;
     let rejectedAudio=false;
@@ -195,7 +197,27 @@ export function usePlayerEngine(
       clearTimeout(metadataTimeout);
       validateStreamHealth();
     };
+    const clearStallTimer = () => {
+      if (stalledTimer) clearTimeout(stalledTimer);
+      stalledTimer = null;
+    };
+    const onWaitingOrStalled = () => {
+      if (cancelled || !hasStartedPlaying || document.visibilityState === "hidden" || stalledTimer) return;
+      stalledAt = video.currentTime;
+      // Some Android WebViews emit 'waiting' without a media error or pause.
+      // A second stalled connection must trigger automatic source failover.
+      stalledTimer = setTimeout(() => {
+        stalledTimer = null;
+        if (cancelled || document.visibilityState === "hidden" ||
+            video.paused || video.ended || video.seeking) return;
+        if (video.currentTime <= stalledAt + 0.25) {
+          setState("error");
+          setError("A reprodução parou de carregar. Recuperando conexão…");
+        }
+      }, 15_000);
+    };
     const onTimeUpdate = () => {
+      if (stalledTimer && video.currentTime > stalledAt + 0.25) clearStallTimer();
       setCurrentTime(video.currentTime);
       if (video.buffered.length > 0) {
         setBuffered(video.buffered.end(video.buffered.length - 1));
@@ -206,6 +228,7 @@ export function usePlayerEngine(
       validateStreamHealth();
     };
     const onPlaying = () => {
+      clearStallTimer();
       selectNativeAudio();
       if(rejectedAudio){video.pause();return;}
       metadataLoaded = true;
@@ -249,11 +272,12 @@ export function usePlayerEngine(
     }, 1000);
 
     const onPause = () => {
+      clearStallTimer();
       // Pause events during source replacement or a rejected autoplay are
       // not intentional user pauses and must not disable startup recovery.
       if (!cancelled && hasStartedPlaying && !video.ended) setState("paused");
     };
-    const onEnded_ = () => { if (!cancelled) { setState("paused"); onEnded?.(); } };
+    const onEnded_ = () => { clearStallTimer(); if (!cancelled) { setState("paused"); onEnded?.(); } };
     const onCanPlay = () => {
       metadataLoaded = true;
       clearTimeout(metadataTimeout);
@@ -281,6 +305,8 @@ export function usePlayerEngine(
     video.addEventListener("volumechange", onVolumeChange);
     video.addEventListener("ratechange", onRateChange);
     video.addEventListener("error", onError);
+    video.addEventListener("waiting", onWaitingOrStalled);
+    video.addEventListener("stalled", onWaitingOrStalled);
 
     const setup = async () => {
       const { url } = stream;
@@ -312,22 +338,25 @@ export function usePlayerEngine(
             hls.on(Hls.Events.AUDIO_TRACKS_UPDATED,selectAudio);
             hls.loadSource(url);
             hls.attachMedia(video);
+            let networkRepairs = 0;
+            let mediaRepairs = 0;
             hls.on(Hls.Events.ERROR, (_, data: any) => {
-              const isFatal = Boolean(data?.fatal);
-              const details = String(data?.details || "");
-              const type = String(data?.type || "");
-              const isManifestOrNetwork =
-                details.includes("manifest") ||
-                type === "networkError" ||
-                details.includes("bufferAppendError");
-
-              if (isFatal || (isRelay && isManifestOrNetwork)) {
-                if (!cancelled) {
-                  console.warn(`[PlayerEngine] HLS falhou (${details || type}) para: ${url}`);
-                  setState("error");
-                  setError("Stream HLS falhou. Tentando fonte alternativa…");
-                }
+              if (cancelled || !data?.fatal) return;
+              const type = String(data.type || "");
+              const details = String(data.details || "");
+              if (type === "networkError" && networkRepairs++ < 2) {
+                hls.startLoad();
+                return;
               }
+              if (type === "mediaError" && mediaRepairs++ < 1) {
+                hls.recoverMediaError();
+                return;
+              }
+              // Nonfatal HLS segment retries are handled by hls.js; only
+              // genuinely fatal errors should switch the whole VOD server.
+              console.warn("[PlayerEngine] Falha HLS fatal:", details || type);
+              setState("error");
+              setError("Stream HLS falhou. Tentando fonte alternativa…");
             });
             destroyRef.current = () => hls.destroy();
           } else {
@@ -385,6 +414,7 @@ export function usePlayerEngine(
       clearTimeout(metadataTimeout);
       if (garbageTimer) clearTimeout(garbageTimer);
       if (frozenCheckInterval) clearInterval(frozenCheckInterval);
+      clearStallTimer();
       video.removeEventListener("loadedmetadata", onLoadedMetadata);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("durationchange", onDurationChange);
@@ -395,6 +425,8 @@ export function usePlayerEngine(
       video.removeEventListener("volumechange", onVolumeChange);
       video.removeEventListener("ratechange", onRateChange);
       video.removeEventListener("error", onError);
+      video.removeEventListener("waiting", onWaitingOrStalled);
+      video.removeEventListener("stalled", onWaitingOrStalled);
       destroyRef.current?.();
       destroyRef.current = null;
       video.pause();
