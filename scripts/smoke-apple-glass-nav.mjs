@@ -43,7 +43,7 @@ const inspectExpression = `(() => {
       alpha:(()=>{const c=s.backgroundColor.match(/[\\d.]+/g)||[];return c.length===4?Number(c[3]):1;})()};
   };
   return {width:innerWidth,platform:document.documentElement.dataset.zfPlatform,
-    header:info(".ydo-header"),dock:info(".zf-mobile-dock"),
+    header:info(".ydo-header"),logo:info(".ydo-logo"),dock:info(".zf-mobile-dock"),
     search:info(".ydo-search-trigger-btn"),active:info(".zf-mobile-tab.is-active"),
     links:[...document.querySelectorAll(".zf-mobile-tab")].map(el=>el.getAttribute("href")),
     hasBottomSearch:!!document.querySelector(".zf-mobile-dock .zf-mobile-search-fab"),
@@ -124,9 +124,11 @@ try{
       if(style.alpha<.39||style.alpha>.70)throw new Error(name+" is not translucent smoke glass (alpha "+style.alpha+")");
       if(!/brightness\(0\.(?:79|8|80|82)/.test(style.backdrop||""))throw new Error(name+" lacks darkened backdrop: "+style.backdrop);
     };
-    inspect("header",state.header);
+    if(!scenario.mobile)inspect("header",state.header);
+    else if(state.header.width>50||state.header.alpha!==0)throw Error("Mobile must show only floating search: "+JSON.stringify(state.header));
     if(scenario.mobile){
       inspect("dock",state.dock);
+      if(state.logo?.display!=="none"||state.search?.display==="none")throw Error("Mobile logo was not removed or floating search is missing");
       if(state.hasBottomSearch||state.navItemCount!==5)
         throw new Error("Expected five menu entries and no bottom search icon");
       if(!state.search||state.search.parent!=="ydo-header-tools")
@@ -315,7 +317,7 @@ try{
     if(edition.mark?.text!=="13"||edition.mark?.svg||edition.mark?.border!=="0px"||
       edition.mark?.color!=="rgb(255, 255, 255)"||edition.mark?.background!=="rgba(0, 0, 0, 0)")
       throw Error("Number 13 must be white without a box or weapon: "+JSON.stringify(edition.mark));
-    if(!edition.afterCollection||edition.titlePicks!=="Escolha do Zangs"||
+    if(!edition.afterCollection||edition.titlePicks!=="Mais terror na sua noite"||
       !edition.picks[0]?.includes("/filme/invocacao do mal")||!edition.picks[6]?.includes("/filme/midsommar"))
       throw Error("Curated movie selection or placement is incorrect");
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});

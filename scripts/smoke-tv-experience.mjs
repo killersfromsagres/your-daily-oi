@@ -66,6 +66,7 @@ try{
   if(playing.bodyWidth>scenario.width+1||Math.abs(playing.volume-.6)>.02)throw Error('Initial audio/layout failed: '+JSON.stringify(playing));
   await evaluate("document.querySelector('[aria-label=\"Ajustar volume\"]').click()");
   await until(s=>s.panel);
+  if(playing.muted){await evaluate("document.querySelector('.zf-volume-mute').click()");await until(s=>!s.muted&&Math.abs(s.volume-.6)<.01);}
   await evaluate("document.querySelector('[aria-label=\"Diminuir volume\"]').click()");
   await until(s=>Math.abs(s.volume-.55)<.01);
   await evaluate("document.querySelector('[aria-label=\"Aumentar volume\"]').click()");

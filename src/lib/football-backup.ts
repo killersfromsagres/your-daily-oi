@@ -1,3 +1,4 @@
+import {broadcastTeamKey} from "./broadcast-verified";
 // src/lib/football-backup.ts — keyless TheSportsDB daily soccer feed, timezone-safe.
 import {
   addDaysUTC, dataBrasilia, horaBrasilia, normalizeSoccerName,
@@ -108,8 +109,8 @@ export function mergeProviderFixtures(primary: readonly JogoBrasileirao[],backup
     const duplicate=result.find(game=>{
       const at=Math.abs(Date.parse(game.inicioIso)-Date.parse(candidate.inicioIso));
       return at<110*60_000 &&
-        normalizeSoccerName(game.casa)===normalizeSoccerName(candidate.casa) &&
-        normalizeSoccerName(game.fora)===normalizeSoccerName(candidate.fora);
+        broadcastTeamKey(normalizeSoccerName(game.casa))===broadcastTeamKey(normalizeSoccerName(candidate.casa)) &&
+        broadcastTeamKey(normalizeSoccerName(game.fora))===broadcastTeamKey(normalizeSoccerName(candidate.fora));
     });
     if(!duplicate)result.push(candidate);
     else {

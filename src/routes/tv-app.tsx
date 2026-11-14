@@ -1,6 +1,6 @@
 import {createFileRoute,Link} from "@tanstack/react-router";
 import {useState} from "react";
-import {Tv,Download,ArrowRight,Cast,ChevronLeft,Check} from "lucide-react";
+import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check} from "lucide-react";
 import {ANDROID_APK_URL} from "@/components/layout/InstallAppButton";
 export const Route=createFileRoute("/tv-app")({component:TvAppPage,head:()=>({meta:[{title:"ZANG FLIX na TV"}]})});
 function TvAppPage(){

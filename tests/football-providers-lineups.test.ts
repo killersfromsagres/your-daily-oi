@@ -33,6 +33,12 @@ describe("multi-provider football fixtures",()=>{
     expect(merged[0].id).toBe(espn.id);
     expect(merged[0].escudoCasa).toBe(backup.escudoCasa);
   });
+  test("deduplicates the exact same fixture when providers spell Atlético-MG differently",()=>{
+    const base=sportsDbToFixture(match,date)!;
+    const espn={...base,id:"bra.1:1",casa:"Mirassol",fora:"Atlético-MG"};
+    expect(mergeProviderFixtures([espn],[{...base,casa:"Mirassol",fora:"Atlético Mineiro"}])).toHaveLength(1);
+    expect(mergeProviderFixtures([espn],[{...base,casa:"Mirassol",fora:"Atlético Mineiro Feminino"}])).toHaveLength(2);
+  });
   test("Brazil-only channel names: never label Serbian or European stations as Brazilian",()=>{
     expect(broadcastersForBrazil([
       {strCountry:"Serbia",strChannel:"RTS 1 RS"},

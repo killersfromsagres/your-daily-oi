@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Download, Smartphone, Tv, X } from "lucide-react";
+import { Download, Smartphone, TvMinimal as Tv, X } from "lucide-react";
 
 // Direct, publicly accessible Android package. GitHub serves the binary with
 // Content-Disposition: attachment so Chrome downloads the .apk on tap.
