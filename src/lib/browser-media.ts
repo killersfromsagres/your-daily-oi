@@ -7,6 +7,8 @@ declare global {
         loadSource:(url:string)=>void;
         attachMedia:(video:HTMLVideoElement)=>void;
         destroy:()=>void;
+        startLoad:()=>void;
+        recoverMediaError:()=>void;
         on:(event:string,callback:(...args:any[])=>void)=>void;
         audioTracks:Array<{lang?:string;name?:string}>;
         audioTrack:number;
