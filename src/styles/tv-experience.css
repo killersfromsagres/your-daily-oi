@@ -163,3 +163,97 @@ html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-t
 .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-vs{display:none}
 html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{grid-template-columns:minmax(0,1fr) 92px}
 html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{min-height:0}
+
+
+/* Streaming-app shelves: on phones and installed apps, posters stay clean.
+   Only the desktop web interface may show glass arrows and edge fades. */
+html[data-zf-platform="mobile"] .zf-media-carousel__arrow,
+html[data-zf-platform="mobile"] .zf-media-carousel__fade,
+html[data-zf-platform="tv"] .zf-media-carousel__arrow,
+html[data-zf-platform="tv"] .zf-media-carousel__fade,
+.zf-media-carousel--installed .zf-media-carousel__arrow,
+.zf-media-carousel--installed .zf-media-carousel__fade {
+  display: none !important;
+}
+@media (max-width: 1120px), (hover: none), (pointer: coarse), (display-mode: standalone) {
+  .zf-media-carousel__arrow,
+  .zf-media-carousel__fade {
+    display: none !important;
+  }
+
+  html:not([data-zf-platform="tv"]) .zf-media-carousel {
+    overflow: visible;
+    isolation: auto;
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track {
+    gap: 10px;
+    padding: 5px 16px 17px;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track > .ydo-card {
+    width: clamp(126px, 34vw, 162px);
+    flex: 0 0 clamp(126px, 34vw, 162px);
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+    contain-intrinsic-size: 148px 222px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track .ydo-card-poster {
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, .09);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .26);
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track .ydo-card:hover .ydo-card-poster,
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track .ydo-card:focus-within .ydo-card-poster {
+    transform: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .26);
+    border-color: rgba(255, 255, 255, .17);
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track .ydo-card-info {
+    margin-top: 7px;
+    padding-inline: 1px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track .ydo-card-title {
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.45;
+    letter-spacing: -.015em;
+  }
+  html:not([data-zf-platform="tv"]) .zf-media-carousel__track .ydo-card-meta {
+    font-size: 10px;
+    margin-top: 3px;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-row-header {
+    padding-inline: 16px;
+    margin-bottom: 10px;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-row-title {
+    font-size: clamp(18px, 4.8vw, 22px);
+    line-height: 1.2;
+    letter-spacing: -.035em;
+  }
+  html:not([data-zf-platform="tv"]) .ydo-row-section {
+    margin-bottom: 29px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-zangs-picks-heading {
+    padding-inline: 16px;
+    padding-bottom: 14px;
+  }
+  html:not([data-zf-platform="tv"]) .zf-zangs-picks {
+    margin-bottom: 29px;
+    padding-top: 19px;
+  }
+}
+/* Respect app installation even if the webview presents a desktop viewport. */
+.zf-media-carousel--installed .zf-media-carousel__track {
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zf-media-carousel__track { scroll-behavior: auto; }
+}
