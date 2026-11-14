@@ -797,18 +797,33 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     };
   }, [title, subtitle]);
 
-  // Auto-hide controles
+  const menuInteractionRef=useRef(false);
+  // Fullscreen controls fade promptly after entry/play, even without a pointer move.
   const showControls = useCallback(() => {
     setControlsVisible(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    if (engine.state === "playing") {
-      hideTimer.current = setTimeout(() => setControlsVisible(false), 3000);
+    if (engine.state === "playing" && !menuInteractionRef.current) {
+      hideTimer.current = setTimeout(() => setControlsVisible(false), isFullscreen ? 1200 : 2200);
     }
-  }, [engine.state]);
-
+  }, [engine.state,isFullscreen]);
+  const handleMenuInteraction = useCallback((open:boolean)=>{
+    menuInteractionRef.current=open;
+    showControls();
+  },[showControls]);
   useEffect(() => {
-    if (engine.state !== "playing") setControlsVisible(true);
-  }, [engine.state]);
+    showControls();
+    return()=>{if(hideTimer.current)clearTimeout(hideTimer.current);};
+  }, [showControls]);
+  const handleBack = () => {
+    if(hideTimer.current)clearTimeout(hideTimer.current);
+    const video=videoRef.current;
+    if(video){
+      if(video.currentTime>2)onTimeUpdate?.(video.currentTime,Number.isFinite(video.duration)?video.duration:0);
+      video.pause();
+    }
+    // Route changes must not wait for fullscreen/orientation promises or providers.
+    onBack?.();
+  };
 
   // Atalhos de teclado
   useEffect(() => {
@@ -1160,7 +1175,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       <div className={`ydo-player-topbar${controlsVisible ? " visible" : ""}`}>
         {onBack && (
           <button
-            onClick={onBack}
+            onClick={handleBack}
             className="ydo-player-back-btn"
             aria-label="Voltar"
           >
@@ -1179,7 +1194,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           <AlertCircle size={38} aria-hidden style={{color:"#e8b44a"}} />
           <h3>Dublagem indisponível no momento</h3>
           <p>Não encontramos uma fonte dublada adequada para este título. Tente novamente mais tarde.</p>
-          {onBack && <button className="ydo-btn-secondary" onClick={onBack}>Voltar</button>}
+          {onBack && <button className="ydo-btn-secondary" onClick={handleBack}>Voltar</button>}
         </div>
       )}
       {/* Loading */}
@@ -1235,7 +1250,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             {onBack && (
               <button
                 className="ydo-btn-secondary"
-                onClick={onBack}
+                onClick={handleBack}
               >
                 Voltar
               </button>
@@ -1248,6 +1263,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       <div className={`ydo-controls-wrapper${controlsVisible ? " visible" : ""}`}>
         {title && <div className="ydo-player-title">{title}</div>}
         <PlayerControls
+          onMenuInteraction={handleMenuInteraction}
           state={engine.state}
           currentTime={engine.currentTime}
           duration={engine.duration}

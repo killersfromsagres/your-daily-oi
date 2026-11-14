@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import { findCatalogItem } from "./lib/movie-source-identity";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
@@ -247,13 +248,7 @@ async function handleItemApi(url: URL): Promise<Response> {
   }
 
   const { items } = await loadCatalog();
-  const norm = normalizeTitle(id);
-  const item =
-    (typeKey ? items.get(`${typeKey}-${norm}`) : null) ||
-    (typeKey ? Array.from(items.values()).find((i) => (i.id === id || normalizeTitle(i.title) === norm) && i.type === typeKey) : null) ||
-    items.get(id) ||
-    items.get(norm) ||
-    Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm);
+  const item = findCatalogItem(items,id,typeKey);
 
   if (!item) {
     if (typeKey === "a" || id.includes("-") || tipoParam === "anime") {
@@ -272,7 +267,7 @@ async function handleItemApi(url: URL): Promise<Response> {
   // Se ainda não carregou os streams deste item, busca instantaneamente pela letra correspondente
   if (!finalItem.streams || finalItem.streams.length === 0) {
     try {
-      const streams = await getStreamsForItem(finalItem.type, finalItem.title);
+      const streams = await getStreamsForItem(finalItem.type, finalItem.title, finalItem);
       finalItem = { ...finalItem, streams };
     } catch {
       // Ignora e continua
@@ -371,14 +366,7 @@ async function handleStreamApi(url: URL): Promise<Response> {
   }
 
   const { items } = await loadCatalog();
-  const norm = normalizeTitle(id);
-  const item =
-    items.get(`f-${norm}`) ||
-    items.get(`s-${norm}`) ||
-    items.get(id) ||
-    Array.from(items.values()).find(
-      (i) => i.id === id || String(i.tmdbId) === id || normalizeTitle(i.title) === norm
-    );
+  const item = findCatalogItem(items,id,tipo === "movie" ? "f" : "s");
 
   const tmdbId = item?.tmdbId || (/^\d+$/.test(id) ? Number(id) : null);
   const title = item?.title || id;
@@ -388,6 +376,7 @@ async function handleStreamApi(url: URL): Promise<Response> {
     id,
     tmdbId,
     title,
+    ...(item?.catalogTitle ? {catalogTitle:item.catalogTitle} : {}),
     season: s,
     episode: e,
     versao,
@@ -492,22 +481,9 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   const ep = parseInt(url.searchParams.get("ep") || url.searchParams.get("e") || "1", 10);
 
   const { items } = await loadCatalog();
-  const norm = normalizeTitle(id);
   const numId = Number(id);
-  const isNumeric = !Number.isNaN(numId) && numId > 0;
-
-  const item =
-    items.get(`${typeKey}-${norm}`) ||
-    Array.from(items.values()).find(
-      (i) =>
-        ((isNumeric && i.tmdbId === numId) || i.id === id || normalizeTitle(i.title) === norm) &&
-        i.type === typeKey
-    ) ||
-    items.get(id) ||
-    items.get(norm) ||
-    (isNumeric
-      ? Array.from(items.values()).find((i) => i.tmdbId === numId)
-      : Array.from(items.values()).find((i) => i.id === id || normalizeTitle(i.title) === norm));
+  const isNumeric = Number.isSafeInteger(numId) && numId > 0;
+  const item = findCatalogItem(items,id,typeKey);
 
   const tipo =
     tipoParam === "movie" || tipoParam === "f" || (item && item.type === "f")
@@ -525,6 +501,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
     id,
     ...(effectiveTmdbId ? {tmdbId:effectiveTmdbId} : {}),
     title: effectiveTitle,
+    ...(item?.catalogTitle ? {catalogTitle:item.catalogTitle} : {}),
     season: temp,
     episode: ep,
   });
@@ -532,7 +509,7 @@ async function handleResolveVodApi(url: URL): Promise<Response> {
   const catalogTask = (async (): Promise<StreamSource[]> => {
     if (!item) return [];
     if (item.type === "f") {
-      return getStreamsForItem("f", item.title);
+      return getStreamsForItem("f", item.title,item);
     }
     const seasons = await getSeasonsForSeries(item.title, item.type === "a" ? "a" : "s");
     const fallback = item.type === "a" && !seasons.length

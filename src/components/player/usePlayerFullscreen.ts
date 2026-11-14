@@ -84,6 +84,7 @@ export function usePlayerFullscreen(containerRef:RefObject<HTMLElement|null>,vid
   useEffect(()=>{
     mounted.current=true;
     const video=videoRef.current;
+    const container=containerRef.current;
     const onChange=()=>{
       if(belongs()){
         if(!active.current)return;
@@ -108,6 +109,14 @@ export function usePlayerFullscreen(containerRef:RefObject<HTMLElement|null>,vid
     window.addEventListener("keydown",onKey);
     return()=>{
       mounted.current=false;generation.current++;active.current=false;
+      // Closing a route must also release the native fullscreen surface.
+      if((container && nativeElement()===container) || (video as Video|null)?.webkitDisplayingFullscreen){
+        if((video as Video|null)?.webkitDisplayingFullscreen)(video as Video).webkitExitFullscreen?.();
+        else {
+          const exit=document.exitFullscreen?.bind(document)||(document as FullDocument).webkitExitFullscreen?.bind(document);
+          try{if(exit)void Promise.resolve(exit()).catch(()=>{});}catch{/* Route unmount still proceeds. */}
+        }
+      }
       document.removeEventListener("fullscreenchange",onChange);
       document.removeEventListener("webkitfullscreenchange",onChange);
       video?.removeEventListener("webkitbeginfullscreen",onChange);

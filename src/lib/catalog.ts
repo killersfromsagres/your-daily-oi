@@ -11,6 +11,7 @@ import type {
 import { getIndiceBases, expandBaseToken, isHlsUrl } from "./saimo-stream";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
 import { advertisedVodResolution } from "./vod-source-quality";
+import { canonicalMovieId, movieTitleKey, movieIdentityMap, indexMovieSources, findMovieSources, type MovieIdentityMap, type MovieSourceIndex, type MovieSourceRow } from "./movie-source-identity";
 import { correctClassicStreetFighter, isClassicStreetFighter } from "./movie-metadata-fixes";
 
 // As URLs de catálogo:
@@ -33,6 +34,8 @@ export function getCatalogSourceStatus() {
 }
 const CACHE_TTL = 30 * 60 * 1000;
 const STREAM_TTL = 15 * 60 * 1000;
+let movieIdentities: MovieIdentityMap = new Map();
+const movieSourceIndexes = new Map<string, MovieSourceIndex>();
 
 /** Converts URL-encoded catalogue titles into readable Portuguese labels.
  * The catalogue ID remains unchanged; only title matching and display use it.
@@ -240,7 +243,7 @@ async function fetchAnimeText(fileName: string): Promise<string> {
 }
 
 // Parse de fichas.txt: tipo\tTítulo\tTMDB_ID\tposter_path\tGênero1,Gênero2,...
-function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "seasons">> {
+export function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "seasons">> {
   const map = new Map<string, Omit<CatalogItem, "streams" | "seasons">>();
   for (const line of text.split("\n")) {
     if (line.startsWith("#")) continue;
@@ -248,9 +251,9 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
     if (parts.length < 4) continue;
     const [tipo, title, tmdbRaw, posterPath, genresRaw] = parts;
     if (!title || (tipo !== "f" && tipo !== "s" && tipo !== "a")) continue;
-    const tmdbId = tmdbRaw && !Number.isNaN(Number(tmdbRaw)) ? Number(tmdbRaw) : null;
+    const tmdbId = tmdbRaw && !Number.isNaN(Number(tmdbRaw)) ? (tipo === "f" ? canonicalMovieId(title,Number(tmdbRaw)) : Number(tmdbRaw)) : null;
     const genres = genresRaw ? genresRaw.split(",").map((g) => g.trim()).filter(Boolean) : [];
-    const normKey = normalizeTitle(title);
+    const normKey = tipo === "f" ? movieTitleKey(title) : normalizeTitle(title);
     // Preserve previously issued route IDs/bookmarks while adding a corrected
     // lookup key for catalogue titles where "+" was a word separator.
     const legacyKey = title.toLowerCase().normalize("NFD")
@@ -274,6 +277,7 @@ function parseFichas(text: string): Map<string, Omit<CatalogItem, "streams" | "s
       id,
       type: tipo as "f" | "s" | "a",
       title: cleanDisplayTitle(title),
+      ...(tipo === "f" ? {catalogTitle:title} : {}),
       tmdbId,
       posterPath: cleanPoster,
       posterUrl,
@@ -324,33 +328,17 @@ function parseDestaques(text: string): HighlightRow[] {
 }
 
 // Parse de filmes-{letra}.txt: Título\tdub=URL1,URL2\tleg=URL1,...
-function parseFilmesFile(text: string, bases: string[] = []): Map<string, StreamSource[]> {
-  const map = new Map<string, StreamSource[]>();
+function parseFilmesFile(text: string, bases: string[] = []): MovieSourceIndex {
+  const rows: MovieSourceRow[] = [];
   for (const line of text.split("\n")) {
     if (line.startsWith("#")) continue;
-    const parts = line.trim().split("\t");
-    if (parts.length < 2) continue;
-    const [title, ...rest] = parts;
+    const [title,...fields] = line.trim().split("\t");
     if (!title) continue;
-    const streams: StreamSource[] = [];
-    for (const part of rest) {
-      if (part.startsWith("dub=")) streams.push(...parseStreams(part, "dub", bases));
-      else if (part.startsWith("leg=")) streams.push(...parseStreams(part, "leg", bases));
-    }
-    if (streams.length > 0) {
-      const normRaw = normalizeTitle(title);
-      const normClean = normalizeTitle(cleanDisplayTitle(title));
-      const keys = new Set([normRaw, normClean]);
-      for (const k of keys) {
-        if (!k) continue;
-        const existing = map.get(k) || [];
-        const existingUrls = new Set(existing.map((s) => s.url));
-        const newStreams = streams.filter((s) => !existingUrls.has(s.url));
-        map.set(k, [...existing, ...newStreams]);
-      }
-    }
+    const streams = fields.flatMap(field => field.startsWith("dub=") ? parseStreams(field,"dub",bases)
+      : field.startsWith("leg=") ? parseStreams(field,"leg",bases) : []);
+    rows.push({title,streams});
   }
-  return map;
+  return indexMovieSources(rows,movieIdentities);
 }
 
 // Cache de streams e temporadas por arquivo já baixado
@@ -513,7 +501,10 @@ export async function getStreamsForLetter(type: "f" | "s" | "a", letter: string)
   if (type === "f") {
     try {
       const text = await fetchText(getCatalogUrls(`filmes-${letter}.txt`));
-      const parsed = parseFilmesFile(text, bases);
+      if (!movieIdentities.size) await loadCatalog();
+      const index = parseFilmesFile(text, bases);
+      movieSourceIndexes.set(letter,index);
+      const parsed = index.byTitle;
       streamsCache.set(cacheKey, parsed);
         streamsCacheExpires.set(cacheKey, Date.now() + STREAM_TTL);
       return parsed;
@@ -574,11 +565,15 @@ export async function getSeasonsForSeries(title: string, type: "s" | "a" = "s"):
 /**
  * Busca streams de um título específico de forma cirúrgica e instantânea
  */
-export async function getStreamsForItem(type: "f" | "s" | "a", title: string): Promise<StreamSource[]> {
+export async function getStreamsForItem(type: "f" | "s" | "a", title: string, identity?: {tmdbId?:number | null; catalogTitle?:string}): Promise<StreamSource[]> {
   const norm = normalizeTitle(title);
   const cleanNorm = normalizeTitle(cleanDisplayTitle(title));
   const letter = getLetterKey(title);
   const streamsMap = await getStreamsForLetter(type, letter);
+  if (type === "f") {
+    const index = movieSourceIndexes.get(letter);
+    return index ? findMovieSources(index,{title,...identity}) : [];
+  }
   const found = streamsMap.get(norm) || streamsMap.get(cleanNorm);
   if (found && found.length > 0) return found;
 
@@ -607,6 +602,10 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
       fichasResult.status === "rejected" ? String(fichasResult.reason) : "");
   }
 
+  movieIdentities = movieIdentityMap(fichasText);
+  // Rebuild identity-bound buckets when upstream metadata changes.
+  movieSourceIndexes.clear();
+  for (const key of streamsCache.keys()) if (key.startsWith("f-")) {streamsCache.delete(key);streamsCacheExpires.delete(key);}
   const fichas = parseFichas(fichasText);
   const highlights = parseDestaques(destaquesText);
 

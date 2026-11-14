@@ -8,6 +8,7 @@
  * 4. Fallback por IMDb ID via TMDB External IDs
  */
 
+import { isQuarantinedMovieSource, movieSourceMatches, selectMovieSearchResult } from "./movie-source-identity";
 import { dubbedVodSources } from "./dubbed-audio";
 import type { StreamSource, AudioTrack, StreamFormat } from "./types";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
@@ -138,7 +139,7 @@ async function getRedeflixFilmes(): Promise<Map<string, { title: string; streams
       for (const line of text.split("\n")) {
         const parts = line.split("\t");
         if (parts.length < 2) continue;
-        const title = parts[0]?.trim();
+        const title = parts[0]?.trim() || "";
         let tmdb = "";
         let imdb = "";
         const streams: StreamSource[] = [];
@@ -389,6 +390,7 @@ export interface ResolveOptions {
   id?: string;
   tmdbId?: number | string | null;
   title?: string;
+  catalogTitle?: string;
   season?: number;
   episode?: number;
 }
@@ -401,7 +403,7 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
   const isSerie = tipo === "series";
   const rawId = String(opts.tmdbId || opts.id || "").trim();
   const cleanId = rawId.replace(/^(tmdb:|imdb:)/i, "");
-  const cacheKey = `${tipo}:${cleanId || title}:${season}:${episode}`;
+  const cacheKey = `${tipo}:${cleanId}:${opts.catalogTitle || title}:${season}:${episode}`;
   const cached = streamResultsCache.get(cacheKey);
   const now = Date.now();
   if (cached && cached.expires > now) return cached.streams;
@@ -416,7 +418,8 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
       );
       if (searchRes.ok) {
         const data = await searchRes.json() as { results?: Array<{ id: number }> };
-        if (data.results?.[0]?.id) resolvedTmdbId = String(data.results[0].id);
+        const match = selectMovieSearchResult(data.results || [],opts.catalogTitle || title);
+        if (match) resolvedTmdbId = String(match);
       }
     } catch { /* A catalog title can still resolve independently. */ }
   }
@@ -456,43 +459,10 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
   }
 
   if (!isSerie && title) {
-    jobs.push((async () => {
-      const norm = title.replace(/^\s*[#+]+/, "").replace(/\+/g, " ").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim();
-      const first = norm[0]?.toUpperCase() || "#";
-      const letter = /^[A-Z]$/.test(first) ? first : "%23";
-      const [bases, catalog] = await Promise.all([
-        getIndiceBases().catch(() => [] as string[]),
-        fetchFirstText(catalogUrls(`filmes-${letter}.txt`), "filmes", { timeoutMs: 4800 })
-          .then(result => result.text).catch(() => ""),
-      ]);
-      if (!catalog) return [];
-      const comparable = (value: string) =>
-        value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/^#+/, "").replace(/\s*\(\d{4}\)$/, "")
-          .replace(/[^a-z0-9]/gi, "").toLowerCase();
-      const wanted = comparable(title);
-      const direct: StreamSource[] = [];
-      for (const line of catalog.split("\n")) {
-        const cols = line.split("\t");
-        if (!cols[0] || comparable(cols[0]) !== wanted) continue;
-        for (const field of cols.slice(1)) {
-          const found = /^(dub|leg)=(.*)$/.exec(field.trim());
-          if (!found) continue;
-          const audio: AudioTrack = found[1] === "leg" ? "leg" : "dub";
-          for (const token of (found[2] || "").split(",")) {
-            const resolved = expandBaseToken(token.trim(), bases);
-            if (!/^https?:\/\//i.test(resolved)) continue;
-            direct.push({
-              url: resolved, audio, format: isHlsUrl(resolved) ? "hls" : "auto",
-              quality: detectVodQuality(resolved), priority: 2,
-              name: `Catálogo (${audio.toUpperCase()})`,
-            });
-          }
-        }
-        break;
-      }
-      return direct;
-    })());
+    jobs.push(import("./catalog").then(catalog => catalog.getStreamsForItem("f",title,{
+      ...(/^\d+$/.test(resolvedTmdbId) ? {tmdbId:Number(resolvedTmdbId)} : {}),
+      ...(opts.catalogTitle ? {catalogTitle:opts.catalogTitle} : {}),
+    })));
   }
 
   const settled = await Promise.allSettled(jobs);
@@ -502,6 +472,7 @@ export async function resolveVodStreams(opts: ResolveOptions): Promise<StreamSou
     if (outcome.status !== "fulfilled") continue;
     for (const source of playableVodSources(outcome.value)) {
       if (!source?.url || seen.has(source.url)) continue;
+      if (!isSerie && (!movieSourceMatches(source,Number(resolvedTmdbId)||null) || isQuarantinedMovieSource(source.url))) continue;
       seen.add(source.url);
       ordered.push(source);
     }

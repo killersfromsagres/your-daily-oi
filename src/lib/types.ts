@@ -59,6 +59,8 @@ export interface SeasonItem {
 export interface CatalogItem {
   id: string;
   title: string;
+  /** Original source identity, including remake year; never use display text for playback. */
+  catalogTitle?: string;
   type: "f" | "s" | "a";
   posterPath?: string;
   posterUrl?: string;

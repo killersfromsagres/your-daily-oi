@@ -4,6 +4,7 @@ import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck } from "lu
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { catalogDisplayTitle, detectQuality } from "@/lib/catalog";
+import { getMovieDetails, peekMovieDetails } from "@/lib/movie-details-client";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
 export const Route = createFileRoute("/filme/$id")({
@@ -23,54 +24,29 @@ function formatRuntime(minutes?: number | null): string {
 function MovieDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const [movie, setMovie] = useState<CatalogItem | null>(null);
+  const [movie, setMovie] = useState<CatalogItem | null>(()=>peekMovieDetails(id));
   const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(()=>!peekMovieDetails(id));
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-
-    Promise.allSettled([
-      fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((res) => {
-        if (!res.ok) throw new Error("Erro");
-        return res.json() as Promise<CatalogItem>;
-      }),
-      fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=movie`, { cache: "no-store" }).then((res) => {
-        if (!res.ok) throw new Error("Erro");
-        return res.json() as Promise<{ sources?: StreamSource[] }>;
-      }),
-    ])
-      .then(([itemRes, resolveRes]) => {
-        if (!active) return;
-        if (itemRes.status === "fulfilled" && itemRes.value && !(itemRes.value as any).error) {
-          const found = itemRes.value as CatalogItem;
-          setMovie(found);
-          setSaved(getSavedList().includes(found.id));
-        }
-        if (resolveRes.status === "fulfilled" && resolveRes.value?.sources) {
-          setExtraStreams(resolveRes.value.sources);
-        }
-      })
-      .catch(() => {
-        fetch("/api/catalogo", { cache: "no-store" })
-          .then((r) => r.json() as Promise<{ items: CatalogItem[] }>)
-          .then((d) => {
-            if (!active) return;
-            const f = d.items.find((i) => i.id === id);
-            setMovie(f || null);
-            if (f) setSaved(getSavedList().includes(f.id));
-          })
-          .catch(() => {});
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+    const cached=peekMovieDetails(id);
+    setMovie(cached);setExtraStreams([]);setLoading(!cached);
+    if(cached)setSaved(getSavedList().includes(cached.id));
+    // Render the card as soon as its metadata arrives. Source discovery is
+    // independent and may finish after this route has already been closed.
+    void getMovieDetails(id).then(item=>{
+      if(!active)return;
+      setMovie(item);setSaved(getSavedList().includes(item.id));
+    }).catch(()=>{}).finally(()=>{if(active)setLoading(false);});
+    const abort=new AbortController();
+    fetch(`/api/resolve-vod?id=${encodeURIComponent(id)}&tipo=movie`,{cache:"no-store",signal:abort.signal})
+      .then(response=>response.ok?response.json():null)
+      .then((result:{sources?:StreamSource[]}|null)=>{
+        if(active&&result?.sources)setExtraStreams(result.sources);
+      }).catch(()=>{});
+    return()=>{active=false;abort.abort();};
   }, [id]);
 
   const toggleSave = () => {
@@ -141,7 +117,7 @@ function MovieDetailPage() {
   const runtimeDisplay = formatRuntime(movie.tmdb?.runtime);
 
   const movieQuality = (() => {
-    if (!movie) return "FULL HD 1080P";
+    if (!movie) return "AUTO";
     const allStreams = [...(movie.streams || []), ...extraStreams];
     const qualities = allStreams
       .map((s) => s.quality || detectQuality(s.url, movie.title))
@@ -150,7 +126,7 @@ function MovieDetailPage() {
     if (qualities.some((q) => /2k|1440|qhd/i.test(q)) || /2k|1440|qhd/i.test(movie.title)) return "2K QUAD HD";
     if (qualities.some((q) => /720|720p/i.test(q)) && !qualities.some((q) => /1080|fhd/i.test(q))) return "HD 720P";
     if (qualities.some((q) => /480|480p|sd/i.test(q)) && !qualities.some((q) => /1080|720/i.test(q))) return "SD 480P";
-    return "FULL HD 1080P";
+    return "AUTO";
   })();
 
   return (
@@ -448,7 +424,8 @@ function MovieDetailPage() {
               {/* Botões de Ação Personalizados e Modernos */}
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "10px", flexWrap: "wrap" }}>
                 <Link
-                  to={`/assistir/filme/${movie.id}`}
+                  to="/assistir/filme/$id"
+                  params={{id:movie.id}}
                   style={{
                     display: "inline-flex",
                     alignItems: "center",

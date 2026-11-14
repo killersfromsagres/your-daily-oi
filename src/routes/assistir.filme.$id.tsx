@@ -7,6 +7,7 @@ import { PlayerErrorBoundary } from "@/components/player/PlayerErrorBoundary";
 import type { CatalogItem, StreamSource } from "@/lib/types";
 import { shortlistVodSources } from "@/lib/vod-source-quality";
 import { catalogDisplayTitle } from "@/lib/catalog";
+import { getMovieDetails, peekMovieDetails } from "@/lib/movie-details-client";
 import { saveProgress, getProgressById } from "@/lib/storage";
 
 export const Route = createFileRoute("/assistir/filme/$id")({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/assistir/filme/$id")({
 function WatchMoviePage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const [movie, setMovie] = useState<CatalogItem | null>(null);
+  const [movie, setMovie] = useState<CatalogItem | null>(()=>peekMovieDetails(id));
   const [loading, setLoading] = useState(true);
 
   const [extraStreams, setExtraStreams] = useState<StreamSource[]>([]);
@@ -29,7 +30,7 @@ function WatchMoviePage() {
     let active = true;
     const abort = new AbortController();
     let requestsRemaining = 2;
-    setMovie(null);
+    setMovie(peekMovieDetails(id));
     setExtraStreams([]);
     setLoading(true);
 
@@ -40,13 +41,7 @@ function WatchMoviePage() {
 
     // Prioriza o primeiro resultado útil: não espera o agregador de fontes externas
     // para iniciar o MP4 do Saimo por proxy.
-    fetch(`/api/item?id=${encodeURIComponent(id)}&tipo=movie`, {
-      cache: "no-store", signal: abort.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Item HTTP ${res.status}`);
-        return res.json() as Promise<CatalogItem>;
-      })
+    getMovieDetails(id)
       .then((item) => {
         if (!active || !item?.id) return;
         setMovie(item);

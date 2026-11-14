@@ -7,7 +7,8 @@ if (run.error) throw run.error;
 const lines = (run.stdout+"\n"+run.stderr).split(/\r?\n/);
 const diagnostics = lines.filter(line => /^src\/.*error TS\d+:/.test(line));
 const scoped = diagnostics.filter(line => {
-  if (/^src\/lib\/(?:saimo-vod-url|vod-source-quality|playback-start|types)\.ts\(/.test(line)) return true;
+  if (/^src\/lib\/(?:movie-source-identity|movie-details-client|saimo-vod-url|vod-source-quality|playback-start|types)\.ts\(/.test(line)) return true;
+  if (/^src\/routes\/filme\.\$id\.tsx/.test(line)) return true;
   if (/^src\/routes\/assistir\.(?:filme|serie|anime)\.\$id/.test(line)) return true;
   const match = line.match(/^src\/(lib\/[^(/]+\.ts|components\/player\/[^(/]+\.tsx?|server\.ts)\((\d+),/);
   if (!match) return false;
@@ -22,7 +23,7 @@ const scoped = diagnostics.filter(line => {
     (lineNumber >= 548 && lineNumber <= 605)
   );
   if (file === "components/player/OwnPlayer.tsx") return true;
-  if (file === "components/player/usePlayerEngine.ts") return true;
+  if (file === "components/player/usePlayerEngine.ts" || file === "components/player/PlayerControls.tsx" || file === "components/player/usePlayerFullscreen.ts") return true;
   if (file === "server.ts") return lineNumber >= 437 && lineNumber <= 590;
   return false;
 });

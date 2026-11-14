@@ -60,6 +60,7 @@ interface PlayerControlsProps {
   hqActive?: boolean;
   hqMode?: "ai" | "loading" | "shader" | "native";
   onToggleHq?: () => void;
+  onMenuInteraction?: (open:boolean)=>void;
 }
 
 export function PlayerControls({
@@ -90,9 +91,11 @@ export function PlayerControls({
   hqActive,
   hqMode = "ai",
   onToggleHq,
+  onMenuInteraction,
 }: PlayerControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showServers, setShowServers] = useState(false);
+  useEffect(()=>{onMenuInteraction?.(showSettings||showServers);},[showSettings,showServers,onMenuInteraction]);
   const serversRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 

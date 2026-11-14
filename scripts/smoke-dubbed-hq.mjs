@@ -36,8 +36,8 @@ const send=(method,params={})=>new Promise((resolve,reject)=>{
  const id=++seq,timeout=setTimeout(()=>{pending.delete(id);reject(Error(method+' timeout'));},20000);
  pending.set(id,{resolve,reject,timeout});ws.send(JSON.stringify({id,method,params}));
 });
-const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
-const state=()=>evaluate("(()=>{const v=document.querySelector('video'),hq=document.querySelector('.ydo-hq-btn');return {time:v?.currentTime||0,paused:v?.paused,src:v?.currentSrc,hq:hq?.getAttribute('aria-pressed'),mode:hq?.dataset.mode,notice:document.body.innerText.includes('Dublagem indisponível'),sources:Array.from(document.querySelectorAll('.zf-server-audio')).map(x=>x.textContent),width:innerWidth,bodyWidth:document.documentElement.scrollWidth};})()");
+const evaluate=async expression=>{const r=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,userGesture:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
+const state=()=>evaluate("(()=>{const v=document.querySelector('video'),hq=document.querySelector('.ydo-hq-btn');return {fullscreen:!!document.fullscreenElement||!!document.querySelector('.ydo-player-container.is-theater'),controls:document.querySelector('.ydo-player-container')?.dataset.controlsVisible,returned:!!document.querySelector('[data-return-card]'),time:v?.currentTime||0,paused:v?.paused,src:v?.currentSrc,hq:hq?.getAttribute('aria-pressed'),mode:hq?.dataset.mode,notice:document.body.innerText.includes('Dublagem indisponível'),sources:Array.from(document.querySelectorAll('.zf-server-audio')).map(x=>x.textContent),width:innerWidth,bodyWidth:document.documentElement.scrollWidth};})()");
 const until=async fn=>{for(let n=0;n<400;n++){const s=await state().catch(()=>({}));if(fn(s))return s;await sleep(150);}throw Error('Player state timeout: '+JSON.stringify(await state()));};
 try{
  let port=0,logs='';
@@ -73,7 +73,19 @@ try{
   writeFileSync('artifacts/dubbed-hq-'+scenario.mode+'.png',Buffer.from(shot.data,'base64'));
   await evaluate("document.querySelector('.ydo-hq-btn').click()");
   await until(s=>s.hq==='false'&&s.time>enhanced.time&&!s.paused);
-  console.log(JSON.stringify({event:'dubbed-hq-playback',scenario:scenario.mode,playing,enhanced}));
+  await evaluate("document.querySelector('.ydo-ctrl-btn-fullscreen').click()");
+  await until(s=>s.fullscreen);
+  const entered=Date.now();
+  await until(s=>s.controls==='false');
+  const hideMs=Date.now()-entered;
+  if(hideMs>1800)throw Error('Fullscreen controls took too long to hide: '+hideMs);
+  await evaluate("document.querySelector('.ydo-player-container').dispatchEvent(new MouseEvent('mousemove',{bubbles:true}))");
+  await until(s=>s.controls==='true');
+  const closedAt=Date.now();
+  await evaluate("document.querySelector('.ydo-player-back-btn').click()");
+  const returned=await until(s=>s.returned&&!s.fullscreen);
+  if(Date.now()-closedAt>1000||returned.src)throw Error('Player failed to release immediately on close');
+  console.log(JSON.stringify({event:'dubbed-hq-playback',scenario:scenario.mode,playing,enhanced,fullscreenControlsHideMs:hideMs,closedMs:Date.now()-closedAt}));
  }
  await send('Page.navigate',{url:'http://127.0.0.1:4214/?mode=leg-only'});
  const blocked=await until(s=>s.notice);

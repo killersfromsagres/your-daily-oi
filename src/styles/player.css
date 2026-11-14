@@ -640,3 +640,9 @@
 .ydo-live-latency-btn:focus-visible { outline:2px solid #f5d6a1; outline-offset:2px; }
 @media(max-width:610px){.ydo-live-latency-btn{padding:0 8px;gap:4px;font-size:10px}.ydo-live-latency-btn span{display:none}}
 @media(prefers-reduced-motion:reduce){.ydo-live-latency-btn{transition:none}}
+
+/* Faster fullscreen exit of the chrome; playback remains visible. */
+.ydo-player-container:fullscreen .ydo-controls-wrapper,
+.ydo-player-container:fullscreen .ydo-player-topbar,
+.ydo-player-container.is-theater .ydo-controls-wrapper,
+.ydo-player-container.is-theater .ydo-player-topbar {transition-duration: .15s;}
