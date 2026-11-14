@@ -7,7 +7,27 @@ html[data-zf-edition="friday13"] .zf-mobile-dock {border-color:#b9746b55;}
 html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
   border-color:#d0938659;background:linear-gradient(145deg,#7f36334d,#281d2780);
 }
-.zf-friday13-hero {isolation:isolate;}
+html[data-zf-edition="friday13"] body::before {display:none;}
+html .ydo-hero.zf-friday13-hero {
+  isolation:isolate;height:auto;min-height:clamp(660px,84svh,900px);
+}
+html .zf-friday13-hero .ydo-hero-content {
+  max-width:820px;padding:130px clamp(1.5rem,5vw,4.5rem) 105px;
+}
+html .zf-friday13-hero .ydo-hero-title {
+  font-size:clamp(36px,4vw,64px);line-height:1.08;text-wrap:balance;
+}
+html .zf-friday13-hero .ydo-hero-img {filter:none;}
+html .zf-friday13-hero .ydo-hero-veil-left {
+  background:linear-gradient(90deg,#0a0b14ed 0%,#0a0b14cc 22%,#0a0b1466 49%,#0a0b1414 74%,transparent 100%);
+}
+/* The final veil sits ABOVE the red atmosphere, fog and watermark.
+   Its opaque end is exactly the catalog background, with no seam. */
+html .zf-friday13-hero .ydo-hero-veil-bottom {
+  z-index:4;background:linear-gradient(180deg,
+    #0a0b1400 36%,#0a0b1424 53%,#0a0b148c 72%,#0a0b14e6 87%,
+    var(--bg-deep,#0a0b14) 97%,var(--bg-deep,#0a0b14) 100%);
+}
 .zf-friday13-hero .ydo-hero-badge-tag {
   background:#b43e43;color:#fff7f1;letter-spacing:.1em;
 }
@@ -16,8 +36,8 @@ html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
   background:#eee5d9;color:#1b1516;box-shadow:0 8px 36px #0006;
 }
 .zf-friday13-masthead {
-  position:absolute;z-index:5;top:clamp(114px,14vh,145px);
-  left:clamp(1.5rem,5vw,4.5rem);display:flex;align-items:center;gap:13px;
+  position:relative;display:flex;align-items:center;gap:15px;
+  margin:0 0 28px;
   pointer-events:none;color:#f4ece0;
 }
 .zf-friday13-date {
@@ -61,8 +81,7 @@ html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
 }
 .zf-friday13-collection {
   position:relative;margin:0 0 22px;padding:24px 0 4px;
-  background:linear-gradient(100deg,#57182018,transparent 75%);
-  border-top:1px solid #cf716333;
+  background:none;border:0;
 }
 .zf-friday13-collection .ydo-row-eyebrow {color:#dc9b8b;}
 .zf-friday13-collection .ydo-row-title {color:#f4e9dd;}
@@ -80,18 +99,18 @@ html[data-zf-edition="friday13"] .zf-mobile-tab.is-active {
   to {transform:translate3d(3%,-12px,0);opacity:.9;}
 }
 @media(max-width:1120px) {
-  .zf-friday13-hero {min-height:760px;min-height:max(760px,90svh);}
-  .zf-friday13-masthead {top:116px;left:20px;gap:11px;}
+  html .ydo-hero.zf-friday13-hero {min-height:max(760px,90svh);}
+  html .zf-friday13-hero .ydo-hero-content {max-width:100%;padding:134px 20px 88px;}
+  .zf-friday13-masthead {gap:13px;margin-bottom:26px;}
   .zf-friday13-masthead p {font-size:11px;letter-spacing:.16em;}
   .zf-friday13-masthead small {font-size:8px;}
   .zf-friday13-date {width:38px;height:48px;font-size:30px;}
-  .zf-friday13-hero .ydo-hero-content {padding-bottom:64px;}
-  .zf-friday13-hero .ydo-hero-title {font-size:clamp(30px,8vw,46px);}
+  html .zf-friday13-hero .ydo-hero-title {font-size:clamp(30px,8vw,46px);}
   .zf-friday13-hero .ydo-hero-overview {-webkit-line-clamp:2;}
   .zf-friday13-collection-footer {margin-inline:18px;font-size:11px;}
 }
 @media(max-height:520px) and (orientation:landscape) {
-  .zf-friday13-hero {min-height:650px;}
+  html .ydo-hero.zf-friday13-hero {min-height:650px;}
 }
 @media(prefers-reduced-motion:reduce) {
   .zf-friday13-fog,.zf-friday13-orbit {animation:none;}

@@ -12,6 +12,7 @@ on:
       - 'tests/zangs-picks.test.ts'
       - 'src/lib/friday13-edition.ts'
       - 'src/styles/friday13-edition.css'
+      - 'src/styles/hero.css'
       - 'src/routes/index.tsx'
       - 'tests/friday13-edition.test.ts'
       - 'src/components/catalog/MobileCatalogFilters.tsx'

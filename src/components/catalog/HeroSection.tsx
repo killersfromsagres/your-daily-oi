@@ -107,10 +107,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved, editio
           <span className="zf-friday13-watermark">13</span>
           <div className="zf-friday13-fog" />
         </div>
-        <div className="zf-friday13-masthead">
-          <Friday13Emblem />
-          <div><p>SEXTA-FEIRA 13</p><small>EDIÇÃO ESTENDIDA · ATÉ 03H DE 14/11</small></div>
-        </div>
+
       </>}
       {/* One image in memory; quality scales with display size. */}
       {(() => {
@@ -164,6 +161,12 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved, editio
 
       {/* Conteúdo sobreposto */}
       <div className="ydo-hero-content">
+        {edition === "friday13" && (
+        <div className="zf-friday13-masthead">
+          <Friday13Emblem />
+          <div><p>SEXTA-FEIRA 13</p><small>EDIÇÃO ESTENDIDA · ATÉ 03H DE 14/11</small></div>
+        </div>
+        )}
         <div className="ydo-hero-badges">
           <span className="ydo-hero-badge-tag">{edition ? "A NOITE É DE JASON" : "EM ALTA"}</span>
           {hero.hasDub && <span className="ydo-hero-badge">DUBLADO</span>}
