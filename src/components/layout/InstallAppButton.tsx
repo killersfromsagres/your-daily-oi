@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Download, Smartphone, TvMinimal as Tv, X } from "lucide-react";
+import { detectInstalledZangFlixRuntime } from "@/lib/app-runtime";
 
 // Direct, publicly accessible Android package. GitHub serves the binary with
 // Content-Disposition: attachment so Chrome downloads the .apk on tap.
@@ -12,20 +13,51 @@ export const ANDROID_APK_URL =
  * Android controls user confirmation of side-loaded APK installation.
  */
 export function InstallAppButton() {
-  const [platform, setPlatform] = useState<"android" | "ios" | "other" | "native" | "tv">("other");
+  const [platform, setPlatform] = useState<"checking" | "installed" | "android" | "ios" | "other" | "tv">("checking");
   const [help, setHelp] = useState(false);
 
   useEffect(() => {
-    const agent = navigator.userAgent;
-    if(agent.includes("ZangFlixTV/"))setPlatform("native");
-    else if(/smart.?tv|tizen|webos|web0s|android.?tv|googletv|aft[a-z0-9]+/i.test(agent))setPlatform("tv");
-    else if (agent.includes("ZangFlixAndroid/")) setPlatform("native");
-    else if (/iPad|iPhone|iPod/i.test(agent)) setPlatform("ios");
-    else if (/Android/i.test(agent)) setPlatform("android");
-    else setPlatform("other");
+    // Check the CURRENT browsing context, not just whether the same phone has
+    // installed the app. Browsing in Chrome must still offer the APK download.
+    const synchronize = () => {
+      if (detectInstalledZangFlixRuntime()) {
+        setPlatform("installed");
+        return;
+      }
+
+      const agent = navigator.userAgent;
+      if (/smart.?tv|tizen|webos|web0s|android.?tv|googletv|aft[a-z0-9]+/i.test(agent)) {
+        setPlatform("tv");
+      } else if (/iPad|iPhone|iPod/i.test(agent)) {
+        setPlatform("ios");
+      } else if (/Android/i.test(agent)) {
+        setPlatform("android");
+      } else {
+        setPlatform("other");
+      }
+    };
+
+    // PWA launch modes can change after installation or when returning to a
+    // previously open tab. Re-evaluate on resume and display-mode changes.
+    const displayQueries = ["standalone", "minimal-ui"]
+      .map(mode => window.matchMedia?.(`(display-mode: ${mode})`))
+      .filter((query): query is MediaQueryList => Boolean(query));
+    const onVisibilityChange = () => { if (!document.hidden) synchronize(); };
+
+    synchronize();
+    window.addEventListener("pageshow", synchronize);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    displayQueries.forEach(query => query.addEventListener?.("change", synchronize));
+    return () => {
+      window.removeEventListener("pageshow", synchronize);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      displayQueries.forEach(query => query.removeEventListener?.("change", synchronize));
+    };
   }, []);
 
-  if (platform === "native") return null;
+  // No CTA flash while hydration identifies the app, and no redundant
+  // download/installation prompts in the native APK or an installed PWA.
+  if (platform === "checking" || platform === "installed") return null;
 
   return (
     <div className="zf-install-header">
