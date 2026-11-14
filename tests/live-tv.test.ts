@@ -122,6 +122,19 @@ describe("Priorização de espelhos em canais fechados", () => {
     expect(orderLiveSources([first, second])).toEqual([first, second]);
   });
 
+  test("deprioritizes 403-prone cdn8embed origins behind a same-channel alternative", () => {
+    const blocked = {url:"https://d1-example.cdn8embed.xyz/live/channel.m3u8"};
+    const alternate = {url:"https://regional.example/live/channel.m3u8"};
+    expect(orderLiveSources([blocked,alternate])).toEqual([alternate,blocked]);
+    expect(orderLiveSources([blocked])).toEqual([blocked]);
+  });
+
+  test("does not accidentally penalize cdn8embed text in a path", () => {
+    const good = {url:"https://independent.example/path/cdn8embed.xyz/live.m3u8"};
+    const blocked = {url:"https://cdn8embed.xyz/live.m3u8"};
+    expect(orderLiveSources([blocked,good])).toEqual([good,blocked]);
+  });
+
   test("não reordena por caminho quando o host contém a palavra CDN em URL", () => {
     const first = { url: "https://cdn.example/redirect/cdn13embed.xyz/master.m3u8" };
     const second = { url: "https://backup.example/stream.m3u8" };
