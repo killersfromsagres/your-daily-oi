@@ -197,11 +197,24 @@ export function OwnPlayer({
   const chooseNextApprovedSource = useCallback((): boolean => {
     const current = orderedStreams[sourceIndex];
     if (current) rejectedDuringPlaybackRef.current.add(current.url);
-    const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
+    let next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
       preferredAudio,
       failedUrls: getFailedUrls(),
       observedHeights: measuredHeightsRef.current,
     });
+    // A speculative quality upgrade must never discard the last working dub.
+    // Prefer its measured frame size over another sequence of failed servers.
+    const failed=getFailedUrls();
+    const excludeUnverified=new Set(orderedStreams.filter(source=>
+      !measuredHeightsRef.current.has(source.url)||failed.has(source.url)||source.url===current?.url
+    ).map(source=>source.url));
+    const working=bestVodSourceIndex(orderedStreams,{preferredAudio,
+      observedHeights:measuredHeightsRef.current,excludedUrls:excludeUnverified});
+    if(working>=0){
+      next=working;
+      rejectedDuringPlaybackRef.current.delete(orderedStreams[working]!.url);
+      qualitySwitchesRef.current+=1;
+    }
     if (next < 0) {
       setExhaustedSources(true);
       return false;
@@ -842,7 +855,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     if (height >= 2160 || qualitySwitchesRef.current >= 3) return;
     if (rejectedDuringPlaybackRef.current.has(source.url)) return;
 
-    const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
+    const next = nextVodSourceIndex(orderedStreams, sourceIndex,
+      new Set([...rejectedDuringPlaybackRef.current,...getFailedUrls()]), {
       preferredAudio, observedHeights: measuredHeightsRef.current,
       failedUrls: getFailedUrls(),
     });
@@ -880,7 +894,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     if (!active || manualSelectionRef.current || qualitySwitchesRef.current >= 3) return;
     const actualHeight = measuredHeightsRef.current.get(active.url);
     if (!actualHeight || actualHeight >= 2160) return;
-    const next = nextVodSourceIndex(orderedStreams, sourceIndex, rejectedDuringPlaybackRef.current, {
+    const next = nextVodSourceIndex(orderedStreams, sourceIndex,
+      new Set([...rejectedDuringPlaybackRef.current,...getFailedUrls()]), {
       preferredAudio, observedHeights: measuredHeightsRef.current,
       failedUrls: getFailedUrls(),
     });
