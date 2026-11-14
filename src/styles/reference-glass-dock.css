@@ -350,6 +350,13 @@
     height: 46px;
   }
 
+  /* If the user opens search while scrolled, expand the whole search row. */
+  html:not([data-zf-platform="tv"]) .ydo-header.is-mobile-collapsed.is-searching > .zf-search-install-stack {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+
   html:not([data-zf-platform="tv"]) .zf-search-install-stack .zf-install-help {
     top: calc(100% + 8px);
     right: 0;
