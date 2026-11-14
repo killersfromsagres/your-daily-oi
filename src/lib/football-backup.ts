@@ -118,6 +118,19 @@ export function mergeProviderFixtures(primary: readonly JogoBrasileirao[],backup
       duplicate.escudoCasa ||= candidate.escudoCasa;
       duplicate.escudoFora ||= candidate.escudoFora;
       duplicate.ligaLogo ||= candidate.ligaLogo;
+      // ESPN occasionally leaves a completed game as "pre" while the
+      // independent provider has already published a valid result.
+      const hasScore = candidate.placarCasa !== null && candidate.placarFora !== null;
+      const upgrade = (candidate.status === "encerrado" && duplicate.status !== "encerrado") ||
+        (candidate.status === "ao-vivo" && duplicate.status === "agendado");
+      if (upgrade && hasScore) {
+        duplicate.status = candidate.status;
+        duplicate.fase = candidate.status === "encerrado" ? "encerrado" : (candidate.fase || "ao-vivo");
+        duplicate.faseRotulo = candidate.status === "encerrado" ? "Encerrado" : (candidate.faseRotulo || "Ao vivo");
+        duplicate.minuto = candidate.status === "encerrado" ? null : candidate.minuto;
+        duplicate.placarCasa = candidate.placarCasa;
+        duplicate.placarFora = candidate.placarFora;
+      }
     }
   }
   return result;
