@@ -285,8 +285,8 @@ try{
 
   // Dated campaign: genuine movie metadata and non-playable catalog fixtures.
   const fridayMovies=[{"id":"sextafeira 13","type":"f","title":"Sexta-Feira 13","tmdbId":13207,"posterPath":"/9tXjmu3J8ad4IpvrjEMS4ZxmsjN.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/9tXjmu3J8ad4IpvrjEMS4ZxmsjN.jpg","genres":["Terror","Suspense"],"tmdb":null,"streams":[]},{"id":"sextafeira 13 1980","type":"f","title":"Sexta-Feira 13","tmdbId":4488,"posterPath":"/rdrVW0qN16Ho8BDwmcqW9oLQtn3.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/rdrVW0qN16Ho8BDwmcqW9oLQtn3.jpg","genres":["Terror"],"tmdb":null,"streams":[]}];
-  fridayMovies[0].tmdb={backdropUrl:"https://image.tmdb.org/t/p/original/xECaVCK8nT1KCKdGg01mQgizuOd.jpg",releaseYear:2009,overview:"Crystal Lake guarda um passado que ninguém esqueceu.",voteAverage:5.8};
-  fridayMovies[1].tmdb={releaseYear:1980};
+  fridayMovies[0].tmdb={backdropUrl:"https://image.tmdb.org/t/p/original/rpb9eBNpYjqSI3dLLniZ0GXcnlS.jpg",releaseYear:2009,overview:"Crystal Lake guarda um passado que ninguém esqueceu.",voteAverage:5.8};
+  fridayMovies[1].tmdb={releaseYear:1980,backdropUrl:"https://image.tmdb.org/t/p/original/e5Z35sfdHd3bnUdrzKPEvgcx4Db.jpg",backdropWidth:3840,backdropHeight:2160};
   const zangsMovies=[{"id":"invocacao do mal","type":"f","title":"Invocação do Mal","tmdbId":138843,"posterPath":"/1NxHKZW5DPbUFtbF3MxbdSyxRqU.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/1NxHKZW5DPbUFtbF3MxbdSyxRqU.jpg","genres":["Terror","Suspense"],"tmdb":null,"streams":[]},{"id":"panico na floresta 2003","type":"f","title":"Panico na Floresta","tmdbId":9902,"posterPath":"/mQVIIUXHo3Qpd6nu0api7UyMpas.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/mQVIIUXHo3Qpd6nu0api7UyMpas.jpg","genres":["Terror","Suspense"],"tmdb":null,"streams":[]},{"id":"o albergue 2006","type":"f","title":"O Albergue","tmdbId":1690,"posterPath":"/lF0qaRHBa86mOHomjunVg31fJMz.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/lF0qaRHBa86mOHomjunVg31fJMz.jpg","genres":["Terror"],"tmdb":null,"streams":[]},{"id":"o albergue 2 2007","type":"f","title":"O Albergue 2","tmdbId":1691,"posterPath":"/hilegO5kmza8W6T2E6v7TlY3WwE.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/hilegO5kmza8W6T2E6v7TlY3WwE.jpg","genres":["Terror"],"tmdb":null,"streams":[]},{"id":"o albergue 3 2011","type":"f","title":"O Albergue 3","tmdbId":71670,"posterPath":"/YUYdVD8hBud7j5mQ33kj1lGhGQ.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/YUYdVD8hBud7j5mQ33kj1lGhGQ.jpg","genres":["Terror"],"tmdb":null,"streams":[]},{"id":"hereditario","type":"f","title":"Hereditario","tmdbId":493922,"posterPath":"/x9tUYQj6WrdVwoKimSdoMzkDABS.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/x9tUYQj6WrdVwoKimSdoMzkDABS.jpg","genres":["Terror","Mistério","Suspense"],"tmdb":null,"streams":[]},{"id":"midsommar o mal nao espera a noite","type":"f","title":"Midsommar: O Mal Não Espera a Noite","tmdbId":530385,"posterPath":"/hR4dXPlWq5Nekwjqbp3gFGeiiZS.jpg","posterUrl":"https://image.tmdb.org/t/p/w500/hR4dXPlWq5Nekwjqbp3gFGeiiZS.jpg","genres":["Terror","Drama","Mistério"],"tmdb":null,"streams":[]}];
   const regularMovie={id:"habitual",title:"Destaque habitual",type:"f",genres:["Drama"],streams:[],tmdb:{backdropUrl:"https://image.tmdb.org/t/p/original/xOMo8BRK7PfcJv9JCnx7s520QIq.jpg"}};
   await send("Page.addScriptToEvaluateOnNewDocument",{source:
@@ -297,7 +297,7 @@ try{
     'window.__editionCatalogReads=0;window.fetch=(input,options)=>{const url=new URL(String(input?.url||input),location.origin);'+
     'if(url.pathname==="/api/catalogo"){window.__editionCatalogReads++;return Promise.resolve(new Response(JSON.stringify({items:[...special,...picks,regular],highlights:[],genres:[],featuredHero:[regular],friday13Hero:special}),{headers:{"Content-Type":"application/json"}}));}'+
     'return original(input,options);};})()'});
-  const editionState=()=>evalInPage("(()=>{\n  const hero=document.querySelector('.ydo-hero'),mast=document.querySelector('.zf-friday13-masthead');\n  const title=document.querySelector('.ydo-hero-title'),fog=document.querySelector('.zf-friday13-fog');\n  const mark=document.querySelector('.zf-friday13-date'),orbit=document.querySelector('.zf-friday13-orbit');\n  const picks=document.querySelector('.zf-zangs-picks');\n  return {active:document.documentElement.dataset.zfEdition||null,\n    hero:hero?.classList.contains('zf-friday13-hero'),title:title?.textContent,\n    top:title?.getBoundingClientRect().top,mastBottom:mast?.getBoundingClientRect().bottom,\n    image:document.querySelector('.ydo-hero-img')?.currentSrc,\n    collection:!!document.querySelector('.zf-friday13-collection'),\n    picks:Array.from(picks?.querySelectorAll('.ydo-card-poster-link')||[]).map(x=>decodeURIComponent(x.getAttribute('href'))),\n    titlePicks:picks?.querySelector('h2')?.textContent,\n    afterCollection:!!picks?.previousElementSibling?.classList.contains('zf-friday13-collection'),\n    mark:mark&&{text:mark.textContent,border:getComputedStyle(mark).borderTopWidth,color:getComputedStyle(mark).color,background:getComputedStyle(mark).backgroundColor,svg:!!mark.querySelector('svg')},\n    orbit:orbit&&getComputedStyle(orbit).animationName,\n    play:document.querySelector('.ydo-hero-actions .ydo-btn-primary')?.getAttribute('href'),\n    animation:fog&&getComputedStyle(fog).animationName,\n    width:innerWidth,bodyWidth:document.documentElement.scrollWidth,reads:window.__editionCatalogReads};\n})()");
+  const editionState=()=>evalInPage("(()=>{\n  const hero=document.querySelector('.ydo-hero'),mast=document.querySelector('.zf-friday13-masthead');\n  const title=document.querySelector('.ydo-hero-title'),fog=document.querySelector('.zf-friday13-fog');\n  const mark=document.querySelector('.zf-friday13-date'),orbit=document.querySelector('.zf-friday13-orbit');\n  const picks=document.querySelector('.zf-zangs-picks');\n  return {active:document.documentElement.dataset.zfEdition||null,\n    hero:hero?.classList.contains('zf-friday13-hero'),title:title?.textContent,\n    top:title?.getBoundingClientRect().top,mastBottom:mast?.getBoundingClientRect().bottom,\n    image:document.querySelector('.ydo-hero-img')?.currentSrc,\n    imageWidth:document.querySelector('.ydo-hero-img')?.naturalWidth,\n    imageHeight:document.querySelector('.ydo-hero-img')?.naturalHeight,\n    collection:!!document.querySelector('.zf-friday13-collection'),\n    picks:Array.from(picks?.querySelectorAll('.ydo-card-poster-link')||[]).map(x=>decodeURIComponent(x.getAttribute('href'))),\n    titlePicks:picks?.querySelector('h2')?.textContent,\n    afterCollection:!!picks?.previousElementSibling?.classList.contains('zf-friday13-collection'),\n    mark:mark&&{text:mark.textContent,border:getComputedStyle(mark).borderTopWidth,color:getComputedStyle(mark).color,background:getComputedStyle(mark).backgroundColor,svg:!!mark.querySelector('svg')},\n    orbit:orbit&&getComputedStyle(orbit).animationName,\n    play:document.querySelector('.ydo-hero-actions .ydo-btn-primary')?.getAttribute('href'),\n    animation:fog&&getComputedStyle(fog).animationName,\n    width:innerWidth,bodyWidth:document.documentElement.scrollWidth,reads:window.__editionCatalogReads};\n})()");
   const waitEdition=async predicate=>{
     for(let n=0;n<80;n++){const s=await editionState().catch(()=>null);if(s&&predicate(s))return s;await sleep(100);}
     throw Error('Friday 13 state timeout: '+JSON.stringify(await editionState()));
@@ -307,7 +307,7 @@ try{
     await send("Emulation.setUserAgentOverride",{userAgent:scenario.ua});
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
     await send("Page.navigate",{url:BASE+"/"});
-    const edition=await waitEdition(s=>s.active==="friday13"&&s.hero&&s.collection&&s.title==="Sexta-Feira 13"&&!!s.image&&s.picks.length===7);
+    const edition=await waitEdition(s=>s.active==="friday13"&&s.hero&&s.collection&&s.title==="Sexta-Feira 13"&&s.imageWidth>=3840&&s.imageHeight>=2160&&s.picks.length===7);
     if(edition.bodyWidth>scenario.width+1||edition.mastBottom+12>edition.top)
       throw Error('Campaign layout overlaps/overflows: '+JSON.stringify(edition));
     if(edition.animation!=="none"||edition.orbit!=="none")throw Error("Campaign ignores reduced motion");
@@ -322,7 +322,7 @@ try{
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
     if(!decodeURIComponent(edition.play||"").startsWith("/assistir/filme/sextafeira 13"))
       throw Error("Campaign movie playback destination is incorrect");
-    if(!edition.image.includes(scenario.mobile?"/w1280/":"/original/"))
+    if(!edition.image.includes("/original/"))
       throw Error("Campaign is not using the correct high-resolution banner");
     const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-friday13-"+scenario.name+".png",Buffer.from(shot.data,"base64"));
@@ -349,11 +349,13 @@ try{
     const collectionShot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-zangs-picks-"+scenario.name+".png",Buffer.from(collectionShot.data,"base64"));
     await evalInPage("scrollTo(0,0)");
-    await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T03:00:00Z"))');
+    await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T05:30:00Z"))');
+    await waitEdition(s=>s.active==="friday13"&&s.hero);
+    await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T06:00:00Z"))');
     const expired=await waitEdition(s=>s.active===null&&!s.hero&&!s.collection&&s.title==="Destaque habitual");
     if(expired.reads!==1||expired.picks.length!==7)throw Error("Expiry must preserve curated films without reloading the catalog");
     // The last 250ms must expire through the real timer, without another event.
-    await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T03:00:00Z")-250)');
+    await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T06:00:00Z")-250)');
     await waitEdition(s=>s.active==="friday13"&&s.hero);
     await waitEdition(s=>s.active===null&&!s.hero&&!s.collection&&s.title==="Destaque habitual");
     console.log(JSON.stringify({event:"friday13-edition",device:scenario.name,edition,expired,automaticExpiry:true}));

@@ -4,7 +4,9 @@ describe("one-day Friday 13 edition in Brasilia",()=>{
   test("uses the exact local day, including the UTC date change",()=>{
     expect(isFriday13EditionActive(FRIDAY13_START-1)).toBe(false);
     expect(isFriday13EditionActive(FRIDAY13_START)).toBe(true);
-    expect(isFriday13EditionActive(Date.parse("2026-11-14T02:59:59.999Z"))).toBe(true);
+    expect(isFriday13EditionActive(Date.parse("2026-11-14T00:00:00-03:00"))).toBe(true);
+    expect(isFriday13EditionActive(Date.parse("2026-11-14T02:59:59.999-03:00"))).toBe(true);
+    expect(isFriday13EditionActive(Date.parse("2026-11-14T03:00:00-03:00"))).toBe(false);
     expect(isFriday13EditionActive(FRIDAY13_END)).toBe(false);
     expect(isFriday13EditionActive(Date.parse("2026-11-20T12:00:00-03:00"))).toBe(false);
     expect(isFriday13EditionActive(Date.parse("2027-08-13T12:00:00-03:00"))).toBe(false);

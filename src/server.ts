@@ -113,7 +113,7 @@ async function getFeaturedHero(items: CatalogItem[], highlights: HighlightRow[],
         let tmdbData = item.tmdb;
         if (item.tmdbId) {
           try {
-            const tmdb = await getTmdbData(item.tmdbId, item.type);
+            const tmdb = await getTmdbData(item.tmdbId, item.type, {highResolutionBackdrop:true});
             if (tmdb) tmdbData = tmdb;
           } catch {
             // continua

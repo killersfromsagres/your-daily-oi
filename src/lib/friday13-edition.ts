@@ -1,8 +1,8 @@
 import { normalizeHeroTitle } from "./hero-rotation";
 
-/** One campaign only: 13 November 2026, America/Sao_Paulo (UTC-03). */
+/** One campaign only, extended through 03:00 on 14 November in Brasilia. */
 export const FRIDAY13_START = Date.parse("2026-11-13T00:00:00-03:00");
-export const FRIDAY13_END = Date.parse("2026-11-14T00:00:00-03:00");
+export const FRIDAY13_END = Date.parse("2026-11-14T03:00:00-03:00");
 export function isFriday13EditionActive(now = Date.now()): boolean {
   return Number.isFinite(now) && now >= FRIDAY13_START && now < FRIDAY13_END;
 }

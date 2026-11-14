@@ -243,7 +243,7 @@ function HomePage() {
               eyebrow="A coleção Sexta-feira 13 · Especial de hoje"
               items={friday13Movies} savedIds={savedIds} onToggleSaved={toggleSaved}/>
             <div className="zf-friday13-collection-footer">
-              <p>Crystal Lake espera por você.<br/>Edição até 23h59 de 13/11, horário de Brasília.</p>
+              <p>Crystal Lake espera por você.<br/>Edição estendida até 03h de 14/11, horário de Brasília.</p>
               <Link to="/generos/$slug" params={{slug:"terror"}} search={{tipo:"f"}} preload={false}>Explorar mais terror</Link>
             </div>
           </section>

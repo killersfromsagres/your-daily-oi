@@ -1,4 +1,5 @@
 import type { CastMember, TmdbData } from "./types";
+import { selectBestBackdrop, type BackdropArtwork } from "./backdrop-selection";
 
 const BASE = "https://api.themoviedb.org/3";
 const DEFAULT_TOKEN =
@@ -78,11 +79,11 @@ export async function getTmdbTvSeasons(
   }
 }
 
-export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<TmdbData | null> {
+export async function getTmdbData(tmdbId: number, type: "f" | "s", options: {highResolutionBackdrop?:boolean} = {}): Promise<TmdbData | null> {
   try {
     const mediaType = type === "f" ? "movie" : "tv";
     const [details, credits, videos] = await Promise.all([
-      tmdbFetch(`/${mediaType}/${tmdbId}?append_to_response=&`).catch(() => null),
+      tmdbFetch(`/${mediaType}/${tmdbId}?append_to_response=${options.highResolutionBackdrop ? "images&include_image_language=null,en,pt" : ""}&`).catch(() => null),
       tmdbFetch(`/${mediaType}/${tmdbId}/credits?`).catch(() => null),
       tmdbFetch(`/${mediaType}/${tmdbId}/videos?`).catch(() => null),
     ]);
@@ -104,7 +105,10 @@ export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<Tmdb
       profilePath: m["profile_path"] ? String(m["profile_path"]) : null,
     }));
 
-    const backdropPath = d["backdrop_path"] ? String(d["backdrop_path"]) : null;
+    const images=d["images"] as {backdrops?:BackdropArtwork[]}|undefined;
+    const artwork=options.highResolutionBackdrop && Array.isArray(images?.backdrops)
+      ? selectBestBackdrop(images.backdrops) : null;
+    const backdropPath = artwork?.file_path || (d["backdrop_path"] ? String(d["backdrop_path"]) : null);
     const releaseDate = String(d["release_date"] ?? d["first_air_date"] ?? "");
     const runtime = typeof d["runtime"] === "number" ? d["runtime"] : null;
     const seasonsCount = typeof d["number_of_seasons"] === "number" ? d["number_of_seasons"] : null;
@@ -118,6 +122,7 @@ export async function getTmdbData(tmdbId: number, type: "f" | "s"): Promise<Tmdb
       voteAverage: Number(d["vote_average"] ?? 0),
       backdropPath,
       backdropUrl: backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : null,
+      ...(artwork ? {backdropWidth:artwork.width,backdropHeight:artwork.height} : {}),
       trailerId: trailer ? String(trailer["key"]) : null,
       cast,
       releaseYear: releaseDate ? Number(releaseDate.slice(0, 4)) : null,

@@ -109,26 +109,21 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved, editio
         </div>
         <div className="zf-friday13-masthead">
           <Friday13Emblem />
-          <div><p>SEXTA-FEIRA 13</p><small>EDIÇÃO ESPECIAL · SÓ HOJE, ATÉ 23H59</small></div>
+          <div><p>SEXTA-FEIRA 13</p><small>EDIÇÃO ESTENDIDA · ATÉ 03H DE 14/11</small></div>
         </div>
       </>}
       {/* One image in memory; quality scales with display size. */}
       {(() => {
         const backdrop = failedBackdropId === hero.id ? null : hero.backdropUrl;
         const poster = failedPosterId === hero.id ? null : hero.posterUrl;
-        const imageUrl = getSizedHeroImage(backdrop, poster, "w1280");
-        const mobileUrl = getSizedHeroImage(backdrop, poster, "w1280");
-        const largeUrl = getSizedHeroImage(backdrop, poster, "original");
+        // Portrait mobile heroes crop heavily: a 1280px landscape rendition
+        // cannot supply enough native pixels for a tall high-density screen.
+        const imageUrl = getSizedHeroImage(backdrop, poster, "original");
         return (
           <div key={hero.id} className="ydo-hero-slide is-active" aria-hidden={false}>
             {imageUrl && (
               <picture>
-                {/* Original TMDB artwork on desktop / high-density tablet;
-                    1280px on phones preserves sharpness without oversized memory use.
-                    Original quality depends on the source file's actual resolution. */}
-                <source media="(min-width: 1024px)" srcSet={largeUrl} />
-                <source media="(min-width: 700px) and (min-resolution: 2dppx)" srcSet={largeUrl} />
-                <source media="(max-width: 1023px)" srcSet={mobileUrl} />
+                {/* Original selected artwork, one decoded image at a time. */}
                 <img src={imageUrl} alt="" className="ydo-hero-img"
                   fetchPriority="high" loading="eager" decoding="async"
                   onError={() => {
