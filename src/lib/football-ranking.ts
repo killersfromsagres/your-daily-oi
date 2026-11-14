@@ -1,5 +1,7 @@
 // src/lib/football-ranking.ts — editorial ordering for Zang Flix football fixtures.
 import { isFeaturedTeam, normalizeSoccerName, type JogoBrasileirao } from "./jogos-match";
+import { sameBroadcastFixture } from "./broadcast-verified";
+import { applyVerifiedResult } from "./football-result-verified";
 
 const LEAGUE_WEIGHT: Record<string, number> = {
   "bra.1": 1000,
@@ -64,20 +66,28 @@ export function mergeFootballScores(
   placares: readonly JogoBrasileirao[],
   date: string,
 ): JogoBrasileirao[] {
-  const byId = new Map(agenda.filter(g => g.dataLocal === date).map(g => [g.id, g]));
-  for (const update of placares) {
-    if (update.dataLocal !== date) continue;
-    const previous = byId.get(update.id);
+  const byId = new Map(agenda.filter(g => g.dataLocal === date)
+    .map(g => [g.id, applyVerifiedResult(g)]));
+  for (const raw of placares) {
+    if (raw.dataLocal !== date) continue;
+    const update = applyVerifiedResult(raw);
+    const previousKey = byId.has(update.id) ? update.id :
+      [...byId.values()].find(g => (g.ligaId === update.ligaId ||
+        g.id.startsWith("sportsdb:") || update.id.startsWith("sportsdb:")) &&
+        sameBroadcastFixture(g, update))?.id;
+    const previous = previousKey ? byId.get(previousKey) : undefined;
     if (!previous) {
       byId.set(update.id, update);
       continue;
     }
-    // Do not regress an in-progress match to "scheduled" on an inconsistent feed.
+    // A stale source cannot turn a finished game back into a kickoff or live
+    // card, nor erase a genuine live match's score with a scheduled snapshot.
+    if (previous.status === "encerrado" && update.status !== "encerrado") continue;
     if (previous.status === "ao-vivo" && update.status === "agendado") continue;
     const origin = previous.origemTransmissao ?? update.origemTransmissao;
     const broadcasters = previous.canaisTransmissao?.length ?
       previous.canaisTransmissao : update.canaisTransmissao;
-    byId.set(update.id, {
+    const combined: JogoBrasileirao = {
       ...previous,
       status: update.status,
       ...(update.fase ? {fase: update.fase} : {}),
@@ -88,12 +98,15 @@ export function mergeFootballScores(
       canalId: previous.canalId || update.canalId,
       canalNome: previous.canalNome || update.canalNome,
       canalLogo: previous.canalLogo || update.canalLogo,
+      ...(previous.transmissaoUrl || update.transmissaoUrl ?
+        {transmissaoUrl: previous.transmissaoUrl || update.transmissaoUrl} : {}),
       ...(previous.canaisDisponiveis?.length || update.canaisDisponiveis?.length ?
         { canaisDisponiveis: previous.canaisDisponiveis?.length ? previous.canaisDisponiveis : update.canaisDisponiveis } : {}),
       ...(broadcasters?.length ? {canaisTransmissao: broadcasters} : {}),
       transmissao: previous.canalId || update.canalId ? "confirmada" : previous.transmissao,
       ...(origin ? {origemTransmissao: origin} : {}),
-    });
+    };
+    byId.set(previousKey!, applyVerifiedResult(combined));
   }
   return [...byId.values()];
 }
@@ -104,7 +117,7 @@ export function liveScoreLeagueIds(games: readonly JogoBrasileirao[], nowMs: num
   for (const game of games) {
     const kickoff = Date.parse(game.inicioIso);
     const nearby = Number.isFinite(kickoff) &&
-      kickoff >= nowMs - 4 * 60 * 60_000 && kickoff <= nowMs + 2 * 60 * 60_000;
+      kickoff >= nowMs - 22 * 60 * 60_000 && kickoff <= nowMs + 2 * 60 * 60_000;
     if (game.status === "ao-vivo" || (nearby && game.status === "agendado")) ids.add(game.ligaId);
   }
   return [...ids].sort();
