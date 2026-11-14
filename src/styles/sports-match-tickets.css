@@ -190,3 +190,36 @@
  .zf-football-brazil-head {padding:8px 7px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
  .zf-football-brazil-head>small {margin-left:0;font-size:9px;}
 }
+
+
+/* Verified streaming-only broadcaster: an official external destination,
+   never a non-existent IPTV channel. Same visual hierarchy as TV buttons. */
+.zf-ticket-broadcast a.zf-ticket-watch-external,
+.zf-ticket-broadcast a.zf-ticket-watch-external:visited {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  min-height:42px;
+  padding:8px 11px;
+  border:1px solid rgba(180,215,255,.32);
+  border-radius:9px;
+  background:rgba(80,123,163,.15);
+  color:#d7ecff;
+  text-decoration:none;
+  transition:background-color .2s ease,border-color .2s ease;
+}
+.zf-ticket-broadcast a.zf-ticket-watch-external:hover,
+.zf-ticket-broadcast a.zf-ticket-watch-external:focus-visible {
+  color:#eff8ff;
+  background:rgba(80,123,163,.24);
+  border-color:rgba(180,215,255,.65);
+}
+.zf-ticket-broadcast a.zf-ticket-watch-external:focus-visible {
+  outline:2px solid #a3dfff;
+  outline-offset:2px;
+}
+.zf-ticket-watch-external>span { flex:1;display:flex;min-width:0;flex-direction:column;gap:3px; }
+.zf-ticket-watch-external small { font-size:8px;letter-spacing:.11em;font-weight:800;color:#a8cced; }
+.zf-ticket-watch-external strong { font-size:12px;color:#f0f8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.zf-ticket-watch-external>svg { flex-shrink:0; }
