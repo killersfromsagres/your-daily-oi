@@ -1,4 +1,5 @@
 import {describe,expect,test} from "bun:test";
+import {readFileSync} from "node:fs";
 import {isLiveHlsMime,liveMediaHeaders,isContinuousTs,finiteLiveBody} from "../src/lib/live-proxy-transport";
 describe("live HTTP proxy transport",()=>{
  test("drops unverified Content-Length and content encoding on binary media",()=>{
@@ -24,6 +25,13 @@ describe("live HTTP proxy transport",()=>{
    expect(isContinuousTs(r,null)).toBe(true);
    expect(isContinuousTs(r,"bytes=0-5")).toBe(false);
    expect(isContinuousTs(new Response("a",{status:206,headers:{"content-type":"video/mp2t"}}),null)).toBe(false);
+ });
+ test("extensionless HLS/DASH 206 manifests are refetched without Range",()=>{
+   const server=readFileSync(new URL("../src/server.ts",import.meta.url),"utf8");
+   const proxy=server.slice(server.indexOf("async function handleLiveProxyApi("),server.indexOf("async function handleProxyStreamApi("));
+   expect(proxy).toContain("if (clientRange && res.status === 206 &&");
+   expect(proxy).toContain('delete h["Range"]');
+   expect(proxy).toContain("const isSegment = !isHls && !isMpd");
  });
  test("cleanly closes an idle transport before the function's deadline",async()=>{
    const source=new ReadableStream<Uint8Array>({start(c){c.enqueue(new Uint8Array([1,2]));}});
