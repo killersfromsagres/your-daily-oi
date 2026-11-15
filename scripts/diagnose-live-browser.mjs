@@ -101,18 +101,23 @@ try{
  await sleep(9000);await snapshot(14);
  await sleep(9000);await snapshot(23);
  if (verifyResume && (lastSnapshot?.video?.time ?? 0) >= 7) {
-   const before = lastSnapshot.video.time;
    await send("Runtime.evaluate", { expression: `(() => {
      const video = document.querySelector("video");
      video?.pause();
      window.dispatchEvent(new Event("focus"));
    })()` });
-   await sleep(5500);
+   // A reconnect can recreate MediaSource and reset currentTime to zero.
+   // Compare two snapshots AFTER resuming, not against the old live window.
+   await sleep(2500);
+   await snapshot("return-to-app-start");
+   const resumedAt = lastSnapshot?.video?.time ?? 0;
+   await sleep(5200);
    await snapshot("return-to-app");
-   if (lastSnapshot?.video?.paused ||
-       (lastSnapshot?.video?.time ?? 0) < before + 2 ||
-       lastSnapshot?.errorText || lastSnapshot?.loading) {
-     throw new Error("Live stream failed to resume after returning to the app: " + JSON.stringify(lastSnapshot));
+   const finalVideo = lastSnapshot?.video;
+   if (!finalVideo || finalVideo.paused ||
+       (finalVideo.time ?? 0) < resumedAt + 1 ||
+       finalVideo.ready < 3 || lastSnapshot?.errorText || lastSnapshot?.loading) {
+     throw new Error("Live stream failed to advance after returning to the app: " + JSON.stringify({resumedAt, shot:lastSnapshot}));
    }
  }
  if(requireLegacyPlayback){
