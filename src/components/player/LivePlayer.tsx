@@ -4,6 +4,7 @@ import "@/lib/browser-media";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { terminalHlsLoadFailure, accessDeniedLiveSource } from "@/lib/live-http-errors";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
@@ -746,10 +747,18 @@ export function LivePlayer({
 
             let recoveryCount = 0;
             hls.on(Hls.Events.ERROR, (_, data: any) => {
-              if (!data?.fatal || cancelled) return;
+              if (cancelled) return;
               const isNet = data?.type === "networkError";
               const isMedia = data?.type === "mediaError";
-              const responseCode = Number(data?.response?.code || data?.networkDetails?.status || 0);
+              const responseCode = Number(
+                data?.response?.code ?? data?.response?.status ??
+                data?.networkDetails?.status ?? 0
+              );
+              const detail = String(data?.details || "");
+              // Some versions of Hls.js report an HTTP 403 as nonfatal while
+              // retrying a manifest forever. A rejected origin must advance
+              // to the next valid source, not leave the user on "Carregando".
+              if (!terminalHlsLoadFailure(responseCode, detail, Boolean(data?.fatal))) return;
               // Catalog lists refresh independently in the browser and on the
               // server. A 409 means the signature cannot be found server-side;
               // use the exact source URL via the existing legacy proxy.
@@ -772,7 +781,7 @@ export function LivePlayer({
               // HTTP 401/403/404/410/429 não são erros transitórios de buffer.
               // Não desperdiçar até 18 s tentando recuperar uma playlist recusada.
               const persistentHttp = [401, 403, 404, 410, 429].includes(responseCode);
-              if ([401, 403, 404, 410].includes(responseCode) && rawFonte) {
+              if (accessDeniedLiveSource(responseCode, detail) && rawFonte) {
                 accessDeniedSourcesRef.current.add(rawFonte.url);
               }
               if (!persistentHttp && recoveryCount < 1 && (isNet || isMedia)) {

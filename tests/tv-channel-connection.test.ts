@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChannelCard } from "../src/components/tv/ChannelCard";
+import { terminalHlsLoadFailure, accessDeniedLiveSource } from "../src/lib/live-http-errors";
 import type { CanalTV } from "../src/lib/canais";
 
 const channel: CanalTV = {
@@ -20,6 +21,24 @@ function card(status?: "connecting" | "playing" | "unavailable"): string {
     ...(status ? {playbackStatus:status} : {}),
   }));
 }
+
+describe("Recover on real HLS HTTP failures, not harmless fragment retries", () => {
+  test("a nonfatal authorization denial must immediately leave the loading loop", () => {
+    expect(terminalHlsLoadFailure(403, "manifestLoadError", false)).toBe(true);
+    expect(terminalHlsLoadFailure(401, "levelLoadError", false)).toBe(true);
+    expect(terminalHlsLoadFailure(410, "fragLoadError", false)).toBe(true);
+    expect(accessDeniedLiveSource(403, "manifestLoadError")).toBe(true);
+  });
+  test("a single absent segment does not terminate a working live channel", () => {
+    expect(terminalHlsLoadFailure(404, "fragLoadError", false)).toBe(false);
+    expect(terminalHlsLoadFailure(404, "manifestLoadError", false)).toBe(true);
+    expect(accessDeniedLiveSource(404, "fragLoadError")).toBe(false);
+  });
+  test("temporary connection errors still use Hls.js retry logic", () => {
+    expect(terminalHlsLoadFailure(0, "fragLoadTimeOut", false)).toBe(false);
+    expect(terminalHlsLoadFailure(0, "fragLoadTimeOut", true)).toBe(true);
+  });
+});
 
 describe("Truthful live TV source status", () => {
   test("a catalog URL is not falsely described as verified streaming", () => {

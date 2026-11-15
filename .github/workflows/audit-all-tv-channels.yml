@@ -7,6 +7,7 @@ on:
       - 'scripts/compare-saimo-zang-tv.mjs'
       - 'scripts/diagnose-live-browser.mjs'
       - 'src/lib/live-source.ts'
+      - 'src/lib/live-http-errors.ts'
       - 'src/lib/live-proxy-transport.ts'
       - 'tests/live-proxy-transport.test.ts'
       - 'tests/tv-channel-connection.test.ts'
