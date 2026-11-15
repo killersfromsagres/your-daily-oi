@@ -176,6 +176,8 @@ export function LivePlayer({
   const handlingFailureRef = useRef(false);
   const autoRetryCountRef = useRef(0);
   const stablePlaybackSinceRef = useRef<number | null>(null);
+  const everPlayedRef = useRef(false);
+  const lastResumeAttemptRef = useRef(0);
 
   // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
@@ -249,6 +251,8 @@ export function LivePlayer({
     handlingFailureRef.current = false;
     autoRetryCountRef.current = 0;
     stablePlaybackSinceRef.current = null;
+    everPlayedRef.current = false;
+    lastResumeAttemptRef.current = 0;
     setSourceIndex(0);
     setUseLegacyOnMismatch(false);
     setAttemptMode(initialModeFor(validStreams[0]));
@@ -442,6 +446,45 @@ export function LivePlayer({
     };
   }, [error, validStreams, canal.id]);
 
+  // Android WebView explicitly pauses <video> when its Activity goes into
+  // background. The native shell resumes the WebView but not media playback.
+  // Recover a previously verified live session when returning to the app.
+  // Normal websites remain unaffected because there is no pause button in
+  // this live player, and failed/suspended sessions are not falsely resumed.
+  useEffect(() => {
+    const resume = () => {
+      const video = videoRef.current;
+      if (document.visibilityState === "hidden" || !video ||
+          !everPlayedRef.current || error || !video.paused || !rawFonte ||
+          !navigator.onLine) return;
+      const now = Date.now();
+      if (now - lastResumeAttemptRef.current < 4000) return;
+      lastResumeAttemptRef.current = now;
+      void video.play().catch(async () => {
+        try {
+          video.muted = true;
+          setMuted(true);
+          setUnmuteNotice(true);
+          await video.play();
+        } catch {
+          // On some WebViews the paused media element must be recreated.
+          setPlayNonce(n => n + 1);
+        }
+      });
+    };
+    const visibility = () => { if (!document.hidden) resume(); };
+    window.addEventListener("focus", resume);
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("pageshow", resume);
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, [rawFonte, error]);
+
   // Detecta uma transmissão que perdeu os segmentos depois de começar a tocar.
   // Evita trocar o canal durante pausas normais, seek ou buffering curto.
   useEffect(() => {
@@ -506,7 +549,8 @@ export function LivePlayer({
     let progressReference: number | null = null;
     let playbackProgressVerified = false;
     const timeout = setTimeout(() => {
-      if (!cancelled && !playbackConfirmed) {
+      if (!cancelled && !playbackProgressVerified &&
+          document.visibilityState !== "hidden") {
         console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
         handleFatalError(false);
       }
@@ -517,11 +561,9 @@ export function LivePlayer({
       playbackConfirmed = true;
       if (progressReference === null) progressReference = video.currentTime;
       stablePlaybackSinceRef.current = Date.now();
-      clearTimeout(timeout);
-      setLoading(false);
       setError(false);
-      // Only label the channel as confirmed after the media clock advances.
-      // Browser 'playing' alone can still be a permanently frozen frame.
+      // A 'playing' event with a still-frozen frame is not real playback.
+      // Keep the startup deadline and loading indicator until time advances.
       setErrorDetail(null);
       setAutoSwitchMsg(null);
       if (video.muted) {
@@ -534,6 +576,11 @@ export function LivePlayer({
           progressReference !== null && Number.isFinite(video.currentTime) &&
           Math.abs(video.currentTime - progressReference) >= 1) {
         playbackProgressVerified = true;
+        everPlayedRef.current = true;
+        clearTimeout(timeout);
+        setLoading(false);
+        setError(false);
+        setAutoSwitchMsg(null);
         onPlaybackStatus?.(canal.id, "playing");
       }
       if (video.currentTime > 0.5) {
