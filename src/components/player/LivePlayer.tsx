@@ -477,7 +477,11 @@ export function LivePlayer({
     window.addEventListener("pageshow", resume);
     window.addEventListener("online", resume);
     document.addEventListener("visibilitychange", visibility);
+    // Some embedded Android WebViews do not dispatch a browser 'focus' event
+    // when the Activity resumes. A low-frequency foreground check catches it.
+    const foregroundCheck = window.setInterval(resume, 4500);
     return () => {
+      window.clearInterval(foregroundCheck);
       window.removeEventListener("focus", resume);
       window.removeEventListener("pageshow", resume);
       window.removeEventListener("online", resume);
