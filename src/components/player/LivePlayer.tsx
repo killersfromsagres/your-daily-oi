@@ -592,6 +592,7 @@ export function LivePlayer({
           Math.abs(video.currentTime - progressReference) >= 1) {
         playbackProgressVerified = true;
         everPlayedRef.current = true;
+        if (rawFonte) accessDeniedSourcesRef.current.delete(rawFonte.url);
         clearTimeout(timeout);
         setLoading(false);
         setError(false);
