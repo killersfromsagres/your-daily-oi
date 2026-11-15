@@ -6,6 +6,9 @@ const resultCache = new Map<string, { format: LiveStreamFormat; expires: number 
 const FORMATS: Readonly<Record<string, LiveStreamFormat>> = {
   "application/vnd.apple.mpegurl": "hls",
   "application/x-mpegurl": "hls",
+  "application/mpegurl": "hls",
+  "audio/mpegurl": "hls",
+  "audio/x-mpegurl": "hls",
   "application/dash+xml": "dash",
   "video/mp2t": "ts",
   "video/mp4": "mp4",

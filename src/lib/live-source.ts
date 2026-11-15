@@ -4,6 +4,8 @@ export interface LiveSourceLike {
   referer?: string;
   agente?: string;
   chave?: string;
+  /** Explicit stream format declared by an authorized provider list. */
+  formato?: LiveStreamFormat;
 }
 export type LiveStreamFormat = "hls" | "dash" | "ts" | "mp4" | "auto";
 export type LiveAccessMode = "direct" | "proxy";
@@ -25,6 +27,7 @@ function effectiveStreamUrl(input: string): URL | null {
 
 export function classifyLiveSource(source: LiveSourceLike): LiveStreamFormat {
   if (source.chave) return "dash";
+  if (source.formato && ["hls","dash","ts","mp4"].includes(source.formato)) return source.formato;
   const url = effectiveStreamUrl(source.url);
   if (!url) return "auto";
   const pathname = url.pathname.toLowerCase();
@@ -32,6 +35,13 @@ export function classifyLiveSource(source: LiveSourceLike): LiveStreamFormat {
   if (/\.(m3u8|m3u|txt)$/.test(pathname)) return "hls";
   if (/\.ts$/.test(pathname)) return "ts";
   if (/\.(mp4|m4v)$/.test(pathname)) return "mp4";
+  // Extensionless provider endpoints often declare media type in a dedicated
+  // query field. Only accept exact format values, never infer from a token.
+  const declared = (url.searchParams.get("format") || url.searchParams.get("type") || "").toLowerCase();
+  if (declared === "hls" || declared === "m3u8") return "hls";
+  if (declared === "dash" || declared === "mpd") return "dash";
+  if (declared === "mpegts" || declared === "ts") return "ts";
+  if (declared === "mp4") return "mp4";
   return "auto";
 }
 
@@ -145,7 +155,8 @@ export function isLivePlaylistTarget(input: string): boolean {
       if (!nested || !/^https?:\/\//i.test(nested)) break;
       current = new URL(nested);
     }
-    return /\.(?:m3u8?|mpd|txt)$/i.test(current.pathname);
+    const format = classifyLiveSource({ url: current.href });
+    return format === "hls" || format === "dash";
   } catch {
     return false;
   }

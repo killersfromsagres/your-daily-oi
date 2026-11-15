@@ -26,6 +26,12 @@ describe("live HTTP proxy transport",()=>{
    expect(isContinuousTs(r,"bytes=0-5")).toBe(false);
    expect(isContinuousTs(new Response("a",{status:206,headers:{"content-type":"video/mp2t"}}),null)).toBe(false);
  });
+ test("server identifies extensionless authorized HLS/DASH endpoints using shared classifier",()=>{
+   const server=readFileSync(new URL("../src/server.ts",import.meta.url),"utf8");
+   expect(server).toContain("const declaredFormat = classifyLiveSource({ url: targetUrl })");
+   expect(server).toContain('declaredFormat === "hls"');
+   expect(server).toContain('declaredFormat === "dash"');
+ });
  test("extensionless HLS/DASH 206 manifests are refetched without Range",()=>{
    const server=readFileSync(new URL("../src/server.ts",import.meta.url),"utf8");
    const proxy=server.slice(server.indexOf("async function handleLiveProxyApi("),server.indexOf("async function handleProxyStreamApi("));

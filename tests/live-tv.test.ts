@@ -15,6 +15,11 @@ describe("Formatos Saimo", () => {
     expect(classifyLiveSource({ url: "https://x.example/live/movie.mp4" })).toBe("mp4");
     expect(classifyLiveSource({ url: "https://x.example/proxy?url=https%3A%2F%2Fcdn.example%2Fmaster.m3u8" })).toBe("hls");
     expect(classifyLiveSource({ url: "https://x.example/live?key=foo.ts" })).toBe("auto");
+    expect(classifyLiveSource({ url: "https://licensed.example/live?format=hls" })).toBe("hls");
+    expect(classifyLiveSource({ url: "https://licensed.example/live?type=mpd" })).toBe("dash");
+    expect(classifyLiveSource({ url: "https://licensed.example/stream", formato: "hls" })).toBe("hls");
+    expect(classifyLiveSource({ url: "https://licensed.example/stream", formato: "mp4" })).toBe("mp4");
+    expect(classifyLiveSource({ url: "https://licensed.example/live?token=hls" })).toBe("auto");
     expect(classifyLiveSource({ url: "https://x.example/live", chave: "a:b" })).toBe("dash");
   });
 
@@ -83,6 +88,9 @@ describe("Reescrita de playlists com HTTP Range", () => {
     expect(isLivePlaylistTarget("http://cdn.example/hbo/index.m3u8?token=xyz")).toBe(true);
     expect(isLivePlaylistTarget("https://cdn.example/master.mpd")).toBe(true);
     expect(isLivePlaylistTarget("https://cdn.example/list.txt")).toBe(true);
+    expect(isLivePlaylistTarget("https://licensed.example/watch?format=hls")).toBe(true);
+    expect(isLivePlaylistTarget("https://licensed.example/watch?type=mpd")).toBe(true);
+    expect(isLivePlaylistTarget("https://licensed.example/watch?token=m3u8")).toBe(false);
     expect(isLivePlaylistTarget("https://proxy.example/stream?url=https%3A%2F%2Fcdn.example%2Fhbo%2Fmaster.m3u8")).toBe(true);
   });
 
@@ -154,6 +162,22 @@ describe("Categorias IPTV e TXT normalizadas", () => {
       "http://tv.example/telecine.ts",
     ].join("\n"));
     expect(m3u.map(c => c.categoria)).toEqual(["Esportes", "Esportes", "Filmes e Séries"]);
+  });
+});
+
+describe("Provider-declared extensionless formats", () => {
+  test("parses explicit HLS/DASH/MP4 formats without guessing based on a token", () => {
+    const channels = parseCanais([
+      "canal: Canal Licenciado",
+      "fonte: https://licensed.example/live",
+      "formato: hls",
+      "fonte: https://licensed.example/movie",
+      "tipo: mp4",
+      "fonte: https://licensed.example/other",
+      "formato: unknown",
+    ].join("\n"));
+    expect(channels[0]?.fontes.map(f => f.formato)).toEqual(["hls","mp4",undefined]);
+    expect(channels[0]?.fontes.map(classifyLiveSource)).toEqual(["hls","mp4","auto"]);
   });
 });
 

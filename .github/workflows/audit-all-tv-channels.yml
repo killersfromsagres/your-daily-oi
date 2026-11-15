@@ -50,6 +50,12 @@ jobs:
           LIVE_TEST_CHANNEL=sbt LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
       - name: Browser playback diagnostics (TV Câmara)
         run: LIVE_TEST_CHANNEL=tv-camara bun scripts/diagnose-live-browser.mjs
+      # Compare requested channels too: a 403 is diagnostic information,
+      # not permission to bypass the broadcaster's authorization.
+      - name: Browser diagnostics (TNT Séries and Telecine Premium)
+        run: |
+          LIVE_TEST_CHANNEL=tnt-series bun scripts/diagnose-live-browser.mjs
+          LIVE_TEST_CHANNEL=telecine-premium bun scripts/diagnose-live-browser.mjs
       # Record honest observations for the categories users report as broken.
       # HTTP 403/DRM/absent authorized sources are not forced to pass.
       - name: Browser playback diagnostics (SporTV and HBO)

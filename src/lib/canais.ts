@@ -1,5 +1,5 @@
 import { fetchFirstText, sourceUrls } from "./saimo-source";
-import { looksOffline } from "./live-source";
+import { looksOffline, type LiveStreamFormat } from "./live-source";
 
 /** Também aceita listas IPTV M3U sem perder referer e user-agent. */
 export function parseM3UCanais(texto: string): CanalTV[] {
@@ -54,6 +54,8 @@ export interface FonteTV {
   referer?: string;
   agente?: string;
   chave?: string;
+  /** Optional format for extensionless URLs, supplied by the authorized list. */
+  formato?: LiveStreamFormat;
 }
 
 export interface CanalTV {
@@ -239,6 +241,10 @@ export function parseCanais(texto: string): CanalTV[] {
         else if (key === "referer") currentFonte.referer = val;
         else if (key === "agente") currentFonte.agente = val;
         else if (key === "chave") currentFonte.chave = val;
+        else if (key === "formato" || key === "tipo") {
+          const format = val.toLowerCase();
+          if (["hls", "dash", "ts", "mp4"].includes(format)) currentFonte.formato = format as LiveStreamFormat;
+        }
       }
     }
   }

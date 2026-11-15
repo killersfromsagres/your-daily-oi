@@ -16,7 +16,7 @@ import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stre
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
 import { boundedVodRange, isBoundedVodReply, VOD_RANGE_CHUNK_BYTES } from "./lib/vod-range";
 import { handleLiveFormatApi } from "./lib/live-probe";
-import { isLivePlaylistTarget, liveSourceFingerprint } from "./lib/live-source";
+import { classifyLiveSource, isLivePlaylistTarget, liveSourceFingerprint } from "./lib/live-source";
 import { liveMediaHeaders, isLiveHlsMime, isContinuousTs, finiteLiveBody } from "./lib/live-proxy-transport";
 import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
@@ -1546,14 +1546,14 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       });
     }
 
+    const declaredFormat = classifyLiveSource({ url: targetUrl });
     const isMpd =
       rawContentType.includes("application/dash+xml") ||
-      cleanTarget.endsWith(".mpd") ||
-      targetUrl.includes(".mpd");
+      declaredFormat === "dash";
 
-    const isHls = isLiveHlsMime(rawContentType) ||
-      /\.(?:m3u8?|txt)$/.test(cleanTarget) ||
-      /\.(?:m3u8?|txt)(?:\?|$)/i.test(targetUrl);
+    const isHls = !isMpd && (
+      isLiveHlsMime(rawContentType) || declaredFormat === "hls"
+    );
 
     // Content-Type takes precedence over a Range header on dynamic playlist
     // endpoints; otherwise Hls.js receives an unrewritten manifest as video.
