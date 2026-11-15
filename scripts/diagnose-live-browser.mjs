@@ -12,6 +12,7 @@ const blockModern=process.env.LIVE_BLOCK_CATALOG_PROXY === "1";
 const directBlock=process.env.LIVE_BLOCK_DIRECT_HOST || "";
 const requireLegacyPlayback=process.env.LIVE_REQUIRE_LEGACY_PLAYBACK === "1";
 const requirePlayback = process.env.LIVE_REQUIRE_PLAYBACK === "1";
+const verifyResume = process.env.LIVE_VERIFY_RESUME === "1";
 const expectProxy = process.env.LIVE_EXPECT_PROXY === "1";
 const worker=spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(WORKER_PORT)],{stdio:["ignore","pipe","pipe"]});
 let workerLogs="";
@@ -99,6 +100,21 @@ try{
  await send("Runtime.evaluate",{expression:'(() => {const v=document.querySelector("video");if(v){v.muted=true;void v.play().catch(()=>{});}})()'});
  await sleep(9000);await snapshot(14);
  await sleep(9000);await snapshot(23);
+ if (verifyResume && (lastSnapshot?.video?.time ?? 0) >= 7) {
+   const before = lastSnapshot.video.time;
+   await send("Runtime.evaluate", { expression: `(() => {
+     const video = document.querySelector("video");
+     video?.pause();
+     window.dispatchEvent(new Event("focus"));
+   })()` });
+   await sleep(5500);
+   await snapshot("return-to-app");
+   if (lastSnapshot?.video?.paused ||
+       (lastSnapshot?.video?.time ?? 0) < before + 2 ||
+       lastSnapshot?.errorText || lastSnapshot?.loading) {
+     throw new Error("Live stream failed to resume after returning to the app: " + JSON.stringify(lastSnapshot));
+   }
+ }
  if(requireLegacyPlayback){
    await sleep(9000);await snapshot(32);
    await sleep(9000);await snapshot(41);
