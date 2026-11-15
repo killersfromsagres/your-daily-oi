@@ -1232,6 +1232,11 @@ async function handleTvStreamApi(request: Request, url: URL): Promise<Response> 
   internal.searchParams.set("url", fonte.url);
   if (fonte.referer) internal.searchParams.set("referer", fonte.referer);
   if (fonte.agente) internal.searchParams.set("ua", fonte.agente);
+  // An extensionless licensed stream may serve a playlist as
+  // application/octet-stream. Preserve its declared format for this proxy.
+  if (fonte.formato === "hls" || fonte.formato === "dash") {
+    internal.searchParams.set("formato", fonte.formato);
+  }
   return handleLiveProxyApi(request, internal);
 }
 
@@ -1280,10 +1285,12 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
 
   const customReferer = url.searchParams.get("referer") || undefined;
   const customUa = url.searchParams.get("ua") || url.searchParams.get("agente") || undefined;
+  const hint = url.searchParams.get("formato");
+  const declaredPlaylistFormat = hint === "hls" || hint === "dash" ? hint : null;
   // Playlists must be fetched in full so child and key URLs can be rewritten.
   // A client Range on .m3u8 previously forced the segment code path and leaked
   // relative paths like /api/tv/tracks-v1a1/mono.m3u8 into Hls.js.
-  const playlistTarget = isLivePlaylistTarget(targetUrl);
+  const playlistTarget = Boolean(declaredPlaylistFormat) || isLivePlaylistTarget(targetUrl);
   const clientRange = playlistTarget ? null : request.headers.get("range");
   const vodTransfer = url.searchParams.get("vod") === "1";
   const upstreamVodRange = vodTransfer && !playlistTarget
@@ -1546,7 +1553,10 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       });
     }
 
-    const declaredFormat = classifyLiveSource({ url: targetUrl });
+    const declaredFormat = classifyLiveSource({
+      url: targetUrl,
+      ...(declaredPlaylistFormat ? { formato: declaredPlaylistFormat } : {}),
+    });
     const isMpd =
       rawContentType.includes("application/dash+xml") ||
       declaredFormat === "dash";

@@ -31,6 +31,8 @@ describe("live HTTP proxy transport",()=>{
    expect(server).toContain("const declaredFormat = classifyLiveSource({ url: targetUrl })");
    expect(server).toContain('declaredFormat === "hls"');
    expect(server).toContain('declaredFormat === "dash"');
+   expect(server).toContain('internal.searchParams.set("formato", fonte.formato)');
+   expect(server).toContain("const playlistTarget = Boolean(declaredPlaylistFormat) || isLivePlaylistTarget(targetUrl)");
  });
  test("extensionless HLS/DASH 206 manifests are refetched without Range",()=>{
    const server=readFileSync(new URL("../src/server.ts",import.meta.url),"utf8");
