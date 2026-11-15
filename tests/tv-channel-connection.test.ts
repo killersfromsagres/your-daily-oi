@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChannelCard } from "../src/components/tv/ChannelCard";
-import { terminalHlsLoadFailure, accessDeniedLiveSource } from "../src/lib/live-http-errors";
+import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "../src/lib/live-http-errors";
 import type { CanalTV } from "../src/lib/canais";
 
 const channel: CanalTV = {
@@ -21,6 +21,24 @@ function card(status?: "connecting" | "playing" | "unavailable"): string {
     ...(status ? {playbackStatus:status} : {}),
   }));
 }
+
+describe("Native player proxy failure diagnostics", () => {
+  test("recognizes a 403 from same-origin proxy without probing a third-party URL", async () => {
+    const observed: string[] = [];
+    const fake = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      observed.push(String(input) + ":" + init?.method);
+      return new Response(null, { status: 403 });
+    }) as typeof fetch;
+    expect(await probeFailedLiveProxy("/api/tv/stream?canal=licensed-test&fonte=0", fake)).toBe(403);
+    expect(observed).toEqual(["/api/tv/stream?canal=licensed-test&fonte=0:HEAD"]);
+    expect(await probeFailedLiveProxy("https://external.example/stream.m3u8", fake)).toBeNull();
+    expect(observed).toHaveLength(1);
+  });
+  test("does not classify a successful proxy response as rejected", async () => {
+    const fake = (async () => new Response(null, { status: 200 })) as typeof fetch;
+    expect(await probeFailedLiveProxy("/api/live-proxy?url=authorized", fake)).toBeNull();
+  });
+});
 
 describe("Recover on real HLS HTTP failures, not harmless fragment retries", () => {
   test("a nonfatal authorization denial must immediately leave the loading loop", () => {

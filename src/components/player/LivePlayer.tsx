@@ -4,7 +4,7 @@ import "@/lib/browser-media";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
-import { terminalHlsLoadFailure, accessDeniedLiveSource } from "@/lib/live-http-errors";
+import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
@@ -564,6 +564,7 @@ export function LivePlayer({
     let playbackConfirmed = false;
     let progressReference: number | null = null;
     let playbackProgressVerified = false;
+    let inspectingNativeError = false;
     const timeout = setTimeout(() => {
       if (!cancelled && !playbackProgressVerified &&
           document.visibilityState !== "hidden") {
@@ -611,10 +612,27 @@ export function LivePlayer({
     };
 
     const onError = () => {
-      if (cancelled) return;
+      if (cancelled || inspectingNativeError) return;
       clearTimeout(timeout);
-      if (video.error?.code === 4) {
-        setErrorDetail((existing) => existing || "O navegador não conseguiu abrir a fonte. A transmissão pode estar bloqueada ou usar um formato incompatível.");
+      const cannotDecode = video.error?.code === 4;
+      if (cannotDecode) {
+        setErrorDetail((existing) => existing ||
+          "O navegador não conseguiu abrir a fonte. A transmissão pode estar bloqueada ou usar um formato incompatível.");
+      }
+      // Native WebViews sometimes omit the HTTP response entirely; check the
+      // SAME-ORIGIN proxy once so a 403 can stop the automatic retry loop.
+      if (cannotDecode && attemptMode === "proxy") {
+        inspectingNativeError = true;
+        void probeFailedLiveProxy(streamUrl).then(status => {
+          if (cancelled) return;
+          if (status && rawFonte) {
+            accessDeniedSourcesRef.current.add(rawFonte.url);
+            setErrorDetail("A origem recusou a transmissão (HTTP " + status +
+              "). É necessária uma fonte válida e autorizada para este canal.");
+          }
+          handleFatalError(false);
+        });
+        return;
       }
       handleFatalError(attemptMode === "direct");
     };
