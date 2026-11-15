@@ -499,6 +499,8 @@ export function LivePlayer({
 
     // Não considerar apenas readyState: o vídeo pode ter buffer e nunca iniciar.
     let playbackConfirmed = false;
+    let progressReference: number | null = null;
+    let playbackProgressVerified = false;
     const timeout = setTimeout(() => {
       if (!cancelled && !playbackConfirmed) {
         console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
@@ -509,11 +511,13 @@ export function LivePlayer({
     const onPlaying = () => {
       if (cancelled) return;
       playbackConfirmed = true;
+      if (progressReference === null) progressReference = video.currentTime;
       stablePlaybackSinceRef.current = Date.now();
       clearTimeout(timeout);
       setLoading(false);
       setError(false);
-      onPlaybackStatus?.(canal.id, "playing");
+      // Only label the channel as confirmed after the media clock advances.
+      // Browser 'playing' alone can still be a permanently frozen frame.
       setErrorDetail(null);
       setAutoSwitchMsg(null);
       if (video.muted) {
@@ -522,6 +526,12 @@ export function LivePlayer({
     };
 
     const onTimeUpdate = () => {
+      if (playbackConfirmed && !playbackProgressVerified &&
+          progressReference !== null && Number.isFinite(video.currentTime) &&
+          Math.abs(video.currentTime - progressReference) >= 1) {
+        playbackProgressVerified = true;
+        onPlaybackStatus?.(canal.id, "playing");
+      }
       if (video.currentTime > 0.5) {
         setIsLiveEdge(true);
         // Um canal estável volta a ter direito a novas recuperações futuras.
