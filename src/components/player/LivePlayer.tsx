@@ -173,6 +173,7 @@ export function LivePlayer({
   const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number | undefined } | null>(null);
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
   const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
+  const accessDeniedSourcesRef = useRef(new Set<string>());
   const handlingFailureRef = useRef(false);
   const autoRetryCountRef = useRef(0);
   const stablePlaybackSinceRef = useRef<number | null>(null);
@@ -248,6 +249,7 @@ export function LivePlayer({
   useEffect(() => {
     autoCleanPlayerCache();
     attemptedModesRef.current.clear();
+    accessDeniedSourcesRef.current.clear();
     handlingFailureRef.current = false;
     autoRetryCountRef.current = 0;
     stablePlaybackSinceRef.current = null;
@@ -391,6 +393,15 @@ export function LivePlayer({
       setAutoSwitchMsg("Trocando fonte…");
       setPlayNonce((n) => n + 1);
       return;
+    }
+    // Stop automatic repeat attempts when every declared source has already
+    // refused playback with a permanent HTTP authorization/not-found status.
+    // A user-initiated retry still clears the state and can work on another
+    // network, but the app must not look like it is loading forever.
+    if (validStreams.length > 0 &&
+        validStreams.every(source => accessDeniedSourcesRef.current.has(source.url))) {
+      autoRetryCountRef.current = 3;
+      setErrorDetail("As fontes deste canal recusaram o acesso ou foram removidas. Tente novamente mais tarde ou escolha outro canal.");
     }
     setLoading(false);
     setError(true);
@@ -760,6 +771,9 @@ export function LivePlayer({
               // HTTP 401/403/404/410/429 não são erros transitórios de buffer.
               // Não desperdiçar até 18 s tentando recuperar uma playlist recusada.
               const persistentHttp = [401, 403, 404, 410, 429].includes(responseCode);
+              if ([401, 403, 404, 410].includes(responseCode) && rawFonte) {
+                accessDeniedSourcesRef.current.add(rawFonte.url);
+              }
               if (!persistentHttp && recoveryCount < 1 && (isNet || isMedia)) {
                 recoveryCount++;
                 if (isNet && typeof (hls as any).startLoad === "function") {
@@ -1001,6 +1015,7 @@ export function LivePlayer({
             className="ydo-btn-primary"
             onClick={() => {
               attemptedModesRef.current.clear();
+              accessDeniedSourcesRef.current.clear();
               handlingFailureRef.current = false;
               autoRetryCountRef.current = 0;
               stablePlaybackSinceRef.current = null;
