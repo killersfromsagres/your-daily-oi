@@ -488,12 +488,16 @@ export function LivePlayer({
     const video = videoRef.current;
     if (!video || !streamUrl) {
       setLoading(false);
-      if (!streamUrl) setError(true);
+      if (!streamUrl) {
+        setError(true);
+        onPlaybackStatus?.(canal.id, "unavailable");
+      }
       return;
     }
     handlingFailureRef.current = false;
     let cancelled = false;
     setLoading(true);
+    onPlaybackStatus?.(canal.id, "connecting");
     setError(false);
     setErrorDetail(null);
 
