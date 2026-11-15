@@ -455,7 +455,7 @@ export function LivePlayer({
     const resume = () => {
       const video = videoRef.current;
       if (document.visibilityState === "hidden" || !video ||
-          !everPlayedRef.current || error || !video.paused || !rawFonte ||
+          !everPlayedRef.current || loading || error || !video.paused || !rawFonte ||
           !navigator.onLine) return;
       const now = Date.now();
       if (now - lastResumeAttemptRef.current < 4000) return;
@@ -483,7 +483,7 @@ export function LivePlayer({
       window.removeEventListener("online", resume);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [rawFonte, error]);
+  }, [rawFonte, error, loading]);
 
   // Detecta uma transmissão que perdeu os segmentos depois de começar a tocar.
   // Evita trocar o canal durante pausas normais, seek ou buffering curto.
