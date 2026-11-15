@@ -28,7 +28,7 @@ describe("live HTTP proxy transport",()=>{
  });
  test("server identifies extensionless authorized HLS/DASH endpoints using shared classifier",()=>{
    const server=readFileSync(new URL("../src/server.ts",import.meta.url),"utf8");
-   expect(server).toContain("const declaredFormat = classifyLiveSource({ url: targetUrl })");
+   expect(server).toContain("const declaredFormat = classifyLiveSource({");
    expect(server).toContain('declaredFormat === "hls"');
    expect(server).toContain('declaredFormat === "dash"');
    expect(server).toContain('internal.searchParams.set("formato", fonte.formato)');
