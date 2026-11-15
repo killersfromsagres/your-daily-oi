@@ -1503,6 +1503,28 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       } catch {}
     }
 
+    // Some extensionless HLS/DASH URLs receive a Range from the browser.
+    // A partial 206 manifest is not a media segment: refetch the full manifest
+    // so relative child playlist, segment and key URIs can be rewritten.
+    if (clientRange && res.status === 206 &&
+        (isLiveHlsMime(res.headers.get("content-type") || "") ||
+         (res.headers.get("content-type") || "").toLowerCase().includes("application/dash+xml"))) {
+      await res.body?.cancel().catch(() => {});
+      try {
+        res = await tryFetchWith5xxRetry(() => {
+          const h = hasSourceIdentityHeaders
+            ? buildHeaders(defaultReferer, defaultOrigin, defaultUa)
+            : buildHeaders("", "", "", true);
+          delete h["Range"];
+          return h;
+        });
+      } catch {
+        return new Response("Falha ao obter manifesto completo da origem", {
+          status: 502, headers: { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" },
+        });
+      }
+    }
+
     if (!res.ok && res.status !== 206) {
       // Expose actionable upstream HTTP status; do not disguise a permanent 403 as 502.
       const upstreamStatus = res.status;
@@ -1533,14 +1555,17 @@ async function handleLiveProxyApi(request: Request, url: URL): Promise<Response>
       /\.(?:m3u8?|txt)$/.test(cleanTarget) ||
       /\.(?:m3u8?|txt)(?:\?|$)/i.test(targetUrl);
 
-    const isSegment =
+    // Content-Type takes precedence over a Range header on dynamic playlist
+    // endpoints; otherwise Hls.js receives an unrewritten manifest as video.
+    const isSegment = !isHls && !isMpd && (
       Boolean(clientRange) ||
       cleanTarget.endsWith(".ts") ||
       cleanTarget.endsWith(".m4s") ||
       cleanTarget.endsWith(".aac") ||
       cleanTarget.endsWith(".mp4") ||
       rawContentType.includes("video/mp2t") ||
-      rawContentType.includes("video/mp4");
+      rawContentType.includes("video/mp4")
+    );
 
     // Reescrita de Manifesto HLS
     if (isHls && !isSegment) {
