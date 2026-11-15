@@ -8,6 +8,9 @@ on:
       - 'src/lib/live-source.ts'
       - 'src/lib/live-proxy-transport.ts'
       - 'tests/live-proxy-transport.test.ts'
+      - 'tests/tv-channel-connection.test.ts'
+      - 'src/components/tv/ChannelCard.tsx'
+      - 'src/components/tv/TvView.tsx'
       - 'src/components/player/LivePlayer.tsx'
       - 'src/lib/canais.ts'
       - 'src/server.ts'
@@ -27,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Verify live catalog and source identity
-        run: bun test tests/live-tv.test.ts tests/live-proxy-transport.test.ts tests/live-playback-watchdog.test.ts
+        run: bun test tests/live-tv.test.ts tests/live-proxy-transport.test.ts tests/live-playback-watchdog.test.ts tests/tv-channel-connection.test.ts
       - name: Probe all declared origin streams
         run: bun scripts/audit-all-tv-channels.mjs
       - name: Compare all catalog entries and accessible Saimo/ZANG proxy candidates
