@@ -17,6 +17,8 @@ export interface ChannelCardProps {
   slot?: ProgramSlot | undefined;
   guideLoading: boolean;
   nowMs: number;
+  /** Browser-confirmed status; a catalog URL alone does not mean playable. */
+  playbackStatus?: "connecting" | "playing" | "unavailable";
 }
 
 function ChannelCrest({ channel }: { channel: CanalTV }) {
@@ -32,9 +34,11 @@ function ChannelCrest({ channel }: { channel: CanalTV }) {
 }
 
 export function ChannelCard({
-  channel, active, favorite, onSelect, onFavorite, listMode, slot, guideLoading, nowMs,
+  channel, active, favorite, onSelect, onFavorite, listMode, slot, guideLoading, nowMs, playbackStatus,
 }: ChannelCardProps) {
-  const available = channel.fontes.length > 0;
+  const hasSources = channel.fontes.length > 0;
+  const failedPlayback = !hasSources || playbackStatus === "unavailable";
+  const playbackConfirmed = playbackStatus === "playing";
   const preview = resolveChannelProgram(slot, channel.categoria + " " + channel.nome, nowMs);
   const KindIcon = preview.kind === "Filme" ? Film :
     preview.kind === "Série" || preview.kind === "Filmes e séries" ? Clapperboard :
@@ -56,12 +60,12 @@ export function ChannelCard({
   const time = [preview.startTime, preview.endTime].filter(Boolean).join(" – ");
   return (
     <article className={"ztv-card ztv-card-glass" + (active ? " is-active" : "") +
-      (!available ? " is-unavailable" : "") + (listMode ? " is-list" : "")}>
+      (failedPlayback ? " is-unavailable" : "") + (listMode ? " is-list" : "")}>
       <button
         className="ztv-card-main" type="button" onClick={onSelect}
         aria-label={"Assistir " + channel.nome +
           (preview.title ? ", agora: " + preview.title : "") +
-          (available ? "" : " — sem fontes")}
+          (failedPlayback ? " — reprodução indisponível na última tentativa" : "")}
         aria-current={active ? "true" : undefined}
       >
         <span className="ztv-card-topline">
@@ -98,10 +102,13 @@ export function ChannelCard({
         </span>
         <span className="ztv-card-bottom">
           <span className="ztv-card-meta">
-            <span className={"ztv-status-dot" + (available ? " is-on" : " is-off")} />
-            {available ? channel.fontes.length + (channel.fontes.length === 1 ? " fonte" : " fontes") : "Sem fonte"}
+            <span className={"ztv-status-dot" + (playbackConfirmed ? " is-on" : failedPlayback ? " is-off" : "")} />
+            {playbackConfirmed ? "Reprodução confirmada" :
+              failedPlayback ? "Indisponível na última tentativa" :
+              playbackStatus === "connecting" ? "Verificando fonte…" :
+              hasSources ? "Fonte não verificada" : "Sem fonte"}
           </span>
-          <span className="ztv-card-watch"><Play size={13} fill="currentColor" /> Assistir</span>
+          <span className="ztv-card-watch"><Play size={13} fill="currentColor" /> {failedPlayback ? "Tentar novamente" : "Assistir"}</span>
         </span>
       </button>
       <button

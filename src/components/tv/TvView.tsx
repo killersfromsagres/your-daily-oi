@@ -58,9 +58,9 @@ function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
       });
   });
 }
-async function getCatalog(signal: AbortSignal): Promise<CatalogResponse> {
+async function getCatalog(signal: AbortSignal, force = false): Promise<CatalogResponse> {
   try {
-    const response = await fetch("/api/canais", { signal, cache: "no-store" });
+    const response = await fetch(force ? "/api/canais?refresh=1" : "/api/canais", { signal, cache: "no-store" });
     if (!response.ok) throw new Error("Catálogo HTTP " + response.status);
     const data = await response.json() as CatalogResponse;
     if (!Array.isArray(data.canais) || !data.canais.length) throw new Error("Catálogo vazio");
@@ -106,6 +106,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [playerLoading, setPlayerLoading] = useState(true);
+  const [channelPlayback, setChannelPlayback] = useState<Record<string, "connecting" | "playing" | "unavailable">>({});
+  const onChannelPlayback = useCallback((id: string, status: "connecting" | "playing" | "unavailable") => {
+    setChannelPlayback(previous => previous[id] === status ? previous : {...previous, [id]: status});
+  }, []);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [proxyBackend, setProxyBackend] = useState<"checking" | "catalog" | "legacy" | "unavailable">("checking");
   const [, setUpdatedAt] = useState<string | null>(null);
@@ -190,7 +194,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
     });
   }, []);
 
-  const refresh = useCallback(async (initial = false) => {
+  const refresh = useCallback(async (initial = false, force = false) => {
     if (refreshPending.current) return;
     refreshPending.current = true;
     const controller = new AbortController();
@@ -198,7 +202,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
     if (initial) setLoading(true);
     else setRefreshing(true);
     try {
-      const data = await getCatalog(controller.signal);
+      const data = await getCatalog(controller.signal, force);
       applyCatalog(data);
       lastRefresh.current = Date.now();
     } catch (error) {
@@ -211,6 +215,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
       if (requestRef.current === controller) requestRef.current = null;
     }
   }, [applyCatalog]);
+
+  // Refresh current source list once playback exhausted all available URLs.
+  // The backend rate-limits forced loads; no tight request loop on failures.
+  const onSourcesExhausted = useCallback(() => { void refresh(false, true); }, [refresh]);
 
   useEffect(() => {
     void refresh(true);
@@ -410,7 +418,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
             <p>Escolha um canal, descubra o que está passando e assista em poucos cliques.</p>
           </div>
           <div className="ztv-header-actions">
-            <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => void refresh()} disabled={refreshing} aria-label="Atualizar lista de canais">
+            <button type="button" className="ztv-btn ztv-btn-subtle" onClick={() => void refresh(false, true)} disabled={refreshing} aria-label="Atualizar lista de canais e fontes">
               <RefreshCw size={16} className={refreshing ? "ztv-spinning" : ""} /> Atualizar
             </button>
             <button type="button" className="ztv-btn ztv-btn-sports" onClick={() => document.getElementById("ztv-jogos")?.scrollIntoView({ behavior:"smooth", block:"start" })}>
@@ -455,6 +463,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
                   onNextCanal={() => switchChannel(1)}
                   onToggleGuide={() => setGuideOpen(true)}
                   onLoadingChange={setPlayerLoading}
+                  onPlaybackStatus={onChannelPlayback}
+                  onSourcesExhausted={onSourcesExhausted}
                   proxyBackend={proxyBackend}
                 />
               ) : (
@@ -512,7 +522,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
               ))}
             </div>
             <div className="ztv-quick-footer">
-              <span><Signal size={14} /> {availableCount} canais com links</span>
+              <span><Signal size={14} /> {availableCount} canais com fontes cadastradas</span>
               <button type="button" onClick={() => document.getElementById("ztv-explore")?.scrollIntoView({ behavior: "smooth" })}>Ver todos <ChevronRight size={15} /></button>
             </div>
           </aside>
@@ -617,7 +627,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
                     onSelect={() => selectChannel(channel)}
                     onFavorite={() => toggleFavorite(channel.id)}
                     slot={guide[normalize(channel.nome)]} guideLoading={guideLoading}
-                    nowMs={epgNow} listMode={layout === "list"} />
+                    nowMs={epgNow} listMode={layout === "list"}
+                    playbackStatus={channelPlayback[channel.id]} />
                 ))}
               </div>
               {visible < filtered.length && <div className="ztv-load-more" ref={loaderRef}><button type="button" onClick={() => setVisible(n => Math.min(n + 36, filtered.length))}>Carregar mais canais</button></div>}

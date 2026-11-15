@@ -38,6 +38,8 @@ export interface LivePlayerProps {
   onPrevCanal?: () => void;
   onToggleGuide?: () => void;
   onLoadingChange?: (loading: boolean) => void;
+  onPlaybackStatus?: (id: string, status: "connecting" | "playing" | "unavailable") => void;
+  onSourcesExhausted?: () => void;
   /** Older deployments expose /api/live-proxy but not /api/tv/stream. */
   proxyBackend?: "checking" | "catalog" | "legacy" | "unavailable";
 }
@@ -161,6 +163,8 @@ export function LivePlayer({
   onPrevCanal,
   onToggleGuide,
   onLoadingChange,
+  onPlaybackStatus,
+  onSourcesExhausted,
   proxyBackend = "catalog",
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -249,11 +253,12 @@ export function LivePlayer({
     setUseLegacyOnMismatch(false);
     setAttemptMode(initialModeFor(validStreams[0]));
     setError(validStreams.length === 0);
+    onPlaybackStatus?.(canal.id, validStreams.length ? "connecting" : "unavailable");
     setErrorDetail(null);
     setLoading(validStreams.length > 0);
     setAutoSwitchMsg(null);
     setPlayNonce((n) => n + 1);
-  }, [canal.id, validStreams]);
+  }, [canal.id, validStreams, onPlaybackStatus]);
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
   const autoRetryPending = error && nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length) !== null;
@@ -386,7 +391,9 @@ export function LivePlayer({
     setLoading(false);
     setError(true);
     setAutoSwitchMsg(null);
-  }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams]);
+    onPlaybackStatus?.(canal.id, "unavailable");
+    onSourcesExhausted?.();
+  }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams, onPlaybackStatus, onSourcesExhausted]);
 
   // Ao esgotar as rotas/fontes, refaz automaticamente a mesma limpeza do
   // botão manual. Espera a aba ficar visível, com backoff e tentativas finitas.
@@ -506,6 +513,7 @@ export function LivePlayer({
       clearTimeout(timeout);
       setLoading(false);
       setError(false);
+      onPlaybackStatus?.(canal.id, "playing");
       setErrorDetail(null);
       setAutoSwitchMsg(null);
       if (video.muted) {
@@ -752,7 +760,7 @@ export function LivePlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [streamUrl, sourceIndex, attemptMode, playNonce, handleFatalError, latencyMode]);
+  }, [streamUrl, sourceIndex, attemptMode, playNonce, handleFatalError, latencyMode, canal.id, onPlaybackStatus]);
 
   // Source changes and browser/native volume events share the same persisted level.
   useEffect(()=>{

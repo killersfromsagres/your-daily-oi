@@ -81,6 +81,8 @@ const DESATIVADOS_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 let canaisCache: CanalTV[] | null = null;
 let canaisCacheTime = 0;
+let forcedCatalogRefreshAt = 0;
+const FORCE_CATALOG_COOLDOWN_MS = 60_000;
 let canaisCategoriasCache: string[] = [];
 
 let desativadosCache: string[] = [];
@@ -424,13 +426,18 @@ export function mergeCanaisCatalogs(catalogs: CanalTV[][]): CanalTV[] {
 /**
  * Carrega e faz cache server-side dos canais da Saimo TV
  */
-export async function loadCanais(): Promise<{
+export async function loadCanais(forceRefresh = false): Promise<{
   atualizadoEm: string;
   categorias: string[];
   canais: CanalTV[];
 }> {
   const now = Date.now();
-  if (canaisCache && now - canaisCacheTime < CACHE_TTL_MS) {
+  // A user retry must be able to retrieve rotated source URLs immediately.
+  // Cap forced refresh to one request/minute per server instance.
+  if (canaisCache && (
+    (!forceRefresh && now - canaisCacheTime < CACHE_TTL_MS) ||
+    (forceRefresh && now - forcedCatalogRefreshAt < FORCE_CATALOG_COOLDOWN_MS)
+  )) {
     return {
       atualizadoEm: new Date(canaisCacheTime).toISOString(),
       categorias: canaisCategoriasCache,
@@ -438,11 +445,20 @@ export async function loadCanais(): Promise<{
     };
   }
 
+  if (forceRefresh) forcedCatalogRefreshAt = now;
   try {
+    // Source availability cannot be repaired by a player if the origin
+    // returns HTTP 403/404. Operators can configure licensed M3U/TXT feeds
+    // without mixing their valid entries with unreliable legacy sources.
+    const configured = typeof process !== "undefined"
+      ? (process.env.ZANG_TV_CATALOG_URLS || process.env.SAIMO_CANAIS_URLS)
+      : undefined;
+    const licensedOnly = typeof process !== "undefined" &&
+      process.env.ZANG_TV_LICENSED_ONLY === "1";
     const urls = sourceUrls(
-      typeof process !== "undefined" ? process.env.SAIMO_CANAIS_URLS : undefined,
-      [CANAIS_URL, CANAIS_M3U_URL],
+      configured, licensedOnly ? [] : [CANAIS_URL, CANAIS_M3U_URL],
     );
+    if (!urls.length) throw new Error("Configure ZANG_TV_CATALOG_URLS com uma lista autorizada");
     const downloaded = await Promise.allSettled(
       urls.map(async (sourceUrl) => {
         const { text } = await fetchFirstText([sourceUrl], "canais", { timeoutMs: 8000 });

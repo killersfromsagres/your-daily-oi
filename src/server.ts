@@ -2023,7 +2023,8 @@ export default {
         }, 200, "no-store");
       }
       if (url.pathname === "/api/canais") {
-        const data = await loadCanais();
+        const forced = url.searchParams.get("refresh") === "1";
+        const data = await loadCanais(forced);
         const withSources = data.canais.filter((ch) => ch.fontes.length > 0).length;
         const summary = {
           total: data.canais.length,
@@ -2032,7 +2033,7 @@ export default {
           sources: data.canais.reduce((n, ch) => n + ch.fontes.length, 0),
         };
         return withSources > 0
-          ? jsonResponse({ ...data, summary }, 200, "public, max-age=120")
+          ? jsonResponse({ ...data, summary }, 200, forced ? "no-store" : "public, max-age=120")
           : jsonResponse({ ...data, summary, error: "Catálogo de TV temporariamente indisponível." }, 503);
       }
       if (url.pathname === "/api/radios") {
