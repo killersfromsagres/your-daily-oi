@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/audit-all-tv-channels.mjs'
       - 'scripts/compare-saimo-zang-tv.mjs'
+      - 'scripts/diagnose-live-browser.mjs'
       - 'src/lib/live-source.ts'
       - 'src/lib/live-proxy-transport.ts'
       - 'tests/live-proxy-transport.test.ts'
@@ -45,8 +46,8 @@ jobs:
         run: bun run build
       - name: Browser playback diagnostics (Band and SBT)
         run: |
-          LIVE_TEST_CHANNEL=band bun scripts/diagnose-live-browser.mjs
-          LIVE_TEST_CHANNEL=sbt bun scripts/diagnose-live-browser.mjs
+          LIVE_TEST_CHANNEL=band LIVE_REQUIRE_PLAYBACK=1 LIVE_VERIFY_RESUME=1 bun scripts/diagnose-live-browser.mjs
+          LIVE_TEST_CHANNEL=sbt LIVE_REQUIRE_PLAYBACK=1 bun scripts/diagnose-live-browser.mjs
       - name: Browser playback diagnostics (TV Câmara)
         run: LIVE_TEST_CHANNEL=tv-camara bun scripts/diagnose-live-browser.mjs
       # Record honest observations for the categories users report as broken.
