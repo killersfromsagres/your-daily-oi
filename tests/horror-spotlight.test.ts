@@ -30,7 +30,7 @@ describe("Mais terror na sua noite — carrossel",()=>{
     expect(code).toContain('const detailPath = "/filme/" + selected.id');
     expect(code).toContain("onToggleSaved(selected.id)");
     expect(code).toContain("item.posterUrl");
-    expect(code).toContain("selected.tmdb?.backdropUrl");
+    expect(code).toContain("/images/horror-night.webp");
     expect(code).toContain("onTouchEnd");
     expect(code).toContain('aria-pressed={active}');
     expect(code).not.toContain("MediaCarousel");

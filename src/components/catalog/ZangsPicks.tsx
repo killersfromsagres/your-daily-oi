@@ -12,6 +12,7 @@ interface Props {
 
 export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
   const [selectedId,setSelectedId] = useState("");
+  const stageRef = useRef<HTMLDivElement>(null);
   const gestureStart = useRef<{x:number;y:number}|null>(null);
   const selectedIndex = Math.max(0,items.findIndex(item=>item.id === selectedId));
   const selected = items[selectedIndex];
@@ -22,7 +23,7 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
   const select = useCallback((index:number) => {
     if (!items.length) return;
     const item = items[((index % items.length) + items.length) % items.length];
-    setSelectedId(item.id);
+    if (item) setSelectedId(item.id);
   },[items]);
 
   const step = useCallback((direction:-1|1) => {
@@ -31,7 +32,6 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
 
   if (!selected) return null;
   const detailPath = "/filme/" + selected.id;
-  const backdrop = selected.tmdb?.backdropUrl || selected.posterUrl || "";
   const year = selected.tmdb?.releaseYear;
   const rating = selected.tmdb?.voteAverage;
   const hasPlayableSource = selected.streams.length > 0;
@@ -41,7 +41,7 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
     <section className="zf-zangs-picks zf-horror-spotlight"
       aria-labelledby="zangs-picks-title">
       <div className="zf-horror-ambient" aria-hidden="true">
-        {backdrop && <img key={selected.id} src={backdrop} alt="" loading="lazy" decoding="async"/>}
+        <img src="/images/horror-night.webp" alt="" loading="lazy" decoding="async" width={1536} height={1024}/>
       </div>
       <div className="zf-horror-surface">
         <header className="zf-zangs-picks-heading zf-horror-header">
@@ -54,21 +54,26 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
           </span>
         </header>
 
-        <div className="zf-horror-stage" role="region"
+        <div ref={stageRef} className="zf-horror-stage" role="region"
           aria-roledescription="carrossel" aria-label="Seleção de filmes de terror"
           tabIndex={0}
           onKeyDown={event=>{
-            if(event.key==="ArrowRight"){event.preventDefault();step(1);}
-            if(event.key==="ArrowLeft"){event.preventDefault();step(-1);}
+            if(event.key==="ArrowRight" || event.key==="ArrowLeft") {
+              requestAnimationFrame(()=>stageRef.current?.querySelector<HTMLButtonElement>(".is-active")?.focus({preventScroll:true}));
+            }
+            if(event.key==="ArrowRight"){event.preventDefault();event.stopPropagation();step(1);}
+            if(event.key==="ArrowLeft"){event.preventDefault();event.stopPropagation();step(-1);}
           }}
           onTouchStart={event=>{
             const touch=event.touches[0];
+            if (!touch) return;
             gestureStart.current={x:touch.clientX,y:touch.clientY};
           }}
           onTouchEnd={event=>{
             const start=gestureStart.current;gestureStart.current=null;
             if(!start)return;
             const touch=event.changedTouches[0];
+            if (!touch) return;
             const dx=touch.clientX-start.x,dy=touch.clientY-start.y;
             if(Math.abs(dx)>42 && Math.abs(dx)>Math.abs(dy)*1.2){
               step(dx<0?1:-1);
@@ -86,11 +91,10 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
                 className={"zf-horror-card"+(active?" is-active":"")}
                 aria-label={"Selecionar " + item.title}
                 aria-pressed={active}
+                tabIndex={active ? 0 : -1}
                 onClick={()=>select(index)}>
                 <span className="zf-horror-card-visual">
-                  {item.posterUrl
-                    ? <img src={item.posterUrl} alt="" loading={active?"eager":"lazy"} decoding="async" draggable={false}/>
-                    : <span className="zf-horror-card-fallback">{item.title.slice(0,2).toUpperCase()}</span>}
+                  <HorrorPoster key={item.id + (item.posterUrl || "")} item={item}/>
                   <span className="zf-horror-card-tint" aria-hidden="true"/>
                 </span>
                 <span className="zf-horror-card-name">{item.title}</span>
@@ -141,4 +145,17 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
       </div>
     </section>
   );
+}
+
+/** Try the alternate catalog artwork before showing a readable placeholder. */
+function HorrorPoster({item}:{item:CatalogItem}) {
+  const [attempt,setAttempt] = useState(0);
+  const path = item.tmdb?.posterPath || item.posterPath;
+  const alternate = path ? (path.startsWith("http") ? path : `https://image.tmdb.org/t/p/w342/${path.replace(/^\//, "")}`) : "";
+  const sources = [...new Set([item.posterUrl,alternate].filter(Boolean))];
+  const src = sources[attempt];
+  return src ? <img src={src} alt="" width={342} height={513}
+    loading="eager" decoding="async" draggable={false}
+    onError={()=>setAttempt(value=>value+1)}/>
+    : <span className="zf-horror-card-fallback">{item.title}<small>Capa indisponível</small></span>;
 }

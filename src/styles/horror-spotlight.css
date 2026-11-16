@@ -1,131 +1,69 @@
-/* MAIS TERROR NA SUA NOITE — selected-film cinematic spotlight
-   Isolated from the shared shelves: regular movies, anime and TV remain intact. */
-.zf-zangs-picks.zf-horror-spotlight{
-  position:relative;isolation:isolate;overflow:hidden;max-width:1536px;
-  margin:20px auto 40px;padding:0!important;min-width:0;
-  background:#10070b!important;border:1px solid rgba(137,39,45,.34)!important;
-  border-radius:22px;box-shadow:inset 0 0 85px rgba(80,0,0,.12),0 22px 75px rgba(0,0,0,.24);
-}
-.zf-horror-spotlight::before{
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 63% 54% at 14% 78%,rgba(176,13,24,.42),transparent 75%),
-    radial-gradient(ellipse 70% 45% at 88% 80%,rgba(129,6,17,.39),transparent 74%),
-    radial-gradient(ellipse 40% 35% at 50% 55%,rgba(74,4,9,.26),transparent 82%),
-    linear-gradient(180deg,rgba(8,6,9,.65) 0%,rgba(12,4,6,.84) 65%,#09080b 100%);
-}
-.zf-horror-spotlight::after{
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.15;
-  background-image:
-    radial-gradient(circle at 13% 18%,#f52b39 0 1px,transparent 1.7px),
-    radial-gradient(circle at 68% 47%,#dc2833 0 1px,transparent 2px),
-    radial-gradient(circle at 87% 63%,#c93535 0 .7px,transparent 1.5px);
-  background-size:47px 53px,63px 79px,95px 67px;
-  mask-image:linear-gradient(180deg,#000,transparent 85%);
-}
-.zf-horror-ambient{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.zf-horror-ambient img{
-  width:100%;height:100%;object-fit:cover;object-position:center 35%;
-  filter:blur(33px) brightness(.25) saturate(1.6) sepia(.38) hue-rotate(315deg);
-  transform:scale(1.18);animation:zf-horror-fade .45s ease-out both;
-}
-@keyframes zf-horror-fade{from{opacity:.12}to{opacity:.54}}
-.zf-horror-surface{position:relative;z-index:1;padding:clamp(21px,3.2vw,40px) clamp(12px,4.2vw,54px) 24px;}
-.zf-horror-spotlight .zf-horror-header{
-  padding:0!important;margin:0 0 20px!important;display:flex;align-items:flex-end;justify-content:space-between;gap:18px;
-}
-.zf-horror-kicker{margin:0 0 7px;color:#d58a91;font-weight:750;font-size:10px;letter-spacing:.17em}
-.zf-horror-kicker span{padding:0 7px;color:#8e4a50}
-.zf-horror-spotlight .zf-horror-title{
-  font-size:clamp(30px,3.7vw,52px);line-height:1.05;letter-spacing:.01em;
-  color:#f2e8e5;text-shadow:0 2px 16px rgba(0,0,0,.52);
-}
-.zf-horror-spotlight .zf-horror-title span{color:#e15056}
-.zf-horror-count{flex-shrink:0;white-space:nowrap;font:700 13px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:#e9e0df;padding-bottom:5px;letter-spacing:.04em}
-.zf-horror-count i{color:#92565c;font-style:normal;padding:0 5px}
-.zf-horror-stage{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:clamp(5px,1.1vw,18px);min-width:0;outline:none;touch-action:pan-y;}
-.zf-horror-stage:focus-visible{outline:2px solid rgba(255,189,199,.62);outline-offset:5px;border-radius:13px}
-.zf-horror-strip{display:flex;justify-content:center;align-items:center;gap:clamp(6px,1.25vw,16px);min-width:0;perspective:1000px;padding:8px 5px 11px}
-.zf-horror-card{position:relative;display:flex;flex-direction:column;flex:0 1 clamp(110px,14.2vw,190px);width:clamp(110px,14.2vw,190px);min-width:0;min-height:0;padding:0;border:0;border-radius:13px;background:transparent;color:#f8f0ef;text-align:left;cursor:pointer;transform-origin:center 60%;transition:opacity .32s ease,transform .32s cubic-bezier(.2,.8,.2,1),filter .32s ease;user-select:none;-webkit-tap-highlight-color:transparent}
-.zf-horror-card-visual{position:relative;display:block;aspect-ratio:.88;overflow:hidden;isolation:isolate;border-radius:14px;background:linear-gradient(155deg,#301116,#110b12);box-shadow:0 15px 32px rgba(0,0,0,.42);clip-path:polygon(12% 0%,100% 0%,89% 100%,0% 100%);border:1px solid rgba(224,122,126,.09)}
-.zf-horror-card-visual img{width:100%;height:100%;object-fit:cover;object-position:center 26%;transform:scale(1.10);filter:brightness(.77) saturate(.65) contrast(1.13);transition:filter .3s,transform .35s;pointer-events:none}
-.zf-horror-card-tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.13) 0%,transparent 42%,rgba(4,0,0,.52) 100%),linear-gradient(90deg,rgba(155,12,23,.12),transparent 45%);pointer-events:none}
-.zf-horror-card-fallback{display:grid;place-items:center;height:100%;width:100%;font-size:34px;font-weight:800;color:rgba(255,198,198,.48)}
-.zf-horror-card-name{display:block;max-width:100%;margin:8px 6px 0;font-weight:670;font-size:clamp(9px,.88vw,12px);line-height:1.22;letter-spacing:.01em;color:#d9c7c8;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.4em;}
-.zf-horror-card-selected{position:absolute;left:50%;top:9px;transform:translateX(-50%);display:inline-flex;white-space:nowrap;font-weight:800;font-size:8px;letter-spacing:.12em;background:rgba(13,4,8,.75);padding:5px 7px;border-radius:5px;color:#ffd9da;box-shadow:0 3px 9px #0006;pointer-events:none}
-.zf-horror-card[data-offset="-2"]{transform:rotateY(16deg) translateY(6px) scale(.91);opacity:.69;filter:brightness(.73)}
-.zf-horror-card[data-offset="-1"]{transform:rotateY(9deg) translateY(3px) scale(.96);opacity:.85;filter:brightness(.88)}
-.zf-horror-card[data-offset="1"]{transform:rotateY(-9deg) translateY(3px) scale(.96);opacity:.85;filter:brightness(.88)}
-.zf-horror-card[data-offset="2"]{transform:rotateY(-16deg) translateY(6px) scale(.91);opacity:.69;filter:brightness(.73)}
-.zf-horror-card.is-active{z-index:2;transform:translateY(-6px) scale(1.055);opacity:1;filter:drop-shadow(0 0 13px rgba(229,15,29,.45)) drop-shadow(0 11px 16px rgba(0,0,0,.54));}
-.zf-horror-card.is-active .zf-horror-card-visual{background:#b80b1d;border:2px solid #f21527;box-shadow:0 0 0 1px rgba(245,41,55,.78),0 0 32px rgba(231,0,25,.6),0 16px 36px #0009}
-.zf-horror-card.is-active .zf-horror-card-visual img{filter:brightness(.91) saturate(.94) contrast(1.13);transform:scale(1.12)}
-.zf-horror-card.is-active .zf-horror-card-name{color:#fff}
-.zf-horror-card:hover:not(.is-active){opacity:1;filter:brightness(1);transform:translateY(-5px) scale(.985)}
-.zf-horror-card:focus-visible{outline:2px solid #ffadb6;outline-offset:6px}
-.zf-horror-arrow{display:grid;place-items:center;width:45px;height:45px;border-radius:50%;border:1px solid rgba(238,207,215,.48);background:rgba(8,10,15,.42);color:#e2f4ff;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 12px 25px #0006;transition:transform .2s,border-color .2s,background .2s,box-shadow .2s}
-.zf-horror-arrow:hover{border-color:rgba(184,232,255,.88);background:rgba(26,37,49,.65);transform:scale(1.08);box-shadow:0 0 20px #8fcaff30}
-.zf-horror-arrow:focus-visible,.zf-horror-page-dot:focus-visible,.zf-horror-film-actions :is(button,a):focus-visible{outline:2px solid #ffc3c8;outline-offset:4px}
-.zf-horror-pagination{display:flex;justify-content:center;align-items:center;gap:12px;min-height:25px;margin:4px 0 13px}
-.zf-horror-page-dot{width:7px;height:7px;padding:0;border:0;border-radius:20px;background:#8a7c7e;cursor:pointer;opacity:.88;transition:width .23s,background .23s,box-shadow .23s}
-.zf-horror-page-dot.is-current{width:56px;height:6px;background:#ff293e;opacity:1;box-shadow:0 0 15px rgba(255,20,42,.56)}
-.zf-horror-selected-info{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:860px;margin:3px auto 0;padding:11px 17px;border:1px solid rgba(175,91,101,.22);border-radius:13px;background:linear-gradient(100deg,rgba(13,9,12,.6),rgba(33,9,14,.38));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-.zf-horror-selected-label{font-size:8px;font-weight:800;letter-spacing:.15em;color:#d17f87}
+/* Scoped editorial horror shelf. Fixed poster geometry also works on TV WebViews. */
+.zf-zangs-picks.zf-horror-spotlight{position:relative;isolation:isolate;overflow:hidden;max-width:1536px;min-width:0;margin:24px auto 40px;padding:0!important;background:#10090b!important;border:1px solid #552127!important;border-radius:18px}
+.zf-horror-ambient{position:absolute;inset:0;z-index:0;pointer-events:none}
+.zf-horror-ambient img{display:block;width:100%;height:100%;object-fit:cover;object-position:right center;opacity:.55}
+.zf-horror-spotlight::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(8,6,8,.95),rgba(12,5,7,.6) 60%,rgba(12,5,7,.25)),linear-gradient(0deg,#16090ce6,transparent 70%)}
+.zf-horror-spotlight::after{content:none}
+.zf-horror-surface{position:relative;z-index:2;padding:32px clamp(16px,3.5vw,48px) 24px}
+.zf-horror-spotlight .zf-horror-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:0!important;margin:0 0 28px!important}
+.zf-horror-kicker{margin:0 0 9px;font-size:10px;line-height:1.6;font-weight:600;letter-spacing:.16em;color:#c1a5a6}
+.zf-horror-kicker span{margin:0 7px;color:#9d454c}
+.zf-horror-spotlight .zf-horror-title{margin:0;font-size:clamp(30px,3.5vw,50px);line-height:1.06;text-shadow:none;letter-spacing:.015em;color:#f6f1ec}
+.zf-horror-spotlight .zf-horror-title span{background:none;-webkit-text-fill-color:currentColor;color:#df5157}
+.zf-horror-spotlight .zf-horror-title span::before{content:none}
+.zf-horror-count{white-space:nowrap;font:500 12px/1.5 ui-monospace,monospace;color:#e9dcdc}
+.zf-horror-count i{font-style:normal;color:#9c7b80;margin:0 6px}
+.zf-horror-stage{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:16px;align-items:center;min-width:0;touch-action:pan-y}
+.zf-horror-strip{display:flex;align-items:center;justify-content:center;gap:18px;min-width:0;padding:12px 8px 20px}
+.zf-horror-card{position:relative;display:flex;flex-direction:column;flex:0 1 180px;width:180px;min-width:0;padding:0;border:0;background:none;color:#eee;text-align:left;cursor:pointer;transform:scale(.94);opacity:.8;transition:transform .25s ease,opacity .25s ease;-webkit-tap-highlight-color:transparent}
+.zf-horror-card-visual{position:relative;display:block;width:100%;height:auto;aspect-ratio:2/3;overflow:hidden;border:1px solid #ffffff26;border-radius:8px;background:#201317;box-shadow:0 10px 24px #0005}
+.zf-horror-card-visual img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.zf-horror-card-tint{position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,#0005,transparent 38%)}
+.zf-horror-card-fallback{display:flex;position:absolute;inset:0;flex-direction:column;justify-content:center;align-items:center;padding:14px;text-align:center;font-size:15px;color:#e6cacc;gap:12px}
+.zf-horror-card-fallback small{font-size:10px;color:#a78c8f}
+.zf-horror-card-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em;margin:10px 0 0;font-size:12px;line-height:1.4;font-weight:500}
+.zf-horror-card.is-active{transform:translateY(-5px);opacity:1}
+.zf-horror-card.is-active .zf-horror-card-visual{border-color:#ed5661;box-shadow:0 0 0 2px #ed56612b,0 16px 28px #0007}
+.zf-horror-card-selected{position:absolute;top:10px;left:10px;padding:5px 7px;border-radius:3px;background:#12090ddd;color:#fff;font-size:8px;font-weight:700;letter-spacing:.1em}
+.zf-horror-arrow{display:grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid #ffffff45;border-radius:50%;color:#d7edfa;background:#190f13cc;cursor:pointer}
+.zf-horror-pagination{display:flex;justify-content:center;align-items:center;gap:6px;margin:0 0 16px}
+.zf-horror-page-dot{position:relative;display:block;width:28px;height:32px;padding:0;border:0;background:none;cursor:pointer}
+.zf-horror-page-dot::after{content:"";position:absolute;width:5px;height:5px;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:4px;background:#b49b9e}
+.zf-horror-page-dot.is-current::after{width:24px;background:#e33a48}
+.zf-horror-selected-info{display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:860px;margin:auto;padding:18px 0 0;border-top:1px solid #ffffff24}
 .zf-horror-film-copy{min-width:0}
-.zf-horror-film-copy h3{font-weight:790;font-size:clamp(15px,1.5vw,21px);line-height:1.2;color:#f6f0f0;white-space:normal;margin:3px 0 4px;letter-spacing:-.025em}
-.zf-horror-film-copy p{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:0;color:#b6a0a2;font-size:11px;line-height:1.4}
-.zf-horror-rating{display:inline-flex;align-items:center;gap:4px;color:#ead4bb}
-.zf-horror-film-actions{display:flex;flex-shrink:0;gap:8px;align-items:center}
-.zf-horror-save{display:grid;place-items:center;height:39px;width:39px;border:1px solid rgba(255,213,218,.28);border-radius:9px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
-.zf-horror-save[aria-pressed="true"]{color:#ffc9d0;border-color:rgba(255,45,70,.4)}
-.zf-horror-watch{display:inline-flex;justify-content:center;align-items:center;gap:8px;min-height:39px;padding:0 17px;border:1px solid #e33142;border-radius:9px;text-decoration:none!important;color:#fff!important;font-size:11px;font-weight:790;white-space:nowrap;background:linear-gradient(115deg,#cd1426,#a60920);box-shadow:0 7px 20px rgba(174,5,22,.28);transition:filter .2s}
-.zf-horror-watch:hover{filter:brightness(1.17)}
-@media(max-width:1120px){
- .zf-horror-spotlight .zf-horror-card[data-offset="-2"],.zf-horror-spotlight .zf-horror-card[data-offset="2"]{display:none}
- .zf-horror-card{flex-basis:clamp(110px,20vw,172px);width:clamp(110px,20vw,172px)}
- .zf-horror-surface{padding:23px 22px}
+.zf-horror-selected-label{font-size:9px;letter-spacing:.13em;color:#ba9298}
+.zf-horror-film-copy h3{margin:5px 0 7px;font-size:clamp(17px,1.6vw,23px);line-height:1.25;font-weight:650;color:#faf7f4}
+.zf-horror-film-copy p{display:flex;flex-wrap:wrap;gap:6px 12px;margin:0;font-size:12px;color:#c4afb1}
+.zf-horror-rating{display:inline-flex;align-items:center;gap:4px}
+.zf-horror-film-actions{display:flex;flex-shrink:0;align-items:center;gap:10px}
+.zf-horror-save{display:grid;place-items:center;width:44px;height:44px;border:1px solid #ffffff38;border-radius:6px;background:#ffffff08;color:#fff;cursor:pointer}
+.zf-horror-save[aria-pressed="true"]{color:#ff9ea7;border-color:#dc5666}
+.zf-horror-watch{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 20px;border-radius:6px;background:#b91c30;color:#fff!important;text-decoration:none!important;font-size:13px;font-weight:650;white-space:nowrap}
+.zf-horror-spotlight :is(button,a,[tabindex]):focus-visible{outline:3px solid #c2e8ff;outline-offset:4px}
+@media(hover:hover){.zf-horror-card:hover{opacity:1;transform:translateY(-5px)}.zf-horror-card:hover img{transform:scale(1.035)}.zf-horror-arrow:hover{background:#42202a}.zf-horror-watch:hover{background:#d32439}}
+@media(max-width:900px){.zf-horror-card[data-offset="-2"],.zf-horror-card[data-offset="2"]{display:none}.zf-horror-card{flex-basis:190px;width:190px}}
+@media(max-width:600px){
+ .zf-zangs-picks.zf-horror-spotlight{margin:20px 0 28px;border-radius:12px}
+ .zf-horror-surface{padding:24px 16px 20px}
+ .zf-horror-spotlight .zf-horror-header{align-items:flex-start;margin-bottom:18px!important;gap:8px}
+ .zf-horror-kicker{font-size:8px;letter-spacing:.11em}.zf-horror-kicker span{margin:0 3px}
+ .zf-horror-spotlight .zf-horror-title{font-size:32px;max-width:250px;text-wrap:initial}
+ .zf-horror-count{font-size:10px;padding-top:3px}
+ .zf-horror-stage{position:relative;display:block}
+ .zf-horror-strip{gap:12px;padding:12px 0 16px;min-height:295px}
+ .zf-horror-card{flex:0 0 156px;width:156px;min-width:156px;transform:scale(.9);opacity:.7}
+ .zf-horror-card.is-active{transform:translateY(-4px);opacity:1}
+ .zf-horror-card-name{font-size:11px}
+ .zf-horror-arrow{position:absolute;top:105px;z-index:4;background:#160d13ee}
+ .zf-horror-arrow--prev{left:-6px}.zf-horror-arrow--next{right:-6px}
+ .zf-horror-selected-info{flex-direction:column;align-items:stretch;gap:16px}
+ .zf-horror-film-actions{width:100%}.zf-horror-watch{flex:1}
+ .zf-horror-ambient img{object-position:78% center;opacity:.4}
 }
-@media(max-width:650px){
- .zf-zangs-picks.zf-horror-spotlight{border-radius:0;margin:20px 0 25px;padding:0!important}
- .zf-horror-surface{padding:20px 12px 17px}
- .zf-horror-spotlight .zf-horror-header{margin-bottom:14px!important}
- .zf-horror-kicker{font-size:8px;letter-spacing:.13em}
- .zf-horror-spotlight .zf-horror-title{font-size:clamp(26px,7vw,36px)}
- .zf-horror-count{font-size:10px}
- .zf-horror-stage{display:block;touch-action:pan-y}
- .zf-horror-arrow{display:none!important}
- .zf-horror-strip{gap:clamp(5px,1.7vw,9px);padding:9px 0 15px}
- .zf-horror-card{flex:0 1 min(27vw,124px);width:min(27vw,124px)}
- .zf-horror-card-visual{border-radius:10px}
- .zf-horror-card-name{font-size:9px;min-height:2.45em;margin-top:6px}
- .zf-horror-card-selected{font-size:6px;padding:4px 5px;top:6px}
- .zf-horror-card.is-active{transform:translateY(-4px) scale(1.04)}
- .zf-horror-pagination{margin:0 0 8px}
- .zf-horror-selected-info{margin:0 0 0;padding:11px 12px;gap:9px}
- .zf-horror-film-copy h3{font-size:14px}
- .zf-horror-selected-label{font-size:7px}
- .zf-horror-film-copy p{font-size:10px;gap:4px 7px}
- .zf-horror-watch{padding:0 10px;min-height:37px;font-size:10px}
- .zf-horror-save{height:37px;width:35px}
-}
-@media(max-width:360px){
- .zf-horror-spotlight .zf-horror-title{font-size:26px}
- .zf-horror-count{display:none}
- .zf-horror-card{flex-basis:27vw;width:27vw}
- .zf-horror-selected-info{align-items:flex-start;flex-direction:column}
- .zf-horror-film-actions{width:100%}
- .zf-horror-watch{flex:1}
-}
-html[data-zf-platform="mobile"] .zf-horror-arrow,
-html[data-zf-platform="tv"] .zf-horror-arrow,
-html[data-zf-platform="mobile"] .zf-horror-stage .zf-horror-arrow,
-html[data-zf-platform="tv"] .zf-horror-stage .zf-horror-arrow{display:none!important}
-@media(max-width:1120px),(hover:none),(pointer:coarse),(display-mode:standalone){
- .zf-horror-arrow{display:none!important}
- .zf-horror-card:hover:not(.is-active){transform:none}
-}
-@media(prefers-reduced-motion:reduce){
- .zf-horror-spotlight *, .zf-horror-spotlight *::before,.zf-horror-spotlight *::after{
-  animation:none!important;transition:none!important;scroll-behavior:auto!important
- }
-}
+html[data-zf-platform="tv"] .zf-horror-stage{grid-template-columns:64px minmax(0,1fr) 64px}
+html[data-zf-platform="tv"] .zf-horror-arrow{display:grid!important;width:56px;height:56px}
+html[data-zf-platform="tv"] .zf-horror-card-name{font-size:16px}
+html[data-zf-platform="tv"] .zf-horror-watch{min-height:54px;font-size:17px}
+html[data-zf-platform="tv"] .zf-horror-save{height:54px;width:54px}
+@media(prefers-reduced-motion:reduce){.zf-horror-spotlight *{transition:none!important;animation:none!important}}
