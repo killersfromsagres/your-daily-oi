@@ -300,7 +300,10 @@ try{
     'window.__editionCatalogReads=0;window.fetch=(input,options)=>{const url=new URL(String(input?.url||input),location.origin);'+
     'if(url.pathname==="/api/catalogo"){window.__editionCatalogReads++;return Promise.resolve(new Response(JSON.stringify({items:[...special,...picks,regular],highlights:[],genres:[],featuredHero:[regular],friday13Hero:special}),{headers:{"Content-Type":"application/json"}}));}'+
     'return original(input,options);};})()'});
-  const editionState=()=>evalInPage("(()=>{\n  const hero=document.querySelector('.ydo-hero'),mast=document.querySelector('.zf-friday13-masthead');\n  const title=document.querySelector('.ydo-hero-title'),fog=document.querySelector('.zf-friday13-fog');\n  const mark=document.querySelector('.zf-friday13-date'),orbit=document.querySelector('.zf-friday13-orbit');\n  const picks=document.querySelector('.zf-zangs-picks');\n  return {active:document.documentElement.dataset.zfEdition||null,\n    hero:hero?.classList.contains('zf-friday13-hero'),title:title?.textContent,\n    top:title?.getBoundingClientRect().top,mastBottom:mast?.getBoundingClientRect().bottom,\n    badgeTop:document.querySelector('.ydo-hero-badges')?.getBoundingClientRect().top,\n    veil:document.querySelector('.ydo-hero-veil-bottom')&&getComputedStyle(document.querySelector('.ydo-hero-veil-bottom')).zIndex,\n    seam:document.querySelector('.zf-friday13-collection')&&getComputedStyle(document.querySelector('.zf-friday13-collection')).borderTopWidth,\n    image:document.querySelector('.ydo-hero-img')?.currentSrc,\n    imageWidth:document.querySelector('.ydo-hero-img')?.naturalWidth,\n    imageHeight:document.querySelector('.ydo-hero-img')?.naturalHeight,\n    collection:!!document.querySelector('.zf-friday13-collection'),\n    picks:Array.from(picks?.querySelectorAll('.ydo-card-poster-link')||[]).map(x=>decodeURIComponent(x.getAttribute('href'))),\n    titlePicks:picks?.querySelector('h2')?.textContent,\n    afterCollection:!!picks?.previousElementSibling?.classList.contains('zf-friday13-collection'),\n    mark:mark&&{text:mark.textContent,border:getComputedStyle(mark).borderTopWidth,color:getComputedStyle(mark).color,background:getComputedStyle(mark).backgroundColor,svg:!!mark.querySelector('svg')},\n    orbit:orbit&&getComputedStyle(orbit).animationName,\n    play:document.querySelector('.ydo-hero-actions .ydo-btn-primary')?.getAttribute('href'),\n    animation:fog&&getComputedStyle(fog).animationName,\n    width:innerWidth,bodyWidth:document.documentElement.scrollWidth,reads:window.__editionCatalogReads};\n})()");
+  const editionState=()=>evalInPage("(()=>{\n  const hero=document.querySelector('.ydo-hero'),mast=document.querySelector('.zf-friday13-masthead');\n  const title=document.querySelector('.ydo-hero-title'),fog=document.querySelector('.zf-friday13-fog');\n  const mark=document.querySelector('.zf-friday13-date'),orbit=document.querySelector('.zf-friday13-orbit');\n  const picks=document.querySelector('.zf-zangs-picks');\n  return {active:document.documentElement.dataset.zfEdition||null,\n    hero:hero?.classList.contains('zf-friday13-hero'),title:title?.textContent,\n    top:title?.getBoundingClientRect().top,mastBottom:mast?.getBoundingClientRect().bottom,\n    badgeTop:document.querySelector('.ydo-hero-badges')?.getBoundingClientRect().top,\n    veil:document.querySelector('.ydo-hero-veil-bottom')&&getComputedStyle(document.querySelector('.ydo-hero-veil-bottom')).zIndex,\n    seam:document.querySelector('.zf-friday13-collection')&&getComputedStyle(document.querySelector('.zf-friday13-collection')).borderTopWidth,\n    image:document.querySelector('.ydo-hero-img')?.currentSrc,\n    imageWidth:document.querySelector('.ydo-hero-img')?.naturalWidth,\n    imageHeight:document.querySelector('.ydo-hero-img')?.naturalHeight,\n    collection:!!document.querySelector('.zf-friday13-collection'),\n    picks:Array.from(picks?.querySelectorAll('.zf-horror-card')||[]).map(x=>x.getAttribute('aria-label')),
+    selectedFilm:decodeURIComponent(picks?.querySelector('.zf-horror-watch')?.getAttribute('href')||''),
+    selectedCount:picks?.querySelectorAll('.zf-horror-card.is-active').length||0,
+    pagination:picks?.querySelectorAll('.zf-horror-page-dot').length||0,\n    titlePicks:picks?.querySelector('h2')?.textContent,\n    afterCollection:!!picks?.previousElementSibling?.classList.contains('zf-friday13-collection'),\n    mark:mark&&{text:mark.textContent,border:getComputedStyle(mark).borderTopWidth,color:getComputedStyle(mark).color,background:getComputedStyle(mark).backgroundColor,svg:!!mark.querySelector('svg')},\n    orbit:orbit&&getComputedStyle(orbit).animationName,\n    play:document.querySelector('.ydo-hero-actions .ydo-btn-primary')?.getAttribute('href'),\n    animation:fog&&getComputedStyle(fog).animationName,\n    width:innerWidth,bodyWidth:document.documentElement.scrollWidth,reads:window.__editionCatalogReads};\n})()");
   const waitEdition=async predicate=>{
     for(let n=0;n<80;n++){const s=await editionState().catch(()=>null);if(s&&predicate(s))return s;await sleep(100);}
     throw Error('Friday 13 state timeout: '+JSON.stringify(await editionState()));
@@ -310,7 +313,7 @@ try{
     await send("Emulation.setUserAgentOverride",{userAgent:scenario.ua});
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
     await send("Page.navigate",{url:BASE+"/"});
-    const edition=await waitEdition(s=>s.active==="friday13"&&s.hero&&s.collection&&s.title==="Sexta-Feira 13"&&s.imageWidth>=3840&&s.imageHeight>=2160&&s.picks.length===8);
+    const edition=await waitEdition(s=>s.active==="friday13"&&s.hero&&s.collection&&s.title==="Sexta-Feira 13"&&s.imageWidth>=3840&&s.imageHeight>=2160&&s.picks.length===5&&s.selectedCount===1&&s.pagination===2);
     if(edition.bodyWidth>scenario.width+1||edition.mastBottom+12>edition.top)
       throw Error('Campaign layout overlaps/overflows: '+JSON.stringify(edition));
     if(edition.animation!=="none"||edition.orbit!=="none")throw Error("Campaign ignores reduced motion");
@@ -318,11 +321,11 @@ try{
       edition.mark?.color!=="rgb(255, 255, 255)"||edition.mark?.background!=="rgba(0, 0, 0, 0)")
       throw Error("Number 13 must be white without a box or weapon: "+JSON.stringify(edition.mark));
     if(!edition.afterCollection||edition.titlePicks!=="Mais terror na sua noite"||
-      !edition.picks[0]?.includes("/filme/sextafeira 13 1980")||
-       !edition.picks[1]?.includes("/filme/sextafeira 13")||
-       !edition.picks[2]?.includes("/filme/invocacao do mal")||
-       !edition.picks[7]?.includes("/filme/midsommar")||
-       edition.picks.some(href=>href.includes("/filme/hereditario")))
+      !edition.selectedFilm.includes("/filme/sextafeira 13 1980")||
+      !edition.picks.some(label=>label.includes("Sexta-Feira 13 (1980)"))||
+      !edition.picks.some(label=>label.includes("Sexta-Feira 13 (2009)"))||
+      !edition.picks.some(label=>label.includes("Invocação do Mal"))||
+      edition.picks.some(label=>label.includes("Hereditário")))
       throw Error("Curated movie selection or placement is incorrect");
     await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
     if((await editionState()).orbit!=="zf-friday13-orbit")throw Error("Red orbit is not animated");
@@ -345,25 +348,36 @@ try{
     await evalInPage("document.querySelector('.ydo-hero-dots button:first-child').click()");
     await waitEdition(s=>s.title==='Sexta-Feira 13');
     await evalInPage("document.querySelector('.zf-zangs-picks').scrollIntoView({block:'start',behavior:'instant'})");
-    // Visit every card: mobile intentionally defers posters outside its scroll viewport.
-    const posterState=await evalInPage(`(async()=>{
-      const section=document.querySelector('.zf-zangs-picks'),row=section.querySelector('.ydo-row-track');
-      const result=[];
-      for(const card of row.querySelectorAll('.ydo-card')){
-        card.scrollIntoView({block:'nearest',inline:'center',behavior:'instant'});
-        const img=card.querySelector('img');
-        if(img&&!img.complete)await new Promise(resolve=>{
-          img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});
-          setTimeout(resolve,10000);
-        });
-        result.push({title:card.querySelector('.ydo-card-title')?.textContent,loaded:!!card.querySelector('img')?.naturalWidth});
-      }
-      row.scrollTo({left:0,behavior:'instant'});
-      section.scrollIntoView({block:'start',behavior:'instant'});
-      return result;
-    })()`);
-    if(posterState.some(p=>!p.loaded))throw Error('Curated artwork did not load: '+JSON.stringify(posterState));
-    console.log(JSON.stringify({event:'zangs-poster-artwork',device:scenario.name,posters:posterState}));
+    // The spotlight shows five posters but preserves the original eight titles.
+    const posterState=[];
+    for(let index=0;index<8;index++){
+      const current=await evalInPage("(async()=>{"+
+        "const section=document.querySelector('.zf-zangs-picks');"+
+        "const card=section?.querySelector('.zf-horror-card.is-active');"+
+        "const img=card?.querySelector('img');"+
+        "if(img&&!img.complete)await Promise.race(["+
+        "new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})}),"+
+        "new Promise(resolve=>setTimeout(resolve,4000))]);"+
+        "return {film:decodeURIComponent(section?.querySelector('.zf-horror-watch')?.getAttribute('href')||''),"+
+        "title:card?.getAttribute('aria-label')||'',loaded:!!img?.naturalWidth,"+
+        "selected:section?.querySelectorAll('.zf-horror-card.is-active').length||0,"+
+        "visible:section?.querySelectorAll('.zf-horror-card').length||0};"+
+        "})()");
+      posterState.push(current);
+      if(!current || current.visible!==5 || current.selected!==1 ||
+         !current.film?.startsWith('/filme/') || current.film.includes('hereditario'))
+        throw Error("Invalid selected horror film: "+JSON.stringify(current));
+      await evalInPage("document.querySelector('.zf-horror-arrow--next').click()");
+      await sleep(85);
+    }
+    if(new Set(posterState.map(x=>x.film)).size!==8 ||
+       !posterState[0].film.includes('/filme/sextafeira 13 1980') ||
+       !posterState[1].film.includes('/filme/sextafeira 13') ||
+       !posterState[2].film.includes('/filme/invocacao do mal') ||
+       !posterState[7].film.includes('/filme/midsommar') ||
+       posterState.some(p=>!p.loaded))
+      throw Error('Curated film IDs/artwork mismatch: '+JSON.stringify(posterState));
+    console.log(JSON.stringify({event:'zangs-spotlight',device:scenario.name,posters:posterState}));
     const collectionShot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
     writeFileSync("artifacts/apple-glass-zangs-picks-"+scenario.name+".png",Buffer.from(collectionShot.data,"base64"));
     await evalInPage("scrollTo(0,0)");
@@ -371,7 +385,7 @@ try{
     await waitEdition(s=>s.active==="friday13"&&s.hero);
     await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T06:00:00Z"))');
     const expired=await waitEdition(s=>s.active===null&&!s.hero&&!s.collection&&s.title==="Destaque habitual");
-    if(expired.reads!==1||expired.picks.length!==8)throw Error("Expiry must preserve curated films without reloading the catalog");
+    if(expired.reads!==1||expired.picks.length!==5)throw Error("Expiry must preserve curated films without reloading the catalog");
     // The last 250ms must expire through the real timer, without another event.
     await evalInPage('window.__setCampaignClock(Date.parse("2026-11-14T06:00:00Z")-250)');
     await waitEdition(s=>s.active==="friday13"&&s.hero);
