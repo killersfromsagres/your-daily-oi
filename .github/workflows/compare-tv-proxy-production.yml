@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/compare-tv-proxy-production.mjs'
+      - 'vercel.json'
       - '.github/workflows/compare-tv-proxy-production.yml'
   workflow_dispatch:
 permissions: {contents: read}

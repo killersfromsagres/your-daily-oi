@@ -20,7 +20,7 @@ const task=async(site,base,channel,index)=>{
     void reader.cancel().catch(()=>{});
    }catch{}
   } else void r.body?.cancel().catch(()=>{});
-  console.log(JSON.stringify({event:"media-probe",site,channel:channel.id,source:index,http:r.status,mime,hls:prefix.startsWith("#EXTM3U"),mpd:prefix.startsWith("<?xml")||prefix.startsWith("<MPD"),ms:Date.now()-start}));
+  console.log(JSON.stringify({event:"media-probe",site,channel:channel.id,source:index,http:r.status,mime,hls:prefix.startsWith("#EXTM3U"),mpd:prefix.startsWith("<?xml")||prefix.startsWith("<MPD"),region:(r.headers.get("x-vercel-id")||"").split("::").slice(0,2).join("::"),ms:Date.now()-start}));
  }catch(e){console.log(JSON.stringify({event:"media-probe",site,channel:channel.id,source:index,error:e?.name||"error",ms:Date.now()-start}));}
  finally{clearTimeout(timer);}
 };
