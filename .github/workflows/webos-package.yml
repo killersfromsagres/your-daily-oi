@@ -1,0 +1,63 @@
+name: Package ZANG FLIX LG webOS developer build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tv/lg-webos/**'
+      - '.github/workflows/webos-package.yml'
+permissions:
+  contents: write
+concurrency:
+  group: zangflix-webos-release
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate native webOS icons
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          im=Image.open('public/logo.png').convert('RGBA')
+          for size,name in [(80,'icon.png'),(130,'largeicon.png')]:
+              im.resize((size,size),Image.Resampling.LANCZOS).save('tv/lg-webos/'+name)
+          PY
+      - name: Install official LG webOS TV CLI
+        run: npm install -g @webos-tools/cli
+      - name: Package webOS app
+        run: |
+          mkdir -p dist
+          ares-package tv/lg-webos -o dist
+          PACKAGE="$(find dist -maxdepth 1 -name '*.ipk' -print -quit)"
+          test -n "$PACKAGE" && test -s "$PACKAGE"
+          mv "$PACKAGE" dist/ZANG-FLIX-webOS.ipk
+          ares-package --info dist/ZANG-FLIX-webOS.ipk
+          sha256sum dist/ZANG-FLIX-webOS.ipk > dist/SHA256SUMS-webOS.txt
+      - name: Upload IPK for testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZANG-FLIX-LG-webOS-IPK
+          path: |
+            dist/ZANG-FLIX-webOS.ipk
+            dist/SHA256SUMS-webOS.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish webOS developer release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view webos-latest >/dev/null 2>&1; then
+            gh release upload webos-latest dist/ZANG-FLIX-webOS.ipk dist/SHA256SUMS-webOS.txt --clobber
+          else
+            gh release create webos-latest dist/ZANG-FLIX-webOS.ipk dist/SHA256SUMS-webOS.txt \
+              --title "ZANG FLIX — LG webOS (Developer Mode)" \
+              --notes "Developer Mode package for LG webOS; requires ares-install via PC. Not published to LG Apps. Streaming requires authorized media sources."
+          fi
+          gh release view webos-latest --json assets --jq '.assets[].name' | grep -Fx 'ZANG-FLIX-webOS.ipk'

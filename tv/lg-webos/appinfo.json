@@ -1,0 +1,13 @@
+{
+  "id": "com.zangflix.tv",
+  "version": "1.0.0",
+  "vendor": "ZANG FLIX",
+  "type": "web",
+  "title": "ZANG FLIX",
+  "main": "index.html",
+  "icon": "icon.png",
+  "largeIcon": "largeicon.png",
+  "iconColor": "#0a0b14",
+  "resolution": "1920x1080",
+  "transparent": false
+}
