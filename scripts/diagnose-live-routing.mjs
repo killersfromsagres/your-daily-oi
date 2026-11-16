@@ -1,5 +1,6 @@
 // scripts/diagnose-live-routing.mjs — Bun; no full media transfers. Check production routes and build identity.
-const base="https://zangflix.vercel.app";
+const base=process.env.LIVE_TEST_BASE||"https://zangflix.vercel.app";
+console.log(JSON.stringify({event:"routing-diagnostic-start",origin:new URL(base).origin}));
 const routes=[
  "/tv","/api/version","/api/canais","/api/live-proxy","/api/proxy",
  "/api/live-format?canal=band&fonte=0",
@@ -24,7 +25,7 @@ await Promise.all(routes.map(async path=>{
     }
    }catch{}
   }else await res.body?.cancel();
-  console.log(JSON.stringify({path,status:res.status,mime,server:res.headers.get("server"),vercelId:res.headers.get("x-vercel-id"),cache:res.headers.get("cache-control"),
+  console.log(JSON.stringify({origin:base,path,status:res.status,mime,server:res.headers.get("server"),vercelId:res.headers.get("x-vercel-id"),cache:res.headers.get("cache-control"),
     isStudio:path==="/tv"?sample.includes("ztv-studio"):null,sample}));
  }catch(e){console.log(JSON.stringify({path,error:e?.cause?.code||e?.name||"fetch"}));}
 }));
