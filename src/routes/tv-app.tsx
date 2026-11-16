@@ -1,6 +1,6 @@
 import {createFileRoute,Link} from "@tanstack/react-router";
-import {useEffect,useState} from "react";
-import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check,MonitorPlay,ShieldCheck,ExternalLink,Smartphone,Info,Globe} from "lucide-react";
+import {useEffect,useRef,useState, type KeyboardEvent} from "react";
+import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check,MonitorPlay,ShieldCheck,ExternalLink,Smartphone,Info,Globe,Gamepad2,Sparkles,MousePointer2,Wifi,Play,ArrowUpRight} from "lucide-react";
 import {detectDeviceProfile} from "@/lib/device-profile";
 import {detectTvInstallPlatform, type TvInstallPlatform} from "@/lib/tv-install";
 import {ANDROID_APK_URL} from "@/components/layout/InstallAppButton";
@@ -14,16 +14,40 @@ export const Route=createFileRoute("/tv-app")({
 const TV_APK_URL=ANDROID_APK_URL.replace("ZANG-FLIX-Android.apk","ZANG-FLIX-TV.apk");
 const LG_RELEASE="https://github.com/killersfromsagres/your-daily-oi/releases/download/webos-latest/ZANG-FLIX-webOS.ipk";
 const WEB_URL="https://zangflix.vercel.app/tv-app";
-const devices:{id:TvInstallPlatform,name:string,subtitle:string}[]=[
-  {id:"tcl-android",name:"TCL / Android TV",subtitle:"Google TV · Fire TV"},
-  {id:"samsung",name:"Samsung",subtitle:"Tizen OS"},
-  {id:"lg",name:"LG",subtitle:"webOS"},
-  {id:"tcl-roku",name:"TCL Roku",subtitle:"Roku OS"},
+type DeviceInfo = {
+  id:TvInstallPlatform;
+  name:string;
+  subtitle:string;
+  logo:string;
+  status:string;
+  statusType:"ready"|"test"|"browser"|"unavailable";
+  accent:string;
+};
+const TCL_LOGO="https://upload.wikimedia.org/wikipedia/commons/2/2a/Logo_of_the_TCL_Corporation.svg";
+const devices:DeviceInfo[]=[
+  {id:"tcl-android",name:"TCL",subtitle:"Google TV / Android TV",logo:TCL_LOGO,status:"APK disponível",statusType:"ready",accent:"tcl"},
+  {id:"samsung",name:"Samsung",subtitle:"Samsung Tizen",logo:"/tv-brands/samsung.svg",status:"Versão web",statusType:"browser",accent:"samsung"},
+  {id:"lg",name:"LG",subtitle:"LG webOS",logo:"/tv-brands/lg.svg",status:"IPK de testes",statusType:"test",accent:"lg"},
+  {id:"tcl-roku",name:"TCL Roku",subtitle:"Roku OS",logo:"/tv-brands/roku.svg",status:"App Roku pendente",statusType:"unavailable",accent:"roku"},
 ];
 
 function TvAppPage(){
  const [selected,setSelected]=useState<TvInstallPlatform>("tcl-android");
  const [tv,setTv]=useState(false);
+ const optionsRef=useRef<HTMLDivElement>(null);
+ const selectedDevice=devices.find(device=>device.id===selected) || devices[0];
+ const onDeviceKeys=(event:KeyboardEvent<HTMLDivElement>)=>{
+  const step=event.key==="ArrowRight"||event.key==="ArrowDown"?1:
+    event.key==="ArrowLeft"||event.key==="ArrowUp"?-1:0;
+  if(!step)return;
+  const focused=(event.target as HTMLElement).closest<HTMLButtonElement>("[data-tv-device]");
+  if(!focused)return;
+  event.preventDefault();
+  const index=devices.findIndex(device=>device.id===focused.dataset.tvDevice);
+  const next=devices[(index+step+devices.length)%devices.length];
+  setSelected(next.id);
+  optionsRef.current?.querySelector<HTMLButtonElement>('[data-tv-device="'+next.id+'"]')?.focus();
+ };
  useEffect(()=>{
   const update=()=>{
    let forced=false;try{forced=localStorage.getItem("zf-tv-mode")==="true";}catch{}
@@ -45,27 +69,66 @@ function TvAppPage(){
  };
  return <main className="zf-tv-app-page">
   <Link to="/" className="zf-tv-app-back"><ChevronLeft size={18}/> Voltar ao início</Link>
-  <div className="zf-tv-app-intro">
-   <span>UMA EXPERIÊNCIA EM QUALQUER TELA</span>
-   <h1>ZANG FLIX<br/><em>na sua TV.</em></h1>
-   <p>Escolha o sistema da televisão. Mostraremos o método compatível, sem downloads errados.</p>
-  </div>
+  <section className="zf-tv-premium-hero" aria-labelledby="zf-tv-hero-title">
+   <div className="zf-tv-hero-copy">
+    <div className="zf-tv-eyebrow"><Sparkles size={14} aria-hidden="true"/> ZANG FLIX PARA TELA GRANDE</div>
+    <h1 id="zf-tv-hero-title">Seu próximo play.<br/><em>Agora na TV.</em></h1>
+    <p>Uma experiência feita para a sala de estar. Encontre a instalação certa para seu sistema, com interface preparada para o controle remoto.</p>
+    <div className="zf-tv-hero-actions">
+     <a href="#zf-tv-install-title" className="zf-tv-hero-primary">Escolher minha TV <ArrowRight size={17}/></a>
+     <button type="button" className="zf-tv-hero-secondary" onClick={toggle}><Gamepad2 size={17}/>{tv?"Desativar modo TV":"Experimentar modo TV"}</button>
+    </div>
+    <div className="zf-tv-hero-facts">
+     <span><Check size={15}/> Navegação por controle</span>
+     <span><Check size={15}/> Guia por plataforma</span>
+    </div>
+   </div>
+   <div className="zf-tv-visual" aria-hidden="true">
+    <div className="zf-tv-visual-orbit zf-tv-visual-orbit-a"/>
+    <div className="zf-tv-visual-orbit zf-tv-visual-orbit-b"/>
+    <div className="zf-tv-hardware">
+     <div className="zf-tv-screen">
+      <div className="zf-tv-screen-head"><strong>ZANG<span>FLIX</span></strong><span>INÍCIO　 FILMES　 SÉRIES　 TV</span></div>
+      <div className="zf-tv-screen-feature"><span>DESTAQUE</span><strong>Seu cinema<br/>sem limites.</strong><i>EXPLORAR <ArrowRight size={9}/></i></div>
+      <div className="zf-tv-screen-rail"><span>Continue explorando</span><div><i/><i/><i/><i/></div></div>
+     </div>
+     <div className="zf-tv-hardware-stand"/>
+    </div>
+    <div className="zf-tv-remote"><div className="zf-tv-remote-dot"/><div className="zf-tv-remote-cross"><span>▲</span><div><span>◀</span><b>OK</b><span>▶</span></div><span>▼</span></div><div className="zf-tv-remote-home">⌂</div></div>
+    <small className="zf-tv-visual-caption">PRÉVIA ILUSTRATIVA DA INTERFACE</small>
+   </div>
+  </section>
 
   <section className="zf-tv-install-guide" aria-labelledby="zf-tv-install-title">
    <div className="zf-tv-install-lead">
-     <Tv size={23} aria-hidden/>
-     <div><h2 id="zf-tv-install-title">Instalar na televisão</h2><p>Selecione a marca ou sistema.</p></div>
+     <div className="zf-tv-install-lead-icon"><Tv size={23} aria-hidden="true"/></div>
+     <div><span className="zf-tv-section-label">CONFIGURAÇÃO EM POUCOS PASSOS</span>
+      <h2 id="zf-tv-install-title">Qual é a sua televisão?</h2>
+      <p>Escolha a marca e o sistema para visualizar o método de instalação disponível.</p></div>
    </div>
-   <div className="zf-tv-device-options" aria-label="Sistema da televisão">
-    {devices.map(device=><button key={device.id} type="button"
-       className={"zf-tv-device-option"+(selected===device.id?" is-selected":"")}
+   <div className="zf-tv-device-options" ref={optionsRef} onKeyDown={onDeviceKeys} aria-label="Escolher sistema da televisão">
+    {devices.map(device=><button key={device.id} type="button" data-tv-device={device.id}
+       className={"zf-tv-device-option zf-tv-device-"+device.accent+(selected===device.id?" is-selected":"")}
        aria-pressed={selected===device.id}
+       aria-controls="zf-tv-install-panel"
        onClick={()=>setSelected(device.id)}>
-       <strong>{device.name}</strong><small>{device.subtitle}</small>
+       <span className="zf-tv-device-brand">
+         <img src={device.logo} alt="" loading="lazy" width={94} height={45}
+            onError={event=>{event.currentTarget.style.display="none"}}/>
+         <b aria-hidden="true">{device.name}</b>
+       </span>
+       <span className="zf-tv-device-copy"><strong>{device.name}</strong><small>{device.subtitle}</small></span>
+       <span className={"zf-tv-device-status is-"+device.statusType}>{device.status}</span>
+       <span className="zf-tv-device-selected"><Check size={15}/></span>
      </button>)}
    </div>
 
-   <div className="zf-tv-install-detail">
+   <div className="zf-tv-install-detail" id="zf-tv-install-panel" aria-live="polite">
+    <div className="zf-tv-install-panel-heading">
+     <span>PLATAFORMA SELECIONADA</span>
+     <div><strong>{selectedDevice.name}</strong><small>{selectedDevice.status}</small></div>
+    </div>
+    <div className="zf-tv-install-detail-animated" key={selected}>
     {selected==="tcl-android"&&<div>
       <div className="zf-tv-install-type"><ShieldCheck size={17}/> APK Android TV compatível</div>
       <h3>TCL Google TV / Android TV</h3>
@@ -112,9 +175,11 @@ function TvAppPage(){
        <li>Se o objetivo for transmitir do celular, utilize apenas um protocolo suportado por ambos os aparelhos e pela fonte do vídeo.</li></ol>
       <a className="zf-tv-install-resource" href="https://developer.roku.com/develop/getting-started/setup-guide" target="_blank" rel="noopener noreferrer">Guia oficial do Roku Developer <ExternalLink size={14}/></a>
     </div>}
+    </div>
    </div>
   </section>
 
+  <div className="zf-tv-below-heading"><span>MAIS POSSIBILIDADES</span><h2>Do seu jeito. Na sua tela.</h2></div>
   <div className="zf-tv-install-grid zf-tv-install-extra">
    <section>
      <Cast size={25}/><h2>Transmitir pelo celular</h2>
@@ -134,6 +199,6 @@ function TvAppPage(){
      <a className="ydo-btn-secondary" href={ANDROID_APK_URL}><Download size={17}/> APK para Android</a>
    </section>
   </div>
-  <p className="zf-tv-install-legal">A instalação do aplicativo não garante a reprodução de fontes indisponíveis, com DRM ou sem autorização de distribuição.</p>
+  <p className="zf-tv-install-legal">As marcas são exibidas apenas para identificar compatibilidade, sem afiliação com o ZANG FLIX. A instalação não garante a reprodução de fontes indisponíveis, protegidas por DRM ou sem autorização de distribuição.</p>
  </main>;
 }
