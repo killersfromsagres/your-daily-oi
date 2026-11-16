@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'src/lib/tv-backend.ts'
+      - 'src/lib/live-source.ts'
+      - 'tests/live-tv.test.ts'
       - 'src/lib/tv-edge-backup.ts'
       - 'src/components/player/LivePlayer.tsx'
       - 'src/lib/live-http-errors.ts'
