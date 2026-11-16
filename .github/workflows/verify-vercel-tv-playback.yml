@@ -1,0 +1,29 @@
+name: Verify public TV playback on Vercel after deployment
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/tv-backend.ts'
+      - 'src/components/tv/TvView.tsx'
+      - 'src/lib/version.ts'
+      - 'scripts/diagnose-live-browser.mjs'
+      - '.github/workflows/verify-vercel-tv-playback.yml'
+permissions: { contents: read }
+jobs:
+  real-playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [band, sbt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Confirm live video clock advances on zangflix.vercel.app
+        env:
+          LIVE_REMOTE_BASE_URL: https://zangflix.vercel.app
+          LIVE_REQUIRE_PLAYBACK: "1"
+          LIVE_TEST_CHANNEL: ${{ matrix.channel }}
+        run: bun scripts/diagnose-live-browser.mjs
