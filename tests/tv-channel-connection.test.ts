@@ -34,6 +34,10 @@ describe("Native player proxy failure diagnostics", () => {
     expect(await probeFailedLiveProxy("https://external.example/stream.m3u8", fake)).toBeNull();
     expect(observed).toHaveLength(1);
   });
+  test("separates a Vercel upstream failure from a broadcaster authorization denial", async () => {
+    const fake = (async () => new Response(null, { status: 502 })) as typeof fetch;
+    expect(await probeFailedLiveProxy("/api/tv/stream?canal=globo-bahia&fonte=0",fake)).toBe(502);
+  });
   test("does not classify a successful proxy response as rejected", async () => {
     const fake = (async () => new Response(null, { status: 200 })) as typeof fetch;
     expect(await probeFailedLiveProxy("/api/live-proxy?url=authorized", fake)).toBeNull();
@@ -51,6 +55,11 @@ describe("Recover on real HLS HTTP failures, not harmless fragment retries", () 
     expect(terminalHlsLoadFailure(404, "fragLoadError", false)).toBe(false);
     expect(terminalHlsLoadFailure(404, "manifestLoadError", false)).toBe(true);
     expect(accessDeniedLiveSource(404, "fragLoadError")).toBe(false);
+  });
+  test("a nonfatal Vercel 502 manifest failure can switch to alternate infrastructure", () => {
+    expect(terminalHlsLoadFailure(502,"manifestLoadError",false)).toBe(true);
+    expect(terminalHlsLoadFailure(504,"levelLoadError",false)).toBe(true);
+    expect(terminalHlsLoadFailure(502,"fragLoadError",false)).toBe(false);
   });
   test("temporary connection errors still use Hls.js retry logic", () => {
     expect(terminalHlsLoadFailure(0, "fragLoadTimeOut", false)).toBe(false);

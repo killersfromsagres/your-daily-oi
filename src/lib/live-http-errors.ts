@@ -2,6 +2,9 @@
 export function terminalHlsLoadFailure(status: number, detail: string, fatal: boolean): boolean {
   if (fatal) return true;
   if ([401, 403, 410, 429].includes(status)) return true;
+  // Manifest server errors on Vercel can be recovered through our own
+  // Cloudflare deployment. Segment 5xx remains Hls.js retryable.
+  if ([502, 503, 504].includes(status) && /manifest|level|key/i.test(detail)) return true;
   // A single expired/disappearing segment can be retried by Hls.js.
   // A missing manifest/level/key cannot be recovered by retrying fragments.
   return status === 404 && /manifest|level|key/i.test(detail);
@@ -25,7 +28,8 @@ export async function probeFailedLiveProxy(
       signal: AbortSignal.timeout(4500),
     });
     await response.body?.cancel().catch(() => {});
-    return [401, 403, 404, 410].includes(response.status) ? response.status : null;
+    return [401, 403, 404, 410, 502, 503, 504].includes(response.status)
+      ? response.status : null;
   } catch { return null; }
 }
 
