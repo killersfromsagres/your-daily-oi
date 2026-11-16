@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="https://zangflix.vercel.app/ZangFlixDev" version="1.0.0" viewmodes="fullscreen">
+  <!-- Development scaffold only. Reissue app id using Tizen Studio certificates. -->
+  <tizen:application id="ZF2026TEST.ZangFlix" package="ZF2026TEST" required_version="5.5"/>
+  <name>ZANG FLIX</name>
+  <content src="index.html"/>
+  <icon src="icon.png"/>
+  <tizen:profile name="tv-samsung"/>
+  <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <access origin="https://zangflix.vercel.app" subdomains="true"/>
+  <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" hwkey-event="enable"/>
+</widget>
