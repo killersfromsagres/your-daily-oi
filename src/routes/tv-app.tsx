@@ -114,7 +114,7 @@ function TvAppPage(){
        onClick={()=>setSelected(device.id)}>
        <span className="zf-tv-device-brand">
          <img src={device.logo} alt="" loading="lazy" width={94} height={45}
-            onError={event=>{event.currentTarget.style.display="none"}}/>
+            onError={event=>{event.currentTarget.style.display="none";const fallback=event.currentTarget.nextElementSibling as HTMLElement|null;if(fallback)fallback.style.display="block"}}/>
          <b aria-hidden="true">{device.name}</b>
        </span>
        <span className="zf-tv-device-copy"><strong>{device.name}</strong><small>{device.subtitle}</small></span>
