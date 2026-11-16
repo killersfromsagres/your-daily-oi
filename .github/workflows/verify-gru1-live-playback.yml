@@ -1,0 +1,28 @@
+name: Verify São Paulo Vercel live video playback
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'vercel.json'
+      - '.github/workflows/verify-gru1-live-playback.yml'
+      - 'src/lib/tv-edge-backup.ts'
+      - 'src/components/player/LivePlayer.tsx'
+permissions: { contents: read }
+jobs:
+  playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [band, sbt, record, sportv, tnt-series, telecine-premium]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Verify real video clock on production Vercel
+        env:
+          LIVE_REMOTE_BASE_URL: https://zangflix.vercel.app
+          LIVE_TEST_CHANNEL: ${{ matrix.channel }}
+          LIVE_REQUIRE_PLAYBACK: "1"
+        run: bun scripts/diagnose-live-browser.mjs
