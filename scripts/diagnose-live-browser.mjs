@@ -15,6 +15,7 @@ const directBlock=process.env.LIVE_BLOCK_DIRECT_HOST || "";
 const requireLegacyPlayback=process.env.LIVE_REQUIRE_LEGACY_PLAYBACK === "1";
 const requirePlayback = process.env.LIVE_REQUIRE_PLAYBACK === "1";
 const verifyResume = process.env.LIVE_VERIFY_RESUME === "1";
+const diagnosticLong = process.env.LIVE_DIAGNOSTIC_LONG === "1";
 const expectProxy = process.env.LIVE_EXPECT_PROXY === "1";
 const worker=REMOTE_BASE?null:spawn("bunx",["wrangler@4","--cwd",".output","dev","--local","--ip","127.0.0.1","--port",String(WORKER_PORT)],{stdio:["ignore","pipe","pipe"]});
 let workerLogs="";
@@ -49,7 +50,7 @@ try{
  if(!endpoint)throw new Error("Chrome debugging page not found; exit="+chrome.exitCode+"; stderr="+chromeStderr);
  ws=new WebSocket(endpoint);
  await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
- const pending=new Map();let index=0;const failed=[],warnings=[];
+ const pending=new Map();let index=0;const failed=[],warnings=[],mediaResponses=[],loadFailures=[];
  let legacyRequests=0,catalogRequests=0,legacyMediaOk=0,blockedResponses=0;
  let lastSnapshot=null;
  ws.addEventListener("message",event=>{
@@ -64,6 +65,14 @@ try{
    if(m.error)p.reject(new Error(m.error.message));else p.resolve(m.result);
   }else if(m.method==="Network.responseReceived"){
    const response=m.params?.response;
+   if (mediaResponses.length < 45) {
+     try {
+       const u=new URL(response?.url || "");
+       if (/^\/api\/(?:tv\/stream|live-proxy)/.test(u.pathname)) {
+         mediaResponses.push({host:u.hostname,path:u.pathname,status:response.status,mime:response.mimeType});
+       }
+     }catch{}
+   }
    if(response?.url?.includes("/api/live-proxy?url=") && response.status < 300 &&
       /mpegurl|mp2t|video\/mp4/.test(response.mimeType||"")) legacyMediaOk++;
    if(response?.status>=400&&failed.length<20){
@@ -71,6 +80,7 @@ try{
    }
   }else if(m.method==="Network.loadingFailed"){
    if(m.params?.blockedReason) blockedResponses++;
+   if(loadFailures.length<20)loadFailures.push({error:m.params?.errorText||"unknown",blocked:m.params?.blockedReason||null});
   }else if(m.method==="Runtime.consoleAPICalled"){
    const line=(m.params?.args||[]).map(x=>x.value||x.description||"").join(" ").slice(0,210);
    if(/LivePlayer|Hls|m3u8|403|failed/i.test(line)&&warnings.length<20)warnings.push(line);
@@ -102,6 +112,11 @@ try{
  await send("Runtime.evaluate",{expression:'(() => {const v=document.querySelector("video");if(v){v.muted=true;void v.play().catch(()=>{});}})()'});
  await sleep(9000);await snapshot(14);
  await sleep(9000);await snapshot(23);
+ if(diagnosticLong){
+   for(const time of [32,41,50,59]){
+     await sleep(9000);await snapshot(time);
+   }
+ }
  if (verifyResume && (lastSnapshot?.video?.time ?? 0) >= 7) {
    await send("Runtime.evaluate", { expression: `(() => {
      const video = document.querySelector("video");
@@ -126,7 +141,7 @@ try{
    await sleep(9000);await snapshot(32);
    await sleep(9000);await snapshot(41);
  }
- console.log(JSON.stringify({event:"browser-errors",base:BASE,channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,blockedResponses,failed,warnings}));
+ console.log(JSON.stringify({event:"browser-errors",base:BASE,channel,blockModern,directBlock,legacyRequests,catalogRequests,legacyMediaOk,blockedResponses,failed,warnings,mediaResponses,loadFailures}));
  if(requirePlayback && ((lastSnapshot?.video?.time ?? 0)<7 ||
     lastSnapshot?.video?.paused || lastSnapshot?.errorText)) {
    throw new Error("No sustained playback for "+channel+": "+JSON.stringify(lastSnapshot));
