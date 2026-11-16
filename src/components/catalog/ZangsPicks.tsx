@@ -3,7 +3,6 @@ import {Link} from "@tanstack/react-router";
 import {ChevronLeft,ChevronRight,Play,Plus,Check,Star} from "lucide-react";
 import type {CatalogItem} from "@/lib/types";
 import {horrorSpotlightWindow,horrorSpotlightNext,horrorSpotlightPages,HORROR_SPOTLIGHT_PAGE_SIZE} from "@/lib/horror-spotlight";
-import {catalogDisplayTitle} from "@/lib/catalog";
 
 interface Props {
   items: CatalogItem[];
@@ -85,7 +84,7 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
               const active=index===selectedIndex;
               return <button type="button" key={item.id} data-offset={offset}
                 className={"zf-horror-card"+(active?" is-active":"")}
-                aria-label={"Selecionar " + catalogDisplayTitle(item)}
+                aria-label={"Selecionar " + item.title}
                 aria-pressed={active}
                 onClick={()=>select(index)}>
                 <span className="zf-horror-card-visual">
@@ -94,7 +93,7 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
                     : <span className="zf-horror-card-fallback">{item.title.slice(0,2).toUpperCase()}</span>}
                   <span className="zf-horror-card-tint" aria-hidden="true"/>
                 </span>
-                <span className="zf-horror-card-name">{catalogDisplayTitle(item)}</span>
+                <span className="zf-horror-card-name">{item.title}</span>
                 {active && <span className="zf-horror-card-selected" aria-hidden="true">EM DESTAQUE</span>}
               </button>;
             })}
@@ -118,7 +117,7 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
         <div className="zf-horror-selected-info" aria-live="polite" aria-atomic="true">
           <div className="zf-horror-film-copy">
             <span className="zf-horror-selected-label">FILME SELECIONADO</span>
-            <h3>{catalogDisplayTitle(selected)}</h3>
+            <h3>{selected.title}</h3>
             <p>
               {year && <span>{year}</span>}
               {typeof rating==="number" && rating>0 && <span className="zf-horror-rating"><Star size={12} fill="currentColor" aria-hidden="true"/>{rating.toFixed(1)}</span>}
@@ -133,7 +132,7 @@ export function ZangsPicks({items,savedIds,onToggleSaved}:Props) {
               {isSaved?<Check size={18} aria-hidden="true"/>:<Plus size={18} aria-hidden="true"/>}
             </button>
             <Link to={detailPath} className="zf-horror-watch"
-              aria-label={"Ver filme " + catalogDisplayTitle(selected)}>
+              aria-label={"Ver filme " + selected.title}>
               <Play size={16} fill="currentColor" aria-hidden="true"/>
               {hasPlayableSource?"Assistir agora":"Ver filme"}
             </Link>
