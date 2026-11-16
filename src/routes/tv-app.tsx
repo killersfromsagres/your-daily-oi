@@ -1,6 +1,6 @@
 import {createFileRoute,Link} from "@tanstack/react-router";
 import {useEffect,useRef,useState, type KeyboardEvent} from "react";
-import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check,MonitorPlay,ShieldCheck,ExternalLink,Smartphone,Info,Globe,Gamepad2,Sparkles,MousePointer2,Wifi,Play,ArrowUpRight} from "lucide-react";
+import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check,MonitorPlay,ShieldCheck,ExternalLink,Smartphone,Info,Globe,Gamepad2} from "lucide-react";
 import {detectDeviceProfile} from "@/lib/device-profile";
 import {detectTvInstallPlatform, type TvInstallPlatform} from "@/lib/tv-install";
 import {ANDROID_APK_URL} from "@/components/layout/InstallAppButton";
@@ -71,7 +71,7 @@ function TvAppPage(){
   <Link to="/" className="zf-tv-app-back"><ChevronLeft size={18}/> Voltar ao início</Link>
   <section className="zf-tv-premium-hero" aria-labelledby="zf-tv-hero-title">
    <div className="zf-tv-hero-copy">
-    <div className="zf-tv-eyebrow"><Sparkles size={14} aria-hidden="true"/> ZANG FLIX PARA TELA GRANDE</div>
+    <div className="zf-tv-eyebrow"><Tv size={14} aria-hidden="true"/> ZANG FLIX PARA TELA GRANDE</div>
     <h1 id="zf-tv-hero-title">Seu próximo play.<br/><em>Agora na TV.</em></h1>
     <p>Uma experiência feita para a sala de estar. Encontre a instalação certa para seu sistema, com interface preparada para o controle remoto.</p>
     <div className="zf-tv-hero-actions">
