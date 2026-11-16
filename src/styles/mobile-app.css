@@ -126,12 +126,15 @@
   .zf-player-episode-action.zf-skip-opening { bottom:144px; }
 }
 
-/* Android APK entry: always visible in the top navigation, never a fake direct download. */
+/* Quiet download entry for the website. The installed runtime renders none. */
 .zf-header-apk { display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  flex-shrink:0;min-height:37px;padding:0 12px;border-radius:12px;
-  border:1px solid rgba(244,193,116,.36);background:rgba(244,193,116,.10);
-  color:#f2c58c;text-decoration:none;font-size:12px;font-weight:750;white-space:nowrap; }
-.zf-header-apk:hover,.zf-header-apk:focus-visible { background:rgba(244,193,116,.2); }
+  flex-shrink:0;min-height:34px;padding:0 11px;border-radius:999px;
+  border:1px solid rgba(226,236,247,.19);
+  background:rgba(255,255,255,.055);
+  color:rgba(236,242,248,.86);text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap;
+  transition:background .18s ease,border-color .18s ease,color .18s ease; }
+.zf-header-apk:hover,.zf-header-apk:focus-visible { background:rgba(255,255,255,.14);
+  border-color:rgba(226,236,247,.40);color:#fff; }
 @media (max-width:767px) {
   html:not([data-zf-platform="tv"]) .ydo-mobile-menu-trigger { display:none; }
   html:not([data-zf-platform="tv"]) .zf-header-apk { padding:0 9px;min-height:36px;font-size:11px;gap:5px; }

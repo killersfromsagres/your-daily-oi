@@ -333,7 +333,7 @@ export function Header({ onSearch }: HeaderProps) {
           />
         )}
         </div>
-        {platform === "mobile" && <InstallAppButton />}
+        <InstallAppButton />
       </div>
   );
 

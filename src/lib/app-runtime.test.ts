@@ -33,6 +33,11 @@ describe("ZANG FLIX install-button runtime detection", () => {
     expect(isInstalledZangFlixRuntime({ userAgent: androidChrome, minimalUiDisplayMode: true })).toBe(true);
   });
 
+  test("installed webOS or Tizen wrapper hides CTA, not ordinary TV browser", () => {
+    expect(isInstalledZangFlixRuntime({userAgent:"Mozilla/5.0 (WEBOS; SmartTV)"})).toBe(false);
+    expect(isInstalledZangFlixRuntime({userAgent:"Mozilla/5.0 (Tizen; Smart-TV)",installedTvWrapper:true})).toBe(true);
+  });
+
   test("browser remains a browser even when the APK is also installed on the phone", () => {
     expect(isInstalledZangFlixRuntime({
       userAgent: androidChrome,
