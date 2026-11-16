@@ -12,6 +12,7 @@ import type { CanalEPG, ProgramaEPG } from "@/lib/epg";
 import { ChannelCard } from "@/components/tv/ChannelCard";
 import { resolveChannelProgram, searchableProgramText, type ProgramSlot } from "@/lib/tv-program";
 import { LivePlayer } from "@/components/player/LivePlayer";
+import { detectTvProxyBackend, type TvProxyBackend } from "@/lib/tv-backend";
 import { JogosShelf } from "@/components/tv/JogosShelf";
 import "@/styles/tv-premium.css";
 import "@/styles/tv-mobile-player.css";
@@ -54,7 +55,8 @@ function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
       c.fontes.every((source, j) => {
         const alt = other.fontes[j];
         return alt?.url === source.url && alt.referer === source.referer &&
-          alt.agente === source.agente && alt.chave === source.chave;
+          alt.agente === source.agente && alt.chave === source.chave &&
+          alt.formato === source.formato;
       });
   });
 }
@@ -111,7 +113,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
     setChannelPlayback(previous => previous[id] === status ? previous : {...previous, [id]: status});
   }, []);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [proxyBackend, setProxyBackend] = useState<"checking" | "catalog" | "legacy" | "unavailable">("checking");
+  const [proxyBackend, setProxyBackend] = useState<"checking" | TvProxyBackend>("checking");
+  const probeBackendRef = useRef<() => void>(() => {});
   const [, setUpdatedAt] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideQuery, setGuideQuery] = useState("");
@@ -135,35 +138,41 @@ export function TvView({ initialCanalId }: TvViewProps) {
 
   useEffect(() => {
     let active = true;
-    const ctrl = new AbortController();
-    const timer = window.setTimeout(() => ctrl.abort(), 7500);
+    let pending = false;
+    let lastMode: "checking" | TvProxyBackend = "checking";
     const check = async () => {
-      // Vercel and Lovable can deploy newer frontend bundles before their
-      // functions. In that case prefer the old, still-working live proxy.
+      if (!active || pending) return;
+      pending = true;
       try {
-        const modern = await fetch("/api/tv/stream?canal=%21&fonte=0", {
-          signal: ctrl.signal, cache: "no-store",
-        });
-        const mime = modern.headers.get("content-type") || "";
-        if (modern.status === 400 && mime.includes("json")) {
-          const result = await modern.json() as { error?: string };
-          if (typeof result.error === "string") {
-            if (active) setProxyBackend("catalog");
-            return;
-          }
-        }
-      } catch { /* retry with legacy route */ }
-      try {
-        const legacy = await fetch("/api/live-proxy", {
-          signal: ctrl.signal, cache: "no-store",
-        });
-        if (active) setProxyBackend(legacy.status === 400 ? "legacy" : "unavailable");
-      } catch {
-        if (active) setProxyBackend("unavailable");
+        // Cloudflare/Lovable is usually fast; a Vercel cold start can take
+        // longer. Each endpoint has its own independent request deadline.
+        const detected = await detectTvProxyBackend();
+        if (!active) return;
+        lastMode = detected;
+        setProxyBackend(previous => previous === detected ? previous : detected);
+      } finally {
+        pending = false;
       }
     };
-    void check().finally(() => window.clearTimeout(timer));
-    return () => { active = false; ctrl.abort(); window.clearTimeout(timer); };
+    probeBackendRef.current = () => { void check(); };
+    void check();
+    // Unlike the old one-shot 7.5-second check, an unavailable Vercel
+    // function can be detected again after warming or regaining connectivity.
+    const retry = window.setInterval(() => {
+      if (lastMode === "unavailable" && !document.hidden) void check();
+    }, 20_000);
+    const resume = () => {
+      if (lastMode === "unavailable" && !document.hidden) void check();
+    };
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      active = false;
+      window.clearInterval(retry);
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", resume);
+      probeBackendRef.current = () => {};
+    };
   }, []);
 
   const lastRefresh = useRef(0);
@@ -184,10 +193,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
     setActiveId(previous => {
       const requested = initialChannelRef.current;
       if (requested && data.canais.some(c => c.id === requested)) return requested;
-      if (previous && data.canais.some(c => c.id === previous)) return previous;
+      if (previous && data.canais.some(c => c.id === previous && c.fontes.length > 0)) return previous;
       let saved = "";
       try { saved = localStorage.getItem(LAST_KEY) || ""; } catch {}
-      if (saved && data.canais.some(c => c.id === saved)) return saved;
+      if (saved && data.canais.some(c => c.id === saved && c.fontes.length > 0)) return saved;
       const first = data.canais.find(c => c.fontes.length && /^(band|sbt)$/i.test(c.nome)) ||
         data.canais.find(c => c.fontes.length) || data.canais[0];
       return first?.id || "";
@@ -218,7 +227,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
 
   // Refresh current source list once playback exhausted all available URLs.
   // The backend rate-limits forced loads; no tight request loop on failures.
-  const onSourcesExhausted = useCallback(() => { void refresh(false, true); }, [refresh]);
+  const onSourcesExhausted = useCallback(() => {
+    void refresh(false, true);
+    probeBackendRef.current();
+  }, [refresh]);
 
   useEffect(() => {
     void refresh(true);
