@@ -124,6 +124,16 @@ describe("Priorização de espelhos em canais fechados", () => {
     expect(orderLiveSources([dead, official])[0]).toBe(official);
   });
 
+  test("prioriza espelhos da Band e SBT com reprodução real confirmada", () => {
+    const slow = {url:"https://slow.example/live/index.m3u8"};
+    const band = {url:"https://vipwaytvcdn.multtv.tv.br/live/index.m3u8"};
+    const sbt = {url:"https://6836041ea1117.streamlock.net/live/index.m3u8"};
+    expect(orderLiveSources([slow,band])[0]).toBe(band);
+    expect(orderLiveSources([slow,sbt])[0]).toBe(sbt);
+    // A single source is never silently removed.
+    expect(orderLiveSources([slow])).toEqual([slow]);
+  });
+
   test("não altera a ordem de fontes sem CDN problemático", () => {
     const first = { url: "https://cdn.example/stream.m3u8" };
     const second = { url: "https://backup.example/stream.m3u8" };
