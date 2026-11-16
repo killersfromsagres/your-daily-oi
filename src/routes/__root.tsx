@@ -10,7 +10,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 import tvExperienceCss from "../styles/tv-experience.css?url";
 import tvAppPremiumCss from "../styles/tv-app-premium.css?url";
-import horrorSpotlightCss from "../styles/horror-spotlight.css?url";
 import friday13Css from "../styles/friday13-edition.css?url";
 import { Friday13EditionProvider } from "@/components/catalog/Friday13Edition";
 import mobileCatalogCss from "../styles/mobile-catalog-filters.css?url";
@@ -113,7 +112,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: friday13Css },
       { rel: "stylesheet", href: tvExperienceCss },
       { rel: "stylesheet", href: tvAppPremiumCss },
-      { rel: "stylesheet", href: horrorSpotlightCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
