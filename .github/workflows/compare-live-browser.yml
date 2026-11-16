@@ -1,0 +1,25 @@
+name: Compare live TV playback on Lovable and Vercel Chrome
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/diagnose-live-browser.mjs'
+      - '.github/workflows/compare-live-browser.yml'
+permissions: {contents: read}
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [lovable, vercel]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Inspect live Chrome playback on both public domains
+        env:
+          LIVE_REMOTE_BASE_URL: ${{ matrix.site == 'lovable' && 'https://zangflix.lovable.app' || 'https://zangflix.vercel.app' }}
+          LIVE_TEST_CHANNEL: band
+        run: bun scripts/diagnose-live-browser.mjs
