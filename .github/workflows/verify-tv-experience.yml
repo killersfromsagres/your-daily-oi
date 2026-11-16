@@ -12,6 +12,10 @@ on:
       - 'src/lib/football-tv-guide.ts'
       - 'src/styles/tv-experience.css'
       - 'src/routes/tv-app.tsx'
+      - 'src/styles/tv-app-premium.css'
+      - 'public/tv-brands/**'
+      - 'tests/tv-app-design.test.ts'
+      - 'scripts/smoke-tv-app.mjs'
       - 'scripts/fixtures/tv-experience-harness.tsx'
       - 'scripts/smoke-tv-experience.mjs'
       - 'tests/tv-experience.test.ts'
@@ -28,6 +32,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun test
       - run: bun run build
+      - name: Verify premium TV install UI and screenshot desktop/mobile
+        run: bun scripts/smoke-tv-app.mjs
       - name: Install synthetic media dependency
         run: |
           if ! command -v ffmpeg >/dev/null; then
@@ -39,6 +45,8 @@ jobs:
         if: always()
         with:
           name: live-tv-experience-browser
-          path: artifacts/live-tv-*.png
+          path: |
+            artifacts/live-tv-*.png
+            artifacts/tv-app-*.png
           if-no-files-found: warn
           retention-days: 7
