@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'src/lib/tv-backend.ts'
+      - 'src/lib/tv-edge-backup.ts'
+      - 'src/components/player/LivePlayer.tsx'
+      - 'src/lib/live-http-errors.ts'
       - 'src/components/tv/TvView.tsx'
       - 'src/lib/version.ts'
       - 'scripts/diagnose-live-browser.mjs'
@@ -17,13 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        channel: [band, sbt]
+        channel: [band, sbt, globo-bahia]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - name: Confirm live video clock advances on zangflix.vercel.app
         env:
           LIVE_REMOTE_BASE_URL: https://zangflix.vercel.app
-          LIVE_REQUIRE_PLAYBACK: "1"
+          LIVE_REQUIRE_PLAYBACK: ${{ matrix.channel == 'globo-bahia' && '0' || '1' }}
           LIVE_TEST_CHANNEL: ${{ matrix.channel }}
         run: bun scripts/diagnose-live-browser.mjs
