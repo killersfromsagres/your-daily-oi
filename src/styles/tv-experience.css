@@ -258,3 +258,38 @@ html[data-zf-platform="tv"] .zf-media-carousel__fade,
 @media (prefers-reduced-motion: reduce) {
   .zf-media-carousel__track { scroll-behavior: auto; }
 }
+
+
+/* TV installation hub: compact, calm, remote-focusable, and responsive. */
+.zf-tv-app-intro h1 em{font-style:normal;color:#e6c78f}
+.zf-tv-app-intro{max-width:750px}
+.zf-tv-app-page{max-width:1280px}
+.zf-tv-install-guide{margin-top:30px;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(18px,3vw,34px);background:linear-gradient(160deg,rgba(255,255,255,.065),rgba(255,255,255,.019));box-shadow:0 16px 60px #0004}
+.zf-tv-install-lead{display:flex;align-items:center;gap:12px;color:#dfe9f4}
+.zf-tv-install-lead svg{color:#e6c78f}
+.zf-tv-install-lead h2{font-size:20px;font-weight:650;margin:0}
+.zf-tv-install-lead p{color:#929eae;font-size:12px;margin:3px 0 0}
+.zf-tv-device-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0 24px}
+.zf-tv-device-option{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left;padding:15px;border-radius:13px;border:1px solid #ffffff19;background:#0c111a;color:#e1e5ec;cursor:pointer;transition:background .16s,border-color .16s}
+.zf-tv-device-option strong{font-size:13px;font-weight:650}
+.zf-tv-device-option small{font-size:11px;color:#83909f}
+.zf-tv-device-option.is-selected{border-color:rgba(230,199,143,.66);background:rgba(230,199,143,.12)}
+.zf-tv-device-option:focus-visible,.zf-tv-install-cta:focus-visible,.zf-tv-install-resource:focus-visible{outline:3px solid #e6c78f;outline-offset:3px}
+.zf-tv-install-detail{border-top:1px solid #ffffff17;padding-top:24px;min-height:300px}
+.zf-tv-install-detail h3{font-size:clamp(21px,3vw,29px);margin:7px 0 11px;font-weight:700;letter-spacing:-.03em}
+.zf-tv-install-detail p{color:#b1bac8;font-size:14px;line-height:1.7;max-width:780px}
+.zf-tv-install-type{display:inline-flex;align-items:center;gap:7px;color:#ddc28d;font-size:11px;letter-spacing:.07em;font-weight:650}
+.zf-tv-install-cta{margin:12px 0 6px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:45px;padding:0 18px;border-radius:10px;background:#e4bf86;color:#101319!important;font-size:13px;text-decoration:none;font-weight:750}
+.zf-tv-install-cta:hover{background:#f0d4a8}
+.zf-tv-install-cta svg:last-child{margin-left:4px}
+.zf-tv-install-detail ol{display:grid;gap:8px;padding:0 0 0 22px;margin:18px 0;max-width:840px}
+.zf-tv-install-detail li{line-height:1.65;font-size:13px;color:#b4bfcc}
+.zf-tv-install-detail li::marker{color:#dfc188}
+.zf-tv-install-note{display:flex!important;align-items:flex-start;gap:7px;max-width:850px;font-size:12px!important;line-height:1.6;color:#a3adbb!important;margin:18px 0 0}
+.zf-tv-install-note svg{flex:0 0 15px;margin-top:2px;color:#e1c38c}
+.zf-tv-install-resource{display:inline-flex;align-items:center;gap:6px;text-decoration:underline;text-underline-offset:3px;color:#e9cb96;font-size:12px;margin-top:6px}
+.zf-tv-install-extra{margin-top:28px!important;gap:20px!important}
+.zf-tv-install-extra section{padding-top:20px}
+.zf-tv-install-legal{margin-top:30px;color:#86919e;font-size:11px;line-height:1.6}
+@media(max-width:850px){.zf-tv-device-options{grid-template-columns:repeat(2,minmax(0,1fr))}.zf-tv-device-option{padding:13px}.zf-tv-install-guide{border-radius:18px}.zf-tv-install-detail{min-height:unset}}
+@media(max-width:420px){.zf-tv-install-detail p{font-size:13px}.zf-tv-device-option strong{font-size:12px}.zf-tv-install-extra section{padding-top:16px}}
