@@ -191,6 +191,14 @@ export function Header({ onSearch }: HeaderProps) {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
+  // The floating mobile search is portaled outside the header. Focus after
+  // the input is mounted, not only during the click that opens the panel.
+  useEffect(() => {
+    if (!searchOpen) return;
+    const focus = window.setTimeout(() => searchRef.current?.focus(), 125);
+    return () => window.clearTimeout(focus);
+  }, [searchOpen]);
+
   // Fecha busca ao clicar fora
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
