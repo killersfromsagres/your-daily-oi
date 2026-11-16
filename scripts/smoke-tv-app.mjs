@@ -60,7 +60,18 @@ try {
    await wait(170);
   }
   if(first.cards!==4||!first.visual||first.scroll>d.width+2)throw Error(d.name+" missing hero or horizontal overflow: "+JSON.stringify(first));
-  if(first.logos.some(x=>x.id!=="tcl-android"&&x.loaded===0))throw Error(d.name+" local logos failed: "+JSON.stringify(first.logos));
+  // Brand logos use native lazy loading. Scroll the cards into view before
+  // checking their decoding; naturalWidth=0 outside the viewport is normal.
+  const heroShot=await call("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+  writeFileSync("artifacts/tv-app-hero-"+d.name+".png",Buffer.from(heroShot.data,"base64"));
+  await evaluate('document.querySelector(".zf-tv-device-options").scrollIntoView({block:"center"})');
+  let images;
+  for(let n=0;n<45;n++){
+    images=await state();
+    if(images.logos.every(x=>x.id==="tcl-android"||x.loaded>0))break;
+    await wait(160);
+  }
+  if(images.logos.some(x=>x.id!=="tcl-android"&&x.loaded===0))throw Error(d.name+" local logos failed: "+JSON.stringify(images.logos));
   await evaluate('document.querySelector("[data-tv-device=tcl-android]").focus()');
   await call("Input.dispatchKeyEvent",{type:"keyDown",key:"ArrowRight",code:"ArrowRight",windowsVirtualKeyCode:39});
   await call("Input.dispatchKeyEvent",{type:"keyUp",key:"ArrowRight",code:"ArrowRight",windowsVirtualKeyCode:39});
