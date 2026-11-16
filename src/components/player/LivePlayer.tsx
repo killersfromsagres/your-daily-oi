@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
+import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
@@ -174,6 +175,7 @@ export function LivePlayer({
   const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number | undefined } | null>(null);
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
   const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
+  const edgeBackupTriedRef = useRef(new Set<string>());
   const accessDeniedSourcesRef = useRef(new Set<string>());
   const handlingFailureRef = useRef(false);
   const autoRetryCountRef = useRef(0);
@@ -195,6 +197,7 @@ export function LivePlayer({
   );
   const [playNonce, setPlayNonce] = useState(0);
   const [useLegacyOnMismatch, setUseLegacyOnMismatch] = useState(false);
+  const [useEdgeBackup, setUseEdgeBackup] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -250,6 +253,7 @@ export function LivePlayer({
   useEffect(() => {
     autoCleanPlayerCache();
     attemptedModesRef.current.clear();
+    edgeBackupTriedRef.current.clear();
     accessDeniedSourcesRef.current.clear();
     handlingFailureRef.current = false;
     autoRetryCountRef.current = 0;
@@ -258,6 +262,7 @@ export function LivePlayer({
     lastResumeAttemptRef.current = 0;
     setSourceIndex(0);
     setUseLegacyOnMismatch(false);
+    setUseEdgeBackup(false);
     setAttemptMode(initialModeFor(validStreams[0]));
     setError(validStreams.length === 0);
     onPlaybackStatus?.(canal.id, validStreams.length ? "connecting" : "unavailable");
@@ -277,8 +282,12 @@ export function LivePlayer({
     if (!rawFonte?.url) return "";
     if (attemptMode === "direct") return rawFonte.url;
     const index = canal.fontes.findIndex((candidate) => candidate.url === rawFonte.url);
-    return buildLiveProxyPath(canal.id, index, rawFonte, proxyBackend === "catalog" && !useLegacyOnMismatch);
-  }, [rawFonte, attemptMode, canal.id, canal.fontes, proxyBackend, useLegacyOnMismatch]);
+    const proxyPath = buildLiveProxyPath(canal.id, index, rawFonte,
+      proxyBackend === "catalog" && !useLegacyOnMismatch);
+    // Only the Vercel transport-timeout fallback uses the owned Cloudflare
+    // deployment. Signed catalog identity prevents arbitrary URL relays.
+    return useEdgeBackup ? (tvEdgeBackupUrl(proxyPath) || proxyPath) : proxyPath;
+  }, [rawFonte, attemptMode, canal.id, canal.fontes, proxyBackend, useLegacyOnMismatch, useEdgeBackup]);
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -366,11 +375,35 @@ export function LivePlayer({
 
   // Avança para a próxima fonte caso haja falha fatal (escada direto -> proxy -> próxima fonte)
   // Timeout e erro do motor de vídeo podem ocorrer juntos; alternar uma única vez.
-  const handleFatalError = useCallback((isNetworkError = false) => {
+  const handleFatalError = useCallback((isNetworkError = false, upstreamStatus?: number) => {
     if (!rawFonte || handlingFailureRef.current) return;
     handlingFailureRef.current = true;
     stablePlaybackSinceRef.current = null;
     const key = `${canal.id}:${rawFonte.url}`;
+    const index = canal.fontes.findIndex(item => item.url === rawFonte.url);
+    const localProxyPath = buildLiveProxyPath(canal.id, index, rawFonte,
+      proxyBackend === "catalog" && !useLegacyOnMismatch);
+    if (shouldTryTvEdgeBackup({
+      hostname: window.location.hostname,
+      mode: attemptMode,
+      backend: proxyBackend,
+      proxyPath: localProxyPath,
+      upstreamStatus,
+      tried: edgeBackupTriedRef.current.has(key) || useEdgeBackup,
+    }) && tvEdgeBackupUrl(localProxyPath)) {
+      // Vercel and Cloudflare are both deployments of this application.
+      // Try the Cloudflare endpoint once ONLY for transport errors; a 403
+      // remains an authorization refusal and never triggers failover.
+      edgeBackupTriedRef.current.add(key);
+      setUseEdgeBackup(true);
+      setLoading(true);
+      setError(false);
+      setErrorDetail(null);
+      setAutoSwitchMsg("Reconectando por servidor alternativo…");
+      setPlayNonce(n => n + 1);
+      return;
+    }
+    setUseEdgeBackup(false);
     const attempted = attemptedModesRef.current.get(key) || new Set<LiveAccessMode>();
     attempted.add(attemptMode);
     attemptedModesRef.current.set(key, attempted);
@@ -409,7 +442,8 @@ export function LivePlayer({
     setAutoSwitchMsg(null);
     onPlaybackStatus?.(canal.id, "unavailable");
     onSourcesExhausted?.();
-  }, [rawFonte, canal.id, attemptMode, sourceIndex, validStreams, onPlaybackStatus, onSourcesExhausted]);
+  }, [rawFonte, canal.id, canal.fontes, attemptMode, proxyBackend, useLegacyOnMismatch,
+    useEdgeBackup, sourceIndex, validStreams, onPlaybackStatus, onSourcesExhausted]);
 
   // Ao esgotar as rotas/fontes, refaz automaticamente a mesma limpeza do
   // botão manual. Espera a aba ficar visível, com backoff e tentativas finitas.
@@ -425,6 +459,8 @@ export function LivePlayer({
       autoRetryCountRef.current += 1;
       clearAllPlayerCaches();
       attemptedModesRef.current.clear();
+      edgeBackupTriedRef.current.clear();
+      setUseEdgeBackup(false);
       handlingFailureRef.current = false;
       stablePlaybackSinceRef.current = null;
       setSourceIndex(0);
@@ -569,7 +605,7 @@ export function LivePlayer({
       if (!cancelled && !playbackProgressVerified &&
           document.visibilityState !== "hidden") {
         console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
-        handleFatalError(false);
+        handleFatalError(false, attemptMode === "proxy" ? 0 : undefined);
       }
     }, 18000);
 
@@ -625,12 +661,12 @@ export function LivePlayer({
         inspectingNativeError = true;
         void probeFailedLiveProxy(streamUrl).then(status => {
           if (cancelled) return;
-          if (status && rawFonte) {
+          if (status && [401, 403, 404, 410].includes(status) && rawFonte) {
             accessDeniedSourcesRef.current.add(rawFonte.url);
             setErrorDetail("A origem recusou a transmissão (HTTP " + status +
               "). É necessária uma fonte válida e autorizada para este canal.");
           }
-          handleFatalError(false);
+          handleFatalError(false, status && [502, 503, 504].includes(status) ? status : undefined);
         });
         return;
       }
@@ -802,6 +838,13 @@ export function LivePlayer({
               if (accessDeniedLiveSource(responseCode, detail) && rawFonte) {
                 accessDeniedSourcesRef.current.add(rawFonte.url);
               }
+              // Vercel proxy outages need an edge retry, not another reload
+              // of the same broken Vercel HTTP connection.
+              if (isNet && attemptMode === "proxy" && !useEdgeBackup &&
+                  [502, 503, 504].includes(responseCode)) {
+                handleFatalError(true, responseCode);
+                return;
+              }
               if (!persistentHttp && recoveryCount < 1 && (isNet || isMedia)) {
                 recoveryCount++;
                 if (isNet && typeof (hls as any).startLoad === "function") {
@@ -814,7 +857,7 @@ export function LivePlayer({
                 }
               }
               console.warn("[LivePlayer] HLS indisponível após recuperação:", data?.details || data?.type);
-              handleFatalError(isNet);
+              handleFatalError(isNet, isNet ? responseCode : undefined);
             });
 
             hlsInstanceRef.current = {
@@ -1043,6 +1086,8 @@ export function LivePlayer({
             className="ydo-btn-primary"
             onClick={() => {
               attemptedModesRef.current.clear();
+              edgeBackupTriedRef.current.clear();
+              setUseEdgeBackup(false);
               accessDeniedSourcesRef.current.clear();
               handlingFailureRef.current = false;
               autoRetryCountRef.current = 0;
