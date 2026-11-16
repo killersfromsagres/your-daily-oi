@@ -133,8 +133,14 @@ export function orderLiveSources<T extends LiveSourceLike>(sources: readonly T[]
   // answer while another TV Câmara mirror timed out. Prefer the healthy
   // origin but never remove alternatives or reorder an all-degraded list.
   const highConfidence = (source: T): boolean => {
-    try { return new URL(source.url).hostname.toLowerCase() === "stream3.camara.gov.br"; }
-    catch { return false; }
+    try {
+      const host = new URL(source.url).hostname.toLowerCase();
+      // Free-to-air mirrors confirmed by actual video-clock progression in
+      // headless Chrome. Put them before stalled first-source mirrors.
+      return host === "stream3.camara.gov.br" ||
+        host === "vipwaytvcdn.multtv.tv.br" ||
+        host === "6836041ea1117.streamlock.net";
+    } catch { return false; }
   };
   if (sources.length < 2) return [...sources];
   return [...sources].sort((left, right) =>
