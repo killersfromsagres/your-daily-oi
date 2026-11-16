@@ -12,7 +12,7 @@ export const Route=createFileRoute("/tv-app")({
 });
 
 const TV_APK_URL=ANDROID_APK_URL.replace("ZANG-FLIX-Android.apk","ZANG-FLIX-TV.apk");
-const LG_RELEASE="https://github.com/killersfromsagres/your-daily-oi/releases/tag/webos-latest";
+const LG_RELEASE="https://github.com/killersfromsagres/your-daily-oi/releases/download/webos-latest/ZANG-FLIX-webOS.ipk";
 const WEB_URL="https://zangflix.vercel.app/tv-app";
 const devices:{id:TvInstallPlatform,name:string,subtitle:string}[]=[
   {id:"tcl-android",name:"TCL / Android TV",subtitle:"Google TV · Fire TV"},
