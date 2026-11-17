@@ -117,6 +117,14 @@ try {
           signal: timeout(12000),
         });
         const text = await response.text();
+        // An external provider may deny the request in the CI runner's region.
+        // That is NOT a manifest rewrite failure. The Band/SBT probe above
+        // already verifies a real HLS playlist and MPEG-TS fragment.
+        if ([401, 403, 404, 410, 429].includes(response.status)) {
+          console.warn(JSON.stringify({ event:"worker-hbo-source-denied",
+            status:response.status, rewriteCheck:"not-run", reason:"upstream-unavailable" }));
+          break;
+        }
         const stripped = text.split("\n").slice(0, 16).map(line => {
           if (line.includes("/api/live-proxy?url=")) return "<rewritten proxy URL>";
           if (/^https?:\/\//.test(line)) return "<unrewritten absolute URL>";

@@ -284,9 +284,11 @@ export function LivePlayer({
     const index = canal.fontes.findIndex((candidate) => candidate.url === rawFonte.url);
     const proxyPath = buildLiveProxyPath(canal.id, index, rawFonte,
       proxyBackend === "catalog" && !useLegacyOnMismatch);
-    // Only the Vercel transport-timeout fallback uses the owned Cloudflare
-    // deployment. Signed catalog identity prevents arbitrary URL relays.
-    return useEdgeBackup ? (tvEdgeBackupUrl(proxyPath) || proxyPath) : proxyPath;
+    // The fallback always uses a signed, catalog-indexed request on our own
+    // deployment, even if the primary Vercel backend was detected as legacy
+    // or unavailable during a cold start. Never forward an arbitrary URL.
+    const backupPath = buildLiveProxyPath(canal.id, index, rawFonte, index >= 0);
+    return useEdgeBackup ? (tvEdgeBackupUrl(backupPath) || proxyPath) : proxyPath;
   }, [rawFonte, attemptMode, canal.id, canal.fontes, proxyBackend, useLegacyOnMismatch, useEdgeBackup]);
 
   const showControls = useCallback(() => {
@@ -381,16 +383,18 @@ export function LivePlayer({
     stablePlaybackSinceRef.current = null;
     const key = `${canal.id}:${rawFonte.url}`;
     const index = canal.fontes.findIndex(item => item.url === rawFonte.url);
-    const localProxyPath = buildLiveProxyPath(canal.id, index, rawFonte,
-      proxyBackend === "catalog" && !useLegacyOnMismatch);
+    // Do not derive the backup URL from the failing Vercel route selection:
+    // the primary may use /api/live-proxy while the healthy secondary uses
+    // /api/tv/stream with a catalog fingerprint.
+    const signedBackupPath = buildLiveProxyPath(canal.id, index, rawFonte, index >= 0);
     if (shouldTryTvEdgeBackup({
       hostname: window.location.hostname,
       mode: attemptMode,
       backend: proxyBackend,
-      proxyPath: localProxyPath,
+      proxyPath: signedBackupPath,
       upstreamStatus,
       tried: edgeBackupTriedRef.current.has(key) || useEdgeBackup,
-    }) && tvEdgeBackupUrl(localProxyPath)) {
+    }) && tvEdgeBackupUrl(signedBackupPath)) {
       // Vercel and Cloudflare are both deployments of this application.
       // Try the Cloudflare endpoint once ONLY for transport errors; a 403
       // remains an authorization refusal and never triggers failover.
