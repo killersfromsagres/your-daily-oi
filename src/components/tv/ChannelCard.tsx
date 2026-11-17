@@ -18,7 +18,7 @@ export interface ChannelCardProps {
   guideLoading: boolean;
   nowMs: number;
   /** Browser-confirmed status; a catalog URL alone does not mean playable. */
-  playbackStatus?: "connecting" | "playing" | "unavailable";
+  playbackStatus?: "connecting" | "playing" | "unavailable" | undefined;
 }
 
 function ChannelCrest({ channel }: { channel: CanalTV }) {
