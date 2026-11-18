@@ -16,7 +16,7 @@
   /* Set the actual photograph on the section, not a negative-z-index
      pseudo-element that can disappear behind its opaque parent. */
   background-image:
-    linear-gradient(180deg,rgba(0,24,23,.15),rgba(0,28,25,.22) 33%,rgba(0,24,22,.44) 86%),
+    linear-gradient(180deg,rgba(0,24,23,.07),rgba(0,28,25,.11) 38%,rgba(0,24,22,.24) 91%),
     url("/stadium-night-zang.webp");
   background-size:cover,cover;
   background-position:center,center 51%;
@@ -33,7 +33,7 @@
   position:absolute;z-index:-1;pointer-events:none;inset:0;
   background:
     radial-gradient(ellipse 23% 15% at 63% -3%,rgba(157,255,229,.22),transparent 94%),
-    linear-gradient(180deg,rgba(0,22,22,.08) 0%,rgba(1,30,26,.20) 43%,rgba(2,18,17,.49) 100%),
+    linear-gradient(180deg,rgba(0,22,22,.04) 0%,rgba(1,30,26,.09) 43%,rgba(2,18,17,.21) 100%),
     linear-gradient(90deg,rgba(0,17,17,.23),transparent 25%,transparent 77%,rgba(0,17,17,.21));
 }
 .zf-reference-section .zgame-ambient {display:none;}
@@ -248,7 +248,7 @@
   font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   -webkit-font-smoothing:antialiased;
   background-image:
-    linear-gradient(180deg,rgba(0,27,24,.16) 0%,rgba(0,27,23,.40) 44%,#041c1b 77%),
+    linear-gradient(180deg,rgba(0,27,24,.07) 0%,rgba(0,27,23,.17) 57%,#041c1b 95%),
     url("/stadium-night-zang.webp");
   background-size:100% 1220px,100% 930px;
   background-position:center top,center top;
@@ -265,7 +265,7 @@
   pointer-events:none;
   background:
     radial-gradient(ellipse 50% 30% at 74% 0,rgba(91,247,202,.16),transparent 85%),
-    linear-gradient(180deg,rgba(0,25,24,.04),rgba(0,33,27,.21) 29%,#041c1b 76%);
+    linear-gradient(180deg,rgba(0,25,24,.025),rgba(0,33,27,.09) 29%,#041c1b 93%);
 }
 .zf-football-reference-page .zf-football-ambient {display:none;}
 .zf-football-reference-page .zf-football-wrap {max-width:1560px;}
