@@ -13,6 +13,8 @@ import {
   Clock3, ExternalLink, MapPin, Radio, RefreshCw, ShieldQuestion, Trophy, WifiOff,
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
+import { getMatchCardVisual } from "@/lib/match-card-visual";
+import { useMatchCardClock } from "@/lib/use-match-card-clock";
 import "@/styles/jogos-center.css";
 import "@/styles/sports-match-tickets.css";
 
@@ -53,107 +55,162 @@ export function MatchCard({ game, onWatch, onExplore }: {
   onWatch: (id: string) => void;
   onExplore?: (() => void) | undefined;
 }) {
-  const [channelsExpanded,setChannelsExpanded]=useState(false);
-  const active=game.status==="ao-vivo";
-  const watchable=Boolean(game.canalId);
-  const officialUrl=(()=>{
+  const [channelsExpanded, setChannelsExpanded] = useState(false);
+  const now = useMatchCardClock();
+  const visual = getMatchCardVisual(game, now);
+  const active = game.status === "ao-vivo";
+  const watchable = Boolean(game.canalId);
+  const officialUrl = (() => {
     try {
-      if(!game.transmissaoUrl)return null;
-      const url=new URL(game.transmissaoUrl);
-      return url.protocol==="https:" && url.hostname==="www.primevideo.com" &&
+      if (!game.transmissaoUrl) return null;
+      const url = new URL(game.transmissaoUrl);
+      return url.protocol === "https:" && url.hostname === "www.primevideo.com" &&
         url.pathname.startsWith("/detail/") ? url.href : null;
-    } catch {return null;}
+    } catch { return null; }
   })();
-  const scored=game.placarCasa!==null&&game.placarFora!==null;
-  const dateParts=game.dataLocal.split("-");
-  const numberDay=dateParts[2]||"--";
-  const monthAbbrev=new Intl.DateTimeFormat("pt-BR",{month:"short",timeZone:"UTC"})
-    .format(new Date(game.dataLocal+"T12:00:00Z")).replace(".","").toUpperCase();
-  const statusLabel=active?(game.fase==="intervalo"?"INTERVALO":game.faseRotulo||"AO VIVO"):
-    game.status==="encerrado"?"ENCERRADO":
-    game.status==="adiado"?"ADIADO":"EM BREVE";
-  const showScore=scored&&(active||game.status==="encerrado");
-  const displayTime=showScore
-    ?game.placarCasa+" – "+game.placarFora
-    :game.status==="adiado"?"ADIADO":game.status==="encerrado"?"ENCERRADO":game.horarioLocal;
-  const theme=game.grupo==="copas"||game.grupo==="champions"?"is-cup":"is-league";
-  const brazilFeatured=isBrazilFixture(game);
-  const venue=game.estadio?.trim();
+  const dateParts = game.dataLocal.split("-");
+  const numberDay = dateParts[2] || "--";
+  const monthAbbrev = new Intl.DateTimeFormat("pt-BR", { month:"short", timeZone:"UTC" })
+    .format(new Date(game.dataLocal + "T12:00:00Z")).replace(".", "").toUpperCase();
+  const theme = game.grupo === "copas" || game.grupo === "champions" ? "is-cup" : "is-league";
+  const brazilFeatured = isBrazilFixture(game);
+  const venue = game.estadio?.trim();
+
   return (
-    <article className={"zgame-card zf-ticket "+theme+(brazilFeatured?" is-brazil":"")+(active?" is-live":"")+(watchable?" has-channel":"")}>
-      <div className="zf-ticket-watermark" aria-hidden="true">ZANG <span>FLIX</span></div>
-      <button
-        type="button" className="zf-ticket-main"
+    <article className={"zgame-card zf-ticket zf-ticket-premium " + theme +
+      (brazilFeatured ? " is-brazil" : "") +
+      (active ? " is-live" : "") +
+      (visual.phase === "soon" ? " is-soon" : "") +
+      (watchable ? " has-channel" : "")}
+      aria-label={game.casa + " contra " + game.fora + ". " + visual.statusLabel}>
+      <button type="button" className="zf-ticket-main"
         disabled={!watchable}
-        onClick={()=>{if(game.canalId)onWatch(game.canalId);}}
+        onClick={() => { if(game.canalId)onWatch(game.canalId); }}
         aria-label={watchable
-          ?"Assistir "+game.casa+" contra "+game.fora+" no canal "+game.canalNome
-          :"Jogo "+game.casa+" contra "+game.fora+" — transmissão não confirmada"}
-      >
+          ? "Assistir " + game.casa + " contra " + game.fora + " no canal " + game.canalNome
+          : "Jogo " + game.casa + " contra " + game.fora + " — transmissão não confirmada"}>
         <div className="zf-ticket-masthead">
-          <span className="zf-ticket-date"><strong>{numberDay}</strong><small>{monthAbbrev}</small></span>
+          <span className="zf-ticket-date" aria-label={"Dia " + numberDay + " de " + monthAbbrev}>
+            <strong>{numberDay}</strong><small>{monthAbbrev}</small>
+          </span>
           <span className="zf-ticket-league">
-            <span className="zf-ticket-league-crest">{game.ligaLogo?<img src={game.ligaLogo} alt="" loading="lazy"/>:<CompetitionIcon size={22}/>}</span>
+            <span className="zf-ticket-league-crest">
+              {game.ligaLogo ? <img src={game.ligaLogo} alt="" loading="lazy"/> : <CompetitionIcon size={22}/>}
+            </span>
             <strong title={game.liga}>{game.liga}</strong>
           </span>
-          <span className={"zf-ticket-status"+(active?" is-live":"")}>{active&&<Radio size={11}/>} {statusLabel}</span>
         </div>
-        <div className="zf-ticket-teams" aria-label={game.casa+" contra "+game.fora}>
-          <div className="zf-ticket-team"><TeamCrest name={game.casa} src={game.escudoCasa}/>
+        <div className="zf-ticket-teams" aria-label={game.casa + " contra " + game.fora}>
+          <div className="zf-ticket-team">
+            <TeamCrest name={game.casa} src={game.escudoCasa}/>
             <strong title={game.casa}>{game.casa}</strong>
           </div>
-          <span className="zf-ticket-vs">×</span>
-          <div className="zf-ticket-team"><TeamCrest name={game.fora} src={game.escudoFora}/>
+          <span className="zf-ticket-vs" aria-hidden="true">×</span>
+          <div className="zf-ticket-team">
+            <TeamCrest name={game.fora} src={game.escudoFora}/>
             <strong title={game.fora}>{game.fora}</strong>
           </div>
         </div>
-        <div className="zf-ticket-time-block">
-          <span className="zf-ticket-time-caption">{active?"PLACAR AO VIVO":game.status==="encerrado"?"RESULTADO FINAL":"HORÁRIO DE BRASÍLIA"}</span>
-          <strong className="zf-ticket-time">{displayTime}</strong>
-          {active&&game.minuto&&<small className="zf-ticket-minute">{game.minuto}</small>}
-        </div>
-        <div className="zf-ticket-match-meta">
-          <span className="zf-ticket-round" title={game.rodada||game.faseRotulo||game.liga}>
-            {game.rodada||game.faseRotulo||"PARTIDA"}
+        <div className={"zf-ticket-status-row is-" + visual.phase}>
+          <span className="zf-ticket-status">
+            {visual.phase === "live" ? <Radio size={14}/> :
+             visual.phase === "soon" ? <Clock3 size={14}/> :
+             visual.phase === "finished" ? <CheckCircle2 size={14}/> :
+             <CalendarDays size={14}/>}
+            {visual.statusLabel}
           </span>
-          {venue&&<span className="zf-ticket-stadium"><MapPin size={12}/> {venue}</span>}
+        </div>
+        {visual.showScore ? (
+          <div className="zf-ticket-score-panel" aria-label={"Placar: " + visual.scoreHome + " a " + visual.scoreAway}>
+            <span className="zf-ticket-score-pair">
+              <strong>{visual.scoreHome}</strong><span aria-hidden="true">–</span><strong>{visual.scoreAway}</strong>
+            </span>
+            <span className="zf-ticket-score-phase">
+              <small>{active ? (visual.periodLabel || "EM ANDAMENTO") : "RESULTADO"}</small>
+              <strong>{active ? (game.minuto?.trim() || "AO VIVO") : "FINAL"}</strong>
+            </span>
+          </div>
+        ) : active || visual.phase === "finished" ? (
+          <div className="zf-ticket-score-panel is-unavailable">
+            <span className="zf-ticket-score-empty">PLACAR NÃO INFORMADO</span>
+            <span className="zf-ticket-score-phase">
+              <small>{visual.periodLabel || (active ? "EM ANDAMENTO" : "RESULTADO")}</small>
+              <strong>{active ? (game.minuto?.trim() || "AO VIVO") : "FINAL"}</strong>
+            </span>
+          </div>
+        ) : (
+          <div className="zf-ticket-time-block">
+            <span className="zf-ticket-time-caption">HORÁRIO DE BRASÍLIA</span>
+            <strong className="zf-ticket-time" suppressHydrationWarning>
+              {visual.phase === "postponed" ? "—" : game.horarioLocal}
+            </strong>
+            {visual.remainingLabel && (
+              <span className="zf-ticket-countdown" role="status">
+                <Clock3 size={14}/>{visual.remainingLabel}
+              </span>
+            )}
+          </div>
+        )}
+        <div className="zf-ticket-match-meta">
+          <span className="zf-ticket-round" title={game.rodada || game.faseRotulo || game.liga}>
+            {game.rodada || "PARTIDA"}
+          </span>
+          <span className="zf-ticket-stadium">
+            <MapPin size={17} aria-hidden="true"/>
+            <span><small>ESTÁDIO</small><strong>{venue || "Local a confirmar"}</strong></span>
+          </span>
         </div>
       </button>
       <div className="zf-ticket-broadcast">
-        {watchable&&game.canalId&&game.canalNome?(
+        {watchable && game.canalId && game.canalNome ? (
           <div className="zf-ticket-channel-panel">
-            <button className="zf-ticket-watch" type="button" onClick={()=>onWatch(game.canalId!)}>
-              <Tv size={16}/>
+            <button className={"zf-ticket-watch" +
+              (visual.highlightWatch ? " is-ready" : "") +
+              (active ? " is-onair" : "")}
+              type="button" onClick={() => onWatch(game.canalId!)}>
+              <Tv size={20} aria-hidden="true"/>
               <span><small>ASSISTIR NO CANAL</small><strong>{game.canalNome}</strong></span>
-              <ArrowRight size={16}/>
+              <ArrowRight size={18} aria-hidden="true"/>
             </button>
-            {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).length>0&&<button type="button" className="zf-ticket-channels-toggle"
-              aria-expanded={channelsExpanded} onClick={()=>setChannelsExpanded(value=>!value)}>Canais <span>{game.canaisDisponiveis?.length}</span></button>}
-            {channelsExpanded&&<div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
-                {(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId).map(ch=>
-                  <button key={ch.id} type="button" onClick={()=>onWatch(ch.id)}
-                    aria-label={"Assistir também em "+ch.nome}>
-                    {ch.logo?<img src={ch.logo} alt="" loading="lazy"/>:<Tv size={12}/>}
+            {visual.highlightWatch && (
+              <div className="zf-ticket-watch-ready"><span aria-hidden="true"/> DISPONÍVEL PARA O INÍCIO</div>
+            )}
+            {(game.canaisDisponiveis || []).filter(ch => ch.id !== game.canalId).length > 0 && (
+              <button type="button" className="zf-ticket-channels-toggle"
+                aria-expanded={channelsExpanded} onClick={() => setChannelsExpanded(value => !value)}>
+                Outros canais <span>{game.canaisDisponiveis?.length}</span>
+              </button>
+            )}
+            {channelsExpanded && (
+              <div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
+                {(game.canaisDisponiveis || []).filter(ch => ch.id !== game.canalId).map(ch => (
+                  <button key={ch.id} type="button" onClick={() => onWatch(ch.id)}
+                    aria-label={"Assistir também em " + ch.nome}>
+                    {ch.logo ? <img src={ch.logo} alt="" loading="lazy"/> : <Tv size={13}/>}
                     <span>{ch.nome}</span>
-                  </button>)}
-              </div>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        ):officialUrl?(
-          <a className="zf-ticket-watch zf-ticket-watch-external" href={officialUrl}
-            target="_self" rel="noopener noreferrer" aria-label={"Abrir transmissão oficial de "+game.casa+" contra "+game.fora+" no Prime Video"}>
-            <ExternalLink size={16}/>
-            <span><small>TRANSMISSÃO OFICIAL</small><strong>{game.canaisTransmissao?.[0]||"Prime Video"}</strong></span>
-            <ArrowRight size={16}/>
+        ) : officialUrl ? (
+          <a className={"zf-ticket-watch zf-ticket-watch-external" +
+            (visual.highlightWatch ? " is-ready" : "")}
+            href={officialUrl} target="_self" rel="noopener noreferrer"
+            aria-label={"Abrir transmissão oficial de " + game.casa + " contra " + game.fora + " no Prime Video"}>
+            <ExternalLink size={18}/>
+            <span><small>TRANSMISSÃO OFICIAL</small><strong>{game.canaisTransmissao?.[0] || "Prime Video"}</strong></span>
+            <ArrowRight size={18}/>
           </a>
-        ):game.canaisTransmissao?.length?(
-          <div className="zf-ticket-identified"><Tv size={15}/>
-            <span>TRANSMISSÃO INFORMADA · {game.canaisTransmissao.join(" · ")} · canais não vinculados ao catálogo</span>
+        ) : game.canaisTransmissao?.length ? (
+          <div className="zf-ticket-identified"><Tv size={16}/>
+            <span>TRANSMISSÃO INFORMADA · {game.canaisTransmissao.join(" · ")} · ainda sem canal vinculado</span>
           </div>
-        ):(
+        ) : (
           <div className="zf-ticket-pending">
-            <ShieldQuestion size={15}/>
+            <ShieldQuestion size={17}/>
             <span>Transmissão a confirmar</span>
-            {onExplore&&<button type="button" onClick={onExplore}>Canais <ArrowRight size={13}/></button>}
+            {onExplore && <button type="button" onClick={onExplore}>Ver canais <ArrowRight size={14}/></button>}
           </div>
         )}
       </div>
