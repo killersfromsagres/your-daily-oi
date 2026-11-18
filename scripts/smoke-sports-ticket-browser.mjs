@@ -384,7 +384,7 @@ try{
        tv.teamDirection!=="column"||!tv.dateVisible||!tv.venueVisible||
        tv.timeSize<38||tv.timeOverflow)
       throw new Error("Smart TV game information clipped: "+JSON.stringify({device,tv}));
-    if(tv.watchHeight<58||tv.lineupHeight<58||!tv.channelLabel.includes("TV Globo")||
+    if(tv.watchHeight<58||tv.lineupHeight<58||!tv.channelLabel.includes("ASSISTIR NO CANAL")||tv.channelLabel.length<22||
        !tv.lineupLabel.includes("Escalação")||!tv.focused||!tv.glass)
       throw new Error("Smart TV D-pad actions inaccessible: "+JSON.stringify({device,tv}));
     await evaluate('document.querySelector(".zf-reference-section").scrollIntoView({block:"start"})');
