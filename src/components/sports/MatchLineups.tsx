@@ -33,8 +33,6 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
   const closeRef=useRef<HTMLButtonElement>(null);
   const previousFocus=useRef<HTMLElement|null>(null);
   const opened=side!==null;
-  const homeTeam=selectLineupTeam(game,data,"home");
-  const awayTeam=selectLineupTeam(game,data,"away");
   const selected=side?selectLineupTeam(game,data,side):null;
   const selectedName=side==="away"?game.fora:game.casa;
   const selectedCrest=side==="away"?game.escudoFora:game.escudoCasa;
@@ -110,15 +108,10 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
     <div className="zf-lineup-actions">
       <button type="button" className="zf-lineup-single-button" onClick={()=>{setSide("home");setError(null);}}
         aria-label={"Ver escalações de "+game.casa+" e "+game.fora}>
-        <span className="zf-lineup-pair-crests" aria-hidden="true">
-          <LocalCrest name={game.casa} src={game.escudoCasa}/>
-          <LocalCrest name={game.fora} src={game.escudoFora}/>
-        </span>
+        <span className="zf-lineup-action-symbol" aria-hidden="true"><Users size={23} strokeWidth={1.8}/></span>
         <span className="zf-lineup-single-copy">
-          <strong><Users size={16} strokeWidth={1.8} aria-hidden="true"/> Escalação</strong>
-          <small>{homeTeam?.starting.length||awayTeam?.starting.length
-            ? "Titulares disponíveis · toque para consultar"
-            : "Titulares, posições e técnicos"}</small>
+          <strong>Escalação</strong>
+          <small>Titulares, posições e técnicos</small>
         </span>
         <ChevronRight size={18} aria-hidden="true"/>
       </button>
