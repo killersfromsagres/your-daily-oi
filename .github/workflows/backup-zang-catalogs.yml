@@ -1,0 +1,62 @@
+name: Preserve ZANG FLIX catalogs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 5 * * *" # daily 02:23 Brasilia during standard UTC-3
+  push:
+    branches: [main]
+    paths:
+      - scripts/backup-zang-metadata.mjs
+      - src/lib/zang-archive.ts
+      - .github/workflows/backup-zang-catalogs.yml
+
+concurrency:
+  group: zang-catalog-backup-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: oven-sh/setup-bun@v2
+      - name: Validate snapshot generator
+        run: node --check scripts/backup-zang-metadata.mjs
+      - name: Recover public metadata from owned APIs and available catalogs
+        run: node scripts/backup-zang-metadata.mjs
+      - name: Reject media URLs or credentials in snapshots
+        run: |
+          node --input-type=module - <<'NODE'
+          import fs from "node:fs";
+          for (const file of ["catalog.json","tv.json","sushi.json"]) {
+            const data = JSON.parse(fs.readFileSync("src/data/zang-backup/" + file, "utf8"));
+            if (data.version !== 1) throw Error("Invalid archive version");
+            if (file === "catalog.json" && /(?:\bdub=|\bleg=|\bchave=|#EXT-X-KEY)/i.test(data.fichas || ""))
+              throw Error("Media references found in catalog metadata");
+            if (file === "tv.json" && (data.channels || []).some(ch =>
+                "fontes" in ch || "chave" in ch || "referer" in ch || "agente" in ch))
+              throw Error("Live stream credentials found in public archive");
+            if (file === "sushi.json" && (data.items || []).some(it =>
+                "streams" in it || "chave" in it || "headers" in it))
+              throw Error("Anime media credentials found in public archive");
+          }
+          NODE
+      - name: Commit only actual archive changes
+        run: |
+          if git diff --quiet -- src/data/zang-backup; then
+            echo "No metadata changes: preserving last good snapshots."
+            exit 0
+          fi
+          git config user.name "zangflix-catalog-backup[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/zang-backup
+          git commit -m "chore(catalog): preserve last-known-good ZANG metadata [skip ci]"
+          git push origin HEAD:main
