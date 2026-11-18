@@ -175,8 +175,12 @@ try{
    canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false,
    status:"ao-vivo",fase:"segundo-tempo",faseRotulo:"2º TEMPO",
    minuto:"67:24",placarCasa:1,placarFora:0};
+ // Same-grid scheduled fixtures with differing broadcaster counts for QA.
+ const third={...first,id:"fifa.friendly:99999",casa:"Uruguai",fora:"Chile",
+   horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
+   canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false};
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
-   jogos:[first,second],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
+   jogos:[first,second,third],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
  // Recorded provider roles from the exact match that exposed the LB/CB swap.
  // Mock only transport; parser, vocabulary and rendered ordering are production code.
@@ -219,7 +223,9 @@ try{
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
   if(!device.mobile){
     const stadiumRows=await evaluate(`(()=>{
-      return Array.from(document.querySelectorAll(".zf-ticket")).slice(0,2).map(card=>({
+      return Array.from(Array.from(document.querySelectorAll(".zf-football-grid"))
+        .find(grid=>grid.querySelectorAll(".zf-ticket").length>=2)
+        ?.querySelectorAll(".zf-ticket")||[]).slice(0,2).map(card=>({
         stadiumTop:card.querySelector(".zf-ticket-stadium")?.getBoundingClientRect().top,
         timeTop:card.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel")?.getBoundingClientRect().top,
         watch:!!card.querySelector(".zf-ticket-watch")
