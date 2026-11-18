@@ -23,7 +23,7 @@ public final class MainActivity extends Activity {
   private int previousSystemUi;
   private int previousWindowFlags;
   private WebChromeClient.CustomViewCallback customCallback;
-  private static final String HOME = "https://zangflix.vercel.app/";
+  private static final String HOME = "https://zangflix.lovable.app/";
   @Override public void onCreate(Bundle state) {
     super.onCreate(state);
     UiModeManager mode=(UiModeManager)getSystemService(UI_MODE_SERVICE);
@@ -43,7 +43,7 @@ public final class MainActivity extends Activity {
     web.setWebViewClient(new WebViewClient() {
       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         Uri uri = request.getUrl();
-        if ("https".equals(uri.getScheme()) && "zangflix.vercel.app".equals(uri.getHost())) return false;
+        if ("https".equals(uri.getScheme()) && "zangflix.lovable.app".equals(uri.getHost())) return false;
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) {}
         return true;
       }
