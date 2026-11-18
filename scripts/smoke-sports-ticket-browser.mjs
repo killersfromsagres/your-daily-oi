@@ -56,8 +56,9 @@ const STATE=`(()=>{
   visibleLiveScore:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
     card.querySelector(".zf-ticket-score-pair")?.textContent?.replace(/\s+/g,"").includes("1–0")),
   visibleReadyWatch:!!document.querySelector(".zf-ticket-watch.is-ready"),
+  computedGlassLayers:element?getComputedStyle(element).backgroundImage.slice(0,680):"",
   trueFrostedGlass:!!element?.classList.contains("zf-ticket-premium") &&
-    getComputedStyle(element).backgroundImage.includes("0.33"),
+    /rgba\([^)]+,\s*0\.(?:2|3|4|5)[0-9]*\)/.test(getComputedStyle(element).backgroundImage),
   noCrestTile:!!element?.querySelector(".zf-ticket-team .zgame-crest")&&(()=>{
     const style=getComputedStyle(element.querySelector(".zf-ticket-team .zgame-crest"));
     return style.backgroundColor==="rgba(0, 0, 0, 0)"&&style.borderTopWidth==="0px"&&style.boxShadow==="none";
