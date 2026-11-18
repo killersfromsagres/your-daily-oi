@@ -203,17 +203,21 @@
 .zf-reference-calendar .zgame-day-arrow {border-color:rgba(193,255,225,.20);}
 .zf-reference-calendar .zgame-section-kicker {color:#9bf4c7;}
 .zf-reference-section .zf-reference-cards .zf-ticket-premium {
-  min-height:608px;border-radius:21px;
-  border-color:rgba(189,255,224,.44);
-  -webkit-backdrop-filter:blur(24px) saturate(155%);
-  backdrop-filter:blur(24px) saturate(155%);
+  min-height:608px;border-radius:22px;
+  border-color:rgba(193,255,225,.54);
+  -webkit-backdrop-filter:blur(19px) saturate(165%);
+  backdrop-filter:blur(19px) saturate(165%);
+  /* Previous alpha .77–.87 made the cards opaque even on a stadium image.
+     Render the same transparent frosted panel on TV and the football route. */
   background:
-    radial-gradient(ellipse 85% 55% at 25% -7%,rgba(131,255,204,.15),transparent 77%),
-    linear-gradient(152deg,rgba(6,58,47,.77),rgba(1,43,35,.81) 58%,rgba(2,39,33,.87));
+    linear-gradient(150deg,rgba(245,255,251,.065),rgba(255,255,255,.01) 41%,transparent 68%),
+    radial-gradient(ellipse 85% 60% at 25% -7%,rgba(118,255,195,.13),transparent 77%),
+    linear-gradient(159deg,rgba(5,60,46,.33),rgba(2,42,35,.42) 59%,rgba(1,30,30,.55));
   box-shadow:
-    inset 0 1px 0 rgba(230,255,242,.20),
-    0 18px 38px rgba(0,0,0,.29),
-    0 0 22px rgba(22,119,82,.10);
+    inset 0 1px 0 rgba(245,255,249,.25),
+    inset 0 0 22px rgba(164,255,215,.04),
+    0 20px 44px rgba(0,0,0,.33),
+    0 0 22px rgba(42,242,158,.10);
 }
 .zf-reference-section .zf-reference-cards .zf-ticket-premium:hover {
   border-color:rgba(161,255,211,.64);
@@ -235,11 +239,11 @@
   font-size:clamp(38px,3.4vw,52px)!important;
 }
 .zf-reference-section .zf-reference-cards .zf-ticket-premium .zf-ticket-watch {
-  min-height:64px;
-  border-radius:14px;
+  min-height:68px;
+  border-radius:15px;
 }
 .zf-reference-section .zf-reference-cards .zf-ticket-premium .zf-lineup-single-button {
-  min-height:62px;border-radius:14px;
+  min-height:68px;border-radius:15px;
 }
 
 /* Full-screen football route shares the same image language as the TV shelf. */
@@ -310,13 +314,14 @@
 }
 .zf-football-reference-page .zf-football-grid .zf-ticket-premium {
   min-height:608px;
-  border-radius:21px;
-  border-color:rgba(188,255,224,.44);
-  -webkit-backdrop-filter:blur(24px) saturate(155%);
-  backdrop-filter:blur(24px) saturate(155%);
+  border-radius:22px;
+  border-color:rgba(193,255,225,.54);
+  -webkit-backdrop-filter:blur(19px) saturate(165%);
+  backdrop-filter:blur(19px) saturate(165%);
   background:
-    radial-gradient(ellipse 85% 55% at 25% -7%,rgba(131,255,204,.14),transparent 77%),
-    linear-gradient(150deg,rgba(5,54,44,.80),rgba(2,42,36,.84) 64%,rgba(3,35,33,.88));
+    linear-gradient(150deg,rgba(245,255,251,.065),rgba(255,255,255,.01) 41%,transparent 68%),
+    radial-gradient(ellipse 85% 60% at 25% -7%,rgba(118,255,195,.13),transparent 77%),
+    linear-gradient(159deg,rgba(5,60,46,.33),rgba(2,42,35,.42) 59%,rgba(1,30,30,.55));
 }
 .zf-football-reference-page .zf-football-live-section {
   margin:13px 0 25px;

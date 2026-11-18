@@ -63,7 +63,9 @@ describe("match ticket and tactical field",()=>{
     const component=readFileSync("src/components/sports/MatchLineups.tsx","utf8");
     expect(component).toContain('className="zf-lineup-single-button"');
     expect(component).toContain("setSide(\"home\");setError(null)");
-    expect(component).toContain('className="zf-lineup-pair-crests"');
+    expect(component).toContain('className="zf-lineup-action-symbol"');
+    expect(component).toContain("<Users size={23}");
+    expect(component).not.toContain('className="zf-lineup-pair-crests"');
     expect(component).toContain('onClick={()=>setSide("home")}');
     expect(component).toContain('onClick={()=>setSide("away")}');
     expect(component).toContain('createPortal(');
@@ -85,7 +87,8 @@ describe("match ticket and tactical field",()=>{
     expect(css).toContain("backdrop-filter:blur(18px)");
     expect(css).toContain("zgame-grid,.zf-football-page .zf-football-grid");
     const glass=readFileSync("src/styles/match-glass-premium.css","utf8");
-    expect(glass).toContain("backdrop-filter:blur(24px)");
+    expect(glass).toContain("backdrop-filter:blur(19px) saturate(165%)");
+    expect(glass).toContain("zf-lineup-action-symbol");
     expect(glass).toContain(".zf-ticket-watch.is-ready");
     expect(glass).toContain("background:transparent;border:0;border-radius:0;padding:0;");
     expect(glass).toContain("box-shadow:none;filter:none;");

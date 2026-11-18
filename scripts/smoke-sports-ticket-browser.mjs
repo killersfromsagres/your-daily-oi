@@ -49,6 +49,16 @@ const STATE=`(()=>{
   lineupButtons:element?.querySelectorAll(".zf-lineup-single-button").length||0,
   hasWatermark:!!element?.querySelector(".zf-ticket-watermark"),
   hasGlass:!!element?.classList.contains("zf-ticket-premium"),
+  visibleLiveStatus:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
+    card.querySelector(".zf-ticket-status-row.is-live .zf-ticket-status")?.textContent?.includes("AO VIVO")),
+  visibleLiveMinute:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
+    card.querySelector(".zf-ticket-score-phase strong")?.textContent?.trim()==="67:24"),
+  visibleLiveScore:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
+    card.querySelector(".zf-ticket-score-pair")?.textContent?.replace(/\s+/g,"").includes("1–0")),
+  visibleReadyWatch:!!document.querySelector(".zf-ticket-watch.is-ready"),
+  computedGlassLayers:element?getComputedStyle(element).backgroundImage.slice(0,680):"",
+  trueFrostedGlass:!!element?.classList.contains("zf-ticket-premium") &&
+    getComputedStyle(element).backgroundImage.includes("rgba(5, 60, 46, 0.35)"),
   noCrestTile:!!element?.querySelector(".zf-ticket-team .zgame-crest")&&(()=>{
     const style=getComputedStyle(element.querySelector(".zf-ticket-team .zgame-crest"));
     return style.backgroundColor==="rgba(0, 0, 0, 0)"&&style.borderTopWidth==="0px"&&style.boxShadow==="none";
@@ -159,11 +169,18 @@ try{
    canaisDisponiveis:[{id:"globo",nome:"TV Globo"},{id:"sportv",nome:"SporTV"}],
    canaisTransmissao:["TV Globo","SporTV"],transmissao:"confirmada",
  };
+ // Browser-only test fixture for the genuine AO VIVO display path.
  const second={...first,id:"fifa.friendly:99998",casa:"Argentina",fora:"França",
+   horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
+   canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false,
+   status:"ao-vivo",fase:"segundo-tempo",faseRotulo:"2º TEMPO",
+   minuto:"67:24",placarCasa:1,placarFora:0};
+ // Same-grid scheduled fixtures with differing broadcaster counts for QA.
+ const third={...first,id:"fifa.friendly:99999",casa:"Uruguai",fora:"Chile",
    horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
    canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false};
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
-   jogos:[first,second],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
+   jogos:[first,second,third],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
  // Recorded provider roles from the exact match that exposed the LB/CB swap.
  // Mock only transport; parser, vocabulary and rendered ordering are production code.
@@ -199,12 +216,16 @@ try{
     throw new Error("Reference image and borderless crests not applied: "+JSON.stringify(state));
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
     throw new Error("Match card must be brand-free, glass styled and aligned: "+JSON.stringify(state));
+  if(!state.visibleLiveStatus||!state.visibleLiveMinute||!state.visibleLiveScore||!state.visibleReadyWatch||!state.trueFrostedGlass)
+    throw new Error("Live pill, minute, score, 5-minute glow and true transparency must render: "+JSON.stringify(state));
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
     throw new Error("Football page must match full stadium reference layout: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
   if(!device.mobile){
     const stadiumRows=await evaluate(`(()=>{
-      return Array.from(document.querySelectorAll(".zf-ticket")).slice(0,2).map(card=>({
+      return Array.from(Array.from(document.querySelectorAll(".zf-football-grid"))
+        .find(grid=>grid.querySelectorAll(".zf-ticket").length>=2)
+        ?.querySelectorAll(".zf-ticket")||[]).slice(0,2).map(card=>({
         stadiumTop:card.querySelector(".zf-ticket-stadium")?.getBoundingClientRect().top,
         timeTop:card.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel")?.getBoundingClientRect().top,
         watch:!!card.querySelector(".zf-ticket-watch")
