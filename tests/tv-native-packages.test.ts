@@ -8,7 +8,7 @@ describe("TV packages and truthful installation capabilities",()=>{
    expect(info.type).toBe("web");
    expect(info.main).toBe("index.html");
    expect(info.icon).toBe("icon.png");
-   expect(html).toContain("https://zangflix.vercel.app/?zf-tv-app=webos");
+   expect(html).toContain("https://zangflix.lovable.app/?zf-tv-app=webos");
  });
  test("CI builds LG webOS IPK using official CLI",()=>{
    const ci=readFileSync(new URL("../.github/workflows/webos-package.yml",import.meta.url),"utf8");
