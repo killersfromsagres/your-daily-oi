@@ -2067,9 +2067,13 @@ export default {
           temporarilyUnavailable: data.canais.length - withSources,
           sources: data.canais.reduce((n, ch) => n + ch.fontes.length, 0),
         };
-        return withSources > 0
-          ? jsonResponse({ ...data, summary }, 200, forced ? "no-store" : "public, max-age=120")
-          : jsonResponse({ ...data, summary, error: "Catálogo de TV temporariamente indisponível." }, 503);
+        // Archived channel names remain browsable during upstream outages.
+        // The UI distinguishes these from sources confirmed as playable.
+        return data.canais.length > 0
+          ? jsonResponse({ ...data, summary,
+              ...(withSources === 0 ? { warning: "Fontes de transmissão temporariamente indisponíveis." } : {}),
+            }, 200, forced ? "no-store" : "public, max-age=120")
+          : jsonResponse({ ...data, summary, error: "Nenhum catálogo de TV disponível." }, 503);
       }
       if (url.pathname === "/api/radios") {
         const data = await loadRadios();
