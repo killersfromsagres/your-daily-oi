@@ -246,3 +246,13 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 9999;
   pointer-events: none;
 }
+
+/* ZANG FLIX — visual-only suppression of Lovable's optional publishing pill.
+   Scoped to the vendor badge ID; never touches ZANG controls or links.
+   This cannot disable host-side branding settings or guarantee that future
+   Lovable revisions use this exact ID. */
+#lovable-badge {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
