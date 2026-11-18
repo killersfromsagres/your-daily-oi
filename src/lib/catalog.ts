@@ -149,6 +149,10 @@ function getCatalogUrls(fileName: string): string[] {
     urls.push(`${SNAPSHOT_URL}/${fileName}`);
   }
   // No Cloudflare Pages, a raiz JÁ É a pasta vod
+  // Owner-controlled catalog feeds take priority over any Saimo mirror.
+  for (const mirror of sourceUrls(process.env["ZANG_VOD_CATALOG_URLS"])) {
+    urls.push(mirror + "/" + fileName);
+  }
   for (const mirror of sourceUrls(process.env["SAIMO_VOD_MIRRORS"], [SAIMO_PAGES])) {
     urls.push(`${mirror}/${fileName}`);
   }
