@@ -85,26 +85,9 @@
 .zf-player-menu-header{display:flex;justify-content:space-between;align-items:center}
 .zf-player-menu-header button{font-size:20px;color:#fff;border:0;background:none;min-height:32px;min-width:32px}
 .zf-volume-panel button:focus-visible,.zf-volume-slider input:focus-visible{outline:2px solid #f0c487;outline-offset:2px}
-/* Smaller sports shelf leaves the channel browser close to the player. */
-.zgame-center.is-compact{padding:20px 20px 24px;margin-block:22px;border-radius:18px}
-.zgame-center.is-compact .zgame-header{margin-bottom:14px;gap:12px;align-items:center}
-.zgame-center.is-compact .zgame-kicker,.zgame-center.is-compact .zgame-toolbar-label,.zgame-center.is-compact .zgame-timezone,.zgame-center.is-compact .zf-featured-summary,.zgame-center.is-compact .zgame-section-kicker{display:none}
-.zgame-center.is-compact .zgame-header h2{font-size:clamp(24px,3vw,34px);margin:0 0 5px}
-.zgame-center.is-compact .zgame-header-copy{padding:0}.zgame-center.is-compact .zf-football-inline-link{font-size:11px}
-.zgame-center.is-compact .zgame-toolbar{padding:8px 0;margin-bottom:10px;border:0;background:none;min-height:0}
-.zgame-center.is-compact .zgame-days{width:100%;max-width:620px;gap:5px}
-.zgame-center.is-compact .zgame-day{height:auto;min-height:42px;min-width:62px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:10px}
-.zgame-center.is-compact .zgame-day span{font-size:9px}.zgame-center.is-compact .zgame-day strong{font-size:16px}.zgame-center.is-compact .zgame-day small{display:none}
-.zgame-center.is-compact .zgame-section-head{margin:6px 0 12px}.zgame-center.is-compact .zgame-section-head h3{font-size:13px}.zgame-center.is-compact .zgame-summary{font-size:10px}
-.zgame-center.is-compact .zgame-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,290px);grid-template-columns:none;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding:4px;padding:4px 4px 12px}
-.zgame-center.is-compact .zf-ticket{min-height:280px;scroll-snap-align:start;border-radius:14px;backdrop-filter:none}
-.zgame-center.is-compact .zf-ticket-main{padding:12px;min-height:0;gap:10px}
-.zgame-center.is-compact .zf-ticket-date{display:none}.zgame-center.is-compact .zf-ticket-league-crest{width:24px;height:24px}.zgame-center.is-compact .zf-ticket-status{font-size:8px}
-.zgame-center.is-compact .zf-ticket-teams{gap:10px;margin:8px 0}.zgame-center.is-compact .zgame-crest{width:36px;height:36px}.zgame-center.is-compact .zf-ticket-team strong{font-size:12px}
-.zgame-center.is-compact .zf-ticket-time{font-size:28px;line-height:1.1}.zgame-center.is-compact .zf-ticket-time-caption{display:none}.zgame-center.is-compact .zf-ticket-match-meta{font-size:9px;margin-top:0}
-.zgame-center.is-compact .zf-ticket-broadcast{padding:0 10px 10px}.zgame-center.is-compact .zf-ticket-watch{min-height:38px;padding:7px 9px}.zgame-center.is-compact .zf-ticket-watch small{display:none}
-.zf-ticket-channels-toggle{display:flex;align-items:center;justify-content:center;gap:6px;background:#ffffff09;border:1px solid #ffffff18;border-radius:7px;color:#dce8e0;padding:6px 10px;margin-top:5px;width:100%;font-size:11px;cursor:pointer}.zf-ticket-channels-toggle span{opacity:.6}
-.zgame-center.is-compact .zf-ticket-channel-choices{max-height:120px;overflow-y:auto}
+/* The TV sports shelf is a premium 10-foot football board, not the old
+   condensed horizontal carousel. Full match styles live in
+   football-reference-scene.css and football-tv-remote.css. */
 .zf-tv-app-page{max-width:1440px;padding:130px 5vw 110px;margin:auto;color:#f3f2ef;min-height:100dvh}
 .zf-tv-app-back{display:inline-flex;gap:6px;align-items:center;color:#b6becb;font-size:13px;margin-bottom:28px}
 .zf-tv-app-intro>span{font-size:11px;letter-spacing:.24em;color:#d7b77c}.zf-tv-app-intro h1{font-size:clamp(38px,5vw,72px);line-height:1.05;letter-spacing:-.05em;margin:16px 0}.zf-tv-app-intro p{color:#aab3c1}
@@ -118,7 +101,7 @@ html[data-zf-platform="tv"] .zf-volume-panel button{min-width:46px;min-height:46
 html[data-zf-platform="tv"] .zf-volume-slider input{height:46px}
 html[data-zf-platform="tv"] .ydo-controls-row button{min-width:44px;min-height:44px}
 html[data-zf-platform="tv"] :is(.zf-player-menu,.zang-cast-menu){backdrop-filter:none;background:#121923}
-@media(max-width:740px){.zf-tv-app-page{padding-top:86px}.zf-tv-install-grid{grid-template-columns:1fr;gap:24px}.zgame-center.is-compact{padding:16px 10px;margin-inline:0}.zgame-center.is-compact .zgame-summary{display:none}.zgame-center.is-compact .zgame-header-actions{gap:5px}.zgame-center.is-compact .zgame-refresh{font-size:0;min-width:36px;padding:8px}.zgame-center.is-compact .zgame-days-scroll{gap:5px}.zgame-center.is-compact .zgame-day{min-width:57px}}
+@media(max-width:740px){.zf-tv-app-page{padding-top:86px}.zf-tv-install-grid{grid-template-columns:1fr;gap:24px}}
 .zang-receiver-volume{border-top:1px solid #ffffff15;border-bottom:1px solid #ffffff15;padding:12px 2px;margin:8px 0}.zang-receiver-volume>strong{display:block;color:#efd1a0;font-size:13px;margin-bottom:12px}.zang-receiver-volume label{font-size:12px;display:block}.zang-receiver-volume output{float:right;color:#e4c58d}.zang-receiver-volume input{width:100%;height:36px;accent-color:#e4bd7b}.zang-receiver-volume button{display:flex;gap:8px;align-items:center;color:#dbe2e8;background:#ffffff0b;border:1px solid #ffffff18;border-radius:8px;padding:9px 12px;font-size:12px}.zang-cast-install{display:block;margin:14px 0 2px;font-size:12px;color:#e6c287;padding:8px 0}
 .zf-volume-hardware{font-size:11px;line-height:1.4;color:#d6b783;margin:8px 0}
 /* On smaller TV viewports, keep every destination reachable without text overlap. */
@@ -128,42 +111,9 @@ html[data-zf-platform="tv"] .ydo-nav-link,html[data-zf-platform="tv"] .ydo-dropd
 html[data-zf-platform="tv"] .ydo-tv-remote-indicator{display:none}
 
 @media(max-width:1100px){html[data-zf-platform="tv"] .ydo-logo-text{display:none}html[data-zf-platform="tv"] .ydo-logo-img{max-width:54px;height:30px}html[data-zf-platform="tv"] .ydo-nav-link{font-size:11px;padding-inline:5px}}
-/* Specific enough to retain compact geometry when route ticket styles load later. */
-.zgame-center.is-compact{scroll-margin-top:110px}
-.zgame-center.is-compact .zgame-card.zf-ticket{min-height:0;align-self:stretch}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{display:grid;grid-template-columns:minmax(0,1fr) 66px;grid-template-areas:'mast mast' 'teams time';flex:0 0 auto;min-height:0;padding:12px;gap:10px;align-items:center}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-masthead{grid-area:mast;min-height:24px;padding:0}
-.zgame-center.is-compact .zgame-card.zf-ticket.is-brazil .zf-ticket-masthead::after{display:none}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-teams{grid-area:teams;flex:none;min-height:0;padding:0;margin:0;gap:6px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team{gap:5px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team .zgame-crest{width:36px;height:36px;padding:2px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{font-size:11px;min-height:27px;line-height:1.2}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time-block{grid-area:time;min-height:0;gap:3px;padding:0;border:0;margin:0}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time{font-size:25px;line-height:1.1}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-minute{position:static;font-size:9px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-match-meta{display:none}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-broadcast{margin-top:auto;min-height:0;padding:0 10px 8px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-watch{min-height:36px;padding:6px 8px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-pending,.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-identified{min-height:38px;padding:6px;font-size:9px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-actions{padding:0 10px 10px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-single-button{min-height:38px;padding:7px 10px;gap:8px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-single-copy small{display:none}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-single-copy strong{font-size:11px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-lineup-pair-crests{display:none}
-.zgame-center.is-compact .zgame-header{min-height:0;padding:0 0 12px;margin:0;align-items:center;flex-wrap:nowrap}
-html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-grid{grid-auto-columns:minmax(300px,340px)}
-html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{font-size:14px;min-height:34px}
-html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-time{font-size:31px}
-/* Fixture names stay on two clean rows; the clock has its own measured column. */
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{grid-template-columns:minmax(0,1fr) 82px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-teams{display:flex;flex-direction:column;align-items:stretch;gap:7px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team{flex-direction:row;justify-content:flex-start;gap:7px;text-align:left}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team .zgame-crest{flex:0 0 28px;width:28px;height:28px}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:0;text-align:left}
-.zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-vs{display:none}
-html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-main{grid-template-columns:minmax(0,1fr) 92px}
-html[data-zf-platform="tv"] .zgame-center.is-compact .zgame-card.zf-ticket .zf-ticket-team strong{min-height:0}
-
+/* Keep the TV match section reachable below the fixed remote-navigation
+   header. No global compressed ticket geometry overrides are allowed. */
+.zgame-center.is-compact { scroll-margin-top:110px; }
 
 /* Streaming-app shelves: on phones and installed apps, posters stay clean.
    Only the desktop web interface may show glass arrows and edge fades. */
