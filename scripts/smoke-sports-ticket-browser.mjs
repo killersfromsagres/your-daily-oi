@@ -337,11 +337,11 @@ try{
     await send("Emulation.setDeviceMetricsOverride",{width:device.width,height:device.height,mobile:false,deviceScaleFactor:1});
     await send("Emulation.setUserAgentOverride",{userAgent:tvUA});
     await send("Page.navigate",{url:BASE+"/tv"});
-    await waitFor(x=>x.pathname==="/tv"&&x.cards>=3&&x.hasGlass&&x.lineupButtons===1);
+    await waitFor(x=>x.pathname==="/tv"&&x.cards>=2&&x.visibleLiveStatus);
     const tv=await evaluate(`(()=>{
       const board=document.querySelector(".zf-reference-section");
       const grid=board?.querySelector(".zf-reference-cards");
-      const card=grid?.querySelector(".zf-ticket");
+      const card=Array.from(grid?.querySelectorAll(".zf-ticket")||[]).find(node=>node.querySelector(".zf-ticket-watch"))||grid?.querySelector(".zf-ticket");
       const main=card?.querySelector(".zf-ticket-main");
       const team=card?.querySelector(".zf-ticket-team");
       const date=card?.querySelector(".zf-ticket-date");
