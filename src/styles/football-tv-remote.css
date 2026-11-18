@@ -1,0 +1,541 @@
+/* ZANG FLIX · football for actual Smart TVs and explicitly selected TV mode.
+   The old horizontal micro-ticket carousel was removed from tv-experience.css.
+   Keep the original design on desktop/mobile; do NOT infer TV from screen size. */
+html[data-zf-platform="tv"] .zgame-center.zf-reference-section {
+  width:100%;
+  min-width:0;
+  padding:clamp(22px,2.25vw,39px);
+  margin-block:22px 40px;
+  border-radius:26px;
+  overflow:hidden;
+  scroll-margin-top:122px;
+  border:1px solid rgba(116,249,184,.39);
+  box-shadow:inset 0 1px rgba(235,255,243,.16),0 24px 56px rgba(0,0,0,.32);
+}
+html[data-zf-platform="tv"] .zf-reference-scene {
+  width:100%;
+  min-width:0;
+  overflow:visible;
+}
+html[data-zf-platform="tv"] .zf-scene-header {
+  gap:clamp(14px,2vw,32px);
+  padding-bottom:clamp(20px,2.4vw,36px);
+  align-items:center;
+}
+html[data-zf-platform="tv"] .zf-scene-heading {
+  flex:1 1 420px;
+  gap:clamp(12px,1.35vw,22px);
+}
+html[data-zf-platform="tv"] .zf-scene-title-bar {height:67px;flex-basis:6px;}
+html[data-zf-platform="tv"] .zf-scene-tv-icon {
+  flex:0 0 53px;width:53px;height:62px;
+}
+html[data-zf-platform="tv"] .zf-scene-tv-icon svg {width:48px;height:48px;}
+html[data-zf-platform="tv"] .zf-scene-title-copy h2 {
+  font-size:clamp(34px,2.8vw,55px);
+  line-height:1.04;
+  letter-spacing:-.038em;
+}
+html[data-zf-platform="tv"] .zf-scene-title-copy p {
+  max-width:670px;
+  font-size:clamp(11px,.92vw,16px);
+  line-height:1.45;
+  letter-spacing:.16em;
+}
+html[data-zf-platform="tv"] .zf-scene-league-picker {
+  min-height:57px;
+  max-width:390px;
+  padding:12px 19px;
+  gap:12px;
+  border:1px solid rgba(147,255,207,.46);
+  background:rgba(7,91,64,.47);
+  border-radius:999px;
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+}
+html[data-zf-platform="tv"] .zf-scene-league-copy {
+  max-width:305px;
+  font-size:clamp(14px,1.03vw,19px);
+}
+html[data-zf-platform="tv"] .zf-scene-league-picker svg {width:20px;height:20px;}
+
+/* 10-foot board: maximum four *readable* cards, never a 250px scroll-snap
+   horizontal carousel. Explicit grid auto placement prevents a legacy rule
+   from squeezing all fixtures into a single horizontal strip. */
+html[data-zf-platform="tv"] .zf-reference-section .zgame-grid,
+html[data-zf-platform="tv"] .zf-football-reference-page .zf-football-grid {
+  display:grid;
+  grid-auto-flow:row;
+  grid-auto-columns:auto;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(16px,1.2vw,26px);
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  align-items:stretch;
+  overflow:visible;
+  scroll-snap-type:none;
+  overscroll-behavior-x:auto;
+  padding:0;
+}
+html[data-zf-platform="tv"] .zf-reference-section .zgame-grid .zgame-skeleton {
+  min-height:540px;
+}
+html[data-zf-platform="tv"] .zf-reference-section .zf-reference-cards .zf-ticket-premium,
+html[data-zf-platform="tv"] .zf-football-reference-page .zf-football-grid .zf-ticket-premium {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  width:100%;
+  height:100%;
+  min-height:598px;
+  scroll-snap-align:none;
+  border-radius:23px;
+  border:1px solid rgba(186,255,219,.56);
+  background:
+    linear-gradient(151deg,rgba(242,255,248,.10),rgba(13,112,78,.07) 36%,transparent 76%),
+    linear-gradient(156deg,rgba(4,61,45,.34),rgba(3,45,37,.47) 52%,rgba(2,30,30,.62));
+  -webkit-backdrop-filter:blur(15px) saturate(150%);
+  backdrop-filter:blur(15px) saturate(150%);
+  box-shadow:inset 0 1px rgba(240,255,250,.22),0 20px 45px rgba(0,0,0,.32);
+  transform:none;
+  overflow:hidden;
+}
+html[data-zf-platform="tv"] .zf-reference-section .zf-ticket-premium:hover,
+html[data-zf-platform="tv"] .zf-football-reference-page .zf-ticket-premium:hover {
+  transform:none;
+}
+html[data-zf-platform="tv"] .zf-reference-section .zf-ticket-premium:focus-within,
+html[data-zf-platform="tv"] .zf-football-reference-page .zf-ticket-premium:focus-within {
+  border-color:rgba(153,255,204,.87);
+  box-shadow:inset 0 1px rgba(245,255,250,.27),0 0 26px rgba(40,235,151,.23),0 16px 43px rgba(0,0,0,.38);
+}
+html[data-zf-platform="tv"] .zf-reference-section .zf-ticket-premium .zf-ticket-main,
+html[data-zf-platform="tv"] .zf-football-reference-page .zf-ticket-premium .zf-ticket-main {
+  display:flex;
+  flex:0 0 auto;
+  flex-direction:column;
+  align-items:stretch;
+  width:100%;
+  min-width:0;
+  gap:0;
+  padding:clamp(16px,1.23vw,22px) clamp(14px,1.18vw,21px) 12px;
+  background:transparent;
+  text-align:center;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-masthead {
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr);
+  align-items:center;
+  gap:13px;
+  min-height:66px;
+  padding:0 0 14px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-date {
+  display:flex;
+  width:58px;height:64px;
+  flex:0 0 58px;
+  border-radius:14px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-date strong {
+  font-size:29px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-date small {
+  font-size:11px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-league {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding-left:12px;
+  min-width:0;
+  text-align:left;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-league-crest {
+  flex:0 0 29px;width:29px;height:33px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-league strong {
+  display:block;
+  min-width:0;
+  max-width:100%;
+  font-size:clamp(12px,.93vw,16px);
+  line-height:1.25;
+  text-align:left;
+  font-weight:800;
+  white-space:normal;
+  overflow-wrap:break-word;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-teams {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+  min-height:169px;
+  margin:0;
+  padding:15px 0 10px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-team {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  min-width:0;
+  text-align:center;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-team .zgame-crest {
+  width:clamp(65px,4.4vw,86px);
+  height:clamp(65px,4.4vw,86px);
+  flex:0 0 auto;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-team strong {
+  display:block;
+  min-height:38px;
+  max-width:100%;
+  overflow-wrap:break-word;
+  overflow:visible;
+  white-space:normal;
+  text-align:center;
+  font-size:clamp(13px,1vw,18px);
+  line-height:1.22;
+  font-weight:850;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-vs {
+  display:block;
+  font-size:24px;
+  align-self:center;
+  padding-bottom:28px;
+  text-align:center;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-status-row {
+  display:flex;
+  justify-content:center;
+  min-height:44px;
+  margin:3px 0 7px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-status {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  max-width:100%;
+  min-height:37px;
+  padding:9px 16px;
+  border-radius:999px;
+  font-size:clamp(11px,.85vw,14px);
+  line-height:1.15;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-time-block {
+  display:flex;
+  min-width:0;
+  min-height:126px;
+  width:100%;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  padding:10px 0 15px;
+  margin:0;
+  border-bottom:1px solid rgba(229,255,241,.20);
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-time-caption {
+  display:block;
+  position:static;
+  width:auto;height:auto;
+  padding:0;
+  border:0;
+  clip:auto;
+  overflow:visible;
+  white-space:nowrap;
+  font-size:10px;
+  line-height:1.3;
+  color:rgba(234,255,244,.73);
+  letter-spacing:.12em;
+}
+html[data-zf-platform="tv"] .zf-reference-cards .zf-ticket-premium .zf-ticket-time,
+html[data-zf-platform="tv"] .zf-football-grid .zf-ticket-premium .zf-ticket-time {
+  display:block;
+  max-width:100%;
+  font-size:clamp(40px,2.72vw,55px)!important;
+  line-height:1.04;
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum";
+  text-align:center;
+  overflow:visible;
+  white-space:nowrap;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-countdown {
+  font-size:11px;
+  min-height:26px;
+  padding:5px 12px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-score-panel {
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
+  align-items:center;
+  min-width:0;
+  width:100%;
+  min-height:126px;
+  padding:12px 10px;
+  margin:0;
+  border-radius:17px;
+  overflow:hidden;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-score-pair {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);
+  gap:3px;
+  align-items:center;
+  justify-items:center;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-score-pair strong {
+  font-size:clamp(32px,2.35vw,47px);
+  font-variant-numeric:tabular-nums;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-score-phase {
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:0 0 0 8px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-score-phase small {
+  font-size:clamp(10px,.73vw,12px);
+  line-height:1.25;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-score-phase strong {
+  font-size:clamp(15px,.98vw,21px);
+  line-height:1.15;
+  font-variant-numeric:tabular-nums;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-match-meta {
+  display:flex;
+  margin:0;
+  padding:10px 0 0;
+  min-height:69px;
+  width:100%;
+  align-items:stretch;
+  justify-content:flex-end;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-stadium {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:61px;
+  min-width:0;
+  width:100%;
+  padding:12px 14px;
+  background:rgba(208,255,231,.075);
+  border:1px solid rgba(199,255,225,.31);
+  border-radius:14px;
+  text-align:left;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-stadium strong {
+  font-size:clamp(12px,.89vw,16px);
+  line-height:1.2;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-stadium small {
+  font-size:10px;
+  letter-spacing:.11em;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-broadcast {
+  display:flex;
+  flex:1 0 auto;
+  min-width:0;
+  padding:12px 14px 10px;
+  gap:6px;
+  margin:0;
+  border-top:1px solid rgba(230,255,245,.18);
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-channel-panel {
+  display:flex;
+  gap:10px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch {
+  display:flex;
+  align-items:center;
+  min-height:65px;
+  width:100%;
+  gap:12px;
+  padding:12px 14px;
+  border-radius:15px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch small {
+  display:block;
+  font-size:10px;
+  line-height:1.25;
+  letter-spacing:.1em;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch strong {
+  font-size:clamp(14px,.98vw,19px);
+  line-height:1.2;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch>svg:first-child {
+  flex:0 0 22px;width:22px;height:22px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch>svg:last-child {
+  margin-left:auto;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-channels-toggle {
+  min-height:44px;
+  padding:9px 10px;
+  border-radius:12px;
+  font-size:13px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-channel-choices button {
+  min-height:42px;
+  font-size:13px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch-ready {
+  display:flex;
+  font-size:11px;
+  letter-spacing:.08em;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-lineup-actions {
+  display:flex;
+  margin:auto 0 0;
+  padding:0 14px 16px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-lineup-single-button {
+  display:flex;
+  width:100%;
+  min-height:65px;
+  padding:12px 14px;
+  border-radius:15px;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-lineup-single-copy strong {
+  font-size:clamp(14px,1vw,18px);
+  line-height:1.25;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-lineup-single-copy small {
+  display:block;
+  font-size:11px;
+  line-height:1.35;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-lineup-action-symbol {
+  flex:0 0 32px;
+  width:32px;height:32px;
+}
+
+/* A non-blocking, readable notification belongs below the live fixtures. */
+html[data-zf-platform="tv"] .zf-reference-section .zgame-partial {
+  display:inline-flex;
+  width:fit-content;
+  max-width:100%;
+  min-height:46px;
+  align-items:center;
+  gap:10px;
+  margin:16px 0 0;
+  padding:10px 16px;
+  border:1px solid rgba(247,206,133,.32);
+  border-radius:13px;
+  background:rgba(95,66,22,.22);
+  color:#ffe8bd;
+  font-size:clamp(11px,.83vw,14px);
+  line-height:1.4;
+  font-weight:650;
+}
+html[data-zf-platform="tv"] .zf-reference-section .zgame-partial svg {
+  flex:0 0 18px;
+}
+html[data-zf-platform="tv"] .zf-reference-scene-footer {
+  min-height:64px;
+  margin-top:17px;
+  justify-content:flex-end;
+  gap:12px;
+}
+html[data-zf-platform="tv"] .zf-reference-scene-footer .zf-football-inline-link,
+html[data-zf-platform="tv"] .zf-reference-scene-footer .zgame-refresh {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  min-height:53px;
+  margin:0;
+  padding:10px 16px;
+  font-size:clamp(12px,.88vw,16px);
+  border:1px solid rgba(175,247,203,.32);
+  border-radius:14px;
+}
+html[data-zf-platform="tv"] .zf-reference-calendar {
+  margin-top:12px;
+  border-color:rgba(170,246,213,.24);
+}
+html[data-zf-platform="tv"] .zf-reference-calendar summary {
+  min-height:56px;
+  font-size:clamp(12px,.9vw,16px);
+  padding:12px 18px;
+}
+html[data-zf-platform="tv"] .zf-reference-calendar .zgame-day {
+  min-height:84px;
+}
+html[data-zf-platform="tv"] .zf-reference-calendar .zgame-day strong {
+  font-size:clamp(22px,1.45vw,29px);
+}
+
+/* Remote focus is unmistakable, scrolls into view through the existing TV
+   key navigation, and never modifies the keyboard/mobile desktop design. */
+html[data-zf-platform="tv"] .zf-reference-section :is(button,a,select,summary):focus,
+html[data-zf-platform="tv"] .zf-football-reference-page :is(button,a,select,summary):focus {
+  position:relative;
+  z-index:4;
+  outline:3px solid #8affc2 !important;
+  outline-offset:3px !important;
+  box-shadow:0 0 0 6px rgba(75,255,153,.18),0 0 24px rgba(47,255,151,.22) !important;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-main:disabled:focus {
+  outline:none !important;
+  box-shadow:none !important;
+}
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-watch:focus,
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-lineup-single-button:focus,
+html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-channels-toggle:focus {
+  transform:translateY(-1px);
+}
+
+/* 1280–1659: three large cards instead of four cramped or six microscopic. */
+@media(max-width:1659px) {
+  html[data-zf-platform="tv"] .zf-reference-section .zgame-grid,
+  html[data-zf-platform="tv"] .zf-football-reference-page .zf-football-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:18px;
+  }
+}
+/* Smart TV browser engines can report 960 or 1024 CSS pixels on a 4K panel. */
+@media(max-width:1199px) {
+  html[data-zf-platform="tv"] .zf-reference-section .zgame-grid,
+  html[data-zf-platform="tv"] .zf-football-reference-page .zf-football-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+  }
+  html[data-zf-platform="tv"] .zf-ticket-premium .zf-ticket-main {padding:15px 14px 11px;}
+}
+@media(max-width:759px) {
+  html[data-zf-platform="tv"] .zf-reference-section .zgame-grid,
+  html[data-zf-platform="tv"] .zf-football-reference-page .zf-football-grid {
+    grid-template-columns:minmax(0,1fr);
+    gap:14px;
+  }
+  html[data-zf-platform="tv"] .zgame-center.zf-reference-section {padding:17px 13px;}
+  html[data-zf-platform="tv"] .zf-scene-header {gap:13px;}
+  html[data-zf-platform="tv"] .zf-scene-heading {flex-basis:100%;}
+  html[data-zf-platform="tv"] .zf-scene-title-copy h2 {font-size:clamp(26px,5vw,34px);}
+  html[data-zf-platform="tv"] .zf-scene-title-copy p {font-size:10px;}
+  html[data-zf-platform="tv"] .zf-reference-section .zf-reference-cards .zf-ticket-premium {min-height:0;}
+}
+/* Avoid animating entire glass planes or hover transforms on low-power TVs. */
+@media(prefers-reduced-motion:reduce) {
+  html[data-zf-platform="tv"] .zf-ticket-premium :is(.zf-ticket-watch,.zf-lineup-single-button,.zf-ticket-channels-toggle) {
+    transition:none;animation:none;transform:none;
+  }
+}
+@supports not ((-webkit-backdrop-filter:blur(5px)) or (backdrop-filter:blur(5px))) {
+  html[data-zf-platform="tv"] .zf-reference-section .zf-reference-cards .zf-ticket-premium {
+    background:linear-gradient(155deg,rgba(5,52,40,.87),rgba(3,37,32,.95));
+  }
+}
