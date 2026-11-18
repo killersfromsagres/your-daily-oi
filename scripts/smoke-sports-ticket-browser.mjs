@@ -51,6 +51,10 @@ const STATE=`(()=>{
   hasGlass:!!element?.classList.contains("zf-ticket-premium"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
   hasCentralTime:!!element?.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel"),
+  referenceHeader:!!document.querySelector(".zf-football-reference-hero .zf-scene-header"),
+  referenceTitle:document.querySelector(".zf-football-reference-hero .zf-scene-title-copy h2")?.textContent?.trim()||null,
+  leaguePicker:!!document.querySelector(".zf-football-reference-hero select[aria-label='Filtrar jogos por campeonato']"),
+  calendarCompact:!!document.querySelector(".zf-football-date-picker:not([open])"),
   dialog:!!dialog,
   dialogRect:modalRect?{left:modalRect.left,right:modalRect.right,width:modalRect.width}:null,
   activeSide:dialog?.querySelector(".zf-lineup-switch button[aria-pressed=true]")?.textContent?.trim()||null,
@@ -183,6 +187,8 @@ try{
   const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket);
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
     throw new Error("Match card must be brand-free, glass styled and aligned: "+JSON.stringify(state));
+  if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
+    throw new Error("Football page must match full stadium reference layout: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
   await evaluate('Array.from(document.querySelectorAll(".zf-ticket")).find(card=>card.querySelector(".zf-lineup-single-button")?.getAttribute("aria-label")==="Ver escalações de Moldova e Kazakhstan").scrollIntoView({block:"center"})');
   await sleep(600);
