@@ -50,6 +50,11 @@ describe("match ticket and tactical field",()=>{
     expect(component).toContain("getMatchCardVisual(game, now)");
     expect(component).not.toContain("zf-ticket-watermark");
     expect(component).not.toContain("ZANG <span>FLIX</span>");
+    expect(component).toContain('className="zgame-crest zf-ticket-transparent-crest"');
+    expect(component).toContain("<StadiumIcon size={27}/>");
+    expect(component).toContain('className="zf-ticket-stadium-pin"');
+    expect(component).toContain('className="zf-ticket-live-dot"');
+    expect(component).toContain("ACENDE 5 MIN ANTES");
     expect(component).toContain("game.estadio?.trim()");
     expect(component).toContain("game.canaisDisponiveis");
     expect(component).toContain("isBrazilFixture(game)");
@@ -82,6 +87,10 @@ describe("match ticket and tactical field",()=>{
     const glass=readFileSync("src/styles/match-glass-premium.css","utf8");
     expect(glass).toContain("backdrop-filter:blur(24px)");
     expect(glass).toContain(".zf-ticket-watch.is-ready");
+    expect(glass).toContain("background:transparent;border:0;border-radius:0;padding:0;");
+    expect(glass).toContain("box-shadow:none;filter:none;");
+    expect(glass).toContain("zf-ticket-live-dot");
+    expect(glass).toContain(".zf-ticket-stadium-pin");
     expect(glass).toContain("@media(prefers-reduced-motion:reduce)");
     expect(dialog).toContain('aria-modal="true"');
     expect(dialog).toContain('event.key==="Escape"');

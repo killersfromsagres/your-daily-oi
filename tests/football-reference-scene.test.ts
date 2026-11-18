@@ -58,6 +58,10 @@ describe("Football stadium-reference section",()=>{
     expect(css).toContain("backdrop-filter:blur(16px)");
     expect(css).toContain("@media(max-width:650px)");
     expect(css).toContain("@media(prefers-reduced-motion:reduce)");
+    expect(css).toContain('url("/stadium-night-zang.webp")');
+    expect(css).not.toContain("img.magnific.com");
+    expect(css).toContain("background-position:center,center 51%");
+    expect(css).toContain("min-height:608px");
     expect(css).not.toContain("content:'ZANG FLIX'");
   });
 });
