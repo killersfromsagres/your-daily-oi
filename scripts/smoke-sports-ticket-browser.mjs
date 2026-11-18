@@ -324,6 +324,75 @@ try{
    modalWidth:opened.dialogRect.width,firstClub:opened.title,switchedClub:switched.title,
    pitchOrPending:opened.hasPitch||opened.pending,visualData:"synthetic fixtures, production checked separately"}));
  }
+
+  // Real TV route; verifies the removed horizontal-mini-ticket cascade.
+  const tvCases=[
+    {name:"tizen-1920",width:1920,height:1080,columns:4},
+    {name:"tizen-1536",width:1536,height:864,columns:3},
+    {name:"tizen-960",width:960,height:540,columns:2},
+    {name:"tizen-720",width:720,height:480,columns:1},
+  ];
+  const tvUA="Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+  for(const device of tvCases){
+    await send("Emulation.setDeviceMetricsOverride",{width:device.width,height:device.height,mobile:false,deviceScaleFactor:1});
+    await send("Emulation.setUserAgentOverride",{userAgent:tvUA});
+    await send("Page.navigate",{url:BASE+"/tv"});
+    await waitFor(x=>x.pathname==="/tv"&&x.cards>=3&&x.hasGlass&&x.lineupButtons===1);
+    const tv=await evaluate(`(()=>{
+      const board=document.querySelector(".zf-reference-section");
+      const grid=board?.querySelector(".zf-reference-cards");
+      const card=grid?.querySelector(".zf-ticket");
+      const main=card?.querySelector(".zf-ticket-main");
+      const team=card?.querySelector(".zf-ticket-team");
+      const date=card?.querySelector(".zf-ticket-date");
+      const venue=card?.querySelector(".zf-ticket-stadium");
+      const watch=card?.querySelector(".zf-ticket-watch");
+      const lineup=card?.querySelector(".zf-lineup-single-button");
+      const time=card?.querySelector(".zf-ticket-time");
+      const css=grid&&getComputedStyle(grid);
+      const rect=grid?.getBoundingClientRect();
+      if(watch)watch.focus();
+      return {
+        platform:document.documentElement.dataset.zfPlatform,
+        columns:css?.gridTemplateColumns.trim().split(/\\s+/).length||0,
+        autoFlow:css?.gridAutoFlow,
+        right:rect?.right,left:rect?.left,
+        horizontalOverflow:!!grid&&grid.scrollWidth>grid.clientWidth+2,
+        cardWidth:card?.getBoundingClientRect().width||0,
+        mainLayout:main&&getComputedStyle(main).display,
+        teamsLayout:card?.querySelector(".zf-ticket-teams")&&getComputedStyle(card.querySelector(".zf-ticket-teams")).display,
+        teamDirection:team&&getComputedStyle(team).flexDirection,
+        dateVisible:!!date&&getComputedStyle(date).display!=="none",
+        venueVisible:!!venue&&getComputedStyle(venue).display!=="none",
+        timeSize:time?parseFloat(getComputedStyle(time).fontSize):0,
+        timeOverflow:!!time&&time.scrollWidth>time.clientWidth+2,
+        watchHeight:watch?.getBoundingClientRect().height||0,
+        lineupHeight:lineup?.getBoundingClientRect().height||0,
+        channelLabel:watch?.textContent?.trim()||"",
+        lineupLabel:lineup?.textContent?.trim()||"",
+        focused:document.activeElement===watch,
+        glass:!!card&&getComputedStyle(card).backdropFilter.includes("blur"),
+      };
+    })()`);
+    if(tv.platform!=="tv"||tv.columns!==device.columns||tv.autoFlow!=="row"||
+       tv.horizontalOverflow||tv.right>device.width+1||tv.left<0)
+      throw new Error("Smart TV match grid must wrap: "+JSON.stringify({device,tv}));
+    if(tv.cardWidth<260||tv.mainLayout!=="flex"||tv.teamsLayout!=="grid"||
+       tv.teamDirection!=="column"||!tv.dateVisible||!tv.venueVisible||
+       tv.timeSize<38||tv.timeOverflow)
+      throw new Error("Smart TV game information clipped: "+JSON.stringify({device,tv}));
+    if(tv.watchHeight<58||tv.lineupHeight<58||!tv.channelLabel.includes("TV Globo")||
+       !tv.lineupLabel.includes("Escalação")||!tv.focused||!tv.glass)
+      throw new Error("Smart TV D-pad actions inaccessible: "+JSON.stringify({device,tv}));
+    await evaluate('document.querySelector(".zf-reference-section").scrollIntoView({block:"start"})');
+    await sleep(280);
+    await screenshot(device.name+"-sports");
+    console.log(JSON.stringify({event:"sports-smarttv-board",device:device.name,
+      columns:tv.columns,cardWidth:Math.round(tv.cardWidth),clockSize:tv.timeSize,
+      watchHeight:Math.round(tv.watchHeight),lineupHeight:Math.round(tv.lineupHeight),
+      dpadFocus:tv.focused,mockData:"CI-only fixtures"}));
+  }
+
 }finally{
  ws?.close();browser?.kill("SIGTERM");server.kill("SIGTERM");
 }
