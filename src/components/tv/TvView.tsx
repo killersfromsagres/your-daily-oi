@@ -45,6 +45,9 @@ function storeArray(key: string, values: string[]): void {
 function normalize(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
+// Avoid replacing a currently playing channel with offline-only snapshot metadata.
+import { retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
+
 function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((c, i) => {
@@ -186,7 +189,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const applyCatalog = useCallback((data: CatalogResponse) => {
-    setChannels(previous => sameChannels(previous, data.canais) ? previous : data.canais);
+    setChannels(previous => {
+      const safe = retainLiveCatalogOnMetadataOutage(previous, data.canais);
+      return sameChannels(previous, safe) ? previous : safe;
+    });
     setCategories(data.categorias || []);
     setUpdatedAt(data.atualizadoEm || new Date().toISOString());
     setCatalogError(null);
