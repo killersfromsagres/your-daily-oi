@@ -117,7 +117,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
         </div>
         <div className={"zf-ticket-status-row is-" + visual.phase}>
           <span className="zf-ticket-status">
-            {visual.phase === "live" ? <Radio size={14}/> :
+            {visual.phase === "live" ? <span className="zf-ticket-live-dot" aria-hidden="true"/> :
              visual.phase === "soon" ? <Clock3 size={14}/> :
              visual.phase === "finished" ? <CheckCircle2 size={14}/> :
              <CalendarDays size={14}/>}
