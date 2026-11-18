@@ -55,7 +55,7 @@ const STATE=`(()=>{
   })(),
   stadiumIcon:!!element?.querySelector(".zf-ticket-stadium>svg"),
   stadiumPhoto:!!document.querySelector(".zf-football-reference-page")&&getComputedStyle(document.querySelector(".zf-football-reference-page")).backgroundImage.includes("stadium-night-zang.webp"),
-  visualGlass:getComputedStyle(element).backdropFilter.includes("blur"),
+  visualGlass:!!element&&getComputedStyle(element).backdropFilter.includes("blur"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
   hasCentralTime:!!element?.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel"),
   referenceHeader:!!document.querySelector(".zf-football-reference-hero .zf-scene-header"),
