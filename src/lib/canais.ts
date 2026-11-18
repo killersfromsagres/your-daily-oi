@@ -1,4 +1,5 @@
 import { fetchFirstText, sourceUrls } from "./saimo-source";
+import { loadZangTvArchive } from "./zang-archive";
 import { looksOffline, type LiveStreamFormat } from "./live-source";
 
 /** Também aceita listas IPTV M3U sem perder referer e user-agent. */
@@ -374,6 +375,11 @@ export async function fetchCanaisFallbackClient(): Promise<{
   ]);
 
   if (txtRes.status !== "fulfilled" || !txtRes.value.ok) {
+    const restored = await loadZangTvArchive();
+    if (restored.length) {
+      const { canais, categorias } = filterCanaisAndExtractCategories(restored);
+      return { atualizadoEm: new Date().toISOString(), categorias, canais };
+    }
     throw new Error("Falha ao obter catálogo ao vivo de canais");
   }
 
@@ -476,13 +482,18 @@ export async function loadCanais(forceRefresh = false): Promise<{
     const catalogs = downloaded
       .filter((r): r is PromiseFulfilledResult<CanalTV[]> => r.status === "fulfilled")
       .map((r) => r.value);
-    if (!catalogs.length) throw new Error("Todas as origens de canais estão indisponíveis");
-    const canaisRaw = mergeCanaisCatalogs(catalogs);
+    const savedChannels = await loadZangTvArchive();
+    if (!catalogs.length && !savedChannels.length) {
+      throw new Error("Todas as origens de canais estão indisponíveis");
+    }
+    // The owned archive preserves channel identity and navigation; only the
+    // currently reachable, authorized provider lists supply media URLs.
+    const canaisRaw = mergeCanaisCatalogs([...catalogs, savedChannels]);
 
     // Exclui apenas fontes de manutenção e servidores declaradamente desativados.
     const desativados = await fetchFontesDesativadas();
     const { canais, categorias } = filterCanaisAndExtractCategories(canaisRaw, desativados);
-    if (!canais.some((canal) => canal.fontes.length > 0)) throw new Error("Nenhum canal com fonte válida");
+    if (!canais.length) throw new Error("Nenhum canal salvo ou disponível");
 
     canaisCache = canais;
     canaisCategoriasCache = categorias;
