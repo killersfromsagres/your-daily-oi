@@ -44,8 +44,12 @@ describe("match ticket and tactical field",()=>{
     const component=readFileSync("src/components/tv/JogosShelf.tsx","utf8");
     expect(component).toContain("zf-ticket-watch");
     expect(component).toContain("if(game.canalId)onWatch(game.canalId)");
-    expect(component).toContain("zf-ticket-watermark");
-    expect(component).toContain("ZANG <span>FLIX</span>");
+    expect(component).toContain("zf-ticket-premium");
+    expect(component).toContain("zf-ticket-score-panel");
+    expect(component).toContain("zf-ticket-countdown");
+    expect(component).toContain("getMatchCardVisual(game, now)");
+    expect(component).not.toContain("zf-ticket-watermark");
+    expect(component).not.toContain("ZANG <span>FLIX</span>");
     expect(component).toContain("game.estadio?.trim()");
     expect(component).toContain("game.canaisDisponiveis");
     expect(component).toContain("isBrazilFixture(game)");
@@ -75,6 +79,10 @@ describe("match ticket and tactical field",()=>{
     expect(css).toContain(".zgame-card.zf-ticket");
     expect(css).toContain("backdrop-filter:blur(18px)");
     expect(css).toContain("zgame-grid,.zf-football-page .zf-football-grid");
+    const glass=readFileSync("src/styles/match-glass-premium.css","utf8");
+    expect(glass).toContain("backdrop-filter:blur(24px)");
+    expect(glass).toContain(".zf-ticket-watch.is-ready");
+    expect(glass).toContain("@media(prefers-reduced-motion:reduce)");
     expect(dialog).toContain('aria-modal="true"');
     expect(dialog).toContain('event.key==="Escape"');
     expect(dialog).toContain("previousFocus.current?.focus()");

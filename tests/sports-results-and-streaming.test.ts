@@ -95,9 +95,10 @@ describe("exclusive verified Mirassol x Atlético-MG broadcast",()=>{
 
   test("game card offers official link and displays final score rather than old kickoff",()=>{
     const ui=readFileSync("src/components/tv/JogosShelf.tsx","utf8");
-    expect(ui).toContain('active||game.status==="encerrado"');
-    expect(ui).toContain('"RESULTADO FINAL"');
-    expect(ui).toContain('className="zf-ticket-watch zf-ticket-watch-external"');
+    expect(ui).toContain("visual.showScore");
+    expect(ui).toContain('visual.phase === "finished"');
+    expect(ui).toContain('"zf-ticket-score-panel"');
+    expect(ui).toContain('zf-ticket-watch-external" +');
     expect(ui).toContain('href={officialUrl}');
     expect(ui).toContain('rel="noopener noreferrer"');
   });
