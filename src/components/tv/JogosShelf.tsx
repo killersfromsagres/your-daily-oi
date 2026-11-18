@@ -11,7 +11,7 @@ import { StadiumIcon } from "@/components/sports/StadiumIcon";
 import { FootballSceneHeader, selectedFootballLeague } from "@/components/sports/FootballSceneHeader";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
-  Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
+  Activity, AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
   Clock3, ExternalLink, MapPin, RefreshCw, ShieldQuestion, Trophy, WifiOff,
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
@@ -21,6 +21,7 @@ import "@/styles/jogos-center.css";
 import "@/styles/sports-match-tickets.css";
 import "@/styles/match-glass-premium.css";
 import "@/styles/football-reference-scene.css";
+import "@/styles/football-tv-remote.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
@@ -347,9 +348,6 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
         <FootballSceneHeader games={allGames} selection={selectedLeague}
           onChange={setLeagueFilter}
           title={day===today?"Jogos de Hoje":"Jogos do Dia"}/>
-        {data?.parcial && !pending && (
-          <p className="zgame-partial" role="status">Algumas competições não responderam. A programação pode estar incompleta.</p>
-        )}
         {pending ? (
           <div className="zgame-grid" aria-busy="true">
             {[1,2,3,4].map(i=><div key={i} className="zgame-skeleton" aria-hidden="true"><span/><div/><span/></div>)}
@@ -379,6 +377,12 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
               <button type="button" onClick={()=>jumpDays(1)}>Ver próximo dia <ArrowRight size={15}/></button>
             ) : null}
           </div>
+        )}
+        {data?.parcial && !pending && (
+          <p className="zgame-partial" role="status">
+            <AlertTriangle size={18} aria-hidden="true"/>
+            Algumas competições não responderam. Exibindo a programação confirmada.
+          </p>
         )}
         <div className="zf-reference-scene-footer">
           {live>0 && <span className="zgame-live-flag"><span/> {live} EM ANDAMENTO</span>}
