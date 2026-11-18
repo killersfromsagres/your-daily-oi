@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { MatchLineups } from "@/components/sports/MatchLineups";
+import { FootballSceneHeader, selectedFootballLeague } from "@/components/sports/FootballSceneHeader";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
   Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
@@ -18,6 +19,7 @@ import { useMatchCardClock } from "@/lib/use-match-card-clock";
 import "@/styles/jogos-center.css";
 import "@/styles/sports-match-tickets.css";
 import "@/styles/match-glass-premium.css";
+import "@/styles/football-reference-scene.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
@@ -221,6 +223,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
 }
 
 export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfProps) {
+  const [leagueFilter,setLeagueFilter] = useState("auto");
   const [today, setToday] = useState(() => dataBrasilia(new Date()));
   const [day, setDay] = useState(() => dataBrasilia(new Date()));
 
@@ -314,7 +317,10 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
       ? scores.jogos : [];
     return mergeFootballScores(baseGames,updates,day);
   },[baseGames,scores,data,day]);
-  const filtered = useMemo(() => featuredFootballMatches(allGames, 8), [allGames]);
+  const selectedLeague = selectedFootballLeague(allGames,leagueFilter);
+  const filtered = useMemo(() => featuredFootballMatches(
+    selectedLeague==="all" ? allGames : allGames.filter(game=>game.ligaId===selectedLeague),8),
+    [allGames,selectedLeague]);
 
   const live = allGames.filter(game=>game.status==="ao-vivo").length;
   const linked = allGames.filter(game=>game.canalId||game.transmissaoUrl).length;
@@ -332,94 +338,99 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
   };
 
   return (
-    <section className="zgame-center is-compact" id="ztv-jogos" aria-label="Central de futebol com jogos do dia">
+    <section className="zgame-center is-compact zf-reference-section" id="ztv-jogos"
+      aria-label="Jogos de Hoje — futebol ao vivo">
       <div className="zgame-ambient" aria-hidden="true" />
-      <header className="zgame-header">
-        <div className="zgame-header-copy">
-          <div className="zgame-kicker"><Activity size={14} /><span>AGENDA ESPORTIVA</span><span className="zgame-kicker-line" /><span>FUTEBOL AO VIVO</span></div>
-          <h2>Hoje tem <em>jogo.</em></h2>
-          <Link to="/futebol" className="zf-football-inline-link"><FootballIcon size={16}/> Central completa de futebol <ArrowRight size={14}/></Link>
-
-        </div>
-        <div className="zgame-header-actions">
-          {live > 0 && <span className="zgame-live-flag"><span /> {live} EM ANDAMENTO</span>}
-          <span className="zgame-timezone"><Clock3 size={15} /> Horário de Brasília</span>
-          <button type="button" className="zgame-refresh" aria-label="Atualizar agenda" onClick={() => setRefreshKey(k => k + 1)} disabled={pending}>
-            <RefreshCw size={16} className={pending ? "zgame-spin" : ""} /> Atualizar
+      <div className="zf-reference-scene">
+        <FootballSceneHeader games={allGames} selection={selectedLeague}
+          onChange={setLeagueFilter}
+          title={day===today?"Jogos de Hoje":"Jogos do Dia"}/>
+        {data?.parcial && !pending && (
+          <p className="zgame-partial" role="status">Algumas competições não responderam. A programação pode estar incompleta.</p>
+        )}
+        {pending ? (
+          <div className="zgame-grid" aria-busy="true">
+            {[1,2,3,4].map(i=><div key={i} className="zgame-skeleton" aria-hidden="true"><span/><div/><span/></div>)}
+          </div>
+        ) : failure || data?.erro ? (
+          <div className="zgame-empty" role="alert">
+            <WifiOff size={26}/>
+            <h4>Agenda temporariamente indisponível</h4>
+            <p>{failure || data?.erro}</p>
+            <button type="button" onClick={()=>setRefreshKey(k=>k+1)}>
+              Tentar novamente <RefreshCw size={15}/>
+            </button>
+          </div>
+        ) : filtered.length ? (
+          <div className="zgame-grid zf-reference-cards">
+            {filtered.map(game => <MatchCard key={game.id} game={game}
+              onWatch={selectChannel} onExplore={onExploreChannels}/>)}
+          </div>
+        ) : (
+          <div className="zgame-empty">
+            <CalendarDays size={28}/>
+            <h4>{allGames.length?"Nenhum jogo desta competição na data selecionada":"Sem partidas registradas para esta data"}</h4>
+            <p>Selecione outra competição ou uma data diferente para consultar os jogos reais disponíveis.</p>
+            {allGames.length ? (
+              <button type="button" onClick={()=>setLeagueFilter("all")}>Ver todas as competições <ArrowRight size={15}/></button>
+            ) : day!==days[6] ? (
+              <button type="button" onClick={()=>jumpDays(1)}>Ver próximo dia <ArrowRight size={15}/></button>
+            ) : null}
+          </div>
+        )}
+        <div className="zf-reference-scene-footer">
+          {live>0 && <span className="zgame-live-flag"><span/> {live} EM ANDAMENTO</span>}
+          <span className="zgame-timezone"><Clock3 size={14}/> Horário de Brasília</span>
+          <Link to="/futebol" className="zf-football-inline-link">
+            <FootballIcon size={16}/> Central completa de futebol <ArrowRight size={15}/>
+          </Link>
+          <button type="button" className="zgame-refresh" aria-label="Atualizar agenda"
+            onClick={()=>setRefreshKey(k=>k+1)} disabled={pending}>
+            <RefreshCw size={15} className={pending?"zgame-spin":""}/> Atualizar
           </button>
         </div>
-      </header>
-
-      <div className="zgame-toolbar">
-        <div className="zgame-toolbar-label"><CalendarDays size={18} /><span>Selecione o dia</span></div>
-        <div className="zgame-days">
-          <button className="zgame-day-arrow" type="button" onClick={() => jumpDays(-1)} disabled={day === days[0]} aria-label="Dia anterior"><ChevronLeft size={18} /></button>
-          <div className="zgame-days-scroll">
-            {days.map((d,i) => (
-              <button key={d} type="button" className={"zgame-day" + (day === d ? " is-active" : "")}
-                onClick={() => setDay(d)} aria-pressed={day === d}>
-                <span>{i===0 ? "HOJE" : i===1 ? "AMANHÃ" : new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",weekday:"short"}).format(shortDate(d)).replace(".","").toUpperCase()}</span>
-                <strong>{new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",day:"2-digit"}).format(shortDate(d))}</strong>
-                <small>{new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",month:"short"}).format(shortDate(d)).replace(".","")}</small>
-              </button>
-            ))}
+      </div>
+      <details className="zf-reference-calendar">
+        <summary><CalendarDays size={17}/> Outras datas e programação <ChevronDown size={17}/></summary>
+        <div className="zf-reference-calendar-body">
+          <div className="zgame-toolbar">
+            <div className="zgame-toolbar-label"><CalendarDays size={18}/><span>Selecione o dia</span></div>
+            <div className="zgame-days">
+              <button className="zgame-day-arrow" type="button" onClick={()=>jumpDays(-1)}
+                disabled={day===days[0]} aria-label="Dia anterior"><ChevronLeft size={18}/></button>
+              <div className="zgame-days-scroll">
+                {days.map((d,i)=>(
+                  <button key={d} type="button" className={"zgame-day"+(day===d?" is-active":"")}
+                    onClick={()=>{setDay(d);setLeagueFilter("auto");}} aria-pressed={day===d}>
+                    <span>{i===0?"HOJE":i===1?"AMANHÃ":
+                      new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",weekday:"short"}).format(shortDate(d)).replace(".","").toUpperCase()}</span>
+                    <strong>{new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",day:"2-digit"}).format(shortDate(d))}</strong>
+                    <small>{new Intl.DateTimeFormat("pt-BR",{timeZone:"UTC",month:"short"}).format(shortDate(d)).replace(".","")}</small>
+                  </button>
+                ))}
+              </div>
+              <button className="zgame-day-arrow" type="button" onClick={()=>jumpDays(1)}
+                disabled={day===days[6]} aria-label="Próximo dia"><ChevronRight size={18}/></button>
+            </div>
           </div>
-          <button className="zgame-day-arrow" type="button" onClick={() => jumpDays(1)} disabled={day === days[6]} aria-label="Próximo dia"><ChevronRight size={18} /></button>
+          <div className="zgame-section-head">
+            <div>
+              <span className="zgame-section-kicker">{day===today?"PROGRAMAÇÃO DE HOJE":"AGENDA DO DIA"}</span>
+              <h3>{longDay.format(shortDate(day))}</h3>
+            </div>
+            <div className="zgame-summary">
+              <span><Trophy size={14}/> {allGames.length} {allGames.length===1?"jogo":"jogos"}</span>
+              {linked>0 && <span><CheckCircle2 size={14}/> {linked} {linked===1?"canal identificado":"canais identificados"}</span>}
+            </div>
+          </div>
+          <div className="zf-featured-summary">
+            <span><FootballIcon size={16}/> Confrontos organizados por relevância</span>
+            <Link to="/futebol" className="zf-football-view-all">
+              Ver todos os {allGames.length} jogos <ArrowRight size={15}/>
+            </Link>
+          </div>
         </div>
-      </div>
-
-      <div className="zgame-section-head">
-        <div>
-          <span className="zgame-section-kicker">{day === today ? "PROGRAMAÇÃO DE HOJE" : "AGENDA DO DIA"}</span>
-          <h3>{longDay.format(shortDate(day))}</h3>
-        </div>
-        <div className="zgame-summary">
-          <span><Trophy size={14} /> {allGames.length} {allGames.length === 1 ? "jogo" : "jogos"}</span>
-          {linked > 0 && <span><CheckCircle2 size={14} /> {linked} {linked === 1 ? "canal identificado" : "canais identificados"}</span>}
-        </div>
-      </div>
-
-      <div className="zf-featured-summary">
-        <span><FootballIcon size={16} /> Só os confrontos mais relevantes</span>
-        <Link to="/futebol" className="zf-football-view-all">
-          Ver todos os {allGames.length} jogos <ArrowRight size={15} />
-        </Link>
-      </div>
-
-      {data?.parcial && !pending && (
-        <p className="zgame-partial" role="status">Algumas ligas não responderam nesta atualização. A agenda pode estar incompleta.</p>
-      )}
-      {pending ? (
-        <div className="zgame-grid" aria-busy="true">
-          {[1,2,3,4].map(i=><div key={i} className="zgame-skeleton" aria-hidden="true"><span/><div/><span/></div>)}
-        </div>
-      ) : failure || data?.erro ? (
-        <div className="zgame-empty" role="alert">
-          <WifiOff size={26} />
-          <h4>Agenda temporariamente indisponível</h4>
-          <p>{failure || data?.erro}</p>
-          <button type="button" onClick={() => setRefreshKey(k => k + 1)}>Tentar novamente <RefreshCw size={15} /></button>
-        </div>
-      ) : filtered.length ? (
-        <div className="zgame-grid">
-          {filtered.map(game => <MatchCard key={game.id} game={game} onWatch={selectChannel} onExplore={onExploreChannels} />)}
-        </div>
-      ) : (
-        <div className="zgame-empty">
-          <CalendarDays size={28} />
-          <h4>{allGames.length ? "Sem jogos de destaque nesta data" : "Sem partidas registradas para esta data"}</h4>
-          <p>{allGames.length
-            ? "Existem outros confrontos. Veja a agenda completa para consultar todos os jogos deste dia."
-            : "Os jogos são atualizados automaticamente pela fonte de resultados. Selecione outro dia para consultar a próxima rodada."}</p>
-          {allGames.length ? (
-            <Link to="/futebol" className="zf-football-view-all">Abrir agenda completa <ArrowRight size={15}/></Link>
-          ) : day !== days[6] ? (
-            <button type="button" onClick={() => jumpDays(1)}>Ver próximo dia <ArrowRight size={15}/></button>
-          ) : null}
-        </div>
-      )}
-
-
+      </details>
     </section>
   );
 }
