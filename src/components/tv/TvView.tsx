@@ -45,6 +45,9 @@ function storeArray(key: string, values: string[]): void {
 function normalize(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
+// Avoid replacing a currently playing channel with offline-only snapshot metadata.
+import { retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
+
 function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((c, i) => {
@@ -186,11 +189,17 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const applyCatalog = useCallback((data: CatalogResponse) => {
-    setChannels(previous => sameChannels(previous, data.canais) ? previous : data.canais);
+    setChannels(previous => {
+      const safe = retainLiveCatalogOnMetadataOutage(previous, data.canais);
+      return sameChannels(previous, safe) ? previous : safe;
+    });
     setCategories(data.categorias || []);
     setUpdatedAt(data.atualizadoEm || new Date().toISOString());
     setCatalogError(null);
     setActiveId(previous => {
+      // A metadata-only refresh must never switch away from the channel
+      // that is already playing in the browser session.
+      if (previous && !data.canais.some(c => c.fontes.length > 0)) return previous;
       const requested = initialChannelRef.current;
       if (requested && data.canais.some(c => c.id === requested)) return requested;
       if (previous && data.canais.some(c => c.id === previous && c.fontes.length > 0)) return previous;
