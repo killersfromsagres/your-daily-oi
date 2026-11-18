@@ -13,7 +13,7 @@ export const Route=createFileRoute("/tv-app")({
 
 const TV_APK_URL=ANDROID_APK_URL.replace("ZANG-FLIX-Android.apk","ZANG-FLIX-TV.apk");
 const LG_RELEASE="https://github.com/killersfromsagres/your-daily-oi/releases/download/webos-latest/ZANG-FLIX-webOS.ipk";
-const WEB_URL="https://zangflix.vercel.app/tv-app";
+const WEB_URL="https://zangflix.lovable.app/tv-app";
 type DeviceInfo = {
   id:TvInstallPlatform;
   name:string;
@@ -146,7 +146,7 @@ function TvAppPage(){
       <h3>Samsung Smart TV</h3>
       <p>Samsung não instala APK Android. Um aplicativo nativo requer projeto Tizen, assinatura com certificado Samsung e testes na TV. A loja exige aprovação; apps que apenas abrem um site sofrem restrições.</p>
       <a className="zf-tv-install-cta" href={WEB_URL}><Globe size={18}/> Abrir versão TV no navegador <ArrowRight size={17}/></a>
-      <ol><li>Abra o navegador da Samsung e digite <strong>zangflix.vercel.app</strong>.</li>
+      <ol><li>Abra o navegador da Samsung e digite <strong>zangflix.lovable.app</strong>.</li>
        <li>Acesse <strong>Modo TV</strong> nesta página para navegar com o controle.</li>
        <li>Para instalar um aplicativo Tizen de desenvolvimento, use o projeto em <strong>tv/samsung-tizen</strong> com o Tizen Studio no computador e um certificado Samsung.</li></ol>
       <a className="zf-tv-install-resource" href="https://developer.samsung.com/smarttv/develop/getting-started/using-sdk/tv-device.html" target="_blank" rel="noopener noreferrer">Procedimento oficial Samsung <ExternalLink size={14}/></a>
