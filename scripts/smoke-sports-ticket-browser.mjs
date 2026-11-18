@@ -163,7 +163,7 @@ try{
    id:"uefa.nations:401861162",casa:"Moldova",fora:"Kazakhstan",escudoCasa:null,escudoFora:null,
    horarioLocal:"07:15",inicioIso:new Date(Date.now()+4*60_000).toISOString(),
    dataLocal:date,rodada:"Amistoso",estadio:"Estádio Nacional",
-   liga:"Amistosos de seleções",ligaId:"fifa.friendly",ligaLogo:null,grupo:"internacional",
+   liga:"UEFA Nations League",ligaId:"uefa.nations",ligaLogo:null,grupo:"internacional",
    status:"agendado",placarCasa:null,placarFora:null,destaque:true,
    canalId:"globo",canalNome:"TV Globo",canalLogo:null,
    canaisDisponiveis:[{id:"globo",nome:"TV Globo"},{id:"sportv",nome:"SporTV"}],
@@ -179,8 +179,11 @@ try{
  const third={...first,id:"fifa.friendly:99999",casa:"Uruguai",fora:"Chile",
    horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
    canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false};
+ const fourth={...first,id:"bra.1:99997",casa:"Cruzeiro",fora:"Palmeiras",
+   liga:"Brasileirão Série A",ligaId:"bra.1",grupo:"brasileirao",
+   canalId:"premiere2",canalNome:"Premiere 2",destaque:true};
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
-   jogos:[first,second,third],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
+   jogos:[first,second,third,fourth],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
  // Recorded provider roles from the exact match that exposed the LB/CB swap.
  // Mock only transport; parser, vocabulary and rendered ordering are production code.
