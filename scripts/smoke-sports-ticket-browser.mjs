@@ -49,6 +49,13 @@ const STATE=`(()=>{
   lineupButtons:element?.querySelectorAll(".zf-lineup-single-button").length||0,
   hasWatermark:!!element?.querySelector(".zf-ticket-watermark"),
   hasGlass:!!element?.classList.contains("zf-ticket-premium"),
+  noCrestTile:!!element?.querySelector(".zf-ticket-team .zgame-crest")&&(()=>{
+    const style=getComputedStyle(element.querySelector(".zf-ticket-team .zgame-crest"));
+    return style.backgroundColor==="rgba(0, 0, 0, 0)"&&style.borderTopWidth==="0px"&&style.boxShadow==="none";
+  })(),
+  stadiumIcon:!!element?.querySelector(".zf-ticket-stadium>svg"),
+  stadiumPhoto:getComputedStyle(document.querySelector(".zf-football-reference-page")).backgroundImage.includes("stadium-night-zang.webp"),
+  visualGlass:getComputedStyle(element).backdropFilter.includes("blur"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
   hasCentralTime:!!element?.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel"),
   referenceHeader:!!document.querySelector(".zf-football-reference-hero .zf-scene-header"),
@@ -85,6 +92,9 @@ try{
   await sleep(300);
  }
  if(!ready)throw new Error("Worker not ready: "+serverLog);
+ const stadiumAsset=await fetch(BASE+"/stadium-night-zang.webp",{signal:AbortSignal.timeout(4000)});
+ if(!stadiumAsset.ok||!String(stadiumAsset.headers.get("content-type")||"").includes("image/webp"))
+   throw new Error("Locally hosted stadium background not served: "+stadiumAsset.status);
  let port=0,chromiumLog="";
  for(let attempt=0;attempt<3&&!port;attempt++){
    const profile=mkdtempSync(join(tmpdir(),"zang-sport-"));
@@ -185,6 +195,8 @@ try{
   await send("Emulation.setUserAgentOverride",{userAgent:device.ua});
   await send("Page.navigate",{url:BASE+"/futebol"});
   const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket);
+  if(!state.noCrestTile||!state.stadiumIcon||!state.stadiumPhoto||!state.visualGlass)
+    throw new Error("Reference image and borderless crests not applied: "+JSON.stringify(state));
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
     throw new Error("Match card must be brand-free, glass styled and aligned: "+JSON.stringify(state));
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
