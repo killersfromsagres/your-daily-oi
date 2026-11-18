@@ -48,7 +48,9 @@ const STATE=`(()=>{
   ticketBg:styles?.backgroundColor||null,
   lineupButtons:element?.querySelectorAll(".zf-lineup-single-button").length||0,
   hasWatermark:!!element?.querySelector(".zf-ticket-watermark"),
+  hasGlass:!!element?.classList.contains("zf-ticket-premium"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
+  hasCentralTime:!!element?.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel"),
   dialog:!!dialog,
   dialogRect:modalRect?{left:modalRect.left,right:modalRect.right,width:modalRect.width}:null,
   activeSide:dialog?.querySelector(".zf-lineup-switch button[aria-pressed=true]")?.textContent?.trim()||null,
@@ -179,7 +181,8 @@ try{
   await send("Emulation.setUserAgentOverride",{userAgent:device.ua});
   await send("Page.navigate",{url:BASE+"/futebol"});
   const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket);
-  if(!state.hasWatermark||!state.hasTeams)throw new Error("Missing ticket brand or team crests: "+JSON.stringify(state));
+  if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
+    throw new Error("Match card must be brand-free, glass styled and aligned: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
   await evaluate('Array.from(document.querySelectorAll(".zf-ticket")).find(card=>card.querySelector(".zf-lineup-single-button")?.getAttribute("aria-label")==="Ver escalações de Moldova e Kazakhstan").scrollIntoView({block:"center"})');
   await sleep(600);
