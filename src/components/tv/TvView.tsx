@@ -197,6 +197,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
     setUpdatedAt(data.atualizadoEm || new Date().toISOString());
     setCatalogError(null);
     setActiveId(previous => {
+      // A metadata-only refresh must never switch away from the channel
+      // that is already playing in the browser session.
+      if (previous && !data.canais.some(c => c.fontes.length > 0)) return previous;
       const requested = initialChannelRef.current;
       if (requested && data.canais.some(c => c.id === requested)) return requested;
       if (previous && data.canais.some(c => c.id === previous && c.fontes.length > 0)) return previous;
