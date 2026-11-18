@@ -58,7 +58,7 @@ const STATE=`(()=>{
   visibleReadyWatch:!!document.querySelector(".zf-ticket-watch.is-ready"),
   computedGlassLayers:element?getComputedStyle(element).backgroundImage.slice(0,680):"",
   trueFrostedGlass:!!element?.classList.contains("zf-ticket-premium") &&
-    /rgba\([^)]+,\s*0\.(?:2|3|4|5)[0-9]*\)/.test(getComputedStyle(element).backgroundImage),
+    getComputedStyle(element).backgroundImage.includes("rgba(5, 60, 46, 0.35)"),
   noCrestTile:!!element?.querySelector(".zf-ticket-team .zgame-crest")&&(()=>{
     const style=getComputedStyle(element.querySelector(".zf-ticket-team .zgame-crest"));
     return style.backgroundColor==="rgba(0, 0, 0, 0)"&&style.borderTopWidth==="0px"&&style.boxShadow==="none";
