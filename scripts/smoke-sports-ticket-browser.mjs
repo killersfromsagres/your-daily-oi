@@ -54,8 +54,8 @@ const STATE=`(()=>{
     return style.backgroundColor==="rgba(0, 0, 0, 0)"&&style.borderTopWidth==="0px"&&style.boxShadow==="none";
   })(),
   stadiumIcon:!!element?.querySelector(".zf-ticket-stadium>svg"),
-  stadiumPhoto:getComputedStyle(document.querySelector(".zf-football-reference-page")).backgroundImage.includes("stadium-night-zang.webp"),
-  visualGlass:getComputedStyle(element).backdropFilter.includes("blur"),
+  stadiumPhoto:!!document.querySelector(".zf-football-reference-page")&&getComputedStyle(document.querySelector(".zf-football-reference-page")).backgroundImage.includes("stadium-night-zang.webp"),
+  visualGlass:!!element&&getComputedStyle(element).backdropFilter.includes("blur"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
   hasCentralTime:!!element?.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel"),
   referenceHeader:!!document.querySelector(".zf-football-reference-hero .zf-scene-header"),
@@ -202,6 +202,21 @@ try{
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
     throw new Error("Football page must match full stadium reference layout: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
+  if(!device.mobile){
+    const stadiumRows=await evaluate(`(()=>{
+      return Array.from(document.querySelectorAll(".zf-ticket")).slice(0,2).map(card=>({
+        stadiumTop:card.querySelector(".zf-ticket-stadium")?.getBoundingClientRect().top,
+        timeTop:card.querySelector(".zf-ticket-time-block, .zf-ticket-score-panel")?.getBoundingClientRect().top,
+        watch:!!card.querySelector(".zf-ticket-watch")
+      }));
+    })()`);
+    if(stadiumRows.length===2 && Number.isFinite(stadiumRows[0]?.stadiumTop) &&
+      Number.isFinite(stadiumRows[1]?.stadiumTop)){
+      const diff=Math.abs(stadiumRows[0].stadiumTop-stadiumRows[1].stadiumTop);
+      if(diff>12)throw new Error("Uneven stadium positions between cards with different channels: "+JSON.stringify(stadiumRows));
+    }
+  }
+
   await evaluate('Array.from(document.querySelectorAll(".zf-ticket")).find(card=>card.querySelector(".zf-lineup-single-button")?.getAttribute("aria-label")==="Ver escalações de Moldova e Kazakhstan").scrollIntoView({block:"center"})');
   await sleep(600);
   await screenshot(device.name+"-ticket");

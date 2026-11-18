@@ -91,6 +91,8 @@ describe("match ticket and tactical field",()=>{
     expect(glass).toContain("box-shadow:none;filter:none;");
     expect(glass).toContain("zf-ticket-live-dot");
     expect(glass).toContain(".zf-ticket-stadium-pin");
+    expect(glass).toContain("align-items:stretch;flex:0 0 auto");
+    expect(glass).toContain("margin:auto 0 0;padding:0 13px 14px");
     expect(glass).toContain("@media(prefers-reduced-motion:reduce)");
     expect(dialog).toContain('aria-modal="true"');
     expect(dialog).toContain('event.key==="Escape"');
