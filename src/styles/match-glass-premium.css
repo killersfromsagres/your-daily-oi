@@ -172,6 +172,17 @@
   box-shadow:0 0 23px rgba(251,52,75,.23);
 }
 .zf-ticket-premium .zf-ticket-status-row.is-live .zf-ticket-status svg {color:#ffbbbf;}
+.zf-ticket-premium .zf-ticket-live-dot {
+  display:block;width:13px;height:13px;flex:0 0 13px;
+  border:2px solid rgba(255,170,177,.68);
+  border-radius:50%;background:#ff5466;
+  box-shadow:0 0 11px rgba(255,66,85,.89);
+}
+.zf-ticket-premium .zf-ticket-status-row.is-soon {position:relative;}
+.zf-ticket-premium .zf-ticket-status-row.is-soon::after {
+  content:"";position:absolute;z-index:-1;left:0;right:0;bottom:7px;
+  height:1px;background:linear-gradient(90deg,transparent,rgba(250,196,47,.48),transparent);
+}
 .zf-ticket-premium .zf-ticket-status-row.is-finished .zf-ticket-status,
 .zf-ticket-premium .zf-ticket-status-row.is-postponed .zf-ticket-status {
   color:#d8e1e2;background:rgba(255,255,255,.06);
@@ -264,6 +275,20 @@
 .zf-ticket-premium .zf-ticket-stadium svg {flex:0 0 27px;color:#d5f6e5;}
 .zf-ticket-premium .zf-ticket-stadium .zf-ticket-stadium-pin {
   flex:0 0 17px;margin-left:auto;opacity:.84;
+}
+/* Higher specificity than legacy .zgame-card.zf-ticket venue/metadata rules.
+   The stadium icon and venue stay aligned left, location pin stays on right. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-match-meta {
+  align-items:stretch;justify-content:flex-end;text-align:left;
+  width:100%;padding:10px 0 1px;min-height:66px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-stadium {
+  justify-content:flex-start;text-align:left;
+  padding:10px 12px;overflow-wrap:break-word;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-team .zgame-crest.zf-ticket-transparent-crest {
+  background:transparent;border:0;border-radius:0;padding:0;
+  box-shadow:none;filter:none;
 }
 .zf-ticket-premium .zf-ticket-stadium>span {display:flex;flex:1;flex-direction:column;min-width:0;gap:2px;}
 .zf-ticket-premium .zf-ticket-stadium small {
