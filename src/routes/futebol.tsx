@@ -6,10 +6,12 @@ import { Activity, ArrowLeft, ArrowRight, CalendarDays, ChevronLeft, ChevronRigh
   Clock3, RadioTower, RefreshCw, ShieldCheck } from "lucide-react";
 import { MatchCard } from "@/components/tv/JogosShelf";
 import { FootballIcon } from "@/components/sports/FootballIcon";
+import { FootballSceneHeader, selectedFootballLeague } from "@/components/sports/FootballSceneHeader";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import { sortedFootballMatches, matchImportance, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import "@/styles/football-center.css";
+import "@/styles/football-reference-scene.css";
 
 export const Route = createFileRoute("/futebol")({
   component: FootballPage,
@@ -42,6 +44,7 @@ const windows = (date: string) => Array.from({length:7},(_,i)=>addDaysUTC(date,i
 
 function FootballPage() {
   const navigate = useNavigate();
+  const [leagueFilter,setLeagueFilter] = useState("auto");
   const [today,setToday] = useState(()=>dataBrasilia());
   const [day,setDay] = useState(()=>dataBrasilia());
   const [data,setData] = useState<SportsAgendaResponse|null>(null);
@@ -65,9 +68,11 @@ function FootballPage() {
   const games=useMemo(()=>sortedFootballMatches(mergeFootballScores(agendaGames,scoreGames,day)),[agendaGames,scoreGames,day]);
   // A genuine Brazil fixture is pinned once at the top, whether upcoming or
   // live. No duplicate card appears in the live or remaining sections.
-  const brazilGames=useMemo(()=>games.filter(isBrazilFixture),[games]);
-  const liveGames=useMemo(()=>games.filter(g=>g.status==="ao-vivo"&&!isBrazilFixture(g)),[games]);
-  const remainingGames=useMemo(()=>games.filter(g=>g.status!=="ao-vivo"&&!isBrazilFixture(g)),[games]);
+  const selectedLeague=selectedFootballLeague(games,leagueFilter);
+  const visibleGames=useMemo(()=>selectedLeague==="all" ? games : games.filter(g=>g.ligaId===selectedLeague),[games,selectedLeague]);
+  const brazilGames=useMemo(()=>visibleGames.filter(isBrazilFixture),[visibleGames]);
+  const liveGames=useMemo(()=>visibleGames.filter(g=>g.status==="ao-vivo"&&!isBrazilFixture(g)),[visibleGames]);
+  const remainingGames=useMemo(()=>visibleGames.filter(g=>g.status!=="ao-vivo"&&!isBrazilFixture(g)),[visibleGames]);
   const linked=games.filter(g=>Boolean(g.canalId || g.transmissaoUrl)).length;
   const live=games.filter(g=>g.status==="ao-vivo").length;
   const availableLeagues=[...new Set(games.map(g=>g.ligaId))].length;
@@ -155,36 +160,37 @@ function FootballPage() {
   const moveDay=(offset:number)=>{
     const i=days.indexOf(day);
     const next=days[Math.min(6,Math.max(0,i+offset))];
-    if(next)setDay(next);
+    if(next){setDay(next);setLeagueFilter("auto");}
   };
   return (
-    <main className="zf-football-page">
+    <main className="zf-football-page zf-football-reference-page">
       <div className="zf-football-ambient" aria-hidden="true" />
       <div className="zf-football-wrap">
         <div className="zf-football-breadcrumb">
           <Link to="/tv"><ArrowLeft size={16}/> TV ao vivo</Link><span>/</span><FootballIcon size={17}/><strong>Central do Futebol</strong>
         </div>
-        <header className="zf-football-hero">
-          <div>
-            <div className="zf-football-eyebrow"><FootballIcon size={17}/><span>FUTEBOL EM DESTAQUE</span><span className="zf-football-label-line" />HORÁRIO DE BRASÍLIA</div>
-            <h1>Todos os <em>jogos do dia.</em></h1>
-            <p>Todos os confrontos, horários de Brasília e emissoras informadas para cada partida. A agenda e os placares se atualizam automaticamente.</p>
-          </div>
-          <div className="zf-football-hero-actions">
-            {live>0&&<span className="zf-football-live"><span/> {live} EM ANDAMENTO</span>}
-            <button type="button" className="zf-football-refresh" disabled={loading} onClick={()=>setRevalidate(x=>x+1)}>
+        <header className="zf-football-hero zf-football-reference-hero">
+          <FootballSceneHeader games={games} selection={selectedLeague}
+            onChange={setLeagueFilter} title={day===today?"Jogos de Hoje":"Jogos do Dia"}/>
+          <div className="zf-reference-scene-footer">
+            {live>0&&<span className="zf-football-live"><span/>{live} EM ANDAMENTO</span>}
+            <span className="zgame-timezone"><Clock3 size={15}/> Horário de Brasília</span>
+            <button type="button" className="zf-football-refresh" disabled={loading}
+              onClick={()=>setRevalidate(x=>x+1)}>
               <RefreshCw size={15} className={loading?"zf-football-spin":""}/> Atualizar jogos
             </button>
           </div>
         </header>
-        <section className="zf-football-calendar" aria-label="Selecione o dia da agenda">
+        <details className="zf-reference-calendar zf-football-date-picker">
+          <summary><CalendarDays size={17}/> Selecionar outra data <ChevronRight size={17}/></summary>
+          <section className="zf-football-calendar" aria-label="Selecione o dia da agenda">
           <div className="zf-football-section-kicker"><CalendarDays size={17}/> CALENDÁRIO DE JOGOS</div>
           <div className="zf-football-days">
             <button className="zf-football-arrow" type="button" aria-label="Dia anterior" onClick={()=>moveDay(-1)} disabled={day===days[0]}><ChevronLeft size={18}/></button>
             <div className="zf-football-days-scroll">
               {days.map((date,index)=>(
                 <button type="button" key={date} className={"zf-football-day"+(day===date?" is-current":"")}
-                  aria-pressed={day===date} onClick={()=>setDay(date)}>
+                  aria-pressed={day===date} onClick={()=>{setDay(date);setLeagueFilter("auto");}}>
                   <small>{index===0?"HOJE":index===1?"AMANHÃ":dateBR(date,{weekday:"short"}).replace(".","").toUpperCase()}</small>
                   <strong>{dateBR(date,{day:"2-digit"})}</strong>
                   <span>{dateBR(date,{month:"short"}).replace(".","").toUpperCase()}</span>
@@ -193,7 +199,8 @@ function FootballPage() {
             </div>
             <button className="zf-football-arrow" type="button" aria-label="Próximo dia" onClick={()=>moveDay(1)} disabled={day===days[6]}><ChevronRight size={18}/></button>
           </div>
-        </section>
+          </section>
+        </details>
         <section className="zf-football-schedule" aria-live="polite">
           <div className="zf-football-section-row">
             <div>
@@ -228,7 +235,7 @@ function FootballPage() {
               <p>{error||data?.erro}</p>
               <button type="button" onClick={()=>setRevalidate(x=>x+1)}>Tentar novamente <RefreshCw size={15}/></button>
             </div>
-          ) : games.length===0 ? (
+          ) : visibleGames.length===0 ? (
             <div className="zf-football-empty">
               <CalendarDays size={30}/>
               <h3>Nenhum jogo registrado nesta data</h3>
