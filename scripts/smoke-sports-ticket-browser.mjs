@@ -161,7 +161,7 @@ try{
  const date=field("year")+"-"+field("month")+"-"+field("day");
  const first={
    id:"uefa.nations:401861162",casa:"Moldova",fora:"Kazakhstan",escudoCasa:null,escudoFora:null,
-   horarioLocal:"07:15",inicioIso:new Date(Date.now()+60_000).toISOString(),
+   horarioLocal:"07:15",inicioIso:new Date(Date.now()+4*60_000).toISOString(),
    dataLocal:date,rodada:"Amistoso",estadio:"Estádio Nacional",
    liga:"Amistosos de seleções",ligaId:"fifa.friendly",ligaLogo:null,grupo:"internacional",
    status:"agendado",placarCasa:null,placarFora:null,destaque:true,
@@ -211,7 +211,7 @@ try{
    mobile:device.mobile,deviceScaleFactor:device.mobile?2:1});
   await send("Emulation.setUserAgentOverride",{userAgent:device.ua});
   await send("Page.navigate",{url:BASE+"/futebol"});
-  const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket);
+  const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket && x.visibleReadyWatch && x.visibleLiveMinute);
   if(!state.noCrestTile||!state.stadiumIcon||!state.stadiumPhoto||!state.visualGlass)
     throw new Error("Reference image and borderless crests not applied: "+JSON.stringify(state));
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
