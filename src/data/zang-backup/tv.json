@@ -1,6 +1,1534 @@
 {
   "version": 1,
-  "channels": [],
-  "source": "awaiting-first-successful-backup",
-  "updatedAt": null
+  "source": "catalog-metadata",
+  "channels": [
+    {
+      "id": "24h-chaves",
+      "nome": "24H Chaves",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-dragon-ball-z",
+      "nome": "24H Dragon Ball Z",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-friends",
+      "nome": "24H Friends",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-naruto-classico",
+      "nome": "24H Naruto Clássico",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-os-simpsons",
+      "nome": "24H Os Simpsons",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-os-smurfs",
+      "nome": "24H Os Smurfs",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-pica-pau",
+      "nome": "24H Pica Pau",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "24h-todo-mundo-odeia-o-cris",
+      "nome": "24H Todo Mundo Odeia o Cris",
+      "categoria": "24 Horas",
+      "logo": "https://img.faz-o-eli.online/24h.png"
+    },
+    {
+      "id": "a-fazenda-18-1",
+      "nome": "A Fazenda 18 1",
+      "categoria": "PPV",
+      "logo": "https://img.faz-o-eli.online/afazenda2.png"
+    },
+    {
+      "id": "a-fazenda-18-2",
+      "nome": "A Fazenda 18 2",
+      "categoria": "PPV",
+      "logo": "https://img.faz-o-eli.online/afazenda2.png"
+    },
+    {
+      "id": "a-fazenda-18-3",
+      "nome": "A Fazenda 18 3",
+      "categoria": "PPV",
+      "logo": "https://img.faz-o-eli.online/afazenda2.png"
+    },
+    {
+      "id": "a-fazenda-18-4",
+      "nome": "A Fazenda 18 4",
+      "categoria": "PPV",
+      "logo": "https://img.faz-o-eli.online/afazenda2.png"
+    },
+    {
+      "id": "a-fazenda-18-5",
+      "nome": "A Fazenda 18 5",
+      "categoria": "PPV",
+      "logo": "https://img.faz-o-eli.online/afazenda2.png"
+    },
+    {
+      "id": "a-e-e",
+      "nome": "A&E",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/ae.png"
+    },
+    {
+      "id": "a-e-e-s79",
+      "nome": "A&E (S79)",
+      "categoria": "Filmes e Séries",
+      "logo": "https://www.tvlogo.org/brazil/a-and-e-br.png"
+    },
+    {
+      "id": "adult-swim",
+      "nome": "Adult Swim",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/adultswim.png"
+    },
+    {
+      "id": "agro-mais",
+      "nome": "Agro Mais",
+      "categoria": "Variedades",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/agro-mais-br.png"
+    },
+    {
+      "id": "amazon-prime-video-01",
+      "nome": "Amazon Prime Video 01",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/primevideo.png"
+    },
+    {
+      "id": "amazon-prime-video-02",
+      "nome": "Amazon Prime Video 02",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/primevideo.png"
+    },
+    {
+      "id": "amc",
+      "nome": "AMC",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/amc.png"
+    },
+    {
+      "id": "amc-series",
+      "nome": "AMC Séries",
+      "categoria": "Filmes e Séries",
+      "logo": "https://vipcanais.net/images/amcseries.png"
+    },
+    {
+      "id": "animal-planet",
+      "nome": "Animal Planet",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/animalplanet.png"
+    },
+    {
+      "id": "anime-channel-tv",
+      "nome": "Anime Channel TV",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/eHw2M6p.png"
+    },
+    {
+      "id": "apple-tv-01",
+      "nome": "Apple TV 01",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/appletv1.png"
+    },
+    {
+      "id": "apple-tv-02",
+      "nome": "Apple TV 02",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/appletv1.png"
+    },
+    {
+      "id": "apple-tv-03",
+      "nome": "Apple TV 03",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png"
+    },
+    {
+      "id": "apple-tv-04",
+      "nome": "Apple TV 04",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png"
+    },
+    {
+      "id": "apple-tv-05",
+      "nome": "Apple TV 05",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png"
+    },
+    {
+      "id": "apple-tv-06",
+      "nome": "Apple TV 06",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/appletv1.png"
+    },
+    {
+      "id": "arte-1",
+      "nome": "Arte 1",
+      "categoria": "Variedades",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/arte1.png"
+    },
+    {
+      "id": "axn",
+      "nome": "AXN",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/axn.png"
+    },
+    {
+      "id": "axn-s79",
+      "nome": "AXN (S79)",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/axn.png"
+    },
+    {
+      "id": "band",
+      "nome": "Band",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/band.png"
+    },
+    {
+      "id": "band-news",
+      "nome": "Band News",
+      "categoria": "Notícias",
+      "logo": "https://img.faz-o-eli.online/bandnews.png"
+    },
+    {
+      "id": "band-rj",
+      "nome": "Band RJ",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/band.png"
+    },
+    {
+      "id": "band-sp",
+      "nome": "Band SP",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/band.png"
+    },
+    {
+      "id": "band-sports-hd",
+      "nome": "BAND SPORTS HD",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/bandsports.png"
+    },
+    {
+      "id": "bis",
+      "nome": "BIS",
+      "categoria": "Variedades"
+    },
+    {
+      "id": "blits-tv",
+      "nome": "Blits TV",
+      "categoria": "Variedades",
+      "logo": "https://i.imgur.com/FO4QTRf.jpeg"
+    },
+    {
+      "id": "canal-agro",
+      "nome": "Canal Agro",
+      "categoria": "Variedades",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/agromais.png"
+    },
+    {
+      "id": "canal-do-boi",
+      "nome": "Canal do Boi",
+      "categoria": "Variedades",
+      "logo": "https://i.imgur.com/pVM5MhS.png"
+    },
+    {
+      "id": "canal-educacao",
+      "nome": "Canal Educacao",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/OOB7nrS.png"
+    },
+    {
+      "id": "canal-futura",
+      "nome": "Canal Futura",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/LgynEBC.png"
+    },
+    {
+      "id": "canal-goat-jogo-1",
+      "nome": "Canal GOAT (Jogo 1)",
+      "categoria": "Esportes"
+    },
+    {
+      "id": "canal-gov",
+      "nome": "Canal Gov",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/rHPY0Yv.png"
+    },
+    {
+      "id": "canal-off",
+      "nome": "Canal OFF",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/off.png"
+    },
+    {
+      "id": "canal-rural",
+      "nome": "Canal Rural",
+      "categoria": "Variedades",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/canal-rural-br.png"
+    },
+    {
+      "id": "canal-uol",
+      "nome": "Canal UOL",
+      "categoria": "Notícias",
+      "logo": "https://conteudo.imguol.com.br/c/play/logo_canaluol_2024.svg"
+    },
+    {
+      "id": "cancao-nova",
+      "nome": "Canção Nova",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/cancaonova.png"
+    },
+    {
+      "id": "cartoon-network",
+      "nome": "Cartoon Network",
+      "categoria": "Infantil",
+      "logo": "https://img.faz-o-eli.online/cartoonnetwork.png"
+    },
+    {
+      "id": "cartoonito",
+      "nome": "Cartoonito",
+      "categoria": "Infantil",
+      "logo": "https://img.faz-o-eli.online/cartoonito.png"
+    },
+    {
+      "id": "caze-tv-st",
+      "nome": "CAZE TV (ST)",
+      "categoria": "Esportes"
+    },
+    {
+      "id": "cazetv-1",
+      "nome": "CazeTV 1",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/cazetv.png"
+    },
+    {
+      "id": "cazetv-2",
+      "nome": "CazeTV 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/cazetv.png"
+    },
+    {
+      "id": "cazetv-3",
+      "nome": "CazeTV 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/cazetv.png"
+    },
+    {
+      "id": "cazetv-4",
+      "nome": "CazeTV 4",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/cazetv.png"
+    },
+    {
+      "id": "cinemax",
+      "nome": "Cinemax",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/cinemax.png"
+    },
+    {
+      "id": "classique-faroeste",
+      "nome": "Classique Faroeste",
+      "categoria": "Filmes e Séries",
+      "logo": "https://i.imgur.com/c6uFj7A.png"
+    },
+    {
+      "id": "cnn-brasil",
+      "nome": "CNN Brasil",
+      "categoria": "Notícias",
+      "logo": "https://img.faz-o-eli.online/cnnbrasil.png"
+    },
+    {
+      "id": "cnn-brasil-money",
+      "nome": "CNN Brasil Money",
+      "categoria": "Notícias",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/cnn-brasil-money.png"
+    },
+    {
+      "id": "cnt",
+      "nome": "CNT",
+      "categoria": "TV Aberta",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/rede-cnt-br.png"
+    },
+    {
+      "id": "com-brasil",
+      "nome": "Com Brasil",
+      "categoria": "Variedades",
+      "logo": "https://i.imgur.com/GrjGwKM.png"
+    },
+    {
+      "id": "combate",
+      "nome": "Combate",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/combate.png"
+    },
+    {
+      "id": "combate-s46",
+      "nome": "COMBATE (S46)",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/combate.png"
+    },
+    {
+      "id": "cultura-fast",
+      "nome": "Cultura Fast",
+      "categoria": "TV Aberta",
+      "logo": "https://eitv6.cdn.broadpeak.io/account351-i1438/channel/53/quadrada_-3-_pequeno-1723832301.png"
+    },
+    {
+      "id": "dazn-jogo-1",
+      "nome": "DAZN (Jogo 1)",
+      "categoria": "Esportes"
+    },
+    {
+      "id": "discovery-channel",
+      "nome": "Discovery Channel",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/discoverychannel.png"
+    },
+    {
+      "id": "discovery-home-e-health",
+      "nome": "Discovery Home & Health",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/discoveryhh.png"
+    },
+    {
+      "id": "discovery-id",
+      "nome": "Discovery ID",
+      "categoria": "Documentários",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/investigacao-discovery.png"
+    },
+    {
+      "id": "discovery-kids",
+      "nome": "Discovery Kids",
+      "categoria": "Infantil",
+      "logo": "https://img.faz-o-eli.online/discoverykids.png"
+    },
+    {
+      "id": "discovery-science",
+      "nome": "Discovery Science",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/discoveryscience.png"
+    },
+    {
+      "id": "discovery-theater",
+      "nome": "Discovery Theater",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/discoverytheater.png"
+    },
+    {
+      "id": "discovery-turbo",
+      "nome": "Discovery Turbo",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/discoveryturbo.png"
+    },
+    {
+      "id": "discovery-world",
+      "nome": "Discovery World",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/discoveryworld.png"
+    },
+    {
+      "id": "disney-plus-1",
+      "nome": "Disney Plus 1",
+      "categoria": "Filmes e Séries",
+      "logo": "https://vipcanais.net/images/disneyplus.png"
+    },
+    {
+      "id": "disney-01",
+      "nome": "Disney+ 01",
+      "categoria": "Esportes"
+    },
+    {
+      "id": "disney-02",
+      "nome": "Disney+ 02",
+      "categoria": "Esportes"
+    },
+    {
+      "id": "disney-03",
+      "nome": "Disney+ 03",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png"
+    },
+    {
+      "id": "disney-04",
+      "nome": "Disney+ 04",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png"
+    },
+    {
+      "id": "disney-05",
+      "nome": "Disney+ 05",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png"
+    },
+    {
+      "id": "disney-06",
+      "nome": "Disney+ 06",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png"
+    },
+    {
+      "id": "disney-07",
+      "nome": "Disney+ 07",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/disneyplus.png"
+    },
+    {
+      "id": "disney-08",
+      "nome": "Disney+ 08",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/disneyplus.png"
+    },
+    {
+      "id": "dumdum",
+      "nome": "DumDum",
+      "categoria": "Infantil",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/c/c0/DumDum_logo.svg"
+    },
+    {
+      "id": "espn",
+      "nome": "ESPN",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/espn.png"
+    },
+    {
+      "id": "espn-2",
+      "nome": "ESPN 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/espn2.png"
+    },
+    {
+      "id": "espn-2-s46",
+      "nome": "ESPN 2 (S46)",
+      "categoria": "Esportes",
+      "logo": "https://i.imgur.com/ZAHnoPh.png"
+    },
+    {
+      "id": "espn-3",
+      "nome": "ESPN 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/espn3.png"
+    },
+    {
+      "id": "espn-4",
+      "nome": "ESPN 4",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/espn4.png"
+    },
+    {
+      "id": "espn-5",
+      "nome": "ESPN 5",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/espn5.png"
+    },
+    {
+      "id": "espn-6",
+      "nome": "ESPN 6",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/espn6.png"
+    },
+    {
+      "id": "fifa-portugues",
+      "nome": "FIFA+ Português",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/fifa-plus.png"
+    },
+    {
+      "id": "fish-tv",
+      "nome": "Fish TV",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/fish-tv.png"
+    },
+    {
+      "id": "food-network",
+      "nome": "Food Network",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/foodnetwork.png"
+    },
+    {
+      "id": "ge-tv",
+      "nome": "GE TV",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/ge-tv.png"
+    },
+    {
+      "id": "geekdot",
+      "nome": "Geekdot",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/jML1u4O.png"
+    },
+    {
+      "id": "globo",
+      "nome": "Globo",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/globo.png"
+    },
+    {
+      "id": "globo-am",
+      "nome": "Globo AM",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-bahia",
+      "nome": "Globo Bahia",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globo.png"
+    },
+    {
+      "id": "globo-ce",
+      "nome": "Globo CE",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-df",
+      "nome": "Globo DF",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-es",
+      "nome": "Globo ES",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-go",
+      "nome": "Globo GO",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-mg",
+      "nome": "Globo MG",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-pb",
+      "nome": "Globo PB",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-pe",
+      "nome": "Globo PE",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-rj",
+      "nome": "Globo RJ",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globorj.png"
+    },
+    {
+      "id": "globo-rs",
+      "nome": "Globo RS",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-sp",
+      "nome": "Globo SP",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globonews",
+      "nome": "GloboNews",
+      "categoria": "Notícias",
+      "logo": "https://img.faz-o-eli.online/globonews.png"
+    },
+    {
+      "id": "globoplay-novelas",
+      "nome": "Globoplay Novelas",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/globonovelas.prev.png"
+    },
+    {
+      "id": "gloob",
+      "nome": "Gloob",
+      "categoria": "Infantil",
+      "logo": "https://img.faz-o-eli.online/gloob.png"
+    },
+    {
+      "id": "gloobinho",
+      "nome": "Gloobinho",
+      "categoria": "Infantil",
+      "logo": "https://logos.imperioapps.top/GLOBINHO.png"
+    },
+    {
+      "id": "gnt",
+      "nome": "GNT",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/gnt.png"
+    },
+    {
+      "id": "gospel-cartoon",
+      "nome": "Gospel Cartoon",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/yxjPno5.png"
+    },
+    {
+      "id": "hbo",
+      "nome": "HBO",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/hbo.png"
+    },
+    {
+      "id": "hbo-family",
+      "nome": "HBO Family",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/hbofamily.png"
+    },
+    {
+      "id": "hbo-mundi",
+      "nome": "HBO Mundi",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/hbomundi.png"
+    },
+    {
+      "id": "hbo-plus",
+      "nome": "HBO Plus",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/hboplus.png"
+    },
+    {
+      "id": "hbo-pop",
+      "nome": "HBO Pop",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/hbopop.png"
+    },
+    {
+      "id": "hbo-signature",
+      "nome": "HBO Signature",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/hbo-signature.png"
+    },
+    {
+      "id": "hbo-xtreme",
+      "nome": "HBO Xtreme",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/hbo-xtreme.png"
+    },
+    {
+      "id": "hbo2",
+      "nome": "HBO2",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/hbo2.png"
+    },
+    {
+      "id": "hgtv",
+      "nome": "HGTV",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/hgtv.png"
+    },
+    {
+      "id": "history",
+      "nome": "History",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/history.png"
+    },
+    {
+      "id": "history-2",
+      "nome": "History 2",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/history2.png"
+    },
+    {
+      "id": "impd",
+      "nome": "IMPD",
+      "categoria": "Variedades",
+      "logo": "https://d5pgibznjcs0s.cloudfront.net/46d92cf6-4807-45c6-9bfd-b38f80288c86/en/images/logo_full.png"
+    },
+    {
+      "id": "jetsons-tv",
+      "nome": "Jetsons TV",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/PZcTfqV.png"
+    },
+    {
+      "id": "jovem-pan-news",
+      "nome": "Jovem Pan News",
+      "categoria": "Notícias",
+      "logo": "https://www.tvlogo.org/brazil/jovem-pan-news-br.png"
+    },
+    {
+      "id": "kuriakos-kids",
+      "nome": "Kuriakos Kids",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/SRX6EPY.png"
+    },
+    {
+      "id": "loading-tv",
+      "nome": "Loading TV",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/R0aflu1.png"
+    },
+    {
+      "id": "masterchef",
+      "nome": "MasterChef",
+      "categoria": "24 Horas",
+      "logo": "https://images.pluto.tv/channels/6077045b6031bd00078de127/colorLogoPNG_1785430539950.png"
+    },
+    {
+      "id": "max",
+      "nome": "Max",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png"
+    },
+    {
+      "id": "max-01",
+      "nome": "MAX 01",
+      "categoria": "Filmes e Séries"
+    },
+    {
+      "id": "max-02",
+      "nome": "MAX 02",
+      "categoria": "Filmes e Séries"
+    },
+    {
+      "id": "max-03",
+      "nome": "MAX 03",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/max.png"
+    },
+    {
+      "id": "max-04",
+      "nome": "MAX 04",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png"
+    },
+    {
+      "id": "max-05",
+      "nome": "MAX 05",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png"
+    },
+    {
+      "id": "max-06",
+      "nome": "Max 06",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/max.png"
+    },
+    {
+      "id": "megapix",
+      "nome": "Megapix",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/megapix.png"
+    },
+    {
+      "id": "moviesphere-brazil",
+      "nome": "MovieSphere Brazil",
+      "categoria": "Filmes e Séries",
+      "logo": "https://i.imgur.com/c6uFj7A.png"
+    },
+    {
+      "id": "mtv",
+      "nome": "MTV",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/mtv.png"
+    },
+    {
+      "id": "multishow",
+      "nome": "Multishow",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/multishow.png"
+    },
+    {
+      "id": "mytime-movie-network",
+      "nome": "MyTime Movie Network",
+      "categoria": "Filmes e Séries",
+      "logo": "https://i.imgur.com/aiGQtzI.png"
+    },
+    {
+      "id": "n-sports",
+      "nome": "N SPORTS",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/nsports.png"
+    },
+    {
+      "id": "n-sports-ot",
+      "nome": "N SPORTS (OT)",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/nsports.png"
+    },
+    {
+      "id": "n-sports-rk",
+      "nome": "N SPORTS (RK)",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/nsports.png"
+    },
+    {
+      "id": "nbx-tv-kids",
+      "nome": "NBX TV Kids",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/SRX6EPY.png"
+    },
+    {
+      "id": "nickelodeon",
+      "nome": "Nickelodeon",
+      "categoria": "Infantil",
+      "logo": "https://img.faz-o-eli.online/nickelodeon.png"
+    },
+    {
+      "id": "nickonline",
+      "nome": "NickOnline",
+      "categoria": "Infantil",
+      "logo": "https://x1colegal.com/logo.png"
+    },
+    {
+      "id": "nicktoons-brasil",
+      "nome": "NickToons Brasil",
+      "categoria": "Infantil",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Nicktoons_logo_%282023%29.svg/330px-Nicktoons_logo_%282023%29.svg.png"
+    },
+    {
+      "id": "now-rock",
+      "nome": "Now Rock",
+      "categoria": "Músicas",
+      "logo": "https://i.imgur.com/GuM4GnX.png"
+    },
+    {
+      "id": "otaku-sign-tv",
+      "nome": "Otaku Sign TV",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/eHw2M6p.png"
+    },
+    {
+      "id": "paramount-4",
+      "nome": "Paramount + 4",
+      "categoria": "Variedades",
+      "logo": "https://vipcanais.net/images/paramountplus.png"
+    },
+    {
+      "id": "paramount-plus-1",
+      "nome": "Paramount Plus 1",
+      "categoria": "Filmes e Séries",
+      "logo": "https://vipcanais.net/images/paramountplus.png"
+    },
+    {
+      "id": "paramount-jogo-1",
+      "nome": "Paramount+ (Jogo 1)",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/paramountplus.png"
+    },
+    {
+      "id": "paramount-jogo-2",
+      "nome": "Paramount+ (Jogo 2)",
+      "categoria": "Esportes",
+      "logo": "https://www.fontedecanais.gs/logos/canais/paramountplus.png"
+    },
+    {
+      "id": "paramount-jogo-3",
+      "nome": "Paramount+ (Jogo 3)",
+      "categoria": "Esportes",
+      "logo": "https://www.fontedecanais.gs/logos/canais/paramountplus.png"
+    },
+    {
+      "id": "playtv",
+      "nome": "PlayTV",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/Ikrj3lk.png"
+    },
+    {
+      "id": "premiere-2",
+      "nome": "Premiere 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/premiere.png"
+    },
+    {
+      "id": "premiere-3",
+      "nome": "Premiere 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/premiere.png"
+    },
+    {
+      "id": "premiere-4",
+      "nome": "Premiere 4",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/premiere.png"
+    },
+    {
+      "id": "premiere-5",
+      "nome": "Premiere 5",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/premiere.png"
+    },
+    {
+      "id": "premiere-6",
+      "nome": "Premiere 6",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/premiere.png"
+    },
+    {
+      "id": "premiere-7",
+      "nome": "Premiere 7",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/premiere.png"
+    },
+    {
+      "id": "premiere-8",
+      "nome": "Premiere 8",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/premiere.png"
+    },
+    {
+      "id": "premiere-clubes",
+      "nome": "Premiere Clubes",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/premiere.png"
+    },
+    {
+      "id": "pt-a-bola",
+      "nome": "PT - A Bola",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/pt_abola.png"
+    },
+    {
+      "id": "pt-benfica-tv",
+      "nome": "PT - Benfica TV",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/pt_benficatv.prev.png"
+    },
+    {
+      "id": "pt-canal-11",
+      "nome": "PT - Canal 11",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/pt_canal11.prev.png"
+    },
+    {
+      "id": "pt-eleven-1",
+      "nome": "PT - Eleven 1",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/pt_eleven1.prev.png"
+    },
+    {
+      "id": "pt-eleven-2",
+      "nome": "PT - Eleven 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/pt_eleven2.prev.png"
+    },
+    {
+      "id": "pt-eleven-3",
+      "nome": "PT - Eleven 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/pt_eleven3.prev.png"
+    },
+    {
+      "id": "pt-sporttv-1",
+      "nome": "PT - Sporttv 1",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "pt-sporttv-2",
+      "nome": "PT - Sporttv 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "pt-sporttv-3",
+      "nome": "PT - Sporttv 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "pt-sporttv-4",
+      "nome": "PT - Sporttv 4",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "pt-sporttv-5",
+      "nome": "PT - Sporttv 5",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "pt-sporttv-6",
+      "nome": "PT - Sporttv 6",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "pt-sporttv-7",
+      "nome": "PT - Sporttv 7",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "record",
+      "nome": "Record",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/record-tv.png"
+    },
+    {
+      "id": "record-df",
+      "nome": "Record DF",
+      "categoria": "TV Aberta",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png"
+    },
+    {
+      "id": "record-es",
+      "nome": "Record ES",
+      "categoria": "TV Aberta",
+      "logo": "https://1.embedcanaisdetv.com/images/record.png"
+    },
+    {
+      "id": "record-go",
+      "nome": "Record GO",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/record.png"
+    },
+    {
+      "id": "record-mg",
+      "nome": "Record MG",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/record.png"
+    },
+    {
+      "id": "record-news",
+      "nome": "Record News",
+      "categoria": "Notícias",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/recordnews.png"
+    },
+    {
+      "id": "record-rj",
+      "nome": "Record RJ",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/record.png"
+    },
+    {
+      "id": "record-sp",
+      "nome": "Record SP",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/record.png"
+    },
+    {
+      "id": "rede-brasil",
+      "nome": "Rede Brasil",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/TXJKwzZ.png"
+    },
+    {
+      "id": "rede-criancas",
+      "nome": "Rede Crianças",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/SRX6EPY.png"
+    },
+    {
+      "id": "rede-gospel",
+      "nome": "Rede Gospel",
+      "categoria": "Variedades",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/rede-gospel-br.png"
+    },
+    {
+      "id": "rede-tv",
+      "nome": "Rede TV!",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/ZJgD38F.png"
+    },
+    {
+      "id": "rede-vida",
+      "nome": "Rede Vida",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/redevida.png"
+    },
+    {
+      "id": "redetv",
+      "nome": "RedeTV!",
+      "categoria": "TV Aberta",
+      "logo": "https://www.tvlogo.org/brazil/rede-tv-br.png"
+    },
+    {
+      "id": "retro-cartoon",
+      "nome": "Retrô Cartoon",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/hIlEfhl.png"
+    },
+    {
+      "id": "retro-music",
+      "nome": "Retro Music",
+      "categoria": "Músicas",
+      "logo": "https://i.imgur.com/pyOjdZs.png"
+    },
+    {
+      "id": "rit",
+      "nome": "RIT",
+      "categoria": "Variedades",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/rit-br.png"
+    },
+    {
+      "id": "runtime",
+      "nome": "Runtime",
+      "categoria": "Filmes e Séries",
+      "logo": "https://images.pluto.tv/channels/62c5d32e2c48f9000715b6e9/colorLogoPNG.png"
+    },
+    {
+      "id": "runtime-acao",
+      "nome": "Runtime Ação",
+      "categoria": "Filmes e Séries",
+      "logo": "https://i.imgur.com/3rM8nL2.png"
+    },
+    {
+      "id": "sbc-kids",
+      "nome": "SBC Kids",
+      "categoria": "Infantil",
+      "logo": "https://i.imgur.com/SRX6EPY.png"
+    },
+    {
+      "id": "sbt",
+      "nome": "SBT",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/sbt.png"
+    },
+    {
+      "id": "sbt-news",
+      "nome": "SBT News",
+      "categoria": "Notícias",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/sbt-news.png"
+    },
+    {
+      "id": "sbt-rj",
+      "nome": "SBT RJ",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/sbt.png"
+    },
+    {
+      "id": "sbt-sp",
+      "nome": "SBT SP",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/sbt.png"
+    },
+    {
+      "id": "sesc-tv",
+      "nome": "SESC TV",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/Mu8O6CV.png"
+    },
+    {
+      "id": "sony-channel",
+      "nome": "Sony Channel",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/sonychannel.png"
+    },
+    {
+      "id": "sony-movies",
+      "nome": "SONY Movies",
+      "categoria": "Filmes e Séries",
+      "logo": "https://www.tvlogo.org/brazil/sony-movies-br.png"
+    },
+    {
+      "id": "sony-one-classics",
+      "nome": "Sony One Classics",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/sony-movies.png"
+    },
+    {
+      "id": "space",
+      "nome": "Space",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/space.png"
+    },
+    {
+      "id": "sportv",
+      "nome": "SporTV",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv.png"
+    },
+    {
+      "id": "sportv-2",
+      "nome": "SporTV 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv2.png"
+    },
+    {
+      "id": "sportv-3",
+      "nome": "SporTV 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportv3.png"
+    },
+    {
+      "id": "sportynet",
+      "nome": "SportyNet",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportynet.png"
+    },
+    {
+      "id": "sportynet-1",
+      "nome": "SportyNet+ 1",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportynet.png"
+    },
+    {
+      "id": "sportynet-2",
+      "nome": "SportyNet+ 2",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportynet.png"
+    },
+    {
+      "id": "sportynet-3",
+      "nome": "SportyNet+ 3",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/sportynet.png"
+    },
+    {
+      "id": "studio-universal",
+      "nome": "Studio Universal",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/studiouniversal.png"
+    },
+    {
+      "id": "tcm",
+      "nome": "TCM",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/tcm.png"
+    },
+    {
+      "id": "telecine-action",
+      "nome": "Telecine Action",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/telecineaction.png"
+    },
+    {
+      "id": "telecine-cult",
+      "nome": "Telecine Cult",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/telecinecult.png"
+    },
+    {
+      "id": "telecine-fun",
+      "nome": "Telecine Fun",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/telecinefun.png"
+    },
+    {
+      "id": "telecine-pipoca",
+      "nome": "Telecine Pipoca",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/telecinepipoca.png"
+    },
+    {
+      "id": "telecine-premium",
+      "nome": "Telecine Premium",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/telecinepremium.png"
+    },
+    {
+      "id": "telecine-touch",
+      "nome": "Telecine Touch",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/telecinetouch.png"
+    },
+    {
+      "id": "terra-viva",
+      "nome": "Terra Viva",
+      "categoria": "Variedades",
+      "logo": "https://www.tvlogo.org/brazil/terraviva-br.png"
+    },
+    {
+      "id": "tlc",
+      "nome": "TLC",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/tlc.png"
+    },
+    {
+      "id": "tnt",
+      "nome": "TNT",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/tnt.png"
+    },
+    {
+      "id": "tnt-novelas",
+      "nome": "TNT Novelas",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/tntnovelas.png"
+    },
+    {
+      "id": "tnt-series",
+      "nome": "TNT Séries",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/tntseries.png"
+    },
+    {
+      "id": "tooncast",
+      "nome": "Tooncast",
+      "categoria": "Infantil",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/tooncast.png"
+    },
+    {
+      "id": "top-tv",
+      "nome": "Top TV",
+      "categoria": "Músicas",
+      "logo": "https://i.imgur.com/aKbHjFO.png"
+    },
+    {
+      "id": "trace-brazuca",
+      "nome": "Trace Brazuca",
+      "categoria": "Variedades",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/trace-brazuca.png"
+    },
+    {
+      "id": "trace-urban",
+      "nome": "Trace Urban",
+      "categoria": "Músicas",
+      "logo": "https://i.imgur.com/DLIbUMx.png"
+    },
+    {
+      "id": "tv-a-critica",
+      "nome": "TV A Crítica",
+      "categoria": "TV Aberta",
+      "logo": "https://i.imgur.com/j51rBro.png"
+    },
+    {
+      "id": "tv-aparecida",
+      "nome": "TV Aparecida",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/tv-aparecida.png"
+    },
+    {
+      "id": "tv-brasil",
+      "nome": "TV Brasil",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/tv-brasil.png"
+    },
+    {
+      "id": "tv-camara",
+      "nome": "TV Câmara",
+      "categoria": "TV Aberta",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/tv-camara-br.png"
+    },
+    {
+      "id": "tv-classicos",
+      "nome": "TV Clássicos",
+      "categoria": "Filmes e Séries",
+      "logo": "https://i.imgur.com/c6uFj7A.png"
+    },
+    {
+      "id": "tv-cultura",
+      "nome": "TV Cultura",
+      "categoria": "TV Aberta",
+      "logo": "https://img.faz-o-eli.online/cultura.png"
+    },
+    {
+      "id": "tv-evangelizar",
+      "nome": "TV Evangelizar",
+      "categoria": "Variedades",
+      "logo": "https://i.imgur.com/IrYR7Kp.png"
+    },
+    {
+      "id": "tv-gazeta",
+      "nome": "TV Gazeta",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/tv-gazeta.png"
+    },
+    {
+      "id": "tv-justica",
+      "nome": "TV Justiça",
+      "categoria": "TV Aberta",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/tv-justica.png"
+    },
+    {
+      "id": "tv-novo-tempo",
+      "nome": "TV Novo Tempo",
+      "categoria": "Variedades",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/novo-tempo-br.png"
+    },
+    {
+      "id": "tv-pai-eterno",
+      "nome": "TV Pai Eterno",
+      "categoria": "Variedades",
+      "logo": "https://img.faz-o-eli.online/tvpaieterno.png"
+    },
+    {
+      "id": "tv-ra-tim-bum",
+      "nome": "TV Rá Tim Bum",
+      "categoria": "Infantil",
+      "logo": "https://logos.imperioapps.top/TV_RA_TIM_BUM.png"
+    },
+    {
+      "id": "tv-senado",
+      "nome": "TV Senado",
+      "categoria": "TV Aberta",
+      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/tv-senado-br.png"
+    },
+    {
+      "id": "tve-bahia",
+      "nome": "TVE Bahia",
+      "categoria": "TV Aberta"
+    },
+    {
+      "id": "tvideonews",
+      "nome": "TVideoNews",
+      "categoria": "Notícias",
+      "logo": "https://i.imgur.com/vstHOYx.png"
+    },
+    {
+      "id": "ufc-fight-pass",
+      "nome": "UFC Fight Pass",
+      "categoria": "PPV",
+      "logo": "https://img.faz-o-eli.online/ufcfightpass.png"
+    },
+    {
+      "id": "universal-reality",
+      "nome": "Universal Reality",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/universal-reality.png"
+    },
+    {
+      "id": "universal-tv",
+      "nome": "Universal TV",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/universaltv.png"
+    },
+    {
+      "id": "usa-network",
+      "nome": "USA Network",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/usa.png"
+    },
+    {
+      "id": "warner",
+      "nome": "Warner",
+      "categoria": "Filmes e Séries",
+      "logo": "https://img.faz-o-eli.online/warnerchannel.png"
+    },
+    {
+      "id": "warner-channel-s79",
+      "nome": "WARNER CHANNEL (S79)",
+      "categoria": "Filmes e Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/warner-channel.png"
+    },
+    {
+      "id": "woohoo",
+      "nome": "Woohoo",
+      "categoria": "Esportes",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/woohoo.png"
+    },
+    {
+      "id": "x-sports",
+      "nome": "X Sports",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/xsports.png"
+    }
+  ],
+  "updatedAt": "2026-11-18T00:18:49.586Z"
 }
