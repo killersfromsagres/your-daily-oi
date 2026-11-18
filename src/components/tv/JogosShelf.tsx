@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon";
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { MatchLineups } from "@/components/sports/MatchLineups";
+import { StadiumIcon } from "@/components/sports/StadiumIcon";
 import { FootballSceneHeader, selectedFootballLeague } from "@/components/sports/FootballSceneHeader";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
@@ -46,7 +47,7 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
   useEffect(() => setBad(false), [src]);
   const initials = name.split(" ").filter(Boolean).slice(0, 2).map(x => x[0]).join("").toUpperCase().slice(0, 3);
   return (
-    <span className="zgame-crest">
+    <span className="zgame-crest zf-ticket-transparent-crest">
       {src && !bad ? (
         <img src={src} alt={"Escudo do " + name} loading="lazy" decoding="async" onError={() => setBad(true)} />
       ) : <span className="zgame-monogram" aria-label={"Escudo indisponível: " + name}>{initials || "FC"}</span>}
@@ -159,8 +160,9 @@ export function MatchCard({ game, onWatch, onExplore }: {
             {game.rodada || "PARTIDA"}
           </span>
           <span className="zf-ticket-stadium">
-            <MapPin size={17} aria-hidden="true"/>
+            <StadiumIcon size={27}/>
             <span><small>ESTÁDIO</small><strong>{venue || "Local a confirmar"}</strong></span>
+            <MapPin size={17} aria-hidden="true" className="zf-ticket-stadium-pin"/>
           </span>
         </div>
       </button>
@@ -176,7 +178,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {visual.highlightWatch && (
-              <div className="zf-ticket-watch-ready"><span aria-hidden="true"/> DISPONÍVEL PARA O INÍCIO</div>
+              <div className="zf-ticket-watch-ready"><span aria-hidden="true"/> ACENDE 5 MIN ANTES</div>
             )}
             {(game.canaisDisponiveis || []).filter(ch => ch.id !== game.canalId).length > 0 && (
               <button type="button" className="zf-ticket-channels-toggle"
