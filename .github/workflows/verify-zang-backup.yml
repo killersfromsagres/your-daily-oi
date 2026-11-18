@@ -1,0 +1,34 @@
+name: Verify owned catalog backups
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - src/data/zang-backup/**
+      - src/lib/zang-archive.ts
+      - src/lib/catalog.ts
+      - src/lib/canais.ts
+      - src/lib/sushianimes.ts
+      - scripts/backup-zang-metadata.mjs
+      - tests/zang-backup.test.ts
+      - .github/workflows/backup-zang-catalogs.yml
+      - .github/workflows/verify-zang-backup.yml
+
+permissions: { contents: read }
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Validate backup script
+        run: node --check scripts/backup-zang-metadata.mjs
+      - run: bun install --frozen-lockfile
+      - name: Verify local catalog backup
+        run: bun test tests/zang-backup.test.ts
+      - name: Verify TV tests and source fallbacks
+        run: bun test tests/live-tv.test.ts tests/saimo-integration.test.ts tests/tv-backend.test.ts tests/tv-edge-backup.test.ts
+      - name: Production bundle
+        run: bun run build
