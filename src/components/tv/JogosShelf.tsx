@@ -10,7 +10,7 @@ import { MatchLineups } from "@/components/sports/MatchLineups";
 import { FootballSceneHeader, selectedFootballLeague } from "@/components/sports/FootballSceneHeader";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
-  Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
+  Activity, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight,
   Clock3, ExternalLink, MapPin, Radio, RefreshCw, ShieldQuestion, Trophy, WifiOff,
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
