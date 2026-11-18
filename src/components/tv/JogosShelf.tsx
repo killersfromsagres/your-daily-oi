@@ -17,6 +17,7 @@ import { getMatchCardVisual } from "@/lib/match-card-visual";
 import { useMatchCardClock } from "@/lib/use-match-card-clock";
 import "@/styles/jogos-center.css";
 import "@/styles/sports-match-tickets.css";
+import "@/styles/match-glass-premium.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
