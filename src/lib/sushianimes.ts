@@ -1,4 +1,5 @@
 import type { CatalogItem, SeasonItem, EpisodeItem, StreamSource, AudioTrack } from "./types";
+import { loadZangSushiArchive } from "./zang-archive";
 
 export interface SushiAnimeCard {
   id: string; // slug, ex: "one-piece-dublado-760"
@@ -196,6 +197,23 @@ export function parseSushiCatalog(html: string, page = 1): SushiCatalogResponse 
 }
 
 /**
+ * The local snapshot covers search/cards when the anime site is offline.
+ * Episode playback still requires a working authorized provider.
+ */
+async function getArchivedSushiCatalog(page: number, category?: string): Promise<SushiCatalogResponse> {
+  const full = await loadZangSushiArchive();
+  const genre = (category || "").trim().toLowerCase();
+  const filtered = genre && genre !== "todos"
+    ? full.filter(item => item.genres.some(g => g.toLowerCase().includes(genre))) : full;
+  const pageSize = 40;
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  return {
+    items: filtered.slice((page - 1) * pageSize, page * pageSize),
+    pagina: page, totalPaginas: pages, totalItens: filtered.length,
+  };
+}
+
+/**
  * Busca página do catálogo Sushi Animes
  */
 export async function getSushiCatalog(
@@ -219,17 +237,18 @@ export async function getSushiCatalog(
     const res = await fetchSushi(url);
     if (!res.ok) {
       console.warn(`[SushiCatalog] Upstream HTTP ${res.status} para ${url}`);
-      return { items: [], pagina: page, totalPaginas: 1, totalItens: 0 };
+      return getArchivedSushiCatalog(page, category);
     }
 
     const html = await res.text();
     const parsed = parseSushiCatalog(html, page);
+    if (!parsed.items.length) return getArchivedSushiCatalog(page, category);
 
     catalogCache.set(cacheKey, { data: parsed, expires: now + CATALOG_TTL });
     return parsed;
   } catch (err) {
     console.error("[SushiCatalog] Erro ao buscar catálogo:", err);
-    return { items: [], pagina: page, totalPaginas: 1, totalItens: 0 };
+    return getArchivedSushiCatalog(page, category);
   }
 }
 
@@ -295,12 +314,14 @@ export async function searchSushiAnimes(query: string): Promise<SushiAnimeCard[]
 
   // Fallback: se /ajax/posts falhou (ex: 503 temporário de rate limit), busca na 1ª página do catálogo
   try {
-    const cat = await getSushiCatalog(1);
+    const [cat, archive] = await Promise.all([getSushiCatalog(1), loadZangSushiArchive()]);
     const normQ = q.toLowerCase();
-    const fallbackResults = cat.items.filter((item) =>
-      item.title.toLowerCase().includes(normQ) || item.slug.toLowerCase().includes(normQ)
-    );
-    return fallbackResults;
+    const seen = new Set<string>();
+    return [...cat.items, ...archive].filter((item) => {
+      if (seen.has(item.slug)) return false;
+      seen.add(item.slug);
+      return item.title.toLowerCase().includes(normQ) || item.slug.toLowerCase().includes(normQ);
+    }).slice(0, 60);
   } catch {
     return [];
   }

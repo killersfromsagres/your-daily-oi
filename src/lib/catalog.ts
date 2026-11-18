@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { getIndiceBases, expandBaseToken, isHlsUrl } from "./saimo-stream";
 import { fetchFirstText, sourceUrls } from "./saimo-source";
+import { loadZangCatalogArchive } from "./zang-archive";
 import { advertisedVodResolution } from "./vod-source-quality";
 import { canonicalMovieId, movieTitleKey, movieIdentityMap, indexMovieSources, findMovieSources, type MovieIdentityMap, type MovieSourceIndex, type MovieSourceRow } from "./movie-source-identity";
 import { correctClassicStreetFighter, isClassicStreetFighter } from "./movie-metadata-fixes";
@@ -148,6 +149,10 @@ function getCatalogUrls(fileName: string): string[] {
     urls.push(`${SNAPSHOT_URL}/${fileName}`);
   }
   // No Cloudflare Pages, a raiz JÁ É a pasta vod
+  // Owner-controlled catalog feeds take priority over any Saimo mirror.
+  for (const mirror of sourceUrls(process.env["ZANG_VOD_CATALOG_URLS"])) {
+    urls.push(mirror + "/" + fileName);
+  }
   for (const mirror of sourceUrls(process.env["SAIMO_VOD_MIRRORS"], [SAIMO_PAGES])) {
     urls.push(`${mirror}/${fileName}`);
   }
@@ -592,13 +597,38 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
     fetchText(getCatalogUrls("destaques.txt")),
     fetchAnimeText("fichas.txt"),
   ]);
-  const fichasText = fichasResult.status === "fulfilled" ? fichasResult.value : "";
-  metadataSourceStatus = fichasText ? "remote" : "fallback";
+  const remoteFichasText = fichasResult.status === "fulfilled" ? fichasResult.value : "";
+  const backup = await loadZangCatalogArchive();
+  // Never lose previously archived titles when a live provider disappears or
+  // publishes an incomplete list. Prefer current metadata for matching IDs.
+  const seen = new Set<string>();
+  const restoredLines: string[] = [];
+  let remoteValidCount = 0;
+  for (const [origin, text] of [
+    ["remote", remoteFichasText],
+    ["archive", backup?.fichas || ""],
+  ] as const) {
+    for (const line of text.split("\n")) {
+      const columns = line.split("\t");
+      const kind = columns[0];
+      const title = columns[1];
+      if (!["f","s","a"].includes(kind || "") || !title || columns.length < 4) continue;
+      const key = kind + ":" + normalizeTitle(title) + ":" + (columns[2] || "");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (origin === "remote") remoteValidCount++;
+      restoredLines.push(line);
+    }
+  }
+  const fichasText = restoredLines.join("\n");
+  metadataSourceStatus = remoteValidCount > 0 ? "remote" : "fallback";
   metadataSourceCheckedAt = Date.now();
-  const destaquesText = destaquesResult.status === "fulfilled" ? destaquesResult.value : "";
+  const remoteDestaquesText = destaquesResult.status === "fulfilled" ? destaquesResult.value : "";
+  const destaquesText = parseDestaques(remoteDestaquesText).some(row => row.items.length)
+    ? remoteDestaquesText : (backup?.destaques || "");
   const animesFichasText = animesResult.status === "fulfilled" ? animesResult.value : "";
-  if (!fichasText) {
-    console.warn("[Catalog] Catálogo principal inacessível; dados locais de animes serão usados.",
+  if (!remoteValidCount) {
+    console.warn("[Catalog] Catálogo principal inacessível; restaurando arquivo próprio e animes locais.",
       fichasResult.status === "rejected" ? String(fichasResult.reason) : "");
   }
 
@@ -645,7 +675,7 @@ export async function loadCatalog(): Promise<{ items: Map<string, CatalogItem>; 
 
   catalogCache = items;
   highlightCache = highlights;
-  cacheTime = fichasText ? now : now - CACHE_TTL + 60_000;
+  cacheTime = remoteValidCount ? now : now - CACHE_TTL + 5 * 60_000;
 
   // Reprodução é resolvida sob demanda: evita centenas de pedidos a fontes remotas.
   // O prefetch massivo anterior provocava rate limits e lentidão em serverless.

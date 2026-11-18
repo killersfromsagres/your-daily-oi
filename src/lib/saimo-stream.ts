@@ -19,7 +19,8 @@ const FENIX_BASE = "https://fenixflix.fenixhub.online";
 const CATALOG_BASE = process.env["SAIMO_VOD_PAGES"] || "https://filmes-saimo.pages.dev";
 const STREAM_API = process.env["SAIMO_STREAM_API"] || "https://saimo-tv.pages.dev/api/stream";
 function catalogUrls(fileName: string): string[] {
-  return sourceUrls(process.env["SAIMO_VOD_MIRRORS"], [CATALOG_BASE])
+  return sourceUrls(process.env["ZANG_VOD_CATALOG_URLS"], [])
+    .concat(sourceUrls(process.env["SAIMO_VOD_MIRRORS"], [CATALOG_BASE]))
     .map((root) => `${root}/${fileName}`);
 }
 const BROWSER_UA =
