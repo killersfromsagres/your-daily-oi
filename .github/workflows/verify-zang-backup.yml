@@ -1,6 +1,10 @@
 name: Verify owned catalog backups
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/data/zang-backup/**'
   pull_request:
     branches: [main]
     paths:
