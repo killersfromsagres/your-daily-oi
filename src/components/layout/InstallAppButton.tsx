@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { Download, Smartphone, TvMinimal as Tv, X } from "lucide-react";
 import { detectInstalledZangFlixRuntime } from "@/lib/app-runtime";
 
-// Direct, publicly accessible Android package. GitHub serves the binary with
-// Content-Disposition: attachment so Chrome downloads the .apk on tap.
+// Keep the install button downloading the real Android APK; the APK itself
+// opens https://zangflix.lovable.app/ while Vercel hosting is paused.
+// GitHub Releases supplies the APK binary independently of either host.
 export const ANDROID_APK_URL =
   "https://github.com/killersfromsagres/your-daily-oi/releases/download/android-latest/ZANG-FLIX-Android.apk";
 
@@ -77,7 +78,7 @@ export function InstallAppButton() {
           className="zf-header-apk"
           href={ANDROID_APK_URL}
           aria-label="Baixar aplicativo ZANG FLIX para Android em APK"
-          title="Baixar APK Android, sem criar atalho no Chrome"
+          title="Instalar ZANG FLIX Android (versão Lovable)"
         >
           <Download size={17} strokeWidth={1.9} aria-hidden="true" />
           <span className="zf-install-desktop-label">Baixar aplicativo</span>
