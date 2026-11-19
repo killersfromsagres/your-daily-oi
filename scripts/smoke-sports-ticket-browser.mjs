@@ -230,7 +230,8 @@ try{
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
   const readable=await evaluate(`(()=>{
     const cards=[...document.querySelectorAll(".zf-ticket")];
-    const unlinked=cards.find(card=>card.querySelector(".zf-ticket-channel-unlinked"));
+    const unlinked=cards.find(card=>card.querySelector(".zf-ticket-channel-unlinked"))
+      ?.querySelector(".zf-ticket-channel-unlinked");
     const label=unlinked?.querySelector(".zf-ticket-channel-unlinked .zf-ticket-watch strong");
     const field=cards.find(card=>card.querySelector(".zf-ticket-stadium")?.textContent?.includes("Mineirão"));
     const content=field?.querySelector(".zf-ticket-pitch");
