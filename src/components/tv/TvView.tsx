@@ -566,6 +566,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
 
         <section className="ztv-sports" aria-label="Central de jogos e transmissões">
           <JogosShelf
+            channelPlayback={channelPlayback}
             onSelectCanalId={id => {
               const channel = channels.find(c => c.id === id);
               if (channel) selectChannel(channel);
