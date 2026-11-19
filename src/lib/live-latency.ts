@@ -89,11 +89,13 @@ export function classifyLivePlaybackStall(input: {
   return null;
 }
 
-/** Bounded retry schedule after every source and route has been exhausted.
- * Retries are scoped to a channel and reset only after stable playback.
+/** Bounded backoff between retries after transient live source failures.
+ * Keep retrying (at most once every two minutes) while the tab is visible:
+ * sports sources may rotate well after the old three-attempt deadline.
+ * The player suppresses this schedule when every provider rejects access.
  */
 export function nextLiveAutoRetryDelay(attempts: number, sourceCount: number): number | null {
-  const delays = [2000, 6000, 15000] as const;
+  const delays = [2000, 6000, 15000, 30000, 60000, 120000] as const;
   if (!Number.isInteger(attempts) || attempts < 0 || sourceCount <= 0) return null;
-  return delays[attempts] ?? null;
+  return delays[Math.min(attempts, delays.length - 1)];
 }
