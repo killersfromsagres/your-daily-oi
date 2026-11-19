@@ -236,7 +236,7 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
           <div className="zf-ticket-pending">
             <ShieldQuestion size={17}/>
             <span>Transmissão a confirmar</span>
-            {onExplore && <button type="button" onClick={onExplore}>Ver canais <ArrowRight size={14}/></button>}
+            {onExplore && <button type="button" onClick={() => onExplore()}>Ver canais <ArrowRight size={14}/></button>}
           </div>
         )}
       </div>
