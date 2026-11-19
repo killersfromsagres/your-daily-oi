@@ -43,15 +43,14 @@ const verified:readonly {
     },
   },
   {
-    // Two independent match guides report Premiere, without identifying a
-    // particular numbered Premiere channel. Link the official broadcaster
-    // service instead of randomly selecting Premiere 2-8.
+    // The match guide names the Premiere network but does not identify
+    // Premiere 2-8. A broadcaster landing page is not a playable media URL;
+    // only a specific channel with a configured stream can open the player.
     date:"2026-11-18",teams:["corinthians","botafogo"],
     data:{
       names:["Premiere"],
       source:"https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/18/corinthians-x-botafogo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
       checkedAt:"2026-11-18",
-      watchUrl:"https://globoplay.globo.com/canais/premiere/",
       exclusive:true,
     },
   },
