@@ -1200,6 +1200,7 @@ export function LivePlayer({
       ref={containerRef}
       className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "") + (rotateLandscapeFallback ? " is-landscape-fallback" : "")}
       data-controls-visible={controlsVisible}
+      data-hq-renderer={hqStatus}
       onMouseMove={showControls}
       onTouchStart={showControls}
       onFocusCapture={showControls}
@@ -1220,9 +1221,10 @@ export function LivePlayer({
           transition:"opacity .12s ease",
         }}
       />
-      {/* Live HQ: actual WebGL resampling/sharpening on capable source GPUs.
-          Only reveal after 8 verified frames; native video always remains the
-          decoded audio master. Secure/cross-origin sources fall back instantly. */}
+      {/* HQ starts automatically: the real WebGPU CNN 2× is the first choice
+          on capable devices, then one-pass spatial edge reconstruction on
+          WebGL2. No canvas is shown until real frames have been processed;
+          decoding, audio, PiP and the low-latency clock remain on <video>. */}
       <canvas ref={neuralCanvasRef}
         className={"ydo-live-hq-canvas ydo-live-ai-canvas"+(hqStatus==="ai-2x"?" is-active":"")}
         aria-hidden="true"/>
