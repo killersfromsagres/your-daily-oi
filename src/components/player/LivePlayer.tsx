@@ -3,7 +3,7 @@ import "@/lib/browser-media";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
 import { browserLiveTransport, isBraveBrowser, needsPlaybackGesture, type LiveProxyBackend } from "@/lib/live-browser-compat";
 import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
@@ -272,13 +272,11 @@ export function LivePlayer({
       setBraveCompatibility(true);
       // Do not tear down a transmission that has already begun working.
       // On an unstarted connection, try the same-origin catalog/proxy first.
-      if (!everPlayedRef.current && proxyBackend !== "unavailable") {
-        setAttemptMode(current => {
-          if (current === "proxy") return current;
-          setPlayNonce(n => n + 1);
-          setAutoSwitchMsg("Compatibilidade Brave · conexão pelo ZANG FLIX");
-          return "proxy";
-        });
+      if (!everPlayedRef.current && proxyBackend !== "unavailable" && attemptMode === "direct") {
+        attemptedModesRef.current.clear();
+        setAttemptMode("proxy");
+        setPlayNonce(n => n + 1);
+        setAutoSwitchMsg("Brave · tentando conexão pelo ZANG FLIX");
       }
     });
     return () => { mounted = false; };
@@ -1064,6 +1062,26 @@ export function LivePlayer({
     return () => window.removeEventListener("keydown", handler);
   }, [onPrevCanal, onNextCanal, handleToggleMute, handleFullscreenToggle, onToggleGuide, showControls, handleVolumeChange]);
 
+  // A direct user gesture is required when the browser forbids autoplay,
+  // including cases where muted autoplay is disabled in site preferences.
+  const startPlaybackFromGesture = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Must call play() synchronously inside the click, before any await.
+    const action = video.play();
+    setGestureRequired(false);
+    setLoading(true);
+    void action.catch(reason => {
+      if (needsPlaybackGesture(reason)) {
+        setGestureRequired(true);
+        setLoading(false);
+        setErrorDetail("O navegador bloqueou o início automático. Verifique a permissão de reprodução deste site.");
+      } else {
+        handleFatalError(true);
+      }
+    });
+  }, [handleFatalError]);
+
   return (
     <div
       ref={containerRef}
@@ -1089,6 +1107,17 @@ export function LivePlayer({
         onClick={handleToggleMute}
         aria-label="Ativar ou desativar áudio"
       />
+
+      {gestureRequired && !error && (
+        <div className="zf-live-gesture-overlay" role="group" aria-label="Iniciar transmissão">
+          <button type="button" className="zf-live-gesture-play"
+            onClick={startPlaybackFromGesture} aria-label="Reproduzir canal ao vivo">
+            <Play size={20} fill="currentColor" aria-hidden="true"/>
+            <span>Iniciar transmissão</span>
+          </button>
+          <small>Este navegador precisa de um clique para iniciar o vídeo.</small>
+        </div>
+      )}
 
       {/* Alerta discreto quando autoplay iniciou mutado */}
       {unmuteNotice && muted && (
@@ -1119,6 +1148,11 @@ export function LivePlayer({
             <span className="ydo-live-cat-tag">{canal.categoria}</span>
           </div>
           <h2 className="ydo-live-channel-title">{canal.nome}</h2>
+          {braveCompatibility && (
+            <span className="zf-live-compat-status" title="O player tenta primeiro a rota interna; o acesso direto continua disponível se necessário.">
+              Navegador protegido · conexão adaptativa
+            </span>
+          )}
           {epgAtual?.titulo && (
             <p className="ydo-live-epg-subtitle">
               {epgAtual.horario ? `${epgAtual.horario} · ` : ""}
