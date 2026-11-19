@@ -151,6 +151,23 @@ export function estimatePitchFromCurrent(
   };
 }
 
+/**
+ * Stadium-specific locations where coordinates were checked against published
+ * geographic references. Everything else falls back to the city of the venue.
+ * Neo Química Arena: Sports Aspects; Arena do Grêmio: venue map coordinates.
+ */
+export function knownStadiumPoint(
+  stadium?: string, city?: string,
+): {lat:number;lon:number}|null {
+  const venue=norm(stadium||"");
+  const area=norm(city||"");
+  if ((venue.includes("neo quimica") || venue.includes("arena corinthians")) &&
+      (!area || area==="sao paulo")) return {lat:-23.5453,lon:-46.4743};
+  if (venue.includes("arena do gremio") &&
+      (!area || area==="porto alegre")) return {lat:-29.97333,lon:-51.19444};
+  return null;
+}
+
 const geocache=new Map<string,{point:{lat:number;lon:number}|null;expires:number}>();
 const estimateCache=new Map<string,{value:PitchEstimate;expires:number}>();
 function limitedSet<K,V>(map:Map<K,V>,key:K,value:V){
@@ -186,11 +203,13 @@ export async function getRegionalPitchEstimate(input: {
   const country = normalizedCountryCode(input.pais) ||
     (resolveVenueCity(input.estadio) ? "BR" : undefined);
   // Use a 3-minute server cache; live conditions are refreshed by the client.
-  const key = [norm(city), country || "", Math.floor(now.getTime() / 180_000)].join("|");
+  const key = [norm(city), norm(input.estadio || ""), country || "",
+    Math.floor(now.getTime() / 180_000)].join("|");
   const hit = estimateCache.get(key);
   if (hit && hit.expires > Date.now()) return hit.value;
 
-  const point = await pointForCity(city, country);
+  const point = knownStadiumPoint(input.estadio, city) ||
+    await pointForCity(city, country);
   if (!point) return null;
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(point.lat));
