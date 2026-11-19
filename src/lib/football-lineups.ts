@@ -77,11 +77,21 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
 export async function enrichSportsDbMatchPhotos(
   original:MatchLineups,
 ):Promise<MatchLineups> {
-  const candidates=original.equipes.flatMap(team=>[
-    ...team.starting.map(player=>({id:player.id,hasPhoto:!!player.photo})),
-    ...(team.coach?.id?[{id:team.coach.id,hasPhoto:!!team.coach.photo}]:[]),
-    ...team.substitutes.map(player=>({id:player.id,hasPhoto:!!player.photo})),
-  ]);
+  // Prioritize BOTH coaches, then interleave home/away starters so the free
+  // provider lookup budget cannot consume every request on just one squad.
+  const candidates:Array<{id:string;hasPhoto:boolean}>=[];
+  for(const team of original.equipes){
+    if(team.coach?.id)candidates.push({id:team.coach.id,hasPhoto:!!team.coach.photo});
+  }
+  for(const kind of ["starting","substitutes"] as const){
+    const longest=Math.max(0,...original.equipes.map(team=>team[kind].length));
+    for(let i=0;i<longest;i++){
+      for(const team of original.equipes){
+        const player=team[kind][i];
+        if(player)candidates.push({id:player.id,hasPhoto:!!player.photo});
+      }
+    }
+  }
   const photos=await enrichKnownLineupPhotos(candidates,12);
   if(!photos.size)return original;
   return {...original,equipes:original.equipes.map(team=>({
