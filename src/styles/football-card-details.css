@@ -290,3 +290,14 @@ html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-s
 html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
   height:132px;min-height:132px;max-height:132px;flex-basis:132px;
 }
+
+/* Keep cards within the established mobile height budget (including the
+ * formerly hidden alternate broadcaster row) without clipping club crests. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+  height:140px;min-height:140px;flex-basis:140px;
+}
+@media(max-width:610px) {
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+    height:138px;min-height:138px;flex-basis:138px;
+  }
+}
