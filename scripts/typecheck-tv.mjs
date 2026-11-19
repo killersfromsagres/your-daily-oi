@@ -11,6 +11,7 @@ const tvPaths = [
   /^src\/components\/player\/LivePlayer\.tsx\(/,
   /^src\/components\/player\/useVideoEnhancer\.ts\(/,
   /^src\/components\/player\/useNeuralVideoUpscaler\.ts\(/,
+  /^src\/components\/player\/useSportsDeinterlacer\.ts\(/,
   /^src\/components\/player\/OwnPlayer\.tsx\(/,
   /^src\/lib\/automatic-hq\.ts\(/,
   /^src\/lib\/live-latency\.ts\(/,
