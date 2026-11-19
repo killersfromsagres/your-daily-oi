@@ -2,16 +2,18 @@
 export type LiveLatencyMode = "fast" | "stable";
 
 /**
- * Fast mode is opt-in for live sports: a short live-edge buffer and playback
- * speed-up can look like frame dropping on a busy network or low-end TV.
- * An explicit saved preference always wins over the channel default.
+ * Always-on adaptive low latency for live television: minimal server-side
+ * buffer with very small catch-up speed changes, separate from the video HQ
+ * renderer. The viewer can still choose the fluid buffer mode explicitly.
+ * The upstream encoder/segment duration remains an unavoidable lower bound.
  */
 export function preferredLiveLatencyMode(
   category: string, channel: string, saved?: string | null,
 ): LiveLatencyMode {
   if (saved === "fast" || saved === "stable") return saved;
-  return /esport|sport|premiere|espn|combate|band\s*sports/i.test(category + " " + channel)
-    ? "stable" : "fast";
+  // Default every live TV channel to automatic low-latency correction.
+  // Explicit stable mode remains available for unstable connections.
+  return "fast";
 }
 
 export function hlsLatencyOptions(mode: LiveLatencyMode) {
@@ -23,13 +25,16 @@ export function hlsLatencyOptions(mode: LiveLatencyMode) {
     // Fullscreen can still select a matching high-resolution rendition.
     capLevelToPlayerSize: true,
     lowLatencyMode: fast,
-    liveSyncDurationCount: fast ? 3 : 4,
-    liveMaxLatencyDurationCount: fast ? 8 : 12,
+    liveSyncDurationCount: fast ? 2 : 4,
+    liveMaxLatencyDurationCount: fast ? 7 : 12,
     // Playback-rate acceleration makes fast action look uneven on 50/60 Hz TVs.
     // Stable mode plays at the source's natural cadence.
-    maxLiveSyncPlaybackRate: fast ? 1.03 : 1,
-    liveSyncOnStallIncrease: fast ? 1 : 2,
-    maxBufferLength: fast ? 12 : 24,
+    maxLiveSyncPlaybackRate: fast ? 1.025 : 1,
+    liveSyncOnStallIncrease: fast ? 2 : 2,
+    maxBufferLength: fast ? 10 : 24,
+    capLevelOnFPSDrop: true,
+    fpsDroppedMonitoringPeriod: 6000,
+    fpsDroppedMonitoringThreshold: 0.12,
     maxMaxBufferLength: fast ? 22 : 38,
     backBufferLength: fast ? 14 : 22,
   };
@@ -76,14 +81,16 @@ export function decideLiveCatchup(input: {
   const drift = target - current;
   // Avoid repeated seeks near the live edge; they can cause rebuffering
   // and discontinuous motion while the broadcaster's sports stream is healthy.
-  if (drift > (mode === "fast" ? 14 : 30) &&
-      bufferAhead >= (mode === "fast" ? 2 : 4) && target > current + 0.5) {
+  if (drift > (mode === "fast" ? 22 : 30) &&
+      bufferAhead >= (mode === "fast" ? 2.5 : 4) && target > current + 0.5) {
     return { action:"seek", behind, position:target };
   }
   // hls.js owns playbackRate through its latency controller; do not fight it.
   // Only the explicitly selected low-latency mode may accelerate native video.
-  if (!hlsManaged && mode === "fast" && drift > 3 && bufferAhead >= 2) {
-    return { action:"speed", behind, rate:1.03 };
+  // A gentle 1–2.5% speed-up is generally less visible than repeated seeks;
+  // only accelerate native Safari playback with enough forward buffer.
+  if (!hlsManaged && mode === "fast" && drift > 1.4 && bufferAhead >= 2) {
+    return { action:"speed", behind, rate:drift > 6 ? 1.025 : 1.0125 };
   }
   return { action:"none", behind };
 }
@@ -120,4 +127,14 @@ export function nextLiveAutoRetryDelay(attempts: number, sourceCount: number): n
   const delays = [2000, 6000, 15000, 30000, 60000, 120000] as const;
   if (!Number.isInteger(attempts) || attempts < 0 || sourceCount <= 0) return null;
   return delays[Math.min(attempts, delays.length - 1)];
+}
+
+/** Hardware decoder safety: a stream that drops a material fraction of its
+ * decoded frames must not also be accelerated by the live-edge controller. */
+export function shouldEaseLiveCatchup(input: {
+  droppedDelta:number;totalDelta:number;bufferAhead:number;
+}):boolean{
+  if(input.bufferAhead<1.5)return true;
+  return input.totalDelta>=20 &&
+    input.droppedDelta/Math.max(1,input.totalDelta)>0.085;
 }
