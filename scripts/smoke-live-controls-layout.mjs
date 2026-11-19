@@ -92,9 +92,9 @@ const FIXTURE="\n<div class=\"ydo-live-player-container\" data-controls-visible=
  await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send("Page.navigate",{url:BASE+"/tv/canal/band"});
  await until("!!document.querySelector('.ztv-player-frame .zf-player-toolbar')","real LivePlayer toolbar");
- const live=await evaluate("({icons:document.querySelectorAll('.ztv-player-frame .zf-player-toolbar button').length,legacy:document.querySelectorAll('.ztv-player-frame .ydo-live-controls-bar').length,fullscreen:!!document.querySelector('.ztv-player-frame .zf-player-toolbar button[aria-label^=Assistir]'),hq:!!document.querySelector('.ztv-player-frame .zf-live-hq-button')})");
+ const live=await evaluate("({icons:document.querySelectorAll('.ztv-player-frame .zf-player-toolbar button').length,legacy:document.querySelectorAll('.ztv-player-frame .ydo-live-controls-bar').length,fullscreen:!!document.querySelector('.ztv-player-frame .zf-player-toolbar button[aria-label^=Assistir]'),hq:!!document.querySelector('.ztv-player-frame .zf-live-hq-button'),hqAutomaticallyEnabled:document.querySelector('.ztv-player-frame .zf-live-hq-button')?.getAttribute('aria-pressed')==='true',hqRenderer:document.querySelector('.ztv-player-frame .ydo-live-player-container')?.dataset.hqRenderer})");
  console.log(JSON.stringify({event:"real-live-player-toolbar",...live}));
- if(live.icons<5||live.legacy!==0||!live.fullscreen||!live.hq) throw Error("Real LivePlayer does not use isolated minimal toolbar");
+ if(live.icons<5||live.legacy!==0||!live.fullscreen||!live.hq||!live.hqAutomaticallyEnabled||!live.hqRenderer) throw Error("Real LivePlayer does not use isolated minimal toolbar");
 }finally{
  socket?.close();
  chrome?.kill("SIGTERM");
