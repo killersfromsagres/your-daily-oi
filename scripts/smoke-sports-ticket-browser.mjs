@@ -380,7 +380,9 @@ try{
     const tv=await evaluate(`(()=>{
       const board=document.querySelector(".zf-reference-section");
       const grid=board?.querySelector(".zf-reference-cards");
-      const card=Array.from(grid?.querySelectorAll(".zf-ticket")||[]).find(node=>node.querySelector(".zf-ticket-watch"))||grid?.querySelector(".zf-ticket");
+      const card=Array.from(grid?.querySelectorAll(".zf-ticket")||[]).find(node=>
+        Array.from(node.querySelectorAll(".zf-ticket-watch")).some(button=>
+          button.textContent?.includes("ASSISTIR NO CANAL"))) ||grid?.querySelector(".zf-ticket");
       const main=card?.querySelector(".zf-ticket-main");
       const team=card?.querySelector(".zf-ticket-team");
       const date=card?.querySelector(".zf-ticket-date");
