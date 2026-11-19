@@ -29,7 +29,7 @@ export interface JogoBrasileirao {
   placarCasa: number | null;
   placarFora: number | null;
   /** Scorers credited by verified match-play data only, not score guesses. */
-  gols?: MatchGoal[];
+  gols?: MatchGoal[]|undefined;
   destaque: boolean;
   canalId: string | null;
   canalNome: string | null;
