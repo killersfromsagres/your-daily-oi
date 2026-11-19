@@ -40,3 +40,19 @@ console.log(JSON.stringify({probe:"sportsdb-name",status:search.status,options:
   (search.body?.player||search.body?.players||[]).slice(0,4).map(p=>({
     name:p.strPlayer,team:p.strTeam,espnId:p.idESPN,hasPhoto:!!(p.strThumb||p.strCutout),
   }))}));
+
+const event=await query("https://www.thesportsdb.com/api/v1/json/123/searchevents.php?e=Corinthians_vs_Botafogo");
+const choices=event.body?.event||event.body?.events||[];
+console.log(JSON.stringify({probe:"sportsdb-fixture",status:event.status,
+  found:choices.length,sameDate:choices.filter(x=>x.dateEvent==="2026-11-18").map(x=>({
+    id:x.idEvent,home:x.strHomeTeam,away:x.strAwayTeam,date:x.dateEvent,
+  }))}));
+const selectedEvent=choices.find(x=>x.dateEvent==="2026-11-18"&&
+  x.strHomeTeam==="Corinthians"&&x.strAwayTeam==="Botafogo");
+if(selectedEvent){
+  const coaches=await query("https://www.thesportsdb.com/api/v1/json/123/lookuplineup.php?id="+selectedEvent.idEvent);
+  console.log(JSON.stringify({probe:"sportsdb-fixture-coaches",status:coaches.status,
+    managerEntries:(coaches.body?.lineup||[]).filter(x=>/manager|coach|treinador/i.test(x.strPosition||""))
+      .map(x=>({name:x.strPlayer,team:x.strTeam,position:x.strPosition,photo:!!(x.strThumb||x.strCutout)})),
+  }));
+}
