@@ -1,0 +1,73 @@
+/* Small first-party playback activation prompt for browsers with autoplay blocked.
+   No overlays/filters on a playing video, so the player stays fluid. */
+.ydo-live-player-container .zf-live-gesture-overlay {
+  position: absolute;
+  z-index: 64;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(6,13,22,.48),rgba(5,12,20,.72));
+  color: #fff;
+}
+.ydo-live-player-container .zf-live-gesture-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: min(245px, 86%);
+  min-height: 48px;
+  padding: 12px 19px;
+  border: 1px solid rgba(255,255,255,.34);
+  border-radius: 13px;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  font-size: 13px;
+  font-weight: 770;
+  line-height: 1.25;
+  cursor: pointer;
+}
+.ydo-live-player-container .zf-live-gesture-play:hover,
+.ydo-live-player-container .zf-live-gesture-play:focus-visible {
+  background: rgba(255,255,255,.22);
+  border-color: rgba(255,255,255,.55);
+}
+.ydo-live-player-container .zf-live-gesture-overlay small {
+  max-width: 280px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(232,241,248,.8);
+}
+.ydo-live-player-container .zf-live-compat-status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 580;
+  color: rgba(205,236,224,.74);
+}
+@media (max-width: 610px) {
+  .ydo-live-player-container .zf-live-gesture-overlay {gap: 8px;padding: 12px;}
+  .ydo-live-player-container .zf-live-gesture-play {
+    min-height: 42px;
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+  .ydo-live-player-container .zf-live-gesture-overlay small {font-size:10px;}
+}
+html[data-zf-platform="tv"] .ydo-live-player-container .zf-live-gesture-play {
+  min-height: 62px;
+  padding: 15px 24px;
+  font-size: 17px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ydo-live-player-container .zf-live-gesture-play {transition: none;}
+}
