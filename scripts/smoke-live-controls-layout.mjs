@@ -90,8 +90,8 @@ const FIXTURE="\n<div class=\"ydo-live-player-container\" data-controls-visible=
  // Runtime WebGL2 compilation + a synthetic combing sample, using the
  // EXACT shader shipped in useSportsDeinterlacer.ts. Do not use mocked GLSL.
  const source=readFileSync("src/components/player/useSportsDeinterlacer.ts","utf8");
- const vertex=source.match(/export const LIVE_DEINTERLACE_VERTEX=\`([\\s\\S]*?)\`;/)?.[1];
- const fragment=source.match(/export const LIVE_DEINTERLACE_FRAGMENT=\`([\\s\\S]*?)\`;/)?.[1];
+ const vertex=source.match(/export const LIVE_DEINTERLACE_VERTEX=\`([\s\S]*?)\`;/)?.[1];
+ const fragment=source.match(/export const LIVE_DEINTERLACE_FRAGMENT=\`([\s\S]*?)\`;/)?.[1];
  if(!vertex||!fragment)throw Error("Deinterlace shaders not found in actual source");
  const glTest=await evaluate(`(async()=>{
    const canvas=document.createElement("canvas");
