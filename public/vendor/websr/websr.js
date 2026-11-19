@@ -1535,10 +1535,20 @@ class Anime4KCNN2XL extends base_network_1.default {
                 this.context.input = this.context.device.importExternalTexture({ source });
             }
             else {
-                const bitmap = (0, utils_1.isImageBitmap)(source) ? source : yield createImageBitmap(source);
+                // Locally owned bitmaps from deinterlace/2x canvas can be
+                // created 50-60 times per second: release each one immediately
+                // after enqueueing the GPU copy to avoid memory growth.
+                const ownedBitmap = !(0, utils_1.isImageBitmap)(source);
+                const bitmap = ownedBitmap ? yield createImageBitmap(source) : source;
                 const width = (0, utils_1.getSourceWidth)(source);
                 const height = (0, utils_1.getSourceHeight)(source);
-                this.context.device.queue.copyExternalImageToTexture({ source: bitmap }, { texture: this.context.texture('input', { format: "rgba8unorm" }) }, [width, height]);
+                try {
+                    this.context.device.queue.copyExternalImageToTexture({ source: bitmap }, { texture: this.context.texture('input', { format: "rgba8unorm" }) }, [width, height]);
+                }
+                finally {
+                    if (ownedBitmap)
+                        bitmap.close();
+                }
                 this.context.input = this.context.texture('input');
             }
             this.layers[0].inputs[0] = this.context.input;
