@@ -3,7 +3,7 @@ import type { CanalTV } from "./canais";
 /**
  * A metadata-only snapshot must not disconnect an already-playing TV channel.
  * Preserve the actual in-memory source only while playback was confirmed;
- * never fabricate a URL or override a fresh playable provider source.
+ * never fabricate a URL or bypass a provider's access controls.
  */
 export function retainLiveCatalogOnMetadataOutage(
   previous: CanalTV[],
@@ -29,7 +29,12 @@ export function retainLiveCatalogOnMetadataOutage(
   if (!playing) return incoming;
 
   const refreshed = incoming.find(channel => channel.id === playing.id);
-  if (refreshed?.fontes.length) return incoming;
+  // Defer even a valid source rotation until the currently verified playback
+  // actually fails; otherwise React remounts the player mid-match. After a
+  // failure, playbackConfirmed becomes false and the new sources are applied.
+  if (refreshed?.fontes.length) {
+    return incoming.map(channel => channel.id === playing.id ? playing : channel);
+  }
   if (!refreshed) return [...incoming, playing];
   return incoming.map(channel => channel.id === playing.id
     ? { ...channel, fontes: playing.fontes, indisponivel: false }
