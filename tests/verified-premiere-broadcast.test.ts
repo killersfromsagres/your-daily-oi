@@ -72,6 +72,6 @@ describe("official live sports destination", () => {
     expect(tvUi).toContain('setQuery(channelName || "")');
     expect(tvUi).toContain('setOnlineOnly(false)');
     const scoreboard=readFileSync("src/lib/jogos.ts","utf8");
-    expect(scoreboard).toContain("else if (proof?.exclusive) parsed.transmissaoUrl = undefined;");
+    expect(scoreboard).toContain("else if (proof?.exclusive) delete parsed.transmissaoUrl;");
   });
 });
