@@ -126,7 +126,7 @@ export function classifyLivePlaybackStall(input: {
 export function nextLiveAutoRetryDelay(attempts: number, sourceCount: number): number | null {
   const delays = [2000, 6000, 15000, 30000, 60000, 120000] as const;
   if (!Number.isInteger(attempts) || attempts < 0 || sourceCount <= 0) return null;
-  return delays[Math.min(attempts, delays.length - 1)];
+  return delays[Math.min(attempts, delays.length - 1)] ?? 120000;
 }
 
 /** Hardware decoder safety: a stream that drops a material fraction of its
