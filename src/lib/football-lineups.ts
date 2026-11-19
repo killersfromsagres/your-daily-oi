@@ -2,12 +2,13 @@
 // Never invent starters/coach/photos before the provider releases the lineup.
 import { LIGAS_FUTEBOL } from "./jogos-match";
 import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
+import { enrichKnownLineupPhotos, photoFromSportsDbRecord } from "./lineup-photo-source";
 export type { PlayerPosition } from "./football-positions";
 export interface LineupPlayer {
   id:string;name:string;number:string|null;position:string;
   group:PlayerPosition;photo:string|null;grid:string|null;
 }
-export interface LineupCoach {name:string;photo:string|null;}
+export interface LineupCoach {name:string;photo:string|null;id?:string|null;}
 export interface LineupTeam {
   name:string;formation:string|null;crest:string|null;
   coach:LineupCoach|null;starting:LineupPlayer[];substitutes:LineupPlayer[];
@@ -45,9 +46,9 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
     if(entry.strFormation&&!team.formation)team.formation=nameOf(entry.strFormation);
     const role=nameOf(entry.strPosition);
     if(!name)continue;
-    const photo=safePhoto(entry.strCutout)||safePhoto(entry.strThumb)||safePhoto(entry.strRender);
+    const photo=photoFromSportsDbRecord(entry);
     if(/manager|head coach|treinador|t[eé]cnico|coach/i.test(role)){
-      team.coach={name,photo};
+      team.coach={name,photo,id:/^\d{1,12}$/.test(String(entry.idPlayer||""))?String(entry.idPlayer):null};
       continue;
     }
     const player:LineupPlayer={
@@ -68,6 +69,30 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
       :!complete?"Escalação parcial: o provedor ainda não liberou todos os titulares.":"Escalações disponíveis.",
   };
 }
+/**
+ * Enrich only people already included in the verified event's published roster.
+ * A photo lookup may fail; that leaves the true athlete/coach name with a
+ * neutral fallback instead of assigning a photograph to the wrong person.
+ */
+export async function enrichSportsDbMatchPhotos(
+  original:MatchLineups,
+):Promise<MatchLineups> {
+  const candidates=original.equipes.flatMap(team=>[
+    ...team.starting.map(player=>({id:player.id,hasPhoto:!!player.photo})),
+    ...(team.coach?.id?[{id:team.coach.id,hasPhoto:!!team.coach.photo}]:[]),
+    ...team.substitutes.map(player=>({id:player.id,hasPhoto:!!player.photo})),
+  ]);
+  const photos=await enrichKnownLineupPhotos(candidates,12);
+  if(!photos.size)return original;
+  return {...original,equipes:original.equipes.map(team=>({
+    ...team,
+    coach:team.coach?{...team.coach,photo:team.coach.photo||
+      (team.coach.id?photos.get(team.coach.id):null)||null}:null,
+    starting:team.starting.map(player=>({...player,photo:player.photo||photos.get(player.id)||null})),
+    substitutes:team.substitutes.map(player=>({...player,photo:player.photo||photos.get(player.id)||null})),
+  }))};
+}
+
 type ESPNPlayer={
   athlete?:{id?:string;displayName?:string;fullName?:string;headshot?:{href?:string}|string};
   position?:{name?:string;displayName?:string;abbreviation?:string};
@@ -156,7 +181,9 @@ export async function getMatchLineups(jogo:string):Promise<MatchLineups>{
       });
       if(!response.ok)throw new Error("TheSportsDB lineup HTTP "+response.status);
       const json=await response.json() as {lineup?:SportsDbLine[]|null};
-      payload=parseSportsDbLineups(jogo,Array.isArray(json.lineup)?json.lineup:[]);
+      payload=await enrichSportsDbMatchPhotos(
+        parseSportsDbLineups(jogo,Array.isArray(json.lineup)?json.lineup:[]),
+      );
     }else{
       const idx=jogo.lastIndexOf(":"), league=jogo.slice(0,idx), event=jogo.slice(idx+1);
       const url="https://site.api.espn.com/apis/site/v2/sports/soccer/"+
