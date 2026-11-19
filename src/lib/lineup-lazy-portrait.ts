@@ -7,6 +7,7 @@
 import {getMatchLineups,validLineupId} from "./football-lineups";
 import {matchDirectoryPlayer,samePerson,type DirectoryPlayer} from "./lineup-verified-portraits";
 import {photoFromSportsDbRecord} from "./lineup-photo-source";
+import {matchFixtureClub} from "./lineup-match-coaches";
 const cache=new Map<string,{expires:number;photo:string|null}>();
 const pending=new Map<string,Promise<string|null>>();
 export function selectVerifiedSearchPortrait(
@@ -20,11 +21,7 @@ export function selectVerifiedSearchPortrait(
     // verified team name. Search hits with no team cannot confirm identity.
     if(match==="id")return true;
     if(match!=="name"||!candidate.strTeam)return false;
-    const requested=team.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").trim();
-    const actual=candidate.strTeam.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").trim();
-    return actual===requested||
-      (requested.length>6&&actual.startsWith(requested+" "))||
-      (actual.length>6&&requested.startsWith(actual+" "));
+    return matchFixtureClub(candidate.strTeam,team);
   });
   // Multiple plausible identities are ambiguous: do not choose a random face.
   const strong=plausible.filter(row=>String(row.idESPN||"")===id);
