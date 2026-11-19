@@ -209,9 +209,10 @@ export function useNeuralVideoUpscaler(
           const q=video.getVideoPlaybackQuality();
           const total=q.totalVideoFrames-lastTotal;
           const dropped=q.droppedVideoFrames-lastDropped;
+          const hadBaseline=lastTotal>0;
           lastTotal=q.totalVideoFrames;
           lastDropped=q.droppedVideoFrames;
-          if(total>=18 && dropped/total>.085){
+          if(hadBaseline&&total>=18 && dropped/total>.085){
             unavailable("Decodificador sobrecarregado; preservando FPS do jogo");return;
           }
         }
