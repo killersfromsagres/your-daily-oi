@@ -13,6 +13,7 @@ describe("verified portrait identity and multi-provider resolution",()=>{
   test("cross-provider ESPN ID wins over a stale current club; cannot assign similar names blindly",()=>{
     expect(samePerson("Hugo Souza","123",{idESPN:"123",strPlayer:"Hugo Nogueira de Souza"})).toBe("id");
     expect(samePerson("Hugo Souza","123",{idESPN:"456",strPlayer:"Hugo Souza"})).toBeNull();
+    expect(samePerson("Hugo Souza","123",{idESPN:"0",strPlayer:"Hugo Souza"})).toBe("name");
     expect(samePerson("Hugo Souza","123",{strPlayer:"Hugo Nogueira de Souza"})).toBe("name");
     expect(samePerson("Hugo Souza","123",{strPlayer:"Hugo Alberto"})).toBeNull();
     const exact=matchDirectoryPlayer({id:"123",name:"Hugo Souza",photo:null},"Corinthians",[
