@@ -14,7 +14,7 @@
 import {useEffect,useState,type RefObject} from "react";
 
 export function isSportsLiveChannel(name:string,category:string):boolean {
-  return /\b(premiere|sportv|espn|tnt\s*sports|band\s*sports|caz[eé]\s*tv|ge\s*tv|futebol|esportes|sports|futemax)\b/i
+  return /\b(premiere|sportv|espn|tnt\s*sports|band\s*sports|caz[eé]\s*tv|ge\s*tv|futebol|esportes|sports)\b/i
     .test(name+" "+category);
 }
 export function combingConfidence(input:{
