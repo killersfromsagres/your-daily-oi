@@ -2167,6 +2167,10 @@ function isImageSource(source) {
  * Get the width of a media source
  */
 function getSourceWidth(source) {
+    // Local integration: allow origin-clean preprocessing canvases for sports
+    // deinterlacing and a second trained CNN 2x pass (4x reconstruction).
+    if (typeof HTMLCanvasElement !== 'undefined' && source instanceof HTMLCanvasElement)
+        return source.width;
     if (isHTMLVideoElement(source))
         return source.videoWidth;
     if (isHTMLImageElement(source))
@@ -2181,6 +2185,10 @@ function getSourceWidth(source) {
  * Get the height of a media source
  */
 function getSourceHeight(source) {
+    // Local integration: allow origin-clean preprocessing canvases for sports
+    // deinterlacing and a second trained CNN 2x pass (4x reconstruction).
+    if (typeof HTMLCanvasElement !== 'undefined' && source instanceof HTMLCanvasElement)
+        return source.height;
     if (isHTMLVideoElement(source))
         return source.videoHeight;
     if (isHTMLImageElement(source))
