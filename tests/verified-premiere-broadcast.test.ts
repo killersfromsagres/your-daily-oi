@@ -6,13 +6,13 @@ import { matchBrazilianBroadcastChannel } from "../src/lib/broadcast-match";
 
 const game = { casa: "Corinthians", fora: "Botafogo", dataLocal: "2026-11-18" };
 
-describe("Corinthians x Botafogo 18 November verified broadcaster", () => {
-  test("binds the match to Premiere without guessing numbered streams", () => {
-    const evidence = verifiedBroadcastEvidence(game);
-    expect(evidence?.names).toEqual(["Premiere"]);
-    expect(evidence?.exclusive).toBe(true);
-    expect(evidence?.watchUrl).toBeUndefined();
-    expect(evidence?.source).toContain("ge.globo.com/");
+describe("Corinthians x Botafogo dynamically resolved broadcaster", () => {
+  test("does not override the live broadcaster research with hardcoded Premiere rights", () => {
+    expect(verifiedBroadcastEvidence(game)).toBeNull();
+    const source=readFileSync("src/lib/jogos.ts","utf8");
+    expect(source).toContain("getGuideBroadcasts(date)");
+    expect(source).toContain("localizarJogosNaGradeEPG(matches, available)");
+    expect(source).toContain("brBroadcastsFromESPN(fixture.raw)");
   });
 
   test("handles scoreboard home/away ordering and provider team aliases", () => {
@@ -20,7 +20,7 @@ describe("Corinthians x Botafogo 18 November verified broadcaster", () => {
     expect(broadcastTeamKey("Botafogo RJ")).toBe("botafogo");
     expect(verifiedBroadcastEvidence({
       casa: "Botafogo RJ", fora: "SC Corinthians SP", dataLocal: "2026-11-18",
-    })?.names).toEqual(["Premiere"]);
+    })).toBeNull();
   });
 
   test("does not carry broadcaster rights over to unrelated fixtures or dates", () => {
@@ -64,10 +64,11 @@ describe("official live sports destination", () => {
     expect(ui).toContain("officialBroadcastTarget(game.transmissaoUrl)");
     expect(ui).toContain('target="_blank" rel="noopener noreferrer"');
     expect(ui).toContain('channelPlayback?.[ch.id]');
-    expect(ui).toContain('FONTE FALHOU · TENTAR NOVAMENTE');
+    expect(ui).toContain('TENTAR OUTRA FONTE');
     expect(ui).toContain("Outros canais");
     expect(ui).toContain("onExplore?.(exploreChannel)");
-    expect(ui).toContain("Procurar canais no ZANG FLIX");
+    expect(ui).toContain("TRANSMISSORA ANUNCIADA");
+    expect(ui).toContain("<PitchCondition game={game}/>");
     const tvUi=readFileSync("src/components/tv/TvView.tsx","utf8");
     expect(tvUi).toContain('setQuery(channelName || "")');
     expect(tvUi).toContain('setOnlineOnly(false)');
