@@ -65,6 +65,7 @@ const STATE=`(()=>{
   })(),
   stadiumIcon:!!element?.querySelector(".zf-ticket-stadium>svg"),
   fieldIcon:!!element?.querySelector(".zf-ticket-pitch>svg"),
+  weatherWet:!!document.querySelector('.zf-ticket-pitch[data-weather-state="molhado"]'),
   stadiumPhoto:!!document.querySelector(".zf-football-reference-page")&&getComputedStyle(document.querySelector(".zf-football-reference-page")).backgroundImage.includes("stadium-night-zang.webp"),
   visualGlass:!!element&&getComputedStyle(element).backdropFilter.includes("blur"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
@@ -218,7 +219,7 @@ try{
    mobile:device.mobile,deviceScaleFactor:device.mobile?2:1});
   await send("Emulation.setUserAgentOverride",{userAgent:device.ua});
   await send("Page.navigate",{url:BASE+"/futebol"});
-  const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket && x.visibleReadyWatch && x.visibleLiveMinute);
+  const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket && x.visibleReadyWatch && x.visibleLiveMinute && x.weatherWet);
   if(!state.noCrestTile||!state.stadiumIcon||!state.fieldIcon||!state.stadiumPhoto||!state.visualGlass)
     throw new Error("Reference image and borderless crests not applied: "+JSON.stringify(state));
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
@@ -228,6 +229,26 @@ try{
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
     throw new Error("Football page must match full stadium reference layout: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
+  // The scored goals should sit precisely under their own club crests,
+  // including narrow mobile cards (not grouped on the left of the clock).
+  const scoreAlignment=await evaluate(`(()=>{
+    const center=el=>{const box=el?.getBoundingClientRect();return box?box.left+box.width/2:null};
+    return [...document.querySelectorAll(".zf-ticket")]
+      .filter(card=>card.querySelector(".zf-ticket-score-home"))
+      .map(card=>({
+        club:card.querySelector(".zf-ticket-team strong")?.textContent,
+        homeError:Math.abs(center(card.querySelector(".zf-ticket-team:first-child .zgame-crest"))-
+          center(card.querySelector(".zf-ticket-score-home"))),
+        awayError:Math.abs(center(card.querySelector(".zf-ticket-team:last-child .zgame-crest"))-
+          center(card.querySelector(".zf-ticket-score-away"))),
+        stadiumHeight:card.querySelector(".zf-ticket-stadium")?.getBoundingClientRect().height,
+        pitchHeight:card.querySelector(".zf-ticket-pitch")?.getBoundingClientRect().height,
+      }));
+  })()`);
+  if(!scoreAlignment.length || scoreAlignment.some(row=>row.homeError>7 ||
+      row.awayError>7 || Math.abs(row.stadiumHeight-row.pitchHeight)>1))
+    throw new Error("Crest/goal columns or weather/stadium rows are misaligned: "+
+      JSON.stringify({device,scoreAlignment}));
   const readable=await evaluate(`(()=>{
     const cards=[...document.querySelectorAll(".zf-ticket")];
     const unlinked=cards.find(card=>card.querySelector(".zf-ticket-channel-unlinked"))
