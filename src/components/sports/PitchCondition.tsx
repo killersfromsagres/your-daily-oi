@@ -42,9 +42,9 @@ async function readPitch(key:string,params:URLSearchParams):Promise<PitchReply> 
       }catch{/* An older deployment might not yet expose /api/jogos-gramado. */}
       try{
         const direct=await getRegionalPitchEstimate({
-          estadio:params.get("estadio")||undefined,
-          cidade:params.get("cidade")||undefined,
-          pais:params.get("pais")||undefined,
+          estadio:params.get("estadio")||"",
+          cidade:params.get("cidade")||"",
+          pais:params.get("pais")||"",
         });
         if(direct&&isUsable(direct))return direct;
       }catch{/* No verified weather — never assume the pitch is dry. */}
