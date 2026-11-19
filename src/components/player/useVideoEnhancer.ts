@@ -45,6 +45,61 @@ void main() {
   outColor=vec4(clamp(result,0.,1.),1.);
 }`;
 
+// Spatial anti-blocking + edge-adaptive reconstruction for live sport.
+// The output canvas is up to 2× source resolution; sample at pixel centers
+// rather than merely applying a CSS sharpen filter to already pixelated video.
+// This is a custom single-pass spatial method, NOT AMD's FSR implementation.
+// For actual neural super-resolution, capable devices run the WebGPU CNN.
+export const LIVE_RECONSTRUCT = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 outColor;
+uniform sampler2D u_video;
+uniform vec2 u_texel;
+
+vec3 sampleFrame(vec2 uv) {
+  return texture(u_video, clamp(uv, u_texel*.5, vec2(1.)-u_texel*.5)).rgb;
+}
+float luma(vec3 rgb) { return dot(rgb,vec3(.2126,.7152,.0722)); }
+
+void main() {
+  // Reconstruct at the output subpixel position (not rounded native pixels).
+  vec2 pixel=v_uv/u_texel-vec2(.5);
+  vec2 center=(floor(pixel)+vec2(.5))*u_texel;
+  vec2 f=fract(pixel);
+  vec3 a=sampleFrame(center);
+  vec3 b=sampleFrame(center+vec2(u_texel.x,0.));
+  vec3 c=sampleFrame(center+vec2(0.,u_texel.y));
+  vec3 d=sampleFrame(center+u_texel);
+  vec3 bilinear=mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+
+  vec3 n=sampleFrame(v_uv-vec2(0.,u_texel.y));
+  vec3 s=sampleFrame(v_uv+vec2(0.,u_texel.y));
+  vec3 w=sampleFrame(v_uv-vec2(u_texel.x,0.));
+  vec3 e=sampleFrame(v_uv+vec2(u_texel.x,0.));
+  vec3 native=sampleFrame(v_uv);
+  float horizontalEdge=abs(luma(w)-luma(e));
+  float verticalEdge=abs(luma(n)-luma(s));
+  float directionalStrength=smoothstep(.035,.22,max(horizontalEdge,verticalEdge));
+
+  // Follow the smoother direction near a high-contrast edge.
+  vec3 edgeAligned=(horizontalEdge<verticalEdge)?mix(w,e,.5):mix(n,s,.5);
+  vec3 reconstruction=mix(bilinear,edgeAligned,directionalStrength*.17);
+
+  // Suppress block/banding artifacts only on low-detail regions; do not
+  // oversharpen high-contrast football pitch lines, scoreboards or crests.
+  vec3 neighborhood=(n+s+w+e)*.25;
+  float localTexture=length(native-neighborhood);
+  float flat=1.-smoothstep(.025,.13,localTexture);
+  vec3 debanded=mix(reconstruction,neighborhood,flat*.14);
+  vec3 detail=reconstruction-neighborhood;
+  float gain=.26*(1.-smoothstep(.09,.36,localTexture));
+  vec3 low=min(native,min(n,min(s,min(e,w))));
+  vec3 high=max(native,max(n,max(s,max(e,w))));
+  vec3 result=clamp(debanded+detail*gain,low-.016,high+.016);
+  outColor=vec4(clamp(result,vec3(0.),vec3(1.)),1.);
+}`;
+
 function compile(gl: WebGL2RenderingContext, type: number, src: string) {
   const shader = gl.createShader(type);
   if (!shader) throw new Error("Could not allocate shader");
@@ -57,9 +112,9 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string) {
   }
   return shader;
 }
-function program(gl: WebGL2RenderingContext) {
+function program(gl: WebGL2RenderingContext, live: boolean) {
   const vs = compile(gl, gl.VERTEX_SHADER, VERTEX);
-  const fs = compile(gl, gl.FRAGMENT_SHADER, SHARPEN);
+  const fs = compile(gl, gl.FRAGMENT_SHADER, live ? LIVE_RECONSTRUCT : SHARPEN);
   const p = gl.createProgram();
   if (!p) throw new Error("Could not allocate program");
   gl.attachShader(p, vs);
@@ -208,7 +263,7 @@ export function useVideoEnhancer(
       gl=canvas.getContext("webgl2",{alpha:false,antialias:false,depth:false,stencil:false,
         desynchronized:true,powerPreference:"low-power"}) as WebGL2RenderingContext | null;
       if (!gl) throw new Error("WebGL2 not available");
-      shaderProgram=program(gl);
+      shaderProgram=program(gl,live);
       buffer=gl.createBuffer();
       texture=gl.createTexture();
       if (!buffer || !texture) throw new Error("WebGL allocation failed");

@@ -79,6 +79,7 @@ export function useNeuralVideoUpscaler(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   enabled: boolean,
   contentType: "movie" | "series" | "anime",
+  profile: "vod" | "live" = "vod",
 ): NeuralUpscalerResult {
   const [status, setStatus] = useState<Status>("idle");
   const [reason, setReason] = useState<string | null>(null);
@@ -105,6 +106,8 @@ export function useNeuralVideoUpscaler(
     let frameIntervalAvg = 0;
     let promoted = false;
     let networkSize: "s" | "m" = "s";
+    let lastDropped=0;
+    let lastTotal=0;
     previousAvg.current = 0;
     const abortController = new AbortController();
 
@@ -165,11 +168,13 @@ export function useNeuralVideoUpscaler(
         return;
       }
       try {
-        if(!eligibleForNeural2x(video.videoWidth,video.videoHeight)){
-          unavailable("Resolução aumentou; preservando a reprodução em alta definição");return;
+        if(!eligibleForNeural2x(video.videoWidth,video.videoHeight) ||
+           (profile==="live"&&(video.videoWidth>960||video.videoHeight>540))){
+          unavailable("Resolução aumentou; preservando a reprodução fluida");return;
         }
         const startedAt = performance.now();
-        await withinBudget(engine.render(video),900);
+        // A slow inference must never hold a live video pipeline hostage.
+        await withinBudget(engine.render(video),profile==="live"?250:900);
         if (cancelled) return;
         const spent = performance.now() - startedAt;
         previousAvg.current = previousAvg.current
@@ -185,7 +190,8 @@ export function useNeuralVideoUpscaler(
         // Never hide the native video after a single neural frame.
         // Prove near-real-time throughput before swapping the visible layer.
         if (!promoted && rendered >= 8) {
-          if (previousAvg.current > 22 || frameIntervalAvg > 55) {
+          if (previousAvg.current > (profile==="live"?18:22) ||
+              frameIntervalAvg > (profile==="live"?47:55)) {
             unavailable("Super-resolução abaixo da taxa de quadros necessária");
             return;
           }
@@ -193,9 +199,22 @@ export function useNeuralVideoUpscaler(
           setStatus("active");
         }
         if (promoted && rendered > 15 &&
-            (previousAvg.current > 34 || frameIntervalAvg > 70)) {
+            (previousAvg.current > (profile==="live"?22:34) ||
+             frameIntervalAvg > (profile==="live"?52:70))) {
           unavailable("Queda de FPS detectada; mantendo o vídeo original");
           return;
+        }
+        if(profile==="live" && rendered%24===0 &&
+           typeof video.getVideoPlaybackQuality==="function"){
+          const q=video.getVideoPlaybackQuality();
+          const total=q.totalVideoFrames-lastTotal;
+          const dropped=q.droppedVideoFrames-lastDropped;
+          const hadBaseline=lastTotal>0;
+          lastTotal=q.totalVideoFrames;
+          lastDropped=q.droppedVideoFrames;
+          if(hadBaseline&&total>=18 && dropped/total>.085){
+            unavailable("Decodificador sobrecarregado; preservando FPS do jogo");return;
+          }
         }
         // 48 ms for a few frames is normal while pipelines compile or the
         // GPU ramps up. Downgrade only after sustained severe pressure.
@@ -249,13 +268,15 @@ export function useNeuralVideoUpscaler(
         }
         await waitForFrame();
         if (cancelled) return;
-        if (!eligibleForNeural2x(video.videoWidth, video.videoHeight)) {
-          unavailable("Vídeo já possui resolução alta para o modelo IA 2×");
+        if (!eligibleForNeural2x(video.videoWidth, video.videoHeight) ||
+            (profile==="live"&&(video.videoWidth>960||video.videoHeight>540))) {
+          unavailable("Resolução acima do orçamento de IA em tempo real");
           return;
         }
         // Medium-capacity trained network on desktops with smaller source
         // frames; compact network on mobile and higher resolution sources.
-        networkSize = !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) &&
+        networkSize = profile!=="live" &&
+          !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) &&
           navigator.hardwareConcurrency>=12 && video.videoHeight<=360 ? "m" : "s";
         const weightsUrl = "/models/websr/" +
           (contentType === "anime" ? "animation" : "real-life") + "-" + networkSize + ".json";
@@ -285,6 +306,7 @@ export function useNeuralVideoUpscaler(
 
     const resetOnSwitch = () => {
       rendered=0;promoted=false;slowSince=0;previousAvg.current=0;
+      lastDropped=0;lastTotal=0;
       lastFrameCompletedAt=0;frameIntervalAvg=0;
       if (!cancelled) setStatus(previous => previous === "active" ? "loading" : previous);
     };
@@ -295,7 +317,7 @@ export function useNeuralVideoUpscaler(
       video.removeEventListener("loadstart", resetOnSwitch);
       stop();
     };
-  }, [enabled, contentType, videoRef, canvasRef]);
+  }, [enabled, contentType, videoRef, canvasRef, profile]);
 
   return { status, active: enabled && status === "active", reason, avgFrameMs };
 }

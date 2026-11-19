@@ -10,6 +10,8 @@ import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { useVideoEnhancer } from "./useVideoEnhancer";
+import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
+import { automaticHqEnabled, visibleLiveHqStatus } from "@/lib/automatic-hq";
 import {liveHqBackend,liveHqFilter} from "@/lib/live-hq-policy";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
 import { CastControl } from "./CastControl";
@@ -182,6 +184,7 @@ export function LivePlayer({
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hqCanvasRef = useRef<HTMLCanvasElement>(null);
+  const neuralCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsInstanceRef = useRef<{
@@ -236,12 +239,15 @@ export function LivePlayer({
     try{return clampVolume(localStorage.getItem(LIVE_VOL_KEY));}catch{return 1;}
   });
   const [isLiveEdge, setIsLiveEdge] = useState(true);
-  // TV HQ is opt-in. The native decoder and audio clock never stop while
-  // GPU work is prepared or when the source refuses canvas frame access.
-  const [hqEnabled,setHqEnabled]=useState(()=>{
-    if(typeof window==="undefined")return false;
-    try{return localStorage.getItem("zangflix:tv-hq")==="true";}catch{return false;}
-  });
+  // HQ starts automatically on every channel. An explicit previous user
+  // choice of "false" is honored after hydration; avoid a server/client
+  // markup mismatch from reading localStorage during the initial render.
+  const [hqEnabled,setHqEnabled]=useState(true);
+  useEffect(()=>{
+    let saved:string|null=null;
+    try{saved=window.localStorage.getItem("zangflix:tv-hq");}catch{}
+    setHqEnabled(automaticHqEnabled(saved));
+  },[]);
   const hqEnabledRef=useRef(hqEnabled);
   hqEnabledRef.current=hqEnabled;
   const [webglFailed,setWebglFailed]=useState(false);
@@ -252,13 +258,25 @@ export function LivePlayer({
       (typeof window!=="undefined"&&window.matchMedia("(pointer: coarse)").matches);
     return {mobile,cores:navigator.hardwareConcurrency||2,
       memoryGb:(navigator as Navigator&{deviceMemory?:number}).deviceMemory||4,
-      reducedMotion:typeof window!=="undefined"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches};
+      reducedMotion:typeof window!=="undefined"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      webgpu:"gpu" in navigator};
   },[]);
   const hqBackend=liveHqBackend({...hqDevice,...hqSourceSize});
+  const neuralWanted=hqEnabled&&hqBackend==="neural";
+  // Existing trained 2× CNN weights for *real footage* (not a CSS effect).
+  // Automatically fall back if live 50/60 fps decoding cannot keep up.
+  const neural=useNeuralVideoUpscaler(
+    videoRef,neuralCanvasRef,neuralWanted,"movie","live");
   const handleHqDowngrade=useCallback(()=>setWebglFailed(true),[]);
   const enhancer=useVideoEnhancer(videoRef,hqCanvasRef,
-    hqEnabled&&hqBackend==="webgl"&&!webglFailed,handleHqDowngrade,true);
-  const hqActive=hqEnabled&&enhancer.active&&!webglFailed;
+    hqEnabled&&!webglFailed&&
+      (hqBackend==="spatial"||(hqBackend==="neural"&&neural.status==="unavailable")),
+    handleHqDowngrade,true);
+  const hqStatus=visibleLiveHqStatus({
+    enabled:hqEnabled,neuralActive:neural.active,
+    spatialActive:enhancer.active&&!webglFailed,
+  });
+  const hqActive=hqStatus==="ai-2x"||hqStatus==="spatial";
   const measureLiveQuality=useCallback(()=>{
     const video=videoRef.current;
     if(!video)return;
@@ -1182,6 +1200,7 @@ export function LivePlayer({
       ref={containerRef}
       className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "") + (rotateLandscapeFallback ? " is-landscape-fallback" : "")}
       data-controls-visible={controlsVisible}
+      data-hq-renderer={hqStatus}
       onMouseMove={showControls}
       onTouchStart={showControls}
       onFocusCapture={showControls}
@@ -1202,11 +1221,15 @@ export function LivePlayer({
           transition:"opacity .12s ease",
         }}
       />
-      {/* Live HQ: actual WebGL resampling/sharpening on capable source GPUs.
-          Only reveal after 8 verified frames; native video always remains the
-          decoded audio master. Secure/cross-origin sources fall back instantly. */}
+      {/* HQ starts automatically: the real WebGPU CNN 2× is the first choice
+          on capable devices, then one-pass spatial edge reconstruction on
+          WebGL2. No canvas is shown until real frames have been processed;
+          decoding, audio, PiP and the low-latency clock remain on <video>. */}
+      <canvas ref={neuralCanvasRef}
+        className={"ydo-live-hq-canvas ydo-live-ai-canvas"+(hqStatus==="ai-2x"?" is-active":"")}
+        aria-hidden="true"/>
       <canvas ref={hqCanvasRef}
-        className={"ydo-live-hq-canvas"+(hqActive?" is-active":"")}
+        className={"ydo-live-hq-canvas ydo-live-spatial-canvas"+(hqStatus==="spatial"?" is-active":"")}
         aria-hidden="true"/>
 
       {/* Camada de clique: clicar no vídeo muta/desmuta (ao vivo nunca pausa) */}
@@ -1344,7 +1367,10 @@ export function LivePlayer({
             className={"zf-player-action zf-live-hq-button"+(hqEnabled?" is-on":"")}
             aria-pressed={hqEnabled}
             aria-label={hqEnabled?"Desativar melhoria de imagem HQ":"Ativar melhoria de imagem HQ"}
-            title={hqEnabled?(hqActive?"HQ · nitidez WebGL em tempo real":"HQ · qualidade de fonte + melhoria de cor compatível"):"HQ · melhorar imagem sem interromper o canal"}
+            title={hqStatus==="ai-2x"?"HQ IA · super-resolução neural 2× ativa":
+              hqStatus==="spatial"?"HQ · reconstrução espacial de pixels ativa":
+              hqEnabled?"HQ automático · qualidade de fonte e fallback seguro":
+                "Ativar HQ automático"}
             onClick={toggleHq}>
             <span aria-hidden="true">HQ</span><span className="zf-live-hq-dot" aria-hidden="true"/>
           </button>
@@ -1376,7 +1402,9 @@ export function LivePlayer({
                 <button type="button" className={"zf-player-menu-option"+(hqEnabled?" is-selected":"")}
                   onClick={toggleHq} aria-pressed={hqEnabled}>
                   <span className="zf-live-hq-menu-symbol" aria-hidden="true">HQ</span>
-                  <span>HQ · {hqEnabled?(hqActive?"Nitidez GPU ativa":"Melhoria compatível ativa"):"Melhorar imagem"}</span>
+                  <span>HQ · {hqStatus==="ai-2x"?"IA 2× real ativa":
+                    hqStatus==="spatial"?"Reconstrução de pixels":
+                    hqEnabled?(neural.status==="loading"?"Preparando IA…":"Melhoria adaptativa"):"Desativado"}</span>
                   <span className="zf-player-menu-hint">{hqEnabled?"Ligado":"Desligado"}</span>
                 </button>
                 <button type="button" className="zf-player-menu-option"
