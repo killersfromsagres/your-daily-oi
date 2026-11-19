@@ -1,0 +1,36 @@
+name: Verify sports deinterlace and neural 4x
+on:
+  push:
+    branches: [feat/sports-deinterlace-neural4x-20261119]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/player/LivePlayer.tsx"
+      - "src/components/player/useSportsDeinterlacer.ts"
+      - "src/components/player/useNeuralVideoUpscaler.ts"
+      - "src/components/player/useVideoEnhancer.ts"
+      - "src/lib/live-hq-policy.ts"
+      - "src/lib/automatic-hq.ts"
+      - "public/vendor/websr/websr.js"
+      - "tests/sports-deinterlace-neural4x.test.ts"
+      - ".github/workflows/verify-sports-deinterlace-neural4x.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Verify motion combing, source safety and real neural x4 cascade
+        run: bun test tests/sports-deinterlace-neural4x.test.ts tests/live-hq-adaptive.test.ts tests/neural-upscale-policy.test.ts tests/hq-render-policy.test.ts tests/hq-playback-policy.test.ts tests/live-latency.test.ts tests/live-playback-watchdog.test.ts tests/live-glass-player.test.ts tests/tv-mobile-player.test.ts
+      - name: Strict TV graphics and player typechecking
+        run: bun scripts/typecheck-tv.mjs
+      - name: Compile production app
+        run: bun run build
+      - name: Real Chrome mobile and desktop player control smoke
+        run: bun scripts/smoke-live-controls-layout.mjs
