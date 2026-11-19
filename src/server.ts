@@ -2094,19 +2094,16 @@ export default {
         const estadio=url.searchParams.get("estadio") || "";
         const cidade=url.searchParams.get("cidade") || "";
         const pais=url.searchParams.get("pais") || "";
-        const inicioIso=url.searchParams.get("inicio") || "";
-        const aoVivo=url.searchParams.get("aoVivo")==="1";
+        // Current rain is independent from the kickoff time; accept older
+        // clients' optional "inicio"/"aoVivo" arguments without requiring them.
         if (estadio.length>110 || cidade.length>100 || pais.length>32 ||
-            !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(inicioIso) ||
-            !Number.isFinite(Date.parse(inicioIso))) {
-          return jsonResponse({erro:"Local ou horário inválido"},400);
+            (!estadio.trim() && !cidade.trim())) {
+          return jsonResponse({erro:"Local do estádio inválido"},400);
         }
         try {
-          const result=await getRegionalPitchEstimate({
-            estadio,cidade,pais,inicioIso,aoVivo,
-          });
+          const result=await getRegionalPitchEstimate({estadio,cidade,pais});
           return jsonResponse(result || {condicao:"indisponivel",estimado:true},
-            200,"public, max-age=180, stale-while-revalidate=240");
+            200,"public, max-age=90, stale-while-revalidate=60");
         } catch(error) {
           console.warn("[PitchWeather] Dados regionais indisponíveis",error instanceof Error?error.name:"network");
           return jsonResponse({condicao:"indisponivel",estimado:true},200,"public, max-age=60");
