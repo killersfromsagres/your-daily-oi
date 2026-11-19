@@ -1,0 +1,49 @@
+name: Verify multi-source lineups and real frosted-glass portraits
+on:
+  push:
+    branches: [fix/lineup-real-photos-glass-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/sports/TeamLineupBoard.tsx"
+      - "src/components/sports/MatchLineups.tsx"
+      - "src/lib/football-lineups.ts"
+      - "src/lib/lineup-verified-portraits.ts"
+      - "src/lib/lineup-match-coaches.ts"
+      - "src/lib/lineup-lazy-portrait.ts"
+      - "src/lib/lineup-client-portraits.ts"
+      - "src/lib/lineup-image-route.ts"
+      - "src/styles/lineup-glass-premium.css"
+      - "src/server.ts"
+      - "tests/lineup-all-team-portraits.test.ts"
+      - ".github/workflows/verify-all-real-lineup-portraits.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Verified photos, identity, live manager metadata, tactical formation and safe image route
+        run: bun test tests/lineup-all-team-portraits.test.ts tests/lineup-premium-portraits.test.ts tests/football-providers-lineups.test.ts tests/lineup-tactics.test.ts tests/sports-ticket-lineup.test.ts tests/sports-results-and-streaming.test.ts
+      - name: Strict TypeScript for sports and portrait modules
+        run: bun scripts/typecheck-sports.mjs
+      - name: Production build
+        run: bun run build
+      - name: Diagnose real public lineup/photo API coverage
+        run: bun scripts/diagnose-real-lineup-providers.mjs
+      - name: Real browser layout (synthetic lineup fixture, no access-controlled live video)
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Visual screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-lineup-portraits-frosted-glass
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7

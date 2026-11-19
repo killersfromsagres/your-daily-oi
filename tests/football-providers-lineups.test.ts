@@ -127,7 +127,7 @@ describe("published lineups only",()=>{
     expect(ui).toContain('className="zf-lineup-single-button"');
     expect(ui).toContain('onClick={()=>setSide("home")}');
     expect(ui).toContain('onClick={()=>setSide("away")}');
-    expect(ui).toContain("<TeamLineupBoard team={selected}/>");
+    expect(ui).toContain("<TeamLineupBoard team={selected} gameId={game.id}/>");
     expect(board).toContain('className="zf-formation-pitch"');
     expect(board).toContain("buildTacticalLayout(team)");
     expect(board).not.toContain("zf-formation-bottom-box");

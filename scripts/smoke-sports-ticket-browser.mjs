@@ -368,7 +368,7 @@ try{
       coachPhotoWidth:coach?.querySelector(".zf-formation-coach-photo")?.getBoundingClientRect().width||0,
       portraits:portraits.length,
       portraitLinks:portraits.filter(p=>p.querySelector('img[src^="https://a.espncdn.com/"]')).length,
-      correctBackground:!!pitch&&getComputedStyle(pitch).backgroundImage.includes("rgb(22, 97, 74)"),
+      correctBackground:!!pitch&&(getComputedStyle(pitch).backgroundImage.includes("rgb(22, 97, 74)") || getComputedStyle(pitch).backgroundImage.includes("rgba(26, 112, 75")),
       maxWidth:modal?.getBoundingClientRect().width||0,
     };
   })()`);

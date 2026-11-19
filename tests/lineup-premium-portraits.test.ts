@@ -153,7 +153,7 @@ describe("evidence-driven lineup precision",()=>{
     expect(css).toContain("@media(max-width:760px)");
     expect(css).toContain('html[data-zf-platform="tv"]');
     expect(modal).toContain('import "@/styles/lineup-glass-premium.css"');
-    expect(modal).toContain("<TeamLineupBoard team={selected}/>");
+    expect(modal).toContain("<TeamLineupBoard team={selected} gameId={game.id}/>");
     expect(modal).toContain("lineupEvidence(data,selected");
     expect(modal).toContain("aria-modal=\"true\"");
   });

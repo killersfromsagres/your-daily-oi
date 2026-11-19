@@ -357,3 +357,118 @@ html[data-zf-platform="tv"] .zf-lineup-overlay .zf-formation-player strong {font
   .zf-lineup-overlay .zf-formation-player {transition:none;}
   .zf-lineup-overlay .zf-formation-portrait img {transition:none;}
 }
+
+/* 2026 — genuine frosted emerald. Keep backdrop blur within the dialogue
+   and the small sidebar cards; don't blur the moving page or every portrait. */
+.zf-lineup-overlay {
+  background:rgba(0,12,15,.56);
+  -webkit-backdrop-filter:blur(5px) saturate(110%);
+  backdrop-filter:blur(5px) saturate(110%);
+}
+.zf-lineup-overlay .zf-lineup-dialog {
+  width:min(1080px,100%);
+  border:1px solid rgba(209,255,232,.34);
+  border-radius:25px;
+  background:
+    radial-gradient(ellipse 75% 65% at -5% -15%,rgba(160,255,203,.13),transparent 75%),
+    linear-gradient(143deg,rgba(9,75,58,.74) 0%,rgba(6,47,43,.76) 43%,rgba(3,25,33,.81) 100%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.48),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 0 0 0 1px rgba(255,255,255,.035);
+}
+.zf-lineup-overlay .zf-lineup-dialog-header {
+  background:linear-gradient(180deg,rgba(211,255,234,.07),transparent);
+}
+.zf-lineup-overlay .zf-lineup-match-ribbon {
+  border-color:rgba(224,255,232,.30);
+  background:linear-gradient(110deg,rgba(243,255,246,.17),rgba(106,225,164,.075) 55%,rgba(244,255,247,.10));
+  -webkit-backdrop-filter:blur(9px);
+  backdrop-filter:blur(9px);
+  box-shadow:0 8px 24px rgba(0,0,0,.11),inset 0 1px rgba(255,255,255,.15);
+}
+.zf-lineup-overlay .zf-lineup-switch button {
+  border-color:rgba(219,255,231,.29);
+  background:rgba(239,255,239,.095);
+  -webkit-backdrop-filter:blur(7px);
+  backdrop-filter:blur(7px);
+}
+.zf-lineup-overlay .zf-lineup-switch button.is-active {
+  border-color:rgba(146,247,192,.75);
+  background:linear-gradient(142deg,rgba(195,255,219,.21),rgba(73,217,154,.12));
+  box-shadow:inset 0 1px rgba(255,255,255,.20),0 5px 17px rgba(0,0,0,.12);
+}
+.zf-lineup-overlay .zf-lineup-evidence {
+  border-color:rgba(220,255,232,.27);
+  background:rgba(255,255,255,.075);
+}
+.zf-lineup-overlay .zf-lineup-precision-note {
+  border-color:rgba(209,255,224,.20);
+  background:rgba(156,247,191,.095);
+}
+.zf-lineup-overlay .zf-formation-pitch {
+  border:1px solid rgba(210,255,222,.52);
+  background:
+    repeating-linear-gradient(180deg,rgba(233,255,240,.075) 0%,rgba(233,255,240,.075) 12.5%,rgba(4,58,39,.07) 12.5%,rgba(4,58,39,.07) 25%),
+    linear-gradient(149deg,rgba(26,112,75,.76),rgba(12,74,55,.77) 58%,rgba(3,48,41,.82));
+  box-shadow:
+    0 16px 39px rgba(0,0,0,.18),
+    inset 0 0 70px rgba(0,34,26,.22),
+    inset 0 1px rgba(255,255,255,.14);
+}
+.zf-lineup-overlay .zf-formation-coach,
+.zf-lineup-overlay .zf-formation-bench {
+  border:1px solid rgba(225,255,234,.30);
+  background:linear-gradient(148deg,rgba(216,255,232,.16),rgba(207,255,226,.07));
+  -webkit-backdrop-filter:blur(9px) saturate(120%);
+  backdrop-filter:blur(9px) saturate(120%);
+  box-shadow:0 10px 25px rgba(0,0,0,.12),inset 0 1px rgba(255,255,255,.14);
+}
+.zf-lineup-overlay .zf-formation-bench-player {
+  background:rgba(249,255,246,.075);
+  border:1px solid rgba(243,255,242,.10);
+}
+.zf-lineup-overlay .zf-formation-bench-player:hover {
+  background:rgba(225,255,231,.135);
+}
+.zf-lineup-overlay .zf-formation-player .zf-formation-portrait {
+  border-color:rgba(250,255,245,.97);
+  background:linear-gradient(145deg,rgba(166,227,190,.18),rgba(4,56,39,.68));
+  box-shadow:0 0 0 3px rgba(0,39,24,.5),0 9px 20px rgba(0,0,0,.27);
+}
+.zf-lineup-overlay .zf-formation-player .zf-formation-portrait[data-portrait="real"] {
+  border-color:rgba(252,255,248,.99);
+  box-shadow:0 0 0 3px rgba(123,237,174,.38),0 9px 20px rgba(0,0,0,.27);
+}
+.zf-lineup-overlay .zf-formation-player:focus-visible {
+  background:rgba(213,255,230,.12);
+  outline-color:rgba(220,255,228,.85);
+}
+@media(max-width:760px) {
+  .zf-lineup-overlay {
+    background:rgba(0,15,16,.72);
+    -webkit-backdrop-filter:blur(2px);
+    backdrop-filter:blur(2px);
+  }
+  .zf-lineup-overlay .zf-lineup-dialog {
+    border-radius:19px 19px 0 0;
+    -webkit-backdrop-filter:blur(7px) saturate(117%);
+    backdrop-filter:blur(7px) saturate(117%);
+  }
+  .zf-lineup-overlay .zf-lineup-match-ribbon,
+  .zf-lineup-overlay .zf-lineup-switch button,
+  .zf-lineup-overlay .zf-formation-coach,
+  .zf-lineup-overlay .zf-formation-bench {
+    -webkit-backdrop-filter:blur(4px);
+    backdrop-filter:blur(4px);
+  }
+}
+html[data-zf-platform="tv"] .zf-lineup-overlay .zf-lineup-dialog {
+  -webkit-backdrop-filter:blur(5px);
+  backdrop-filter:blur(5px);
+}
+@media(prefers-reduced-motion:reduce) {
+  .zf-lineup-overlay .zf-formation-player .zf-formation-portrait img {transition:none;}
+}
