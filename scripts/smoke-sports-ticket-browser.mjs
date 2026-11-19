@@ -188,6 +188,16 @@ try{
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
    jogos:[first,second,third,fourth],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
+ // Synthetic 2026 Brasileirão table; production zone rules remain under test.
+ const tableRows=Array.from({length:20},(_,i)=>({
+   id:"table_"+(i+1),position:i+1,name:"Clube "+(i+1),
+   abbreviation:"C"+(i+1),logo:null,points:81-i*2,
+   played:35,won:20-i,drawn:7,lost:8+i,goalDifference:35-i,
+   form:null,note:null,
+ }));
+ const standings={ligaId:"bra.1",liga:"Brasileirão Série A",
+   temporada:"2026",atualizadoEm:new Date().toISOString(),
+   grupos:[{id:"general",name:"Classificação geral",rows:tableRows}]};
  // Recorded provider roles from the exact match that exposed the LB/CB swap.
  // Mock only transport; parser, vocabulary and rendered ordering are production code.
  const recorded=JSON.parse(readFileSync("tests/fixtures/espn-moldova-kazakhstan-lineups.json","utf8"));
@@ -196,6 +206,7 @@ try{
    "/api/jogos-gramado":{condicao:"molhado",cidade:"Belo Horizonte",chuvaMm:1.2,
      resumo:"Chuva na região",estimado:true,fonte:"Open-Meteo"},
    "/api/jogos-escalacao":lineup,
+   "/api/futebol/tabela":standings,
    "/api/catalogo":{items:[],highlights:[],genres:[]}};
  await send("Page.addScriptToEvaluateOnNewDocument",{source:
    "(()=>{const original=window.fetch.bind(window);const mocks="+JSON.stringify(mocks)+
@@ -224,6 +235,28 @@ try{
     throw new Error("Reference image and borderless crests not applied: "+JSON.stringify(state));
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
     throw new Error("Match card must be brand-free, glass styled and aligned: "+JSON.stringify(state));
+  const board=await evaluate(`(()=>{
+    const panel=document.querySelector(".ztable-panel");
+    const rows=[...(panel?.querySelectorAll(".ztable-scroll tbody tr")||[])];
+    const count=kind=>rows.filter(row=>row.dataset.zone===kind).length;
+    const legend=[...(panel?.querySelectorAll(".ztable-legend-item")||[])].map(x=>x.textContent.trim());
+    const rect=panel?.getBoundingClientRect();
+    const scroll=panel?.querySelector(".ztable-scroll");
+    return {
+      rows:rows.length,libertadores:count("libertadores"),
+      pre:count("pre-libertadores"),sulamericana:count("sulamericana"),
+      relegation:count("relegation"),legend,
+      provisional:panel?.textContent?.includes("Faixas provisórias"),
+      panelWidth:rect?.width||0,scrollWidth:scroll?.scrollWidth||0,
+      viewportWidth:innerWidth,
+    };
+  })()`);
+  if(board.rows!==20||board.libertadores!==4||board.pre!==1||
+     board.sulamericana!==6||board.relegation!==4||
+     !board.provisional||board.legend.length!==4||
+     board.panelWidth>device.width+1)
+    throw new Error("Standings zone badges, legend or mobile width failed: "+
+      JSON.stringify({device,board}));
   if(!state.visibleLiveStatus||!state.visibleLiveMinute||!state.visibleLiveScore||!state.visibleReadyWatch||!state.trueFrostedGlass)
     throw new Error("Live pill, minute, score, 5-minute glow and true transparency must render: "+JSON.stringify(state));
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
@@ -301,6 +334,10 @@ try{
   await evaluate('Array.from(document.querySelectorAll(".zf-ticket")).find(card=>card.querySelector(".zf-lineup-single-button")?.getAttribute("aria-label")==="Ver escalações de Moldova e Kazakhstan").scrollIntoView({block:"center"})');
   await sleep(600);
   await screenshot(device.name+"-ticket");
+  await evaluate('document.querySelector(".ztable-group")?.scrollIntoView({block:"start"})');
+  await sleep(220);
+  await screenshot(device.name+"-standings-zones");
+  await evaluate('Array.from(document.querySelectorAll(".zf-ticket")).find(card=>card.querySelector(".zf-lineup-single-button")?.getAttribute("aria-label")==="Ver escalações de Moldova e Kazakhstan").scrollIntoView({block:"center"})');
   if(device.mobile){
     await evaluate('window.scrollTo(0,400)');
     await sleep(150);
