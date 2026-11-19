@@ -390,6 +390,12 @@
       "logo": "https://eitv6.cdn.broadpeak.io/account351-i1438/channel/53/quadrada_-3-_pequeno-1723832301.png"
     },
     {
+      "id": "curta",
+      "nome": "Curta",
+      "categoria": "Documentários",
+      "logo": "https://img.faz-o-eli.online/curta.png"
+    },
+    {
       "id": "dazn-jogo-1",
       "nome": "DAZN (Jogo 1)",
       "categoria": "Esportes"
@@ -1530,5 +1536,5 @@
       "logo": "https://img.faz-o-eli.online/xsports.png"
     }
   ],
-  "updatedAt": "2026-11-18T00:18:49.586Z"
+  "updatedAt": "2026-11-19T14:29:12.987Z"
 }
