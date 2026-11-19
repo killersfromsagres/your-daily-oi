@@ -12,6 +12,7 @@ import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
 import { CastControl } from "./CastControl";
 import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, preferredLiveLatencyMode, type LiveLatencyMode } from "@/lib/live-latency";
 import { usePlayerFullscreen } from "./usePlayerFullscreen";
+import "@/styles/live-glass-panels.css";
 import {
   sortStreamsByHealth,
   recordFailedSource,
