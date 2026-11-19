@@ -1,0 +1,43 @@
+name: Verify smooth Premiere playback and glass controls
+on:
+  push:
+    branches: [fix/smooth-premiere-glass-volume-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/live-latency.ts"
+      - "src/components/player/LivePlayer.tsx"
+      - "src/components/player/LiveVolumeControl.tsx"
+      - "src/styles/live-glass-panels.css"
+      - "tests/live-latency.test.ts"
+      - "tests/live-glass-player.test.ts"
+      - "scripts/smoke-tv-experience.mjs"
+      - ".github/workflows/verify-live-glass-sports.yml"
+  workflow_dispatch:
+
+permissions: { contents: read }
+
+jobs:
+  player:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Smooth sports, volume and watchdog regressions
+        run: bun test tests/live-latency.test.ts tests/live-playback-watchdog.test.ts tests/live-glass-player.test.ts tests/tv-experience.test.ts
+      - name: Strict type-check for TV player
+        run: bun scripts/typecheck-tv.mjs
+      - name: Production build
+        run: bun run build
+      - name: Browser test with self-generated, noncopyrighted video
+        run: bun scripts/smoke-tv-experience.mjs
+      - name: Browser screenshots for mobile and TV
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: premiere-glass-volume-browser
+          path: artifacts/live-tv-*.png
+          if-no-files-found: warn
+          retention-days: 7
