@@ -119,7 +119,7 @@ describe("match card progressive goals and non-collapsing broadcasters",()=>{
     expect(ui).toContain("onClick={()=>onWatch(ch.id)}");
     expect(ui).not.toContain("channelsExpanded");
     expect(ui).not.toContain("zf-ticket-channels-toggle");
-    expect(ui).toContain("homeGoals.slice(-2)");
+    expect(ui).toContain("goals.slice(-2)");
     expect(ui).toContain("goal.minute");
     expect(ui).toContain('className="zf-ticket-goals"');
   });
