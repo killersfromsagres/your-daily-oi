@@ -8,6 +8,7 @@ import { CompetitionIcon, FootballIcon } from "@/components/sports/FootballIcon"
 import { LeagueStandings } from "@/components/sports/LeagueStandings";
 import { MatchLineups } from "@/components/sports/MatchLineups";
 import { StadiumIcon } from "@/components/sports/StadiumIcon";
+import { PitchCondition } from "@/components/sports/PitchCondition";
 import { FootballSceneHeader, selectedFootballLeague } from "@/components/sports/FootballSceneHeader";
 import { featuredFootballMatches, mergeFootballScores, liveScoreLeagueIds, isBrazilFixture } from "@/lib/football-ranking";
 import {
@@ -23,6 +24,7 @@ import "@/styles/sports-match-tickets.css";
 import "@/styles/match-glass-premium.css";
 import "@/styles/football-reference-scene.css";
 import "@/styles/football-tv-remote.css";
+import "@/styles/sports-pitch-ui.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
@@ -168,10 +170,13 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
           <span className="zf-ticket-round" title={game.rodada || game.faseRotulo || game.liga}>
             {game.rodada || "PARTIDA"}
           </span>
-          <span className="zf-ticket-stadium">
-            <StadiumIcon size={27}/>
-            <span><small>ESTÁDIO</small><strong>{venue || "Local a confirmar"}</strong></span>
-            <MapPin size={17} aria-hidden="true" className="zf-ticket-stadium-pin"/>
+          <span className="zf-ticket-venue-card">
+            <span className="zf-ticket-stadium">
+              <StadiumIcon size={27}/>
+              <span><small>ESTÁDIO</small><strong>{venue || "Local a confirmar"}</strong></span>
+              <MapPin size={17} aria-hidden="true" className="zf-ticket-stadium-pin"/>
+            </span>
+            <PitchCondition game={game}/>
           </span>
         </div>
       </button>
@@ -183,10 +188,9 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
               (active ? " is-onair" : "")}
               type="button" onClick={() => onWatch(game.canalId!)}>
               <Tv size={20} aria-hidden="true"/>
-              <span><small>{"ASSISTIR NO CANAL · " + (channelStatus === "playing" ? "REPRODUÇÃO CONFIRMADA" :
-                channelStatus === "unavailable" ? "FONTE FALHOU · TENTAR NOVAMENTE" :
-                channelStatus === "connecting" ? "SINTONIZANDO CANAL…" :
-                "FONTE NÃO VERIFICADA")}</small><strong>{game.canalNome}</strong></span>
+              <span><small>{channelStatus === "unavailable" ? "TENTAR OUTRA FONTE" :
+                channelStatus === "connecting" ? "SINTONIZANDO…" :
+                "ASSISTIR NO CANAL"}</small><strong>{game.canalNome}</strong></span>
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {visual.highlightWatch && (
@@ -223,14 +227,25 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
             <ArrowRight size={18}/>
           </a>
         ) : game.canaisTransmissao?.length ? (
-          <div className="zf-ticket-identified"><Tv size={16}/>
-            <span>TRANSMISSORA IDENTIFICADA · {game.canaisTransmissao.join(" · ")} · sem fonte válida vinculada ao player</span>
-            {onExplore && (
-              <button className="zf-ticket-channels-toggle" type="button"
+          <div className="zf-ticket-channel-panel zf-ticket-channel-unlinked">
+            {onExplore ? (
+              <button className="zf-ticket-watch" type="button"
+                aria-label={"Ver canais de "+game.canaisTransmissao.join(", ")+" no ZANG FLIX"}
                 onClick={() => onExplore(exploreChannel)}>
-                Procurar canais no ZANG FLIX <ArrowRight size={14}/>
+                <Tv size={20} aria-hidden="true"/>
+                <span><small>TRANSMISSORA ANUNCIADA</small>
+                  <strong>{game.canaisTransmissao.join(" · ")}</strong></span>
+                <ArrowRight size={18} aria-hidden="true"/>
               </button>
+            ) : (
+              <div className="zf-ticket-unlinked-note">
+                <Tv size={17} aria-hidden="true"/>
+                <span>{game.canaisTransmissao.join(" · ")}</span>
+              </div>
             )}
+            <small className="zf-ticket-unlinked-hint">
+              Aguardando identificação de um canal correspondente no catálogo.
+            </small>
           </div>
         ) : (
           <div className="zf-ticket-pending">
