@@ -1,0 +1,32 @@
+name: Verify Premiere 403 playback fallback
+on:
+  push:
+    branches: [fix/premiere-source-403-feedback-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/lib/live-source.ts'
+      - 'src/lib/tv-official-fallback.ts'
+      - 'src/components/player/LivePlayer.tsx'
+      - 'tests/live-tv.test.ts'
+      - 'tests/tv-official-fallback.test.ts'
+      - '.github/workflows/verify-premiere-outage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  premiere:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Premiere fallback tests
+        run: bun test tests/live-tv.test.ts tests/tv-official-fallback.test.ts tests/tv-channel-connection.test.ts tests/live-playback-watchdog.test.ts
+      - name: Check television player types
+        run: bun scripts/typecheck-tv.mjs
+      - name: Verify production build
+        run: bun run build

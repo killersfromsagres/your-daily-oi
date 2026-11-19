@@ -6,6 +6,7 @@ import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
 import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
+import { officialTvFallback } from "@/lib/tv-official-fallback";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
@@ -275,6 +276,7 @@ export function LivePlayer({
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
   const allSourcesDenied = validStreams.length > 0 &&
     validStreams.every(source => accessDeniedSourcesRef.current.has(source.url));
+  const officialFallbackUrl = officialTvFallback(canal.id);
   const autoRetryPending = error && !allSourcesDenied &&
     nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length) !== null;
 
@@ -1090,6 +1092,17 @@ export function LivePlayer({
                 ? `Tentamos as ${validStreams.length} fontes cadastradas. Algumas podem estar bloqueadas ou fora do ar.`
                 : "O Zang Flix mantém este canal no catálogo, mas as fontes atuais estão temporariamente indisponíveis.")}
           </p>
+          {officialFallbackUrl && (
+            <a
+              className="ydo-btn-secondary"
+              href={officialFallbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={"Assistir " + canal.nome + " no serviço oficial, com assinatura"}
+            >
+              Assistir no Premiere oficial (requer assinatura)
+            </a>
+          )}
           <button
             className="ydo-btn-primary"
             onClick={() => {

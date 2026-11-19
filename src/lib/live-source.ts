@@ -115,8 +115,9 @@ export function buildLiveProxyPath(
 }
 
 /**
- * Audit 2026-11-14: 137 catalog entries served by *.cdn8embed.xyz returned
- * HTTP 403 from the US test runner. Previous audits flagged *.cdn13embed.xyz.
+ * Audit 2026-11-18: 137 sources on cdn10embed.xyz returned HTTP 403,
+ * including Premiere 2-8 and Premiere Clubes, from the US test runner.
+ * Earlier audits flagged cdn8embed.xyz and cdn13embed.xyz.
  * These hosts are not removed: network/region access may differ. Prefer a
  * separate origin for the SAME channel and leave the degraded host as fallback.
  * Source URLs, tokens, declared headers, and channel identities are untouched.
@@ -126,7 +127,8 @@ export function orderLiveSources<T extends LiveSourceLike>(sources: readonly T[]
     try {
       const host = new URL(source.url).hostname.toLowerCase();
       return host === "cdn13embed.xyz" || host.endsWith(".cdn13embed.xyz") ||
-        host === "cdn8embed.xyz" || host.endsWith(".cdn8embed.xyz");
+        host === "cdn8embed.xyz" || host.endsWith(".cdn8embed.xyz") ||
+        host === "cdn10embed.xyz" || host.endsWith(".cdn10embed.xyz");
     } catch { return false; }
   };
   // Reachable government broadcaster with wildcard CORS was observed to

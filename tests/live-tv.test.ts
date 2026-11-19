@@ -147,6 +147,14 @@ describe("Priorização de espelhos em canais fechados", () => {
     expect(orderLiveSources([blocked])).toEqual([blocked]);
   });
 
+  test("deprioritizes cdn10embed origins rejected by the live Premiere audit", () => {
+    const oldSource = { url:"https://d1.example.cdn10embed.xyz/premiere2/index.m3u8" };
+    const licensed = { url:"https://licensed.example/live/premiere2.m3u8" };
+    expect(orderLiveSources([oldSource, licensed])).toEqual([licensed, oldSource]);
+    // A single denied source cannot be repaired by sorting or fabricated.
+    expect(orderLiveSources([oldSource])).toEqual([oldSource]);
+  });
+
   test("does not accidentally penalize cdn8embed text in a path", () => {
     const good = {url:"https://independent.example/path/cdn8embed.xyz/live.m3u8"};
     const blocked = {url:"https://cdn8embed.xyz/live.m3u8"};
