@@ -1,0 +1,46 @@
+name: Verify Brave TV compatibility and native playback
+on:
+  push:
+    branches: [fix/brave-tv-playback-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/player/LivePlayer.tsx"
+      - "src/lib/live-browser-compat.ts"
+      - "src/styles/live-browser-compat.css"
+      - "scripts/typecheck-tv.mjs"
+      - "tests/live-brave-compat.test.ts"
+      - ".github/workflows/verify-brave-live-tv.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  brave-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Browser compat, proxy safety, native player and watchdog regressions
+        run: bun test tests/live-brave-compat.test.ts tests/live-tv.test.ts tests/tv-channel-connection.test.ts tests/live-playback-watchdog.test.ts tests/live-proxy-transport.test.ts tests/player-startup-recovery.test.ts tests/tv-experience.test.ts
+      - name: Strict TV player and Brave policy type check
+        run: bun scripts/typecheck-tv.mjs
+      - name: Production build
+        run: bun run build
+      - name: Prepare synthetic browser media
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Browser UI test without third-party live streams
+        run: bun scripts/smoke-tv-experience.mjs
+      - name: Preserve browser snapshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-brave-compat-browser
+          path: artifacts/live-tv-*.png
+          retention-days: 7
+          if-no-files-found: warn
