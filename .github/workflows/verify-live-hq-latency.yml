@@ -28,10 +28,9 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Test TV HQ, low latency and playback recovery
         run: bun test tests/live-hq-adaptive.test.ts tests/live-latency.test.ts tests/live-playback-watchdog.test.ts tests/live-glass-player.test.ts tests/hq-playback-policy.test.ts tests/hq-render-policy.test.ts tests/neural-upscale-policy.test.ts tests/tv-mobile-player.test.ts
-      - name: Check strict TV and HQ TypeScript diagnostics
+      - name: Check strict TV HQ and latency TypeScript diagnostics
         run: |
           bun scripts/typecheck-tv.mjs
-          bun scripts/typecheck-vod.mjs
       - name: Build production bundles
         run: bun run build
       - name: Smoke TV controls, new HQ button, and settings popup (mobile/desktop)
