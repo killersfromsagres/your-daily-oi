@@ -1,19 +1,34 @@
 // src/lib/live-latency.ts — pure low-latency policy for HLS/MPEG-TS/native live media.
 export type LiveLatencyMode = "fast" | "stable";
 
+/**
+ * Fast mode is opt-in for live sports: a short live-edge buffer and playback
+ * speed-up can look like frame dropping on a busy network or low-end TV.
+ * An explicit saved preference always wins over the channel default.
+ */
+export function preferredLiveLatencyMode(
+  category: string, channel: string, saved?: string | null,
+): LiveLatencyMode {
+  if (saved === "fast" || saved === "stable") return saved;
+  return /esport|sport|premiere|espn|combate|band\s*sports/i.test(category + " " + channel)
+    ? "stable" : "fast";
+}
+
 export function hlsLatencyOptions(mode: LiveLatencyMode) {
   const fast = mode === "fast";
-  // Distances are expressed in HLS target durations, never guessed seconds.
+  // Durations here use HLS target durations, not measured frame rates.
   return {
     enableWorker: true,
-    lowLatencyMode: true,
-    liveSyncDurationCount: fast ? 2 : 3,
-    liveMaxLatencyDurationCount: fast ? 6 : 9,
-    maxLiveSyncPlaybackRate: fast ? 1.08 : 1.04,
-    liveSyncOnStallIncrease: fast ? 0.75 : 1,
-    maxBufferLength: fast ? 8 : 18,
-    maxMaxBufferLength: fast ? 16 : 35,
-    backBufferLength: fast ? 12 : 28,
+    lowLatencyMode: fast,
+    liveSyncDurationCount: fast ? 3 : 4,
+    liveMaxLatencyDurationCount: fast ? 8 : 12,
+    // Playback-rate acceleration makes fast action look uneven on 50/60 Hz TVs.
+    // Stable mode plays at the source's natural cadence.
+    maxLiveSyncPlaybackRate: fast ? 1.03 : 1,
+    liveSyncOnStallIncrease: fast ? 1 : 2,
+    maxBufferLength: fast ? 12 : 24,
+    maxMaxBufferLength: fast ? 22 : 38,
+    backBufferLength: fast ? 14 : 22,
   };
 }
 
@@ -56,12 +71,16 @@ export function decideLiveCatchup(input: {
   if (!Number.isFinite(behind) || behind < 0 || paused || stalled) return { action:"none", behind:Math.max(0,behind || 0) };
   const target = Number.isFinite(input.syncPosition) ? input.syncPosition! : Math.max(0, edge - (mode === "fast" ? 2.5 : 5));
   const drift = target - current;
-  if (drift > (mode === "fast" ? 9 : 14) && bufferAhead > 0.35 && target > current + 0.5) {
+  // Avoid repeated seeks near the live edge; they can cause rebuffering
+  // and discontinuous motion while the broadcaster's sports stream is healthy.
+  if (drift > (mode === "fast" ? 14 : 30) &&
+      bufferAhead >= (mode === "fast" ? 2 : 4) && target > current + 0.5) {
     return { action:"seek", behind, position:target };
   }
   // hls.js owns playbackRate through its latency controller; do not fight it.
-  if (!hlsManaged && drift > (mode === "fast" ? 2 : 4) && bufferAhead >= 1.3) {
-    return { action:"speed", behind, rate:mode === "fast" ? 1.06 : 1.03 };
+  // Only the explicitly selected low-latency mode may accelerate native video.
+  if (!hlsManaged && mode === "fast" && drift > 3 && bufferAhead >= 2) {
+    return { action:"speed", behind, rate:1.03 };
   }
   return { action:"none", behind };
 }
