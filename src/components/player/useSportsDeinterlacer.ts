@@ -140,7 +140,10 @@ export function useSportsDeinterlacer(
      try{
        if(width!==video.videoWidth||height!==video.videoHeight){
          width=video.videoWidth;height=video.videoHeight;frame=0;
-         if(width>1280||height>720)throw Error("source above safe GPU field budget");
+         const mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+         if(width>1920||height>1080||
+            (mobile&&(width>1280||height>720)))
+           throw Error("source above safe GPU field budget");
          canvas.width=width;canvas.height=height;
          gl.viewport(0,0,width,height);
          for(const tex of textures){
