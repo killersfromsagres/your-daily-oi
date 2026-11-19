@@ -27,7 +27,7 @@ jobs:
       - name: Install project dependencies
         run: bun install --frozen-lockfile
       - name: Lineup identities, player portraits, coach photos and tactics
-        run: bun test tests/lineup-premium-portraits.test.ts tests/football-providers-lineups.test.ts tests/lineup-tactics.test.ts tests/sports-ticket-lineup.test.ts tests/sports-match-center.test.ts tests/sports-results-and-streaming.test.ts
+        run: bun test tests/lineup-premium-portraits.test.ts tests/football-providers-lineups.test.ts tests/lineup-tactics.test.ts tests/sports-ticket-lineup.test.ts tests/sports-results-and-streaming.test.ts
       - name: Strict sports and lineup type safety
         run: bun scripts/typecheck-sports.mjs
       - name: Compile production UI
