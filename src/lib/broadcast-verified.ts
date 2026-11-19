@@ -15,6 +15,8 @@ export interface BroadcastEvidence {
 }
 const REGION_ALIASES:Record<string,string> = {
   "atletico mineiro":"atletico mg","clube atletico mineiro":"atletico mg",
+  "sc corinthians sp":"corinthians","corinthians sp":"corinthians",
+  "botafogo rj":"botafogo","botafogo fr":"botafogo",
   "mirassol fc":"mirassol","mirassol futebol clube":"mirassol",
   "athletico paranaense":"athletico pr",
   "man united":"manchester united","psg":"paris saint germain",
@@ -38,6 +40,19 @@ const verified:readonly {
       names:["TV Globo","SporTV","ge TV"],
       source:"https://www.cnnbrasil.com.br/esportes/futebol/selecao-brasileira/brasil-x-japao-horario-e-onde-assistir-ao-amistoso-da-selecao/",
       checkedAt:"2026-11-13",
+    },
+  },
+  {
+    // Two independent match guides report Premiere, without identifying a
+    // particular numbered Premiere channel. Link the official broadcaster
+    // service instead of randomly selecting Premiere 2-8.
+    date:"2026-11-18",teams:["corinthians","botafogo"],
+    data:{
+      names:["Premiere"],
+      source:"https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/18/corinthians-x-botafogo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+      checkedAt:"2026-11-18",
+      watchUrl:"https://globoplay.globo.com/canais/premiere/",
+      exclusive:true,
     },
   },
   {
