@@ -267,14 +267,12 @@ export function LivePlayer({
       ?previous:{width,height});
   },[]);
   const toggleHq=useCallback(()=>{
-    setHqEnabled(previous=>{
-      const next=!previous;
-      if(next)setWebglFailed(false);
-      try{localStorage.setItem("zangflix:tv-hq",String(next));}catch{}
-      return next;
-    });
+    const next=!hqEnabled;
+    setHqEnabled(next);
+    if(next)setWebglFailed(false);
+    try{localStorage.setItem("zangflix:tv-hq",String(next));}catch{}
     measureLiveQuality();
-  },[measureLiveQuality]);
+  },[hqEnabled,measureLiveQuality]);
   const [latencyMode, setLatencyMode] = useState<LiveLatencyMode>(() => {
     if (typeof window === "undefined") return "fast";
     let saved: string | null = null;
