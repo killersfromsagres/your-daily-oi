@@ -10,8 +10,9 @@ import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
 import { CastControl } from "./CastControl";
-import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, type LiveLatencyMode } from "@/lib/live-latency";
+import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, preferredLiveLatencyMode, type LiveLatencyMode } from "@/lib/live-latency";
 import { usePlayerFullscreen } from "./usePlayerFullscreen";
+import "@/styles/live-glass-panels.css";
 import {
   sortStreamsByHealth,
   recordFailedSource,
@@ -215,7 +216,9 @@ export function LivePlayer({
   const [isLiveEdge, setIsLiveEdge] = useState(true);
   const [latencyMode, setLatencyMode] = useState<LiveLatencyMode>(() => {
     if (typeof window === "undefined") return "fast";
-    return window.localStorage.getItem("zangflix:live-latency-mode") === "stable" ? "stable" : "fast";
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem("zangflix:live-latency-mode"); } catch {}
+    return preferredLiveLatencyMode(canal.categoria, canal.nome, saved);
   });
   const [autoSwitchMsg, setAutoSwitchMsg] = useState<string | null>(null);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -248,6 +251,14 @@ export function LivePlayer({
   }, [sourcesOpen]);
 
   const [unmuteNotice, setUnmuteNotice] = useState(false);
+
+  // A persisted manual choice always wins; without one, sports open in
+  // the fluid buffer profile and ordinary channels keep the fast default.
+  useEffect(() => {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("zangflix:live-latency-mode"); } catch {}
+    setLatencyMode(preferredLiveLatencyMode(canal.categoria, canal.nome, saved));
+  }, [canal.id, canal.categoria, canal.nome]);
 
   // Reseta ao trocar de canal
   useEffect(() => {
@@ -1158,8 +1169,8 @@ export function LivePlayer({
                 <button type="button" className="zf-player-menu-option"
                   onClick={() => { toggleLatencyMode(); setSourcesOpen(false); }}>
                   <Gauge size={15} />
-                  <span>{latencyMode === "fast" ? "Menor atraso" : "Modo estável"}</span>
-                  <span className="zf-player-menu-hint">Alternar</span>
+                  <span>{latencyMode === "fast" ? "Menor atraso" : "Modo fluido · sem aceleração"}</span>
+                  <span className="zf-player-menu-hint">Trocar</span>
                 </button>
                 <button type="button" className="zf-player-menu-option"
                   onClick={() => { handlePiPToggle(); setSourcesOpen(false); }}>

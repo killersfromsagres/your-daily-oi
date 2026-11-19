@@ -11,7 +11,7 @@ const video=readFileSync(media),requests=[];
 const bundle=await Bun.build({entrypoints:['scripts/fixtures/tv-experience-harness.tsx'],bundle:true,target:'browser',format:'esm',write:false,define:{'process.env.NODE_ENV':'"production"'}});
 if(!bundle.success)throw Error(bundle.logs.join('\n'));
 const js=await bundle.outputs[0].text();
-const css=['src/styles.css','src/styles/player.css','src/styles/player-fullscreen.css','src/styles/server-selector.css','src/styles/tv.css','src/styles/adaptive-navigation.css','src/styles/live-controls-minimal.css','src/styles/tv-experience.css'].map(p=>readFileSync(p,'utf8')).join('\n');
+const css=['src/styles.css','src/styles/player.css','src/styles/player-fullscreen.css','src/styles/server-selector.css','src/styles/tv.css','src/styles/adaptive-navigation.css','src/styles/live-controls-minimal.css','src/styles/tv-experience.css','src/styles/live-glass-panels.css'].map(p=>readFileSync(p,'utf8')).join('\n');
 const server=Bun.serve({hostname:'127.0.0.1',port:4216,fetch(request){
  const url=new URL(request.url);
  let path=url.pathname;
