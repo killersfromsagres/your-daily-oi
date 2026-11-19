@@ -11,7 +11,7 @@ describe("Corinthians x Botafogo 18 November verified broadcaster", () => {
     const evidence = verifiedBroadcastEvidence(game);
     expect(evidence?.names).toEqual(["Premiere"]);
     expect(evidence?.exclusive).toBe(true);
-    expect(evidence?.watchUrl).toBe("https://globoplay.globo.com/canais/premiere/");
+    expect(evidence?.watchUrl).toBeUndefined();
     expect(evidence?.source).toContain("ge.globo.com/");
   });
 
@@ -40,12 +40,8 @@ describe("Corinthians x Botafogo 18 November verified broadcaster", () => {
 });
 
 describe("official live sports destination", () => {
-  test("permits the specific verified Premiere destination", () => {
-    expect(officialBroadcastTarget("https://globoplay.globo.com/canais/premiere/")).toEqual({
-      href: "https://globoplay.globo.com/canais/premiere/",
-      provider: "Premiere (Globoplay)",
-      subscriptionRequired: true,
-    });
+  test("never converts a Premiere website into an in-player stream or off-site action", () => {
+    expect(officialBroadcastTarget("https://globoplay.globo.com/canais/premiere/")).toBeNull();
   });
 
   test("keeps the already verified Prime Video fixture working", () => {
@@ -70,5 +66,12 @@ describe("official live sports destination", () => {
     expect(ui).toContain('channelPlayback?.[ch.id]');
     expect(ui).toContain('FONTE FALHOU · TENTAR NOVAMENTE');
     expect(ui).toContain("Outros canais");
+    expect(ui).toContain("onExplore?.(exploreChannel)");
+    expect(ui).toContain("Procurar canais no ZANG FLIX");
+    const tvUi=readFileSync("src/components/tv/TvView.tsx","utf8");
+    expect(tvUi).toContain('setQuery(channelName || "")');
+    expect(tvUi).toContain('setOnlineOnly(false)');
+    const scoreboard=readFileSync("src/lib/jogos.ts","utf8");
+    expect(scoreboard).toContain("else if (proof?.exclusive) parsed.transmissaoUrl = undefined;");
   });
 });
