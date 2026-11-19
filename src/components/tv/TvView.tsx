@@ -571,9 +571,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
               const channel = channels.find(c => c.id === id);
               if (channel) selectChannel(channel);
             }}
-            onExploreChannels={() => {
+            onExploreChannels={channelName => {
               setCategory("Esportes");
-              setOnlineOnly(true);
+              setOnlineOnly(false);
+              setQuery(channelName || "");
               setQuery("");
               window.setTimeout(() => document.getElementById("ztv-explore")?.scrollIntoView({ behavior: "smooth" }), 40);
             }}
