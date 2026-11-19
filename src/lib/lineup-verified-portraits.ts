@@ -51,7 +51,9 @@ function sameClub(a:unknown,b:unknown):boolean{
 }
 export function samePerson(espnName:string,espnId:string,other:DirectoryPlayer):"id"|"name"|null {
   const linked=String(other.idESPN||"").trim();
-  if(linked&&/^\d+$/.test(linked)){
+  // TheSportsDB uses "0" to mean no ESPN cross-reference. Do not
+  // reject an otherwise exact teammate match because of that sentinel.
+  if(linked&&/^\d+$/.test(linked)&&linked!=="0"){
     return linked===espnId?"id":null;
   }
   const otherNames=[other.strPlayer,other.strPlayerAlternate].filter(Boolean);
