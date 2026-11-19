@@ -441,7 +441,7 @@ export function LivePlayer({
       const hlsManaged = Boolean(hlsInstanceRef.current?.engineManagesLatency);
       const decision = decideLiveCatchup({
         edge, current:video.currentTime,
-        syncPosition:hlsInstanceRef.current?.liveSyncPosition,
+        syncPosition:hlsInstanceRef.current?.liveSyncPosition??undefined,
         bufferAhead, stalled:video.readyState < 3,
         paused:video.paused, mode:latencyMode, hlsManaged,
       });
@@ -1023,10 +1023,10 @@ export function LivePlayer({
               setHq:enabled=>{
                 // The HLS ABR engine can change level cap without reloading
                 // the playlist, avoiding a blackout when HQ is clicked.
-                hls.capLevelToPlayerSize=!enabled;
+                (hls as unknown as {capLevelToPlayerSize:boolean}).capLevelToPlayerSize=!enabled;
               },
               setPlaybackSafety:enabled=>{
-                hls.config.maxLiveSyncPlaybackRate=enabled?1:
+                (hls as unknown as {config:{maxLiveSyncPlaybackRate:number}}).config.maxLiveSyncPlaybackRate=enabled?1:
                   hlsLatencyOptions(latencyMode).maxLiveSyncPlaybackRate;
               },
             };
