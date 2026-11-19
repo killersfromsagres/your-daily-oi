@@ -63,12 +63,12 @@ export function zoneFromSourceNote(note:string|null):StandingZoneId|null {
   if(/promot|acesso|ascens|subida/.test(n)){
     return /play.?off|repesc|disputa/.test(n)?"promotion-playoff":"promotion";
   }
-  if(/libertador/.test(n))return /pre.?libert|prelim|qualif|fase [123]/.test(n)
+  if(/libertador/.test(n))return /pre.?libert|prelim|(?:fase|phase) [123]|(?:qualifying|qualification) (?:round|stage|phase|play.?off)/.test(n)
     ?"pre-libertadores":"libertadores";
   if(/sudamericana|sul.?americana/.test(n))return /play.?off|repesc/.test(n)
     ?"sudamericana-playoff":"sulamericana";
   if(/champions league|liga dos campeoes|liga de campeones/.test(n)){
-    return /qualif|prelim|play.?off/.test(n)?"pre-champions":"champions";
+    return /prelim|(?:qualifying|qualification) (?:round|stage|phase|play.?off)|\bplay.?off\b/.test(n)?"pre-champions":"champions";
   }
   if(/conference league|liga conferencia|liga de conferencia/.test(n))return "conference";
   if(/europa league|liga europa/.test(n))return "europa";
