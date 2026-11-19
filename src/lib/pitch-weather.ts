@@ -125,7 +125,7 @@ export function estimatePitchFromCurrent(
   };
   const current = forecast.current;
   if (!current || typeof current.time !== "string") return unavailable;
-  const timestamp = Date.parse(/(?:Z|[+-]\\d\\d:\\d\\d)$/.test(current.time)
+  const timestamp = Date.parse(/(?:Z|[+-]\d\d:\d\d)$/.test(current.time)
     ? current.time : current.time + "Z");
   if (!Number.isFinite(timestamp) ||
       Math.abs(now.getTime() - timestamp) > 90 * 60_000) return unavailable;
