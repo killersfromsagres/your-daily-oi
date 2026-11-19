@@ -19,6 +19,9 @@ export function hlsLatencyOptions(mode: LiveLatencyMode) {
   // Durations here use HLS target durations, not measured frame rates.
   return {
     enableWorker: true,
+    // Avoid decoding 4K ABR variants inside small player viewports.
+    // Fullscreen can still select a matching high-resolution rendition.
+    capLevelToPlayerSize: true,
     lowLatencyMode: fast,
     liveSyncDurationCount: fast ? 3 : 4,
     liveMaxLatencyDurationCount: fast ? 8 : 12,
