@@ -2097,7 +2097,7 @@ export default {
         const inicioIso=url.searchParams.get("inicio") || "";
         const aoVivo=url.searchParams.get("aoVivo")==="1";
         if (estadio.length>110 || cidade.length>100 || pais.length>32 ||
-            !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}/.test(inicioIso) ||
+            !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(inicioIso) ||
             !Number.isFinite(Date.parse(inicioIso))) {
           return jsonResponse({erro:"Local ou horário inválido"},400);
         }
