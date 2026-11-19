@@ -35,6 +35,8 @@ jobs:
         run: bun scripts/typecheck-sports.mjs
       - name: Production build
         run: bun run build
+      - name: Diagnose real public lineup/photo API coverage
+        run: bun scripts/diagnose-real-lineup-providers.mjs
       - name: Real browser layout (synthetic lineup fixture, no access-controlled live video)
         run: bun scripts/smoke-sports-ticket-browser.mjs
       - name: Visual screenshots
