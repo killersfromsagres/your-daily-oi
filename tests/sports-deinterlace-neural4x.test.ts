@@ -45,6 +45,8 @@ describe("football motion deinterlace before neural enlargement",()=>{
     expect(code).toContain("video.requestVideoFrameCallback");
     expect(code).toContain("video.getVideoPlaybackQuality");
     expect(code).toContain("gl.texImage2D");
+    expect(code).toContain("width>1920||height>1080");
+    expect(code).toContain("(mobile&&(width>1280||height>720))");
     expect(code).toContain("lastTotal>0");
     expect(code).toContain('disable("GPU deinterlace too slow")');
   });
