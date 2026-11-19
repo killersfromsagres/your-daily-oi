@@ -7,13 +7,16 @@
 export function automaticHqEnabled(value:string|null|undefined):boolean {
   return value!=="false";
 }
-export type LiveHqMode="neural"|"spatial"|"native";
-export type LiveHqStatus="ai-2x"|"spatial"|"native"|"off";
+export type LiveHqMode="neural-4x"|"neural"|"spatial"|"native";
+export type LiveHqStatus="ai-4x"|"ai-2x"|"spatial"|"deinterlace"|"native"|"off";
 export function visibleLiveHqStatus(input:{
   enabled:boolean;neuralActive:boolean;spatialActive:boolean;
+  neural4xActive?:boolean;deinterlaceActive?:boolean;
 }):LiveHqStatus {
   if(!input.enabled)return "off";
+  if(input.neural4xActive)return "ai-4x";
   if(input.neuralActive)return "ai-2x";
   if(input.spatialActive)return "spatial";
+  if(input.deinterlaceActive)return "deinterlace";
   return "native";
 }
