@@ -1,0 +1,44 @@
+name: Verify live stadium weather and score alignment
+on:
+  push:
+    branches: [fix/score-crest-alignment-live-weather-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/pitch-weather.ts"
+      - "src/components/sports/PitchCondition.tsx"
+      - "src/components/tv/JogosShelf.tsx"
+      - "src/styles/sports-pitch-ui.css"
+      - "src/server.ts"
+      - "tests/sports-current-weather-alignment.test.ts"
+      - "scripts/smoke-sports-ticket-browser.mjs"
+      - ".github/workflows/verify-live-pitch-score.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  match-score-weather:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Live rain, venue geolocation, goal/crest and football regressions
+        run: bun test tests/sports-current-weather-alignment.test.ts tests/sports-pitch-weather.test.ts tests/sports-ticket-lineup.test.ts tests/sports-results-and-streaming.test.ts tests/jogos-match.test.ts tests/football-ranking.test.ts
+      - name: Sports and weather TypeScript
+        run: bun scripts/typecheck-sports.mjs
+      - name: Production bundle
+        run: bun run build
+      - name: Chrome browser visual and TV focus checks (synthetic scores/weather)
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Save browser screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: score-alignment-weather-cards
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7

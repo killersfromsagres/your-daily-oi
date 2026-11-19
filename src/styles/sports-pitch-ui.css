@@ -197,3 +197,179 @@
   .zf-ticket-premium .zf-ticket-pitch-copy strong {font-size: 12px;}
   .zf-ticket-premium .zf-ticket-pitch-copy small {font-size: 9px;}
 }
+
+
+/* Score alignment: home/away goals use the same three columns as the crests.
+   The match clock is on its own centered line rather than stealing space from
+   the away goal. Applies to desktop, mobile and Smart TV player grids. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams,
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+  column-gap: clamp(6px, .75vw, 12px);
+  align-items: center;
+  justify-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+  height: 154px;
+  min-height: 154px;
+  flex: 0 0 154px;
+  padding-block: 12px 10px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-team {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-vs {
+  padding: 0;
+  align-self: center;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row {
+  height: 38px;
+  min-height: 38px;
+  margin: 2px 0 6px;
+  flex: 0 0 38px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-height: 118px;
+  height: 118px;
+  max-height: 118px;
+  width: 100%;
+  gap: 5px;
+  padding: 9px 0 7px;
+  margin: 0 0 2px;
+  overflow: hidden;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-pair {
+  flex: 0 0 auto;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-pair > strong {
+  display: block;
+  text-align: center;
+  width: 100%;
+  min-width: 0;
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-pair > .zf-ticket-score-dash {
+  text-align: center;
+  align-self: center;
+  justify-self: center;
+  font-size: 21px;
+  color: rgba(231,249,241,.58);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-phase {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  min-width: 0;
+  min-height: 25px;
+  width: calc(100% - 24px);
+  margin: 0 12px;
+  padding: 6px 2px 0;
+  gap: 9px;
+  border-left: 0;
+  border-top: 1px solid rgba(235,255,245,.15);
+  text-align: center;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-phase small {
+  font-size: 10px;
+  letter-spacing: .06em;
+  line-height: 1.25;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-phase strong {
+  font-size: 15px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-empty {
+  padding-inline: 12px;
+  margin: auto;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+  box-sizing: border-box;
+  min-height: 118px;
+  height: 118px;
+  max-height: 118px;
+  flex: 0 0 118px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-match-meta {
+  margin: 0;
+  justify-content: flex-start;
+  min-height: 0;
+  flex: 0 0 auto;
+  padding: 9px 0 2px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card {
+  min-height: 112px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card .zf-ticket-stadium,
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card .zf-ticket-pitch {
+  height: 56px;
+  min-height: 56px;
+  max-height: 56px;
+  flex: 0 0 56px;
+  padding: 8px 12px;
+  overflow: hidden;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card .zf-ticket-stadium strong,
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-pitch-copy strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.25;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-pitch-copy small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-pitch-copy strong {
+  font-size: clamp(11px, .95vw, 13px);
+}
+@media (max-width: 610px) {
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+    height: 152px;
+    min-height: 152px;
+    flex-basis: 152px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+    min-height: 114px;
+    height: 114px;
+    max-height: 114px;
+  }
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-pair {
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+  min-height: 126px;
+  height: 126px;
+  max-height: 126px;
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row {
+  min-height: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}

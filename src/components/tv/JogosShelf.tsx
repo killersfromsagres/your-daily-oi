@@ -138,7 +138,9 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
         {visual.showScore ? (
           <div className="zf-ticket-score-panel" aria-label={"Placar: " + visual.scoreHome + " a " + visual.scoreAway}>
             <span className="zf-ticket-score-pair">
-              <strong>{visual.scoreHome}</strong><span aria-hidden="true">–</span><strong>{visual.scoreAway}</strong>
+              <strong className="zf-ticket-score-home" aria-label={"Gols de " + game.casa + ": " + visual.scoreHome}>{visual.scoreHome}</strong>
+              <span className="zf-ticket-score-dash" aria-hidden="true">–</span>
+              <strong className="zf-ticket-score-away" aria-label={"Gols de " + game.fora + ": " + visual.scoreAway}>{visual.scoreAway}</strong>
             </span>
             <span className="zf-ticket-score-phase">
               <small>{active ? (visual.periodLabel || "EM ANDAMENTO") : "RESULTADO"}</small>
