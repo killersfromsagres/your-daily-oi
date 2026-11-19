@@ -1,0 +1,44 @@
+name: Verify football standings zone colors
+on:
+  push:
+    branches: [feat/standings-color-zones-20261119]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/standings-zones.ts"
+      - "src/lib/standings.ts"
+      - "src/components/sports/LeagueStandings.tsx"
+      - "src/styles/league-standings.css"
+      - "scripts/smoke-sports-ticket-browser.mjs"
+      - "scripts/typecheck-sports.mjs"
+      - "tests/standings-zones.test.ts"
+      - ".github/workflows/verify-standings-zones.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  zones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Regulations, soccer standings parsing and color mappings
+        run: bun test tests/standings-zones.test.ts tests/standings.test.ts tests/sports-ticket-lineup.test.ts tests/sports-results-and-streaming.test.ts
+      - name: Strict sports TypeScript
+        run: bun scripts/typecheck-sports.mjs
+      - name: Compile production application
+        run: bun run build
+      - name: Responsive sports/standings browser and TV smoke
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Preserve screenshots of position zones and legends
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standings-zones-mobile-desktop
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7
