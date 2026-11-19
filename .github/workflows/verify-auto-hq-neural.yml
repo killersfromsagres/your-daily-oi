@@ -1,0 +1,36 @@
+name: Verify automatic neural HQ and spatial video recovery
+on:
+  push:
+    branches: [feat/auto-hq-ai-video-20261119]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/player/LivePlayer.tsx"
+      - "src/components/player/OwnPlayer.tsx"
+      - "src/components/player/useNeuralVideoUpscaler.ts"
+      - "src/components/player/useVideoEnhancer.ts"
+      - "src/lib/live-hq-policy.ts"
+      - "src/lib/automatic-hq.ts"
+      - "tests/live-hq-adaptive.test.ts"
+      - "scripts/smoke-live-controls-layout.mjs"
+      - ".github/workflows/verify-auto-hq-neural.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-hq:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Test trained CNN model weights, automatic HQ and low-latency fallback
+        run: bun test tests/live-hq-adaptive.test.ts tests/neural-upscale-policy.test.ts tests/hq-render-policy.test.ts tests/hq-playback-policy.test.ts tests/live-latency.test.ts tests/live-playback-watchdog.test.ts tests/live-glass-player.test.ts tests/tv-mobile-player.test.ts
+      - name: Strict HQ modules TypeScript diagnostics
+        run: bun scripts/typecheck-tv.mjs
+      - name: Build production application
+        run: bun run build
+      - name: Responsive live player, automatic HQ and fullscreen smoke
+        run: bun scripts/smoke-live-controls-layout.mjs
