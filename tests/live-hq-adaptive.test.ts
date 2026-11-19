@@ -28,7 +28,7 @@ describe("live player HQ quality and latency policy",()=>{
    const css=readFileSync("src/styles/live-hq-adaptive.css","utf8");
    expect(live).toContain('localStorage.setItem("zangflix:tv-hq"');
    expect(live).toContain("useVideoEnhancer(videoRef,hqCanvasRef");
-   expect(live).toContain("hls.capLevelToPlayerSize=!enabled");
+   expect(live).toContain("capLevelToPlayerSize=!enabled");
    expect(live).toContain("onLoadedMetadata={measureLiveQuality}");
    expect(live).toContain("aria-label={hqEnabled?");
    expect(live).toContain("setPlaybackSafety:enabled");
