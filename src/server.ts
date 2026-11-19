@@ -13,6 +13,7 @@ import { getJogosHoje, getJogosPlacares } from "./lib/jogos";
 import { getRegionalPitchEstimate } from "./lib/pitch-weather";
 import { getMatchLineups } from "./lib/football-lineups";
 import { serveLineupPhoto } from "./lib/lineup-image-route";
+import { lookupMatchPersonPhoto } from "./lib/lineup-lazy-portrait";
 import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
@@ -2108,6 +2109,20 @@ export default {
         } catch(error) {
           console.warn("[PitchWeather] Dados regionais indisponíveis",error instanceof Error?error.name:"network");
           return jsonResponse({condicao:"indisponivel",estimado:true},200,"public, max-age=60");
+        }
+      }
+      if (url.pathname === "/api/lineup-pessoa") {
+        if(request.method!=="GET")return jsonResponse({erro:"Método inválido"},405);
+        const jogo=url.searchParams.get("jogo")||"";
+        const person=url.searchParams.get("pessoa")||"";
+        const papel=url.searchParams.get("papel")||"player";
+        if(!["player","coach"].includes(papel))return jsonResponse({erro:"Papel inválido"},400);
+        try{
+          const photo=await lookupMatchPersonPhoto(jogo,person,papel);
+          return jsonResponse({photo},200,"public, max-age=600, stale-while-revalidate=3600");
+        }catch(e){
+          if(e instanceof RangeError)return jsonResponse({erro:"Identificação inválida"},400);
+          return jsonResponse({photo:null},200,"public, max-age=60");
         }
       }
       if (url.pathname === "/api/lineup-foto") {
