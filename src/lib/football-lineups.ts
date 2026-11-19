@@ -3,14 +3,16 @@
 import { LIGAS_FUTEBOL, normalizeSoccerName } from "./jogos-match";
 import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
 import { enrichKnownLineupPhotos, photoFromSportsDbRecord } from "./lineup-photo-source";
+import { enrichESPNPortraits } from "./lineup-verified-portraits";
 export type { PlayerPosition } from "./football-positions";
 export interface LineupPlayer {
   id:string;name:string;number:string|null;position:string;
-  group:PlayerPosition;photo:string|null;grid:string|null;
+  group:PlayerPosition;photo:string|null;photoFallback?:string|null;grid:string|null;
 }
 export interface LineupCoach {name:string;photo:string|null;id?:string|null;}
 export interface LineupTeam {
   name:string;formation:string|null;crest:string|null;
+  espnTeamId?:string|null;
   coach:LineupCoach|null;starting:LineupPlayer[];substitutes:LineupPlayer[];
 }
 export interface MatchLineups {
@@ -160,6 +162,7 @@ export function parseESPNLineups(jogo:string,raw:ESPNSummary):MatchLineups {
       });
     return {
       name:nameOf(item.team?.displayName||item.team?.name||form?.team?.displayName)||"Equipe",
+      espnTeamId:item.team?.id||form?.team?.id||null,
       formation:nameOf(item.formation||form?.formation)||null,
       crest:safePhoto(item.team?.logo||form?.team?.logo),coach:crew,
       // Never render more than eleven as confirmed. A malformed provider
@@ -210,7 +213,12 @@ export async function getMatchLineups(jogo:string):Promise<MatchLineups>{
       const response=await fetch(url,{signal:AbortSignal.timeout(5500),headers:{Accept:"application/json"}});
       if(!response.ok)throw new Error("ESPN lineup HTTP "+response.status);
       const json=await response.json() as ESPNSummary;
-      payload=parseESPNLineups(jogo,json);
+      const parsed=parseESPNLineups(jogo,json);
+      // Match ESPN athlete IDs to the verified TheSportsDB roster of this
+      // exact team before showing alternative face portraits.
+      payload={...parsed,equipes:await enrichESPNPortraits(
+        parsed.equipes,league==="bra.1"?"BR":undefined,
+      )};
     }
     // A complete XI can still receive corrections before kickoff or during play.
     cache.set(jogo,{until:Date.now()+60_000,data:payload});
