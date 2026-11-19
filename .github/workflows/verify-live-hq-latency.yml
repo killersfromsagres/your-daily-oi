@@ -1,0 +1,38 @@
+name: Verify live HQ and adaptive low latency
+on:
+  push:
+    branches: [feat/live-hq-adaptive-low-latency-20261119]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/player/LivePlayer.tsx"
+      - "src/components/player/useVideoEnhancer.ts"
+      - "src/lib/live-latency.ts"
+      - "src/lib/live-hq-policy.ts"
+      - "src/styles/live-hq-adaptive.css"
+      - "tests/live-hq-adaptive.test.ts"
+      - "tests/live-latency.test.ts"
+      - "scripts/smoke-live-controls-layout.mjs"
+      - ".github/workflows/verify-live-hq-latency.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Test TV HQ, low latency and playback recovery
+        run: bun test tests/live-hq-adaptive.test.ts tests/live-latency.test.ts tests/live-playback-watchdog.test.ts tests/live-glass-player.test.ts tests/hq-playback-policy.test.ts tests/hq-render-policy.test.ts tests/neural-upscale-policy.test.ts tests/tv-mobile-player.test.ts
+      - name: Check strict TV and HQ TypeScript diagnostics
+        run: |
+          bun scripts/typecheck-tv.mjs
+          bun scripts/typecheck-vod.mjs
+      - name: Build production bundles
+        run: bun run build
+      - name: Smoke TV controls, new HQ button, and settings popup (mobile/desktop)
+        run: bun scripts/smoke-live-controls-layout.mjs
