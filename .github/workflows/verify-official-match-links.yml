@@ -1,0 +1,32 @@
+name: Verify official football TV match links
+on:
+  push:
+    branches: [fix/verified-premiere-match-links-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/lib/official-broadcast.ts'
+      - 'src/lib/broadcast-verified.ts'
+      - 'src/components/tv/JogosShelf.tsx'
+      - 'src/components/tv/TvView.tsx'
+      - 'tests/verified-premiere-broadcast.test.ts'
+      - '.github/workflows/verify-official-match-links.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sports-tv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Validate broadcaster identity, verified rights and match cards
+        run: bun test tests/verified-premiere-broadcast.test.ts tests/jogos-broadcast.test.ts tests/sports-broadcast-verified.test.ts tests/sports-results-and-streaming.test.ts
+      - name: Check sports types
+        run: bun scripts/typecheck-sports.mjs
+      - name: Build player and football match UI
+        run: bun run build
