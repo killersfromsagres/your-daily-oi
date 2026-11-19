@@ -10,7 +10,18 @@ export interface PitchEstimate {
   estimado: true;
   fonte: "Open-Meteo";
 }
-type Forecast = {hourly?:{time?:string[];precipitation?:number[];rain?:number[];weather_code?:number[]}};
+type Forecast = {
+  hourly?:{time?:string[];precipitation?:number[];rain?:number[];weather_code?:number[]};
+  current?: {
+    /** UTC current 15-minute model data; a regional estimate, not a turf sensor. */
+    time?: string;
+    interval?: number;
+    precipitation?: number;
+    rain?: number;
+    showers?: number;
+    weather_code?: number;
+  };
+};
 
 const norm = (s:string) => (s || "").normalize("NFD")
   .replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -100,6 +111,46 @@ export function estimatePitchFromForecast(
   };
 }
 
+/**
+ * Current precipitation near the match venue. A zero value and non-rain WMO
+ * code mean dry WEATHER; no statement is made about turf irrigation/drainage.
+ * Open-Meteo current fields are 15-minute modeled data, not station sensors.
+ */
+export function estimatePitchFromCurrent(
+  forecast: Forecast, city: string, now: Date = new Date(),
+): PitchEstimate {
+  const unavailable: PitchEstimate = {
+    condicao: "indisponivel", cidade: city, chuvaMm: null,
+    resumo: "Condições atuais não disponíveis", estimado: true, fonte: "Open-Meteo",
+  };
+  const current = forecast.current;
+  if (!current || typeof current.time !== "string") return unavailable;
+  const timestamp = Date.parse(/(?:Z|[+-]\\d\\d:\\d\\d)$/.test(current.time)
+    ? current.time : current.time + "Z");
+  if (!Number.isFinite(timestamp) ||
+      Math.abs(now.getTime() - timestamp) > 90 * 60_000) return unavailable;
+
+  const valid = (x: unknown): x is number =>
+    typeof x === "number" && Number.isFinite(x) && x >= 0;
+  const amounts = [current.precipitation, current.rain, current.showers].filter(valid);
+  const code = current.weather_code;
+  const hasCode = typeof code === "number" && Number.isFinite(code);
+  if (!amounts.length && !hasCode) return unavailable;
+  const raining = amounts.some(x => x > 0) ||
+    (hasCode && ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) ||
+      (code >= 95 && code <= 99)));
+  const total = valid(current.precipitation)
+    ? current.precipitation
+    : (valid(current.rain) ? current.rain : 0) +
+      (valid(current.showers) ? current.showers : 0);
+  return {
+    condicao: raining ? "molhado" : "seco",
+    cidade: city, chuvaMm: Math.round(total * 100) / 100,
+    resumo: raining ? "Chuva ou garoa agora na região" : "Sem chuva ou garoa agora na região",
+    estimado: true, fonte: "Open-Meteo",
+  };
+}
+
 const geocache=new Map<string,{point:{lat:number;lon:number}|null;expires:number}>();
 const estimateCache=new Map<string,{value:PitchEstimate;expires:number}>();
 function limitedSet<K,V>(map:Map<K,V>,key:K,value:V){
@@ -125,31 +176,33 @@ async function pointForCity(city:string,country?:string):Promise<{lat:number;lon
   limitedSet(geocache,key,{point,expires:Date.now()+12*60*60_000});
   return point;
 }
-export async function getRegionalPitchEstimate(input:{
-  estadio?:string;cidade?:string;pais?:string;inicioIso:string;aoVivo:boolean;
-}, now=new Date()):Promise<PitchEstimate|null>{
-  const city=resolveVenueCity(input.estadio,input.cidade);
-  if(!city)return null;
-  const when=input.aoVivo?now.getTime():Date.parse(input.inicioIso);
-  if(!Number.isFinite(when) || Math.abs(when-now.getTime())>7*86400000)return null;
-  const country=normalizedCountryCode(input.pais)||
-    (resolveVenueCity(input.estadio)?"BR":undefined);
-  const key=[norm(city),country||"",Math.floor(when/3600000)].join("|");
-  const cached=estimateCache.get(key);
-  if(cached&&cached.expires>Date.now())return cached.value;
-  const point=await pointForCity(city,country);
-  if(!point)return null;
-  const url=new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude",String(point.lat));
-  url.searchParams.set("longitude",String(point.lon));
-  url.searchParams.set("hourly","precipitation,rain,weather_code");
-  url.searchParams.set("timezone","UTC");
-  url.searchParams.set("past_days","3");
-  url.searchParams.set("forecast_days","7");
-  const response=await fetch(url,{signal:AbortSignal.timeout(6200)});
-  if(!response.ok)throw Error("Weather unavailable");
-  const forecast=await response.json() as Forecast;
-  const value=estimatePitchFromForecast(forecast,new Date(when).toISOString(),city);
-  limitedSet(estimateCache,key,{value,expires:Date.now()+10*60_000});
+export async function getRegionalPitchEstimate(input: {
+  estadio?: string; cidade?: string; pais?: string;
+  /** Retained only for call compatibility; pitch UI displays current conditions. */
+  inicioIso?: string; aoVivo?: boolean;
+}, now = new Date()): Promise<PitchEstimate | null> {
+  const city = resolveVenueCity(input.estadio, input.cidade);
+  if (!city) return null;
+  const country = normalizedCountryCode(input.pais) ||
+    (resolveVenueCity(input.estadio) ? "BR" : undefined);
+  // Use a 3-minute server cache; live conditions are refreshed by the client.
+  const key = [norm(city), country || "", Math.floor(now.getTime() / 180_000)].join("|");
+  const hit = estimateCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+
+  const point = await pointForCity(city, country);
+  if (!point) return null;
+  const url = new URL("https://api.open-meteo.com/v1/forecast");
+  url.searchParams.set("latitude", String(point.lat));
+  url.searchParams.set("longitude", String(point.lon));
+  url.searchParams.set("current", "precipitation,rain,showers,weather_code");
+  url.searchParams.set("timezone", "UTC");
+  url.searchParams.set("forecast_days", "1");
+  const response = await fetch(url, { signal: AbortSignal.timeout(6200) });
+  if (!response.ok) throw new Error("Current weather unavailable");
+  const value = estimatePitchFromCurrent(await response.json() as Forecast, city, now);
+  if (value.condicao !== "indisponivel") {
+    limitedSet(estimateCache, key, { value, expires: Date.now() + 3 * 60_000 });
+  }
   return value;
 }
