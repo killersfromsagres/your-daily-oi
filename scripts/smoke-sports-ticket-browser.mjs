@@ -181,7 +181,8 @@ try{
          {id:"goal_b",team:"away",scorer:"João Pedro",minute:"82′"}]};
  // Same-grid scheduled fixtures with differing broadcaster counts for QA.
  const third={...first,id:"fifa.friendly:99999",casa:"Uruguai",fora:"Chile",
-   horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
+   horarioLocal:"18:30",inicioIso:new Date(Date.now()+3*60*60_000).toISOString(),
+   canalId:null,canalNome:null,canaisDisponiveis:[],
    canaisTransmissao:["Premiere"],transmissao:"nao-confirmada",destaque:false};
  const fourth={...first,id:"bra.1:99997",casa:"Cruzeiro",fora:"Palmeiras",
    liga:"Brasileirão Série A",ligaId:"bra.1",grupo:"brasileirao",
