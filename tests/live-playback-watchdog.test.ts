@@ -28,11 +28,14 @@ describe("live channel stalled playback",()=>{
 
 
 describe("automatic recovery after exhausted channel sources", () => {
-  test("retries with progressively longer delays and then stops", () => {
+  test("retries transient stream failures with capped backoff instead of giving up", () => {
     expect(nextLiveAutoRetryDelay(0, 1)).toBe(2000);
     expect(nextLiveAutoRetryDelay(1, 3)).toBe(6000);
     expect(nextLiveAutoRetryDelay(2, 1)).toBe(15000);
-    expect(nextLiveAutoRetryDelay(3, 1)).toBeNull();
+    expect(nextLiveAutoRetryDelay(3, 1)).toBe(30000);
+    expect(nextLiveAutoRetryDelay(4, 1)).toBe(60000);
+    expect(nextLiveAutoRetryDelay(5, 1)).toBe(120000);
+    expect(nextLiveAutoRetryDelay(30, 1)).toBe(120000);
     expect(nextLiveAutoRetryDelay(0, 0)).toBeNull();
     expect(nextLiveAutoRetryDelay(-1, 1)).toBeNull();
   });

@@ -46,7 +46,7 @@ function normalize(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 // Avoid replacing a currently playing channel with offline-only snapshot metadata.
-import { retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
+import { retainLiveCatalogOnMetadataOutage, reuseUnchangedLiveChannels } from "@/lib/tv-catalog-recovery";
 
 function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
   if (a.length !== b.length) return false;
@@ -54,10 +54,12 @@ function sameChannels(a: CanalTV[], b: CanalTV[]): boolean {
     const other = b[i];
     return other?.id === c.id && other.nome === c.nome &&
       other.logo === c.logo && other.categoria === c.categoria &&
+      other.indisponivel === c.indisponivel &&
       c.fontes.length === other.fontes.length &&
       c.fontes.every((source, j) => {
         const alt = other.fontes[j];
-        return alt?.url === source.url && alt.referer === source.referer &&
+        return alt?.url === source.url && alt.nome === source.nome &&
+          alt.qualidade === source.qualidade && alt.referer === source.referer &&
           alt.agente === source.agente && alt.chave === source.chave &&
           alt.formato === source.formato;
       });
@@ -99,6 +101,9 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [channels, setChannels] = useState<CanalTV[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeId, setActiveId] = useState(initialCanalId || "");
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
+  const verifiedPlayingChannelRef = useRef<string | null>(null);
   // Hydration-safe: load localStorage after mount, not during the SSR render.
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
@@ -113,6 +118,8 @@ export function TvView({ initialCanalId }: TvViewProps) {
   const [playerLoading, setPlayerLoading] = useState(true);
   const [channelPlayback, setChannelPlayback] = useState<Record<string, "connecting" | "playing" | "unavailable">>({});
   const onChannelPlayback = useCallback((id: string, status: "connecting" | "playing" | "unavailable") => {
+    if (status === "playing") verifiedPlayingChannelRef.current = id;
+    else if (verifiedPlayingChannelRef.current === id) verifiedPlayingChannelRef.current = null;
     setChannelPlayback(previous => previous[id] === status ? previous : {...previous, [id]: status});
   }, []);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -190,8 +197,12 @@ export function TvView({ initialCanalId }: TvViewProps) {
 
   const applyCatalog = useCallback((data: CatalogResponse) => {
     setChannels(previous => {
-      const safe = retainLiveCatalogOnMetadataOutage(previous, data.canais);
-      return sameChannels(previous, safe) ? previous : safe;
+      const safe = retainLiveCatalogOnMetadataOutage(previous, data.canais, {
+        channelId: activeIdRef.current,
+        playbackConfirmed: verifiedPlayingChannelRef.current === activeIdRef.current,
+      });
+      const reconciled = reuseUnchangedLiveChannels(previous, safe);
+      return sameChannels(previous, reconciled) ? previous : reconciled;
     });
     setCategories(data.categorias || []);
     setUpdatedAt(data.atualizadoEm || new Date().toISOString());
@@ -200,6 +211,10 @@ export function TvView({ initialCanalId }: TvViewProps) {
       // A metadata-only refresh must never switch away from the channel
       // that is already playing in the browser session.
       if (previous && !data.canais.some(c => c.fontes.length > 0)) return previous;
+      // A partial metadata outage must not navigate away from a verified
+      // live channel just because another channel still has source URLs.
+      if (previous && verifiedPlayingChannelRef.current === previous &&
+          !data.canais.some(c => c.id === previous && c.fontes.length > 0)) return previous;
       const requested = initialChannelRef.current;
       if (requested && data.canais.some(c => c.id === requested)) return requested;
       if (previous && data.canais.some(c => c.id === previous && c.fontes.length > 0)) return previous;

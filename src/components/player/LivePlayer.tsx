@@ -273,7 +273,10 @@ export function LivePlayer({
   }, [canal.id, validStreams, onPlaybackStatus]);
 
   const rawFonte: FonteTV | undefined = validStreams[sourceIndex];
-  const autoRetryPending = error && nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length) !== null;
+  const allSourcesDenied = validStreams.length > 0 &&
+    validStreams.every(source => accessDeniedSourcesRef.current.has(source.url));
+  const autoRetryPending = error && !allSourcesDenied &&
+    nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length) !== null;
 
   // Seleciona a rota de proxy efetivamente disponível no deploy.
   // O catálogo remoto pode estar atualizado, enquanto o backend da Vercel
@@ -438,7 +441,6 @@ export function LivePlayer({
     // network, but the app must not look like it is loading forever.
     if (validStreams.length > 0 &&
         validStreams.every(source => accessDeniedSourcesRef.current.has(source.url))) {
-      autoRetryCountRef.current = 3;
       setErrorDetail("As fontes deste canal recusaram o acesso ou foram removidas. Tente novamente mais tarde ou escolha outro canal.");
     }
     setLoading(false);
@@ -453,7 +455,9 @@ export function LivePlayer({
   // botão manual. Espera a aba ficar visível, com backoff e tentativas finitas.
   useEffect(() => {
     const delay = nextLiveAutoRetryDelay(autoRetryCountRef.current, validStreams.length);
-    if (!error || delay === null) return;
+    // Provider access refusals are terminal until a fresh catalog or manual
+    // retry; do not keep hammering a 401/403/410/removed origin.
+    if (!error || allSourcesDenied || delay === null) return;
 
     let retryTimer: number | null = null;
     let disposed = false;
@@ -496,7 +500,7 @@ export function LivePlayer({
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", schedule);
     };
-  }, [error, validStreams, canal.id]);
+  }, [error, allSourcesDenied, validStreams, canal.id]);
 
   // Android WebView explicitly pauses <video> when its Activity goes into
   // background. The native shell resumes the WebView but not media playback.

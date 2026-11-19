@@ -1,0 +1,31 @@
+name: Verify TV reconnection
+on:
+  push:
+    branches: [fix/tv-reconnection-premiere-20261118]
+  pull_request:
+    paths:
+      - 'src/lib/tv-catalog-recovery.ts'
+      - 'src/components/tv/TvView.tsx'
+      - 'src/lib/live-latency.ts'
+      - 'src/components/player/LivePlayer.tsx'
+      - 'tests/tv-catalog-recovery.test.ts'
+      - 'tests/live-playback-watchdog.test.ts'
+      - '.github/workflows/verify-tv-reconnection.yml'
+  workflow_dispatch:
+
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: TV and player regression tests
+        run: bun test tests/tv-catalog-recovery.test.ts tests/live-playback-watchdog.test.ts tests/live-tv.test.ts tests/tv-channel-connection.test.ts
+      - name: TV TypeScript check
+        run: bun scripts/typecheck-tv.mjs
+      - name: Production build
+        run: bun run build
