@@ -575,7 +575,6 @@ export function TvView({ initialCanalId }: TvViewProps) {
               setCategory("Esportes");
               setOnlineOnly(false);
               setQuery(channelName || "");
-              setQuery("");
               window.setTimeout(() => document.getElementById("ztv-explore")?.scrollIntoView({ behavior: "smooth" }), 40);
             }}
           />
