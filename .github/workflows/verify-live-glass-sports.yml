@@ -31,6 +31,12 @@ jobs:
         run: bun scripts/typecheck-tv.mjs
       - name: Production build
         run: bun run build
+      - name: Install synthetic media encoder if missing
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
       - name: Browser test with self-generated, noncopyrighted video
         run: bun scripts/smoke-tv-experience.mjs
       - name: Browser screenshots for mobile and TV
