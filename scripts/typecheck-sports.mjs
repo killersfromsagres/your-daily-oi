@@ -6,7 +6,7 @@ const run = spawnSync("bunx",["tsc","--noEmit","--pretty","false"],{
 const lines=(run.stdout+"\n"+run.stderr).split(/\r?\n/);
 const diagnostics=lines.filter(line=>/^src\/.*error TS\d+:/.test(line));
 const relevant=diagnostics.filter(line=>
- /^src\/lib\/(?:jogos|jogos-match|football-ranking|broadcast-match|pitch-weather|standings|football-lineups|football-positions|lineup-tactics|lineup-selection)\.ts\(/.test(line) ||
+ /^src\/lib\/(?:jogos|jogos-match|football-ranking|broadcast-match|pitch-weather|standings|football-lineups|lineup-photo-source|lineup-evidence|football-positions|lineup-tactics|lineup-selection)\.ts\(/.test(line) ||
  (() => { const epgLine=line.match(/^src\/lib\/epg\.ts\((\d+),/); return !!epgLine && Number(epgLine[1]) >= 449; })() ||
  /^src\/components\/(?:tv\/JogosShelf|sports\/(?:LeagueStandings|PitchCondition|MatchLineups|TeamLineupBoard))\.tsx\(/.test(line) ||
  /^src\/routes\/futebol\.tsx\(/.test(line) ||
@@ -14,7 +14,7 @@ const relevant=diagnostics.filter(line=>
 );
 console.log(JSON.stringify({event:"sports-typecheck",newModuleErrors:relevant.length,
  legacyProjectErrors:diagnostics.length-relevant.length,
- checked:["jogos.ts","jogos-match.ts","pitch-weather.ts","PitchCondition.tsx","football-ranking.ts","football-lineups.ts","football-positions.ts","lineup-tactics.ts","MatchLineups.tsx","TeamLineupBoard.tsx","epg.ts new matcher (legacy EPG errors excluded)","JogosShelf.tsx","futebol.tsx","server sports route"]}));
+ checked:["jogos.ts","jogos-match.ts","pitch-weather.ts","PitchCondition.tsx","football-ranking.ts","football-lineups.ts","lineup-photo-source.ts","lineup-evidence.ts","football-positions.ts","lineup-tactics.ts","MatchLineups.tsx","TeamLineupBoard.tsx","epg.ts new matcher (legacy EPG errors excluded)","JogosShelf.tsx","futebol.tsx","server sports route"]}));
 for(const err of relevant)console.error(err);
 if(run.error)throw run.error;
 if(relevant.length)process.exit(1);
