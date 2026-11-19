@@ -1,0 +1,48 @@
+name: Verify football auto-broadcasts and stadium pitch UI
+on:
+  push:
+    branches: [fix/football-broadcast-pitch-ui-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/lib/jogos.ts"
+      - "src/lib/jogos-match.ts"
+      - "src/lib/football-ranking.ts"
+      - "src/lib/broadcast-verified.ts"
+      - "src/lib/pitch-weather.ts"
+      - "src/components/tv/JogosShelf.tsx"
+      - "src/components/tv/TvView.tsx"
+      - "src/components/sports/PitchCondition.tsx"
+      - "src/styles/sports-pitch-ui.css"
+      - "src/server.ts"
+      - "tests/sports-pitch-weather.test.ts"
+      - "tests/verified-premiere-broadcast.test.ts"
+      - "tests/tv-official-fallback.test.ts"
+      - ".github/workflows/verify-pitch-match-ui.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  match-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Pitch meteorology, broadcaster matching, live score and layout regression
+        run: bun test tests/sports-pitch-weather.test.ts tests/verified-premiere-broadcast.test.ts tests/tv-official-fallback.test.ts tests/jogos-broadcast.test.ts tests/sports-broadcast-verified.test.ts tests/sports-ticket-lineup.test.ts tests/sports-results-and-streaming.test.ts tests/football-ranking.test.ts tests/jogos-match.test.ts
+      - name: Sports type verification including new weather modules
+        run: bun scripts/typecheck-sports.mjs
+      - name: Build production UI and weather API
+        run: bun run build
+      - name: Chrome responsive football match cards and D-pad layout
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Save inspected screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: football-card-pitch-weather-visual
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7
