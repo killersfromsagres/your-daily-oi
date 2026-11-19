@@ -29,7 +29,7 @@ describe("lineup photo integrity",()=>{
     expect(providerPhoto("javascript:alert(1)")).toBeNull();
     expect(providerPhoto("https://user:password@a.espncdn.com/headshot.png")).toBeNull();
     expect(photoFromSportsDbRecord({strCutout:"https://r2.thesportsdb.com/cut.png",strThumb:"https://r2.thesportsdb.com/thumb.png"}))
-      .toContain("cut.png");
+      .toContain("thumb.png");
   });
   test("bounded lookup uses the exact published ID, leaves name and position untouched",async()=>{
     const realFetch=globalThis.fetch;
@@ -76,6 +76,33 @@ describe("lineup photo integrity",()=>{
       expect(enriched.equipes[0]?.coach?.name).toBe("Técnico Certo");
       expect(enriched.equipes[0]?.coach?.photo).toContain("923811101.png");
     }finally{globalThis.fetch=realFetch;}
+  });
+  test("reversed ESPN boxscore form order never swaps coaches between teams",()=>{
+    const data=parseESPNLineups("bra.1:12345",{
+      rosters:[
+        {team:{id:"11",displayName:"Casa"},roster:[]},
+        {team:{id:"22",displayName:"Fora"},roster:[]},
+      ],
+      boxscore:{form:[
+        {team:{id:"22",displayName:"Fora"},formation:"5-3-2",
+          coach:{displayName:"Técnico Visitante",headshot:{href:"https://a.espncdn.com/away.png"}}},
+        {team:{id:"11",displayName:"Casa"},formation:"4-4-2",
+          coach:{displayName:"Técnico Mandante",headshot:{href:"https://a.espncdn.com/home.png"}}},
+      ]},
+    });
+    expect(data.equipes[0]?.coach?.name).toBe("Técnico Mandante");
+    expect(data.equipes[0]?.coach?.photo).toBe("https://a.espncdn.com/home.png");
+    expect(data.equipes[0]?.formation).toBe("4-4-2");
+    expect(data.equipes[1]?.coach?.name).toBe("Técnico Visitante");
+    expect(data.equipes[1]?.formation).toBe("5-3-2");
+  });
+  test("unknown form team never assigns another team's manager",()=>{
+    const data=parseESPNLineups("bra.1:12345",{
+      rosters:[{team:{id:"11",displayName:"Casa"},roster:[]}],
+      boxscore:{form:[{team:{id:"99",displayName:"Outra Equipe"},
+        coach:{displayName:"Técnico Errado"}}]},
+    });
+    expect(data.equipes[0]?.coach).toBeNull();
   });
   test("ESPN headshot from the actual roster is used for the correct athlete",()=>{
     const data=parseESPNLineups("bra.1:12345",{rosters:[{
