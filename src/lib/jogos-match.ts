@@ -12,6 +12,10 @@ export interface JogoBrasileirao {
   rodada: string | undefined;
   /** Optional stadium from the source — never inferred. */
   estadio?: string | undefined;
+  /** Stadium municipality from the fixture provider, when explicitly supplied. */
+  cidadeEstadio?: string | undefined;
+  /** Optional stadium country for reliable geocoding on international fixtures. */
+  paisEstadio?: string | undefined;
   liga: string;
   ligaId: string;
   ligaLogo: string | null;
@@ -116,7 +120,7 @@ export function fixturePriority(j: JogoBrasileirao): number {
 type ESPNTeam = { homeAway?: string; score?: string | number; team?: { id?: string; displayName?: string; shortDisplayName?: string; logo?: string; logos?: { href?: string }[] } };
 type ESPNCompetition = {
   date?: string;
-  venue?: { fullName?: string; name?: string };
+  venue?: { fullName?: string; name?: string; address?: { city?:string; country?:string; countryCode?:string } };
   competitors?: ESPNTeam[];
   notes?: { headline?: string }[];
   broadcasts?: { market?: string; names?: string[] }[];
@@ -229,6 +233,8 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
     inicioIso: start.toISOString(),
     dataLocal: data, rodada: competition?.notes?.[0]?.headline || undefined,
     estadio: competition?.venue?.fullName || competition?.venue?.name || undefined,
+    cidadeEstadio: competition?.venue?.address?.city || undefined,
+    paisEstadio: competition?.venue?.address?.countryCode || competition?.venue?.address?.country || undefined,
     liga: liga.name, ligaId: liga.id, ligaLogo: null, grupo: liga.grupo,
     status, fase: phase.fase, faseRotulo: phase.rotulo, minuto: phase.minuto,
     placarCasa: parseScore(home.score), placarFora: parseScore(away.score),

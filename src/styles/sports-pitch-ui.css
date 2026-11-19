@@ -1,0 +1,199 @@
+/* Football card repair — short, readable cards with stadium + local rain estimate.
+   Loaded after legacy green-glass ticket styles to prevent a narrow column
+   from displaying broadcast names one letter at a time. */
+.zgame-grid .zgame-card.zf-ticket.zf-ticket-premium,
+.zf-football-grid .zgame-card.zf-ticket.zf-ticket-premium {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: 0;
+  height: auto;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-main {
+  min-width: 0;
+  width: 100%;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-match-meta {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 9px 0 2px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(212, 255, 238, .3);
+  background: linear-gradient(160deg, rgba(199,255,233,.075),rgba(24,109,88,.06));
+  border-radius: 13px;
+  box-shadow: inset 0 1px rgba(255,255,255,.09);
+  text-align: left;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card .zf-ticket-stadium {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 51px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow-wrap: normal;
+}
+.zf-ticket-premium .zf-ticket-stadium > span {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-pitch {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 51px;
+  padding: 9px 12px;
+  border-top: 1px solid rgba(231,255,244,.14);
+  color: #f4f9f7;
+  background: rgba(255,255,255,.018);
+  text-transform: none;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-pitch > svg {
+  width: 27px;
+  height: 27px;
+  color: #fff;
+  flex: 0 0 27px;
+}
+.zf-ticket-premium .zf-ticket-pitch-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  gap: 3px;
+  min-width: 0;
+}
+.zf-ticket-premium .zf-ticket-pitch-copy small {
+  display: block;
+  color: rgba(223,247,238,.66);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .075em;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.zf-ticket-premium .zf-ticket-pitch-copy strong {
+  display: block;
+  min-width: 0;
+  color: #f7fcf9;
+  font-size: clamp(11px,.96vw,13px);
+  font-weight: 850;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.zf-ticket-premium .zf-ticket-pitch.is-molhado strong {color: #a8ddfc;}
+.zf-ticket-premium .zf-ticket-pitch.is-seco strong {color: #d8f6dc;}
+.zf-ticket-premium .zf-ticket-pitch.is-indisponivel strong {color: #d8e2df;}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-broadcast {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  min-height: 0;
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px 10px;
+  overflow: visible;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-panel,
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-unlinked,
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-identified {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: stretch;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.zf-ticket-premium .zf-ticket-watch {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+.zf-ticket-premium .zf-ticket-watch > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+.zf-ticket-premium .zf-ticket-watch strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.zf-ticket-premium .zf-ticket-unlinked-hint {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  color: rgba(225,242,233,.64);
+  font-size: 10px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.zf-ticket-premium .zf-ticket-unlinked-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(236,255,248,.24);
+  border-radius: 11px;
+  color: #e8f6ee;
+}
+.zf-ticket-premium .zf-ticket-unlinked-note > span {
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices {
+  width: 100%;
+  min-width: 0;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button {
+  min-width: 0;
+  max-width: 100%;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-lineup-actions {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 12px 13px;
+}
+@media (max-width: 610px) {
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-venue-card .zf-ticket-stadium,
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-pitch {
+    padding: 10px 12px;
+    min-height: 52px;
+  }
+  .zf-ticket-premium .zf-ticket-pitch-copy strong {font-size: 12px;}
+  .zf-ticket-premium .zf-ticket-pitch-copy small {font-size: 9px;}
+}

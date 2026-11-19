@@ -64,6 +64,7 @@ const STATE=`(()=>{
     return style.backgroundColor==="rgba(0, 0, 0, 0)"&&style.borderTopWidth==="0px"&&style.boxShadow==="none";
   })(),
   stadiumIcon:!!element?.querySelector(".zf-ticket-stadium>svg"),
+  fieldIcon:!!element?.querySelector(".zf-ticket-pitch>svg"),
   stadiumPhoto:!!document.querySelector(".zf-football-reference-page")&&getComputedStyle(document.querySelector(".zf-football-reference-page")).backgroundImage.includes("stadium-night-zang.webp"),
   visualGlass:!!element&&getComputedStyle(element).backdropFilter.includes("blur"),
   hasTeams:!!element?.querySelector(".zf-ticket-teams"),
@@ -178,9 +179,10 @@ try{
  // Same-grid scheduled fixtures with differing broadcaster counts for QA.
  const third={...first,id:"fifa.friendly:99999",casa:"Uruguai",fora:"Chile",
    horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
-   canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false};
+   canaisTransmissao:["Premiere"],transmissao:"nao-confirmada",destaque:false};
  const fourth={...first,id:"bra.1:99997",casa:"Cruzeiro",fora:"Palmeiras",
    liga:"Brasileirão Série A",ligaId:"bra.1",grupo:"brasileirao",
+   estadio:"Estádio Mineirão",cidadeEstadio:"Belo Horizonte",
    canalId:"premiere2",canalNome:"Premiere 2",destaque:true};
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
    jogos:[first,second,third,fourth],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
@@ -190,6 +192,8 @@ try{
  const recorded=JSON.parse(readFileSync("tests/fixtures/espn-moldova-kazakhstan-lineups.json","utf8"));
  const lineup=parseESPNLineups(first.id,recorded);
  const mocks={"/api/jogos-agenda":agenda,"/api/jogos-placares":placares,
+   "/api/jogos-gramado":{condicao:"molhado",cidade:"Belo Horizonte",chuvaMm:1.2,
+     resumo:"Chuva na região",estimado:true,fonte:"Open-Meteo"},
    "/api/jogos-escalacao":lineup,
    "/api/catalogo":{items:[],highlights:[],genres:[]}};
  await send("Page.addScriptToEvaluateOnNewDocument",{source:
@@ -215,7 +219,7 @@ try{
   await send("Emulation.setUserAgentOverride",{userAgent:device.ua});
   await send("Page.navigate",{url:BASE+"/futebol"});
   const state=await waitFor(x=>x.cards>0 && x.lineupButtons===1 && x.ticket && x.visibleReadyWatch && x.visibleLiveMinute);
-  if(!state.noCrestTile||!state.stadiumIcon||!state.stadiumPhoto||!state.visualGlass)
+  if(!state.noCrestTile||!state.stadiumIcon||!state.fieldIcon||!state.stadiumPhoto||!state.visualGlass)
     throw new Error("Reference image and borderless crests not applied: "+JSON.stringify(state));
   if(state.hasWatermark||!state.hasTeams||!state.hasGlass||!state.hasCentralTime)
     throw new Error("Match card must be brand-free, glass styled and aligned: "+JSON.stringify(state));
@@ -224,6 +228,38 @@ try{
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")
     throw new Error("Football page must match full stadium reference layout: "+JSON.stringify(state));
   if(state.ticket.left<0||state.ticket.right>device.width+1)throw new Error("Ticket overflows viewport: "+JSON.stringify(state));
+  const readable=await evaluate(`(()=>{
+    const cards=[...document.querySelectorAll(".zf-ticket")];
+    const unlinked=cards.find(card=>card.querySelector(".zf-ticket-channel-unlinked"))
+      ?.querySelector(".zf-ticket-channel-unlinked");
+    const label=unlinked?.querySelector(".zf-ticket-channel-unlinked .zf-ticket-watch strong");
+    const field=cards.find(card=>card.querySelector(".zf-ticket-stadium")?.textContent?.includes("Mineirão"));
+    const content=field?.querySelector(".zf-ticket-pitch");
+    return {
+      hasUnlinked:!!unlinked,channelText:label?.textContent||"",
+      labelWidth:label?.getBoundingClientRect().width||0,
+      fallbackHeight:unlinked?.getBoundingClientRect().height||0,
+      watchHeight:unlinked?.querySelector(".zf-ticket-watch")?.getBoundingClientRect().height||0,
+      mainHeight:unlinked?.closest(".zf-ticket")?.querySelector(".zf-ticket-main")?.getBoundingClientRect().height||0,
+      broadcastHeight:unlinked?.parentElement?.getBoundingClientRect().height||0,
+      fallbackStyle:unlinked&&{
+        flex:getComputedStyle(unlinked).flex,
+        display:getComputedStyle(unlinked).display,
+        minHeight:getComputedStyle(unlinked).minHeight,
+        height:getComputedStyle(unlinked).height,
+        alignItems:getComputedStyle(unlinked).alignItems,
+        writingMode:getComputedStyle(unlinked).writingMode,
+        position:getComputedStyle(unlinked).position
+      },
+      fieldIcon:!!content?.querySelector("svg"),
+      fieldStatus:content?.textContent||"",
+      maxTicketHeight:Math.max(...cards.map(card=>card.getBoundingClientRect().height)),
+    };
+  })()`);
+  if(!readable.hasUnlinked || !readable.channelText.includes("Premiere") ||
+     readable.labelWidth<80 || readable.fallbackHeight>130 ||
+     !readable.fieldIcon || readable.maxTicketHeight>760)
+    throw new Error("Broadcast text collapsed or pitch icon missing: "+JSON.stringify({device,readable}));
   if(!device.mobile){
     const stadiumRows=await evaluate(`(()=>{
       return Array.from(Array.from(document.querySelectorAll(".zf-football-grid"))
@@ -344,7 +380,9 @@ try{
     const tv=await evaluate(`(()=>{
       const board=document.querySelector(".zf-reference-section");
       const grid=board?.querySelector(".zf-reference-cards");
-      const card=Array.from(grid?.querySelectorAll(".zf-ticket")||[]).find(node=>node.querySelector(".zf-ticket-watch"))||grid?.querySelector(".zf-ticket");
+      const card=Array.from(grid?.querySelectorAll(".zf-ticket")||[]).find(node=>
+        Array.from(node.querySelectorAll(".zf-ticket-watch")).some(button=>
+          button.textContent?.includes("ASSISTIR NO CANAL"))) ||grid?.querySelector(".zf-ticket");
       const main=card?.querySelector(".zf-ticket-main");
       const team=card?.querySelector(".zf-ticket-team");
       const date=card?.querySelector(".zf-ticket-date");

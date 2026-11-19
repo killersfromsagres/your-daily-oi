@@ -89,6 +89,8 @@ export function mergeFootballScores(
       previous.canaisTransmissao : update.canaisTransmissao;
     const combined: JogoBrasileirao = {
       ...previous,
+      ...(update.cidadeEstadio ? {cidadeEstadio:update.cidadeEstadio} : {}),
+      ...(update.paisEstadio ? {paisEstadio:update.paisEstadio} : {}),
       status: update.status,
       ...(update.fase ? {fase: update.fase} : {}),
       ...(update.faseRotulo ? {faseRotulo: update.faseRotulo} : {}),

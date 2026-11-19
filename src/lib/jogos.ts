@@ -405,12 +405,14 @@ export async function getJogosPlacares(
       const parsed = applyVerifiedResult(initial);
       parsed.ligaLogo = leagueLogo;
       const older = previous.get(parsed.id);
+      if (!parsed.cidadeEstadio && older?.cidadeEstadio) parsed.cidadeEstadio = older.cidadeEstadio;
       if (older?.transmissaoUrl) parsed.transmissaoUrl = older.transmissaoUrl;
       if (older?.canalId) {
         parsed.canalId = older.canalId;
         parsed.canalNome = older.canalNome;
         parsed.canalLogo = older.canalLogo;
         parsed.transmissao = older.transmissao;
+        if (older.canaisDisponiveis?.length) parsed.canaisDisponiveis = older.canaisDisponiveis;
         if (older.origemTransmissao) parsed.origemTransmissao = older.origemTransmissao;
       }
       const announced = brBroadcastsFromESPN(event);

@@ -12,11 +12,12 @@ describe("Premiere is an internal player channel, never a web-page-as-video fall
     expect(source).not.toContain("Assistir no Premiere oficial (requer assinatura)");
     expect(source).not.toContain("href={officialFallbackUrl}");
   });
-  test("verified Premiere network rights do not create a browser redirect", () => {
+  test("live Premiere fixtures are resolved by guide and EPG, not hardcoded redirects", () => {
     const proof = verifiedBroadcastEvidence({
       casa: "Corinthians", fora: "Botafogo", dataLocal: "2026-11-18",
     });
-    expect(proof?.names).toEqual(["Premiere"]);
-    expect(proof?.watchUrl).toBeUndefined();
+    expect(proof).toBeNull();
+    const api=readFileSync(new URL("../src/lib/jogos.ts", import.meta.url),"utf8");
+    expect(api).toContain("localizarJogosNaGradeEPG");
   });
 });

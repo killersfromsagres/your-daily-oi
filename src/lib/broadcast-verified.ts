@@ -43,18 +43,6 @@ const verified:readonly {
     },
   },
   {
-    // The match guide names the Premiere network but does not identify
-    // Premiere 2-8. A broadcaster landing page is not a playable media URL;
-    // only a specific channel with a configured stream can open the player.
-    date:"2026-11-18",teams:["corinthians","botafogo"],
-    data:{
-      names:["Premiere"],
-      source:"https://ge.globo.com/sp/futebol/brasileirao-serie-a/noticia/2026/11/18/corinthians-x-botafogo-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
-      checkedAt:"2026-11-18",
-      exclusive:true,
-    },
-  },
-  {
     date:"2026-11-14",teams:["mirassol","atletico mg"],
     data:{
       names:["Prime Video"],
