@@ -6,7 +6,7 @@ type Status = "idle" | "loading" | "active" | "unavailable";
 type NetworkName = "anime4k/cnn-2x-s" | "anime4k/cnn-2x-m";
 
 type WebSRInstance = {
-  render(source: HTMLVideoElement): Promise<void>;
+  render(source: HTMLVideoElement | HTMLCanvasElement): Promise<void>;
   switchNetwork(network: NetworkName, weights: unknown): void;
   destroy(): Promise<void>;
 };
@@ -80,6 +80,8 @@ export function useNeuralVideoUpscaler(
   enabled: boolean,
   contentType: "movie" | "series" | "anime",
   profile: "vod" | "live" = "vod",
+  scale: 2 | 4 = 2,
+  preprocess?: {canvasRef:RefObject<HTMLCanvasElement|null>;active:boolean},
 ): NeuralUpscalerResult {
   const [status, setStatus] = useState<Status>("idle");
   const [reason, setReason] = useState<string | null>(null);
@@ -97,6 +99,11 @@ export function useNeuralVideoUpscaler(
 
     let cancelled = false;
     let engine: WebSRInstance | null = null;
+    let secondPass:WebSRInstance|null=null;
+    // Two actual trained CNN 2× stages in series = 4× pixel dimensions.
+    // No 4× native model exists in the repository; this is a cascaded 2×
+    // neural reconstruction, not a single pretrained 4× model.
+    const intermediate=scale===4?document.createElement("canvas"):null;
     let videoFrameRequest = 0;
     let animationRequest = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -120,6 +127,7 @@ export function useNeuralVideoUpscaler(
       }
       if (animationRequest) cancelAnimationFrame(animationRequest);
       if (engine) void engine.destroy().catch(() => {});
+      if (secondPass) void secondPass.destroy().catch(() => {});
     };
 
     const unavailable = (message: string) => {
@@ -169,12 +177,20 @@ export function useNeuralVideoUpscaler(
       }
       try {
         if(!eligibleForNeural2x(video.videoWidth,video.videoHeight) ||
-           (profile==="live"&&(video.videoWidth>960||video.videoHeight>540))){
+           (profile==="live"&&(video.videoWidth>960||video.videoHeight>540)) ||
+           (profile==="live"&&scale===4&&(video.videoWidth>480||video.videoHeight>270))){
           unavailable("Resolução aumentou; preservando a reprodução fluida");return;
         }
         const startedAt = performance.now();
         // A slow inference must never hold a live video pipeline hostage.
-        await withinBudget(engine.render(video),profile==="live"?250:900);
+        const cleaned=preprocess?.active?preprocess.canvasRef.current:null;
+        const input=cleaned&&cleaned.width===video.videoWidth&&
+          cleaned.height===video.videoHeight?cleaned:video;
+        await withinBudget(engine.render(input),profile==="live"?250:900);
+        if(secondPass&&intermediate){
+          if(cancelled)return;
+          await withinBudget(secondPass.render(intermediate),300);
+        }
         if (cancelled) return;
         const spent = performance.now() - startedAt;
         previousAvg.current = previousAvg.current
@@ -269,7 +285,8 @@ export function useNeuralVideoUpscaler(
         await waitForFrame();
         if (cancelled) return;
         if (!eligibleForNeural2x(video.videoWidth, video.videoHeight) ||
-            (profile==="live"&&(video.videoWidth>960||video.videoHeight>540))) {
+            (profile==="live"&&(video.videoWidth>960||video.videoHeight>540)) ||
+            (profile==="live"&&scale===4&&(video.videoWidth>480||video.videoHeight>270))) {
           unavailable("Resolução acima do orçamento de IA em tempo real");
           return;
         }
@@ -294,10 +311,16 @@ export function useNeuralVideoUpscaler(
         }
         engine = new WebSR({
           gpu: device,
-          canvas,
+          canvas:intermediate||canvas,
           network_name: networkSize === "m" ? "anime4k/cnn-2x-m" : "anime4k/cnn-2x-s",
           weights,
         });
+        if(intermediate){
+          secondPass=new WebSR({
+            gpu:device,canvas,
+            network_name:"anime4k/cnn-2x-s",weights,
+          });
+        }
         nextFrame();
       } catch (error) {
         if (!cancelled) unavailable(error instanceof Error ? error.message : "Falha de inicialização da IA");
@@ -317,7 +340,7 @@ export function useNeuralVideoUpscaler(
       video.removeEventListener("loadstart", resetOnSwitch);
       stop();
     };
-  }, [enabled, contentType, videoRef, canvasRef, profile]);
+  }, [enabled, contentType, videoRef, canvasRef, profile, scale, preprocess?.active, preprocess?.canvasRef]);
 
   return { status, active: enabled && status === "active", reason, avgFrameMs };
 }

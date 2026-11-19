@@ -136,6 +136,7 @@ export function useVideoEnhancer(
   enabled: boolean,
   onPerformanceDowngrade?: () => void,
   live = false,
+  preprocess?: {canvasRef:RefObject<HTMLCanvasElement|null>;active:boolean},
 ): VideoEnhancerResult {
   const [active,setActive] = useState(false);
   const [supported,setSupported] = useState(true);
@@ -227,7 +228,10 @@ export function useVideoEnhancer(
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D,texture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
-        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video);
+        const corrected=preprocess?.active?preprocess.canvasRef.current:null;
+        const source=corrected&&corrected.width===sourceW&&corrected.height===sourceH
+          ?corrected:video;
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
         gl.useProgram(shaderProgram);
         gl.uniform1i(gl.getUniformLocation(shaderProgram,"u_video"),0);
         gl.uniform2f(gl.getUniformLocation(shaderProgram,"u_texel"),1/sourceW,1/sourceH);
@@ -299,7 +303,7 @@ export function useVideoEnhancer(
         // Keep the context reusable when the user toggles HQ again.
       }
     };
-  },[videoRef,canvasRef,enabled,onPerformanceDowngrade,live]);
+  },[videoRef,canvasRef,enabled,onPerformanceDowngrade,live,preprocess?.active,preprocess?.canvasRef]);
 
   return {active,supported,avgFrameMs};
 }
