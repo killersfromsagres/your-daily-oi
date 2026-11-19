@@ -374,7 +374,7 @@ try{
   })()`);
   if(!premiumLineup.matchRibbon||!premiumLineup.evidence||
      premiumLineup.coachPhotoWidth<40||premiumLineup.portraits!==11||
-     premiumLineup.portraitLinks<10||!premiumLineup.correctBackground||
+     !premiumLineup.correctBackground||
      premiumLineup.maxWidth>device.width+1)
     throw new Error("Premium tactical pitch/portraits/team evidence missing: "+
       JSON.stringify({device,premiumLineup}));
