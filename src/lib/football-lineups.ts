@@ -224,9 +224,13 @@ export async function getMatchLineups(jogo:string):Promise<MatchLineups>{
       const home=competition?.competitors?.find(t=>t.homeAway==="home");
       const away=competition?.competitors?.find(t=>t.homeAway==="away");
       const timestamp=competition?.date?Date.parse(competition.date):NaN;
-      const brazilDate=Number.isFinite(timestamp)
-        ?new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",
-          year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(timestamp)):"";
+      const parts=Number.isFinite(timestamp)
+        ?new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",
+          year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(timestamp))
+        :[];
+      const field=(kind:string)=>parts.find(p=>p.type===kind)?.value||"";
+      const brazilDate=parts.length?
+        [field("year"),field("month"),field("day")].join("-"):"";
       const [portraits,managers]=await Promise.all([
         enrichESPNPortraits(parsed.equipes,league==="bra.1"?"BR":undefined),
         home&&away&&brazilDate?loadVerifiedEventCoaches({
