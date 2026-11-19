@@ -10,6 +10,7 @@ import { getSushiCatalog, searchSushiAnimes, getSushiAnime, resolveSushiEpisodeS
 import { loadCanais, loadRadios } from "./lib/canais";
 import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje, getJogosPlacares } from "./lib/jogos";
+import { getRegionalPitchEstimate } from "./lib/pitch-weather";
 import { getMatchLineups } from "./lib/football-lineups";
 import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
@@ -2087,6 +2088,29 @@ export default {
         const canal = url.searchParams.get("canal") || "";
         const data = await getCanalEPG(canal);
         return jsonResponse(data, 200, "public, max-age=900");
+      }
+      if (url.pathname === "/api/jogos-gramado") {
+        if (request.method !== "GET") return jsonResponse({erro:"Método inválido"},405);
+        const estadio=url.searchParams.get("estadio") || "";
+        const cidade=url.searchParams.get("cidade") || "";
+        const pais=url.searchParams.get("pais") || "";
+        const inicioIso=url.searchParams.get("inicio") || "";
+        const aoVivo=url.searchParams.get("aoVivo")==="1";
+        if (estadio.length>110 || cidade.length>100 || pais.length>32 ||
+            !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}/.test(inicioIso) ||
+            !Number.isFinite(Date.parse(inicioIso))) {
+          return jsonResponse({erro:"Local ou horário inválido"},400);
+        }
+        try {
+          const result=await getRegionalPitchEstimate({
+            estadio,cidade,pais,inicioIso,aoVivo,
+          });
+          return jsonResponse(result || {condicao:"indisponivel",estimado:true},
+            200,"public, max-age=180, stale-while-revalidate=240");
+        } catch(error) {
+          console.warn("[PitchWeather] Dados regionais indisponíveis",error instanceof Error?error.name:"network");
+          return jsonResponse({condicao:"indisponivel",estimado:true},200,"public, max-age=60");
+        }
       }
       if (url.pathname === "/api/jogos-escalacao") {
         if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
