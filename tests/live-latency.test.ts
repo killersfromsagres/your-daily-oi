@@ -10,6 +10,8 @@ describe("Live latency edge policy", () => {
     expect(fast.liveMaxLatencyDurationCount).toBeGreaterThan(fast.liveSyncDurationCount);
     expect(mpegtsLatencyOptions("fast").enableStashBuffer).toBe(false);
     expect(stable.maxLiveSyncPlaybackRate).toBe(1);
+    expect(stable.capLevelToPlayerSize).toBe(true);
+    expect(fast.capLevelToPlayerSize).toBe(true);
     expect(stable.lowLatencyMode).toBe(false);
     expect(stable.maxBufferLength).toBeGreaterThan(fast.maxBufferLength);
     expect(stable.backBufferLength).toBeLessThanOrEqual(28);
