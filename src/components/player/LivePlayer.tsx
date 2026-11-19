@@ -806,13 +806,13 @@ export function LivePlayer({
             try {
               await video.play();
             } catch (reason) {
-              if (requireGesture(reason)) return;
+              // Audible autoplay may be blocked while muted playback works.
               try {
                 video.muted = true;
                 setMuted(true);
                 setUnmuteNotice(true);
                 await video.play();
-              } catch (again) { requireGesture(again); }
+              } catch (again) { requireGesture(again) || requireGesture(reason); }
             }
           }
           return;
@@ -837,9 +837,8 @@ export function LivePlayer({
             player.attachMediaElement(video);
             player.load();
             void player.play().catch(reason => {
-              if (requireGesture(reason)) return;
               video.muted = true;
-              void player.play().catch(again => { requireGesture(again); });
+              void player.play().catch(again => { requireGesture(again) || requireGesture(reason); });
             });
             hlsInstanceRef.current = { destroy: () => { player.unload(); player.destroy(); } };
             return;
@@ -945,13 +944,13 @@ export function LivePlayer({
           try {
             await video.play();
           } catch (reason) {
-            if (requireGesture(reason)) return;
+            // Preserve the normal muted-autoplay fallback in Edge and Brave.
             try {
               video.muted = true;
               setMuted(true);
               setUnmuteNotice(true);
               await video.play();
-            } catch (again) { requireGesture(again); }
+            } catch (again) { requireGesture(again) || requireGesture(reason); }
           }
         }
       } catch (err) {
