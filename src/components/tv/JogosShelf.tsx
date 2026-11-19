@@ -25,6 +25,7 @@ import "@/styles/match-glass-premium.css";
 import "@/styles/football-reference-scene.css";
 import "@/styles/football-tv-remote.css";
 import "@/styles/sports-pitch-ui.css";
+import "@/styles/football-card-details.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
@@ -65,7 +66,6 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   onExplore?: ((channelName?: string) => void) | undefined;
   channelPlayback?: Record<string, "connecting" | "playing" | "unavailable"> | undefined;
 }) {
-  const [channelsExpanded, setChannelsExpanded] = useState(false);
   const now = useMatchCardClock();
   const visual = getMatchCardVisual(game, now);
   const active = game.status === "ao-vivo";
@@ -82,6 +82,11 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   const theme = game.grupo === "copas" || game.grupo === "champions" ? "is-cup" : "is-league";
   const brazilFeatured = isBrazilFixture(game);
   const venue = game.estadio?.trim();
+  // Keep alternate channels immediately visible and compact, not nested in
+  // a collapsed menu that hides valid broadcasters from the visitor.
+  const otherChannels=(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId);
+  const homeGoals=game.gols?.filter(goal=>goal.team==="home")||[];
+  const awayGoals=game.gols?.filter(goal=>goal.team==="away")||[];
 
   return (
     <article className={"zgame-card zf-ticket zf-ticket-premium " + theme +
@@ -146,6 +151,21 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
               <small>{active ? (visual.periodLabel || "EM ANDAMENTO") : "RESULTADO"}</small>
               <strong>{active ? (game.minuto?.trim() || "AO VIVO") : "FINAL"}</strong>
             </span>
+            {(homeGoals.length>0||awayGoals.length>0)&&
+              <div className="zf-ticket-goals" aria-label="Autores e minutos dos gols">
+                {([homeGoals,awayGoals] as const).map((goals,index)=>
+                  <span className="zf-ticket-goals-team" key={index}
+                    aria-label={(index===0?game.casa:game.fora)+": "+
+                      goals.map(g=>g.scorer+" "+g.minute+(g.penalty?" de pênalti":"")).join(", ")}>
+                    {goals.slice(-2).map(goal=><span className="zf-ticket-goal-chip" key={goal.id}
+                      title={goal.scorer+" · "+goal.minute+(goal.penalty?" · pênalti":"")}>
+                      <span className="zf-goal-ball" aria-hidden="true">⚽</span>
+                      <span className="zf-goal-name">{goal.scorer}</span>
+                      <time>{goal.minute}</time>
+                    </span>)}
+                    {goals.length>2&&<small className="zf-goals-more">+{goals.length-2} gols</small>}
+                  </span>)}
+              </div>}
           </div>
         ) : active || visual.phase === "finished" ? (
           <div className="zf-ticket-score-panel is-unavailable">
@@ -198,22 +218,24 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
             {visual.highlightWatch && (
               <div className="zf-ticket-watch-ready"><span aria-hidden="true"/> ACENDE 5 MIN ANTES</div>
             )}
-            {(game.canaisDisponiveis || []).filter(ch => ch.id !== game.canalId).length > 0 && (
-              <button type="button" className="zf-ticket-channels-toggle"
-                aria-expanded={channelsExpanded} onClick={() => setChannelsExpanded(value => !value)}>
-                Outros canais <span>{(game.canaisDisponiveis?.length || 1) - 1}</span>
-              </button>
-            )}
-            {channelsExpanded && (
-              <div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
-                {(game.canaisDisponiveis || []).filter(ch => ch.id !== game.canalId).map(ch => (
-                  <button key={ch.id} type="button" onClick={() => onWatch(ch.id)}
-                    aria-label={"Assistir também em " + ch.nome}>
-                    {ch.logo ? <img src={ch.logo} alt="" loading="lazy"/> : <Tv size={13}/>}
-                    <span>{ch.nome}{channelPlayback?.[ch.id] === "unavailable" ? " · falhou na última tentativa" :
-                      channelPlayback?.[ch.id] === "playing" ? " · reproduzindo" : ""}</span>
-                  </button>
-                ))}
+            {otherChannels.length>0&&(
+              <div className="zf-ticket-alternate-channels" aria-label="Outros canais da partida">
+                <span className="zf-ticket-alternates-heading">TAMBÉM EM</span>
+                <div className="zf-ticket-channel-choices" aria-label="Outros canais confirmados para a partida">
+                  {otherChannels.map(ch=>(
+                    <button key={ch.id} type="button" onClick={()=>onWatch(ch.id)}
+                      title={"Assistir em "+ch.nome}
+                      aria-label={"Assistir também em "+ch.nome}>
+                      {ch.logo ? <img src={ch.logo} alt="" loading="lazy" decoding="async"/> :
+                        <Tv size={13} aria-hidden="true"/>}
+                      <span>{ch.nome}</span>
+                      {channelPlayback?.[ch.id]==="playing"&&
+                        <span className="zf-channel-health is-playing" aria-label="Reproduzindo"/>}
+                      {channelPlayback?.[ch.id]==="unavailable"&&
+                        <span className="zf-channel-health is-unavailable" aria-label="Falhou na última tentativa"/>}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
