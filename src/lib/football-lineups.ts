@@ -1,6 +1,6 @@
 // src/lib/football-lineups.ts — ESPN match rosters + TheSportsDB lineup, server-only.
 // Never invent starters/coach/photos before the provider releases the lineup.
-import { LIGAS_FUTEBOL } from "./jogos-match";
+import { LIGAS_FUTEBOL, normalizeSoccerName } from "./jogos-match";
 import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
 import { enrichKnownLineupPhotos, photoFromSportsDbRecord } from "./lineup-photo-source";
 export type { PlayerPosition } from "./football-positions";
@@ -107,7 +107,7 @@ type ESPNTeam={
 };
 type ESPNSummary={
   rosters?:ESPNTeam[];
-  boxscore?:{form?:Array<{team?:{displayName?:string;logo?:string};formation?:string;coach?:{name?:string;displayName?:string;headshot?:{href?:string}}}>};
+  boxscore?:{form?:Array<{team?:{id?:string;displayName?:string;logo?:string};formation?:string;coach?:{name?:string;displayName?:string;headshot?:{href?:string}}}>};
 };
 function headshot(athlete:ESPNPlayer["athlete"]):string|null {
   const photo=athlete?.headshot;
@@ -118,7 +118,16 @@ function headshot(athlete:ESPNPlayer["athlete"]):string|null {
 }
 export function parseESPNLineups(jogo:string,raw:ESPNSummary):MatchLineups {
   const teams=(Array.isArray(raw.rosters)?raw.rosters:[]).slice(0,2).map((item,index):LineupTeam=>{
-    const form=raw.boxscore?.form?.[index];
+    // ESPN sometimes returns rosters and boxscore forms in different orders.
+    // Match by an actual team identifier/name; never assign another club's
+    // manager or tactical setup solely by the index of a response array.
+    const form=raw.boxscore?.form?.find(entry=>{
+      const a=item.team,b=entry.team;
+      if(a?.id&&b?.id&&a.id===b.id)return true;
+      const left=normalizeSoccerName(a?.displayName||a?.name||"");
+      const right=normalizeSoccerName(b?.displayName||"");
+      return !!left&&!!right&&left===right;
+    });
     const coach=item.coach||item.coaches?.[0]||form?.coach;
     const crew:LineupCoach|null=coach&&nameOf(coach.displayName||coach.name)?
       {name:nameOf(coach.displayName||coach.name),photo:typeof coach.headshot==="string"
