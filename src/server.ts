@@ -12,6 +12,7 @@ import { getCanalEPG, getGradeAgora } from "./lib/epg";
 import { getJogosHoje, getJogosPlacares } from "./lib/jogos";
 import { getRegionalPitchEstimate } from "./lib/pitch-weather";
 import { getMatchLineups } from "./lib/football-lineups";
+import { serveLineupPhoto } from "./lib/lineup-image-route";
 import { getLeagueStandings } from "./lib/standings";
 import { resolveVodStreams, resolveSingleStreamRedirect } from "./lib/saimo-stream";
 import { handleSaimoVodProxy } from "./lib/saimo-vod-proxy";
@@ -2108,6 +2109,10 @@ export default {
           console.warn("[PitchWeather] Dados regionais indisponíveis",error instanceof Error?error.name:"network");
           return jsonResponse({condicao:"indisponivel",estimado:true},200,"public, max-age=60");
         }
+      }
+      if (url.pathname === "/api/lineup-foto") {
+        if (request.method !== "GET") return jsonResponse({erro:"Método inválido"},405);
+        return serveLineupPhoto(url.searchParams.get("u")||"");
       }
       if (url.pathname === "/api/jogos-escalacao") {
         if (request.method !== "GET") return jsonResponse({ erro: "Método inválido" }, 405);
