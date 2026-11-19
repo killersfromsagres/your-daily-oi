@@ -7,8 +7,8 @@ import { buildTacticalLayout, positionBadge, POSITION_SECTORS } from "@/lib/line
 import { requestMatchPortrait } from "@/lib/lineup-client-portraits";
 
 function Photo({ src, name, fallback=null, gameId, personId, role="player" }: {
-  src:string|null;name:string;fallback?:string|null;
-  gameId?:string;personId?:string;role?:"player"|"coach";
+  src:string|null;name:string;fallback?:string|null|undefined;
+  gameId?:string|undefined;personId?:string|undefined;role?:"player"|"coach";
 }) {
   const [alternate,setAlternate]=useState<string|null>(null);
   const [attempt,setAttempt]=useState(0);
@@ -54,7 +54,7 @@ function Photo({ src, name, fallback=null, gameId, personId, role="player" }: {
       onError={()=>{setLoaded(false);setAttempt(i=>i+1);}}/>}
   </span>;
 }
-function Player({ player, gameId }: { player: LineupPlayer;gameId?:string }) {
+function Player({ player, gameId }: { player: LineupPlayer;gameId?:string|undefined }) {
   const role = positionBadge(player);
   const description = [player.number ? "Camisa "+player.number : null,
     player.name,role.label].filter(Boolean).join(" · ");
@@ -73,7 +73,7 @@ function Player({ player, gameId }: { player: LineupPlayer;gameId?:string }) {
     </div>
   );
 }
-export function TeamLineupBoard({ team, gameId }: { team: LineupTeam; gameId?:string }) {
+export function TeamLineupBoard({ team, gameId }: { team: LineupTeam; gameId?:string|undefined }) {
   const layout = buildTacticalLayout(team);
   return (
     <div className="zf-formation-content">
