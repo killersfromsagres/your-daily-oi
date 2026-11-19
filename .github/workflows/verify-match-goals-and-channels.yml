@@ -1,0 +1,44 @@
+name: Verify inline match broadcasters, status and goal scorers
+on:
+  push:
+    branches: [feat/match-visible-channels-goal-scorers-20261119]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/tv/JogosShelf.tsx"
+      - "src/lib/match-goal-events.ts"
+      - "src/lib/jogos-match.ts"
+      - "src/lib/jogos.ts"
+      - "src/lib/football-ranking.ts"
+      - "src/styles/football-card-details.css"
+      - "tests/sports-goal-events-broadcasts.test.ts"
+      - "scripts/smoke-sports-ticket-browser.mjs"
+      - ".github/workflows/verify-match-goals-and-channels.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install deps
+        run: bun install --frozen-lockfile
+      - name: Goal attribution, scores, broadcaster and game card regression tests
+        run: bun test tests/sports-goal-events-broadcasts.test.ts tests/sports-results-and-streaming.test.ts tests/match-card-visual.test.ts tests/sports-ticket-lineup.test.ts tests/jogos-match.test.ts tests/football-ranking.test.ts
+      - name: TypeScript sports checks
+        run: bun scripts/typecheck-sports.mjs
+      - name: Build production app
+        run: bun run build
+      - name: Responsive browser score/goals/channels smoke
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Upload match card screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match-scorers-and-inline-channels
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7
