@@ -10,6 +10,7 @@ const tvPaths = [
   /^src\/components\/tv\/TvView\.tsx\(/,
   /^src\/components\/player\/LivePlayer\.tsx\(/,
   /^src\/lib\/live-source\.ts\(/,
+  /^src\/lib\/live-browser-compat\.ts\(/,
   /^src\/lib\/live-probe\.ts\(/,
 ];
 const relevant = errors.filter(line => tvPaths.some(pattern => pattern.test(line)) ||
@@ -17,7 +18,7 @@ const relevant = errors.filter(line => tvPaths.some(pattern => pattern.test(line
 console.log(JSON.stringify({
   event:"tv-typecheck",tvErrors:relevant.length,
   inheritedProjectErrors:errors.length-relevant.length,
-  checked:"TV view, player, source parser, live-format probe and new server handler",
+  checked:"TV view, player, Brave compatibility, source parser, live-format probe and server handler",
 }));
 if(relevant.length){for(const error of relevant)console.error(error);process.exit(1);}
 if(result.error)throw result.error;

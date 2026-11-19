@@ -3,8 +3,9 @@ import "@/lib/browser-media";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
-import { buildLiveProxyPath, classifyLiveSource, initialLiveMode, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { buildLiveProxyPath, classifyLiveSource, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
 import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
+import { browserLiveTransport, isBraveBrowser, needsPlaybackGesture, type LiveProxyBackend } from "@/lib/live-browser-compat";
 import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
@@ -13,6 +14,7 @@ import { CastControl } from "./CastControl";
 import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, preferredLiveLatencyMode, type LiveLatencyMode } from "@/lib/live-latency";
 import { usePlayerFullscreen } from "./usePlayerFullscreen";
 import "@/styles/live-glass-panels.css";
+import "@/styles/live-browser-compat.css";
 import {
   sortStreamsByHealth,
   recordFailedSource,
@@ -31,6 +33,7 @@ import {
   PictureInPicture2,
   Gauge,
   AlertCircle,
+  Play,
   TvMinimal,
 } from "lucide-react";
 
@@ -126,8 +129,12 @@ function limparHostsSemCors() {
   directHostCooldown.clear();
   try {localStorage.removeItem("zangflix:sem-cors");}catch{}
 }
-const initialModeFor = (f: FonteTV | undefined): LiveAccessMode =>
-  !f ? "proxy" : hostSemCors(f.url) ? "proxy" : initialLiveMode(f);
+const initialModeFor = (
+  f: FonteTV | undefined,
+  firstParty = false,
+  backend: LiveProxyBackend = "catalog",
+): LiveAccessMode =>
+  browserLiveTransport(f, firstParty, backend, Boolean(f && hostSemCors(f.url)));
 
 // Corrige caminhos em proxies de terceiros que aninham o stream no parâmetro url=
 function fixNestedPath(parentUrl: string, childUrl: string): string {
@@ -183,6 +190,7 @@ export function LivePlayer({
   const stablePlaybackSinceRef = useRef<number | null>(null);
   const everPlayedRef = useRef(false);
   const lastResumeAttemptRef = useRef(0);
+  const braveFirstPartyRef = useRef(false);
 
   // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
@@ -193,6 +201,8 @@ export function LivePlayer({
   }, [canal.fontes]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
+  const [braveCompatibility, setBraveCompatibility] = useState(false);
+  const [gestureRequired, setGestureRequired] = useState(false);
   const [attemptMode, setAttemptMode] = useState<"direct" | "proxy">(() =>
     initialModeFor(validStreams[0])
   );
@@ -252,6 +262,26 @@ export function LivePlayer({
 
   const [unmuteNotice, setUnmuteNotice] = useState(false);
 
+  // Brave normally uses a Chromium UA, so do not infer it from the UA string.
+  // The official Brave API is checked locally; no fingerprint is stored or sent.
+  useEffect(() => {
+    let mounted = true;
+    void isBraveBrowser(navigator).then(isBrave => {
+      if (!mounted || !isBrave) return;
+      braveFirstPartyRef.current = true;
+      setBraveCompatibility(true);
+      // Do not tear down a transmission that has already begun working.
+      // On an unstarted connection, try the same-origin catalog/proxy first.
+      if (!everPlayedRef.current && proxyBackend !== "unavailable" && attemptMode === "direct") {
+        attemptedModesRef.current.clear();
+        setAttemptMode("proxy");
+        setPlayNonce(n => n + 1);
+        setAutoSwitchMsg("Brave · tentando conexão pelo ZANG FLIX");
+      }
+    });
+    return () => { mounted = false; };
+  }, [proxyBackend]);
+
   // A persisted manual choice always wins; without one, sports open in
   // the fluid buffer profile and ordinary channels keep the fast default.
   useEffect(() => {
@@ -272,9 +302,10 @@ export function LivePlayer({
     everPlayedRef.current = false;
     lastResumeAttemptRef.current = 0;
     setSourceIndex(0);
+    setGestureRequired(false);
     setUseLegacyOnMismatch(false);
     setUseEdgeBackup(false);
-    setAttemptMode(initialModeFor(validStreams[0]));
+    setAttemptMode(initialModeFor(validStreams[0], braveFirstPartyRef.current, proxyBackend));
     setError(validStreams.length === 0);
     onPlaybackStatus?.(canal.id, validStreams.length ? "connecting" : "unavailable");
     setErrorDetail(null);
@@ -395,6 +426,7 @@ export function LivePlayer({
     if (!rawFonte || handlingFailureRef.current) return;
     handlingFailureRef.current = true;
     stablePlaybackSinceRef.current = null;
+    setGestureRequired(false);
     const key = `${canal.id}:${rawFonte.url}`;
     const index = canal.fontes.findIndex(item => item.url === rawFonte.url);
     // Do not derive the backup URL from the failing Vercel route selection:
@@ -439,7 +471,7 @@ export function LivePlayer({
     if (sourceIndex + 1 < validStreams.length) {
       const next = sourceIndex + 1;
       setSourceIndex(next);
-      setAttemptMode(initialModeFor(validStreams[next]));
+      setAttemptMode(initialModeFor(validStreams[next], braveFirstPartyRef.current, proxyBackend));
       setLoading(true);
       setError(false);
       setAutoSwitchMsg("Trocando fonte…");
@@ -614,6 +646,7 @@ export function LivePlayer({
     onPlaybackStatus?.(canal.id, "connecting");
     setError(false);
     setErrorDetail(null);
+    setGestureRequired(false);
 
     // Não considerar apenas readyState: o vídeo pode ter buffer e nunca iniciar.
     let playbackConfirmed = false;
@@ -628,8 +661,21 @@ export function LivePlayer({
       }
     }, 18000);
 
+    const requireGesture = (reason: unknown): boolean => {
+      if (!needsPlaybackGesture(reason) || cancelled) return false;
+      // NotAllowedError indicates a user-activation policy, not a broken CDN.
+      // Preserve the engine and its source instead of cycling every channel.
+      clearTimeout(timeout);
+      setLoading(false);
+      setGestureRequired(true);
+      setError(false);
+      setAutoSwitchMsg(null);
+      return true;
+    };
+
     const onPlaying = () => {
       if (cancelled) return;
+      setGestureRequired(false);
       playbackConfirmed = true;
       if (progressReference === null) progressReference = video.currentTime;
       stablePlaybackSinceRef.current = Date.now();
@@ -759,13 +805,14 @@ export function LivePlayer({
           if (!cancelled) {
             try {
               await video.play();
-            } catch {
+            } catch (reason) {
+              // Audible autoplay may be blocked while muted playback works.
               try {
                 video.muted = true;
                 setMuted(true);
                 setUnmuteNotice(true);
                 await video.play();
-              } catch {}
+              } catch (again) { requireGesture(again) || requireGesture(reason); }
             }
           }
           return;
@@ -789,9 +836,9 @@ export function LivePlayer({
             });
             player.attachMediaElement(video);
             player.load();
-            void player.play().catch(() => {
+            void player.play().catch(reason => {
               video.muted = true;
-              void player.play();
+              void player.play().catch(again => { requireGesture(again) || requireGesture(reason); });
             });
             hlsInstanceRef.current = { destroy: () => { player.unload(); player.destroy(); } };
             return;
@@ -896,13 +943,14 @@ export function LivePlayer({
         if (!cancelled) {
           try {
             await video.play();
-          } catch {
+          } catch (reason) {
+            // Preserve the normal muted-autoplay fallback in Edge and Brave.
             try {
               video.muted = true;
               setMuted(true);
               setUnmuteNotice(true);
               await video.play();
-            } catch {}
+            } catch (again) { requireGesture(again) || requireGesture(reason); }
           }
         }
       } catch (err) {
@@ -1013,6 +1061,26 @@ export function LivePlayer({
     return () => window.removeEventListener("keydown", handler);
   }, [onPrevCanal, onNextCanal, handleToggleMute, handleFullscreenToggle, onToggleGuide, showControls, handleVolumeChange]);
 
+  // A direct user gesture is required when the browser forbids autoplay,
+  // including cases where muted autoplay is disabled in site preferences.
+  const startPlaybackFromGesture = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    // Must call play() synchronously inside the click, before any await.
+    const action = video.play();
+    setGestureRequired(false);
+    setLoading(true);
+    void action.catch(reason => {
+      if (needsPlaybackGesture(reason)) {
+        setGestureRequired(true);
+        setLoading(false);
+        setErrorDetail("O navegador bloqueou o início automático. Verifique a permissão de reprodução deste site.");
+      } else {
+        handleFatalError(true);
+      }
+    });
+  }, [handleFatalError]);
+
   return (
     <div
       ref={containerRef}
@@ -1038,6 +1106,17 @@ export function LivePlayer({
         onClick={handleToggleMute}
         aria-label="Ativar ou desativar áudio"
       />
+
+      {gestureRequired && !error && (
+        <div className="zf-live-gesture-overlay" role="group" aria-label="Iniciar transmissão">
+          <button type="button" className="zf-live-gesture-play"
+            onClick={startPlaybackFromGesture} aria-label="Reproduzir canal ao vivo">
+            <Play size={20} fill="currentColor" aria-hidden="true"/>
+            <span>Iniciar transmissão</span>
+          </button>
+          <small>Este navegador precisa de um clique para iniciar o vídeo.</small>
+        </div>
+      )}
 
       {/* Alerta discreto quando autoplay iniciou mutado */}
       {unmuteNotice && muted && (
@@ -1068,6 +1147,11 @@ export function LivePlayer({
             <span className="ydo-live-cat-tag">{canal.categoria}</span>
           </div>
           <h2 className="ydo-live-channel-title">{canal.nome}</h2>
+          {braveCompatibility && (
+            <span className="zf-live-compat-status" title="O player tenta primeiro a rota interna; o acesso direto continua disponível se necessário.">
+              Navegador protegido · conexão adaptativa
+            </span>
+          )}
           {epgAtual?.titulo && (
             <p className="ydo-live-epg-subtitle">
               {epgAtual.horario ? `${epgAtual.horario} · ` : ""}
@@ -1114,7 +1198,7 @@ export function LivePlayer({
               clearAllPlayerCaches();
               limparHostsSemCors();
               setSourceIndex(0);
-              setAttemptMode(initialModeFor(validStreams[0]));
+              setAttemptMode(initialModeFor(validStreams[0], braveFirstPartyRef.current, proxyBackend));
               setError(false);
               setErrorDetail(null);
               setLoading(true);
@@ -1185,7 +1269,7 @@ export function LivePlayer({
                       attemptedModesRef.current.delete(`${canal.id}:${f.url}`);
                       handlingFailureRef.current = false;
                       setSourceIndex(i);
-                      setAttemptMode(initialModeFor(f));
+                      setAttemptMode(initialModeFor(f, braveFirstPartyRef.current, proxyBackend));
                       setSourcesOpen(false);
                       setLoading(true);
                       setError(false);
