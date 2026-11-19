@@ -191,7 +191,7 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
                 <BadgeCheck size={15} aria-hidden="true"/>
                 <span><strong>{evidence.tacticalLabel}</strong> · {evidence.detail}</span>
               </p>
-              <TeamLineupBoard team={selected}/>
+              <TeamLineupBoard team={selected} gameId={game.id}/>
               <p className="zf-lineup-source">Fonte esportiva: {data?.origem} · {evidence.updatedLabel}. As fotos identificam atletas por ID do provedor. Nenhuma posição, foto ou escalação ausente é inventada.</p>
             </>}
           </div>
