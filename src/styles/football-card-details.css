@@ -301,3 +301,12 @@ html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-t
     height:138px;min-height:138px;flex-basis:138px;
   }
 }
+
+/* Avoid the old 760px desktop ticket regression while keeping crest and
+ * scorer typography unchanged. Stadium/goal rows remain position-aligned. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-match-meta {
+  padding:4px 0 0;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-broadcast {
+  padding-top:5px;
+}
