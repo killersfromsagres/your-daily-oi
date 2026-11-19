@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import { getMatchCardVisual } from "@/lib/match-card-visual";
+import { officialBroadcastTarget } from "@/lib/official-broadcast";
 import { useMatchCardClock } from "@/lib/use-match-card-clock";
 import "@/styles/jogos-center.css";
 import "@/styles/sports-match-tickets.css";
@@ -26,6 +27,7 @@ import "@/styles/football-tv-remote.css";
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
   onExploreChannels?: () => void;
+  channelPlayback?: Record<string, "connecting" | "playing" | "unavailable">;
 }
 
 interface SportsApiResponse {
@@ -55,24 +57,20 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
     </span>
   );
 }
-export function MatchCard({ game, onWatch, onExplore }: {
+export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   game: JogoBrasileirao;
   onWatch: (id: string) => void;
   onExplore?: (() => void) | undefined;
+  channelPlayback?: Record<string, "connecting" | "playing" | "unavailable"> | undefined;
 }) {
   const [channelsExpanded, setChannelsExpanded] = useState(false);
   const now = useMatchCardClock();
   const visual = getMatchCardVisual(game, now);
   const active = game.status === "ao-vivo";
   const watchable = Boolean(game.canalId);
-  const officialUrl = (() => {
-    try {
-      if (!game.transmissaoUrl) return null;
-      const url = new URL(game.transmissaoUrl);
-      return url.protocol === "https:" && url.hostname === "www.primevideo.com" &&
-        url.pathname.startsWith("/detail/") ? url.href : null;
-    } catch { return null; }
-  })();
+  const officialTarget = officialBroadcastTarget(game.transmissaoUrl);
+  const officialUrl = officialTarget?.href;
+  const channelStatus = game.canalId ? channelPlayback?.[game.canalId] : undefined;
   const dateParts = game.dataLocal.split("-");
   const numberDay = dateParts[2] || "--";
   const monthAbbrev = new Intl.DateTimeFormat("pt-BR", { month:"short", timeZone:"UTC" })
@@ -89,11 +87,16 @@ export function MatchCard({ game, onWatch, onExplore }: {
       (watchable ? " has-channel" : "")}
       aria-label={game.casa + " contra " + game.fora + ". " + visual.statusLabel}>
       <button type="button" className="zf-ticket-main"
-        disabled={!watchable}
-        onClick={() => { if(game.canalId)onWatch(game.canalId); }}
+        disabled={!watchable && !officialUrl}
+        onClick={() => {
+          if (game.canalId) onWatch(game.canalId);
+          else if (officialUrl) window.open(officialUrl, "_blank", "noopener,noreferrer");
+        }}
         aria-label={watchable
-          ? "Assistir " + game.casa + " contra " + game.fora + " no canal " + game.canalNome
-          : "Jogo " + game.casa + " contra " + game.fora + " — transmissão não confirmada"}>
+          ? "Abrir " + game.canalNome + " para " + game.casa + " contra " + game.fora
+          : officialUrl
+            ? "Abrir " + officialTarget?.provider + " (requer assinatura) para " + game.casa + " contra " + game.fora
+            : "Jogo " + game.casa + " contra " + game.fora + " — transmissão não confirmada"}>
         <div className="zf-ticket-masthead">
           <span className="zf-ticket-date" aria-label={"Dia " + numberDay + " de " + monthAbbrev}>
             <strong>{numberDay}</strong><small>{monthAbbrev}</small>
@@ -175,7 +178,10 @@ export function MatchCard({ game, onWatch, onExplore }: {
               (active ? " is-onair" : "")}
               type="button" onClick={() => onWatch(game.canalId!)}>
               <Tv size={20} aria-hidden="true"/>
-              <span><small>ASSISTIR NO CANAL</small><strong>{game.canalNome}</strong></span>
+              <span><small>{channelStatus === "playing" ? "REPRODUÇÃO CONFIRMADA" :
+                channelStatus === "unavailable" ? "FONTE FALHOU · TENTAR NOVAMENTE" :
+                channelStatus === "connecting" ? "SINTONIZANDO CANAL…" :
+                "CANAL CADASTRADO · NÃO VERIFICADO"}</small><strong>{game.canalNome}</strong></span>
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {visual.highlightWatch && (
@@ -184,7 +190,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
             {(game.canaisDisponiveis || []).filter(ch => ch.id !== game.canalId).length > 0 && (
               <button type="button" className="zf-ticket-channels-toggle"
                 aria-expanded={channelsExpanded} onClick={() => setChannelsExpanded(value => !value)}>
-                Outros canais <span>{game.canaisDisponiveis?.length}</span>
+                Outros canais <span>{(game.canaisDisponiveis?.length || 1) - 1}</span>
               </button>
             )}
             {channelsExpanded && (
@@ -193,7 +199,8 @@ export function MatchCard({ game, onWatch, onExplore }: {
                   <button key={ch.id} type="button" onClick={() => onWatch(ch.id)}
                     aria-label={"Assistir também em " + ch.nome}>
                     {ch.logo ? <img src={ch.logo} alt="" loading="lazy"/> : <Tv size={13}/>}
-                    <span>{ch.nome}</span>
+                    <span>{ch.nome}{channelPlayback?.[ch.id] === "unavailable" ? " · falhou na última tentativa" :
+                      channelPlayback?.[ch.id] === "playing" ? " · reproduzindo" : ""}</span>
                   </button>
                 ))}
               </div>
@@ -202,10 +209,12 @@ export function MatchCard({ game, onWatch, onExplore }: {
         ) : officialUrl ? (
           <a className={"zf-ticket-watch zf-ticket-watch-external" +
             (visual.highlightWatch ? " is-ready" : "")}
-            href={officialUrl} target="_self" rel="noopener noreferrer"
-            aria-label={"Abrir transmissão oficial de " + game.casa + " contra " + game.fora + " no Prime Video"}>
+            href={officialUrl} target="_blank" rel="noopener noreferrer"
+            aria-label={"Abrir transmissão oficial de " + game.casa + " contra " + game.fora +
+              " em " + officialTarget?.provider + " (requer assinatura)"}>
             <ExternalLink size={18}/>
-            <span><small>TRANSMISSÃO OFICIAL</small><strong>{game.canaisTransmissao?.[0] || "Prime Video"}</strong></span>
+            <span><small>TRANSMISSÃO OFICIAL · REQUER ASSINATURA</small>
+              <strong>{game.canaisTransmissao?.[0] || officialTarget?.provider || "Serviço oficial"}</strong></span>
             <ArrowRight size={18}/>
           </a>
         ) : game.canaisTransmissao?.length ? (
@@ -225,7 +234,7 @@ export function MatchCard({ game, onWatch, onExplore }: {
   );
 }
 
-export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfProps) {
+export function JogosShelf({ onSelectCanalId, onExploreChannels, channelPlayback }: JogosShelfProps) {
   const [leagueFilter,setLeagueFilter] = useState("auto");
   const [today, setToday] = useState(() => dataBrasilia(new Date()));
   const [day, setDay] = useState(() => dataBrasilia(new Date()));
@@ -364,7 +373,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels }: JogosShelfPro
         ) : filtered.length ? (
           <div className="zgame-grid zf-reference-cards">
             {filtered.map(game => <MatchCard key={game.id} game={game}
-              onWatch={selectChannel} onExplore={onExploreChannels}/>)}
+              onWatch={selectChannel} onExplore={onExploreChannels} channelPlayback={channelPlayback}/>)}
           </div>
         ) : (
           <div className="zgame-empty">
