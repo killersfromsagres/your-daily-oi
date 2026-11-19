@@ -73,7 +73,7 @@ export function zoneFromSourceNote(note:string|null):StandingZoneId|null {
   if(/conference league|liga conferencia|liga de conferencia/.test(n))return "conference";
   if(/europa league|liga europa/.test(n))return "europa";
   if(/round of 16|oitavas|octavos/.test(n))return "knockout-direct";
-  if(/knockout play.?off|play.?off.*knockout|repescagem|repechaje/.test(n))return "knockout-playoff";
+  if(/knockout(?: phase)? play.?off|play.?off.*knockout|repescagem|repechaje/.test(n))return "knockout-playoff";
   if(/eliminat|eliminad|out of contention/.test(n))return "eliminated";
   if(/play.?off|liguilla/.test(n))return "playoff";
   return null;
