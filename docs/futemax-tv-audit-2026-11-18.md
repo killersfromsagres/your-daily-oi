@@ -17,15 +17,15 @@ O ge (18/11/2026) e o SBT News (18/11/2026) anunciam **Premiere** como transmiss
 - https://sbtnews.sbt.com.br/noticia/brasil/corinthians-x-botafogo-onde-assistir-ao-vivo-e-horario
 - Serviço oficial: https://globoplay.globo.com/canais/premiere/ (assinatura exigida)
 
-As fontes editoriais não identificam Premiere 2, Premiere 3 ou outra variante numerada. O jogo **não deve ser ligado arbitrariamente** a esses canais. Caso o catálogo ofereça no futuro um canal Premiere inequivocamente identificado e licenciado, a resolução por nome continua disponível, sem inventar um stream.
+As fontes editoriais não identificam Premiere 2, Premiere 3 ou outra variante numerada. O jogo **não deve ser ligado arbitrariamente** a esses canais. Caso o catálogo ofereça no futuro um canal Premiere inequivocamente identificado e licenciado, a resolução por nome continua disponível, sem inventar um stream. A listagem editorial de Premiere permanece informativa; não há redirecionamento externo ao clicar no jogo.
 
 ## Integrações implementadas
 
 1. Evidência de transmissão específica para o confronto e a data; normalização limitada de aliases de Corinthians e Botafogo RJ (sem confundir Botafogo-SP).
-2. Destina o card ao serviço oficial de Premiere quando não existe canal identificável com fonte confirmada para a partida.
+2. O card do Premiere permanece **dentro do ZANG FLIX**: abre o canal interno quando houver um canal correspondente com fonte cadastrada e, caso contrário, filtra a seleção dos canais Premiere no catálogo interno, indicando que não existe fonte validada. Não há redirecionamento automático para GE ou Globoplay.
 3. Player interno continua mostrando as opções existentes do mesmo canal. Nas partidas com mais de uma emissora identificada, mantém a escolha de cada emissora, sem misturar canais diferentes ou reproduzir outro jogo.
 4. Mostra o resultado real da última tentativa de reprodução no card de transmissão quando esse status existe no navegador; uma URL cadastrada não é prova de vídeo funcionando.
-5. Links externos só são aceitos por lista explícita de domínios e caminhos de serviços oficiais.
+5. Links externos são aceitos apenas para serviços exclusivos por partida (por exemplo, Prime Video); um link de página Premiere nunca é tratado como fonte de vídeo.
 
 ## Limites restantes
 
@@ -33,3 +33,7 @@ As fontes editoriais não identificam Premiere 2, Premiere 3 ou outra variante n
 - A disponibilidade de servidores e a reprodução devem ser verificadas em rede/browser de produção; não confundir o catálogo com a mídia.
 - O deploy na Vercel depende da liberação do limite de uso da equipe (HTTP 402), conforme bloqueio observado em 18/11/2026.
 - Para ingestão própria, configurar uma playlist HTTPS licenciada via `ZANG_TV_CATALOG_URLS` e `ZANG_TV_LICENSED_ONLY=1`, como descrito em `docs/tv-authorized-sources.md`. Uma URL pública de outro portal não confere direitos de retransmissão.
+
+## Revisão a pedido do usuário
+
+A página Futemax fornecida não forneceu um endpoint de mídia verificável ou prova de autorização para retransmissão. O aviso DMCA do próprio site (`https://futemax.gmbh/dmca-direitos-autorais-copyright/`) informa que o portal indexa players e links de **servidores terceiros** e não controla ou administra os sinais. Nenhum servidor Futemax foi cadastrado como fonte de vídeo. A fonte válida precisa vir de um provedor com autorização de exibição e URL HLS/DASH/TS compatível com o player. A integração existente faz ingestão periódica de catálogos de fontes licenciadas por `ZANG_TV_CATALOG_URLS` sem necessidade de editar os cards de jogos.
