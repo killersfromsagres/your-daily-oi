@@ -238,6 +238,18 @@ try{
       hasUnlinked:!!unlinked,channelText:label?.textContent||"",
       labelWidth:label?.getBoundingClientRect().width||0,
       fallbackHeight:unlinked?.getBoundingClientRect().height||0,
+      watchHeight:unlinked?.querySelector(".zf-ticket-watch")?.getBoundingClientRect().height||0,
+      mainHeight:unlinked?.closest(".zf-ticket")?.querySelector(".zf-ticket-main")?.getBoundingClientRect().height||0,
+      broadcastHeight:unlinked?.parentElement?.getBoundingClientRect().height||0,
+      fallbackStyle:unlinked&&{
+        flex:getComputedStyle(unlinked).flex,
+        display:getComputedStyle(unlinked).display,
+        minHeight:getComputedStyle(unlinked).minHeight,
+        height:getComputedStyle(unlinked).height,
+        alignItems:getComputedStyle(unlinked).alignItems,
+        writingMode:getComputedStyle(unlinked).writingMode,
+        position:getComputedStyle(unlinked).position
+      },
       fieldIcon:!!content?.querySelector("svg"),
       fieldStatus:content?.textContent||"",
       maxTicketHeight:Math.max(...cards.map(card=>card.getBoundingClientRect().height)),
