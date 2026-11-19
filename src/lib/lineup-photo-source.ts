@@ -23,8 +23,10 @@ export function providerPhoto(input:unknown):string|null {
   }catch{return null;}
 }
 export function photoFromSportsDbRecord(record:SportsDbPhotoRecord):string|null {
-  return providerPhoto(record.strCutout) ||
-    providerPhoto(record.strThumb) ||
+  // Portrait thumbnail has the correct framing for circular face avatars.
+  // Full-body cutout/render is only used when the thumbnail is absent.
+  return providerPhoto(record.strThumb) ||
+    providerPhoto(record.strCutout) ||
     providerPhoto(record.strRender);
 }
 async function photoByPlayerId(id:string):Promise<string|null> {
