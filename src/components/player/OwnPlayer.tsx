@@ -5,6 +5,7 @@ import { usePlayerEngine, isRelaySource } from "./usePlayerEngine";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
 import { selectHqBackend } from "@/lib/hq-playback-policy";
+import { automaticHqEnabled } from "@/lib/automatic-hq";
 import { chooseHqProcessing } from "@/lib/hq-render-policy";
 import { usePlayerFullscreen } from "./usePlayerFullscreen";
 import { PlayerControls } from "./PlayerControls";
@@ -288,11 +289,14 @@ export function OwnPlayer({
   // keep legacy WebGL HQ only as an explicit, correctly named fallback.
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const neuralCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [hqEnabled, setHqEnabled] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem("zangflix:ai-upscale") === "true"; }
-    catch { return false; }
-  });
+  // Automatic on initial load for VOD too; explicit opt-out is persisted.
+  // Both server and browser hydrate with the same initial state.
+  const [hqEnabled, setHqEnabled] = useState(true);
+  useEffect(() => {
+    let saved:string|null=null;
+    try { saved=localStorage.getItem("zangflix:ai-upscale"); } catch {}
+    setHqEnabled(automaticHqEnabled(saved));
+  }, []);
   const [hqNotice, setHqNotice] = useState<string | null>(null);
   useEffect(() => {
     if (!hqNotice) return;
