@@ -26,10 +26,10 @@ describe("Live player lightweight glass controls", () => {
     expect(glass).not.toContain(".ydo-live-video {");
     expect(player).toContain('import "@/styles/live-glass-panels.css"');
   });
-  test("sports playback defaults to smooth while keeping a user-selected mode", () => {
+  test("all live TV defaults to adaptive low latency while keeping a user-selected mode", () => {
     expect(player).toContain("preferredLiveLatencyMode(canal.categoria, canal.nome, saved)");
     expect(player).toContain('localStorage.setItem("zangflix:live-latency-mode", next)');
-    expect(player).toContain("Modo fluido · sem aceleração");
+    expect(player).toContain("Modo fluido · maior buffer");
     expect(player).toContain("hlsLatencyOptions(latencyMode)");
   });
 });

@@ -9,6 +9,9 @@ const errors = lines.filter(line => /^src\/.*error TS\d+:/.test(line));
 const tvPaths = [
   /^src\/components\/tv\/TvView\.tsx\(/,
   /^src\/components\/player\/LivePlayer\.tsx\(/,
+  /^src\/components\/player\/useVideoEnhancer\.ts\(/,
+  /^src\/lib\/live-latency\.ts\(/,
+  /^src\/lib\/live-hq-policy\.ts\(/,
   /^src\/lib\/live-source\.ts\(/,
   /^src\/lib\/live-browser-compat\.ts\(/,
   /^src\/lib\/live-probe\.ts\(/,
@@ -18,7 +21,7 @@ const relevant = errors.filter(line => tvPaths.some(pattern => pattern.test(line
 console.log(JSON.stringify({
   event:"tv-typecheck",tvErrors:relevant.length,
   inheritedProjectErrors:errors.length-relevant.length,
-  checked:"TV view, player, Brave compatibility, source parser, live-format probe and server handler",
+  checked:"TV player, WebGL HQ, latency policy, source parser, Brave and server routes",
 }));
 if(relevant.length){for(const error of relevant)console.error(error);process.exit(1);}
 if(result.error)throw result.error;

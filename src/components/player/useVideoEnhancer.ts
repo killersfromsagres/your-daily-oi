@@ -80,6 +80,7 @@ export function useVideoEnhancer(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   enabled: boolean,
   onPerformanceDowngrade?: () => void,
+  live = false,
 ): VideoEnhancerResult {
   const [active,setActive] = useState(false);
   const [supported,setSupported] = useState(true);
@@ -143,22 +144,25 @@ export function useVideoEnhancer(
         return;
       }
       const now = performance.now();
-      // Never process more than 30 frames per second. The browser handles
-      // the decoding clock and the original video remains available.
-      if (now - previousDraw < 32) { schedule(); return; }
+      // VOD is capped at 30 fps to conserve the GPU. For live sport, process
+      // delivered frames up to 60 fps; a 30 fps canvas over a 60 fps stream
+      // would look like poor frame rate even with smooth native decoding.
+      if (now - previousDraw < (live ? 15 : 32)) { schedule(); return; }
       previousDraw = now;
 
       const sourceW=video.videoWidth, sourceH=video.videoHeight;
       try {
         if (sourceW !== lastSourceW || sourceH !== lastSourceH) {
           if (sourceW > 1280 || sourceH > 720) { fail("source exceeds real-time budget"); return; }
-          const dpr=Math.min(window.devicePixelRatio || 1, 1.5);
+          const dpr=Math.min(window.devicePixelRatio || 1, live ? 1 : 1.5);
           const mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-          const displayW=Math.min(mobile?1280:1920, Math.max(sourceW, Math.round(video.clientWidth * dpr)));
+          const displayW=Math.min(live?(mobile?960:1280):(mobile?1280:1920),
+            Math.max(sourceW, Math.round(video.clientWidth * dpr)));
           const renderW=Math.max(1,Math.min(sourceW*2,displayW));
           const renderH=Math.max(1,Math.round(renderW * sourceH / sourceW));
-          // Preserve the decoded video aspect ratio when capping GPU pixels.
-          const fit=Math.min(1,(mobile?720:1080)/renderH);
+          // Live retains a smaller GPU output budget; the decoded original
+          // remains in control of time, audio, cast and real source quality.
+          const fit=Math.min(1,(live?(mobile?540:720):(mobile?720:1080))/renderH);
           canvas.width=Math.max(1,Math.round(renderW*fit));
           canvas.height=Math.max(1,Math.round(renderH*fit));
           lastSourceW=sourceW;
@@ -184,19 +188,19 @@ export function useVideoEnhancer(
       const elapsed=performance.now()-now;
       avgMs=frames===0?elapsed:avgMs*.82+elapsed*.18;
       frames++;
-      if (frames===1) {setSupported(true);setActive(true);}
+      if (frames===(live?8:1)) {setSupported(true);setActive(true);}
       if (frames % 30===0) setAvgFrameMs(Math.round(avgMs));
       // Detect frame drops, not just synchronous JS timings. GPU work may be
       // queued asynchronously even if a draw call itself appears fast.
       if (frames % 45===0 && typeof video.getVideoPlaybackQuality==="function") {
         const q=video.getVideoPlaybackQuality();
         const dropped=q.droppedVideoFrames-lastDropped, total=q.totalVideoFrames-lastTotal;
-        if (lastTotal>0 && total>25 && dropped/total>.12) {
+        if (lastTotal>0 && total>25 && dropped/total>(live?.085:.12)) {
           fail("video decoder dropped frames");return;
         }
         lastDropped=q.droppedVideoFrames;lastTotal=q.totalVideoFrames;
       }
-      if (frames>18 && avgMs>18) {fail("per-frame GPU upload too expensive");return;}
+      if (frames>18 && avgMs>(live?8.5:18)) {fail("per-frame GPU upload too expensive");return;}
       schedule();
     };
 
@@ -240,7 +244,7 @@ export function useVideoEnhancer(
         // Keep the context reusable when the user toggles HQ again.
       }
     };
-  },[videoRef,canvasRef,enabled,onPerformanceDowngrade]);
+  },[videoRef,canvasRef,enabled,onPerformanceDowngrade,live]);
 
   return {active,supported,avgFrameMs};
 }

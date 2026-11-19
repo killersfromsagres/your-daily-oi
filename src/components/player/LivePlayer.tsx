@@ -9,12 +9,15 @@ import { browserLiveTransport, isBraveBrowser, needsPlaybackGesture, type LivePr
 import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
 import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
+import { useVideoEnhancer } from "./useVideoEnhancer";
+import {liveHqBackend,liveHqFilter} from "@/lib/live-hq-policy";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
 import { CastControl } from "./CastControl";
-import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, preferredLiveLatencyMode, type LiveLatencyMode } from "@/lib/live-latency";
+import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, classifyLivePlaybackStall, nextLiveAutoRetryDelay, preferredLiveLatencyMode, shouldEaseLiveCatchup, type LiveLatencyMode } from "@/lib/live-latency";
 import { usePlayerFullscreen } from "./usePlayerFullscreen";
 import "@/styles/live-glass-panels.css";
 import "@/styles/live-browser-compat.css";
+import "@/styles/live-hq-adaptive.css";
 import {
   sortStreamsByHealth,
   recordFailedSource,
@@ -178,9 +181,16 @@ export function LivePlayer({
   proxyBackend = "catalog",
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hqCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hlsInstanceRef = useRef<{ destroy: () => void; liveSyncPosition?: number | undefined } | null>(null);
+  const hlsInstanceRef = useRef<{
+    destroy: () => void;
+    liveSyncPosition?: number | null | undefined;
+    engineManagesLatency?: boolean;
+    setHq?: (enabled:boolean)=>void;
+    setPlaybackSafety?: (enabled:boolean)=>void;
+  } | null>(null);
   const shakaInstanceRef = useRef<{ destroy: () => Promise<unknown> | void } | null>(null);
   const attemptedModesRef = useRef<Map<string, Set<LiveAccessMode>>>(new Map());
   const edgeBackupTriedRef = useRef(new Set<string>());
@@ -191,6 +201,8 @@ export function LivePlayer({
   const everPlayedRef = useRef(false);
   const lastResumeAttemptRef = useRef(0);
   const braveFirstPartyRef = useRef(false);
+  const decoderBaselineRef=useRef<{dropped:number;total:number}|null>(null);
+  const smoothPlaybackUntilRef=useRef(0);
 
   // Ordem https-first preservando a ordem curada do catálogo, com suporte total a DASH/ClearKey
   const validStreams = useMemo(() => {
@@ -224,6 +236,43 @@ export function LivePlayer({
     try{return clampVolume(localStorage.getItem(LIVE_VOL_KEY));}catch{return 1;}
   });
   const [isLiveEdge, setIsLiveEdge] = useState(true);
+  // TV HQ is opt-in. The native decoder and audio clock never stop while
+  // GPU work is prepared or when the source refuses canvas frame access.
+  const [hqEnabled,setHqEnabled]=useState(()=>{
+    if(typeof window==="undefined")return false;
+    try{return localStorage.getItem("zangflix:tv-hq")==="true";}catch{return false;}
+  });
+  const hqEnabledRef=useRef(hqEnabled);
+  hqEnabledRef.current=hqEnabled;
+  const [webglFailed,setWebglFailed]=useState(false);
+  const [hqSourceSize,setHqSourceSize]=useState({width:0,height:0});
+  const hqDevice=useMemo(()=>{
+    if(typeof navigator==="undefined")return {mobile:true,cores:2,memoryGb:2,reducedMotion:true};
+    const mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (typeof window!=="undefined"&&window.matchMedia("(pointer: coarse)").matches);
+    return {mobile,cores:navigator.hardwareConcurrency||2,
+      memoryGb:(navigator as Navigator&{deviceMemory?:number}).deviceMemory||4,
+      reducedMotion:typeof window!=="undefined"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches};
+  },[]);
+  const hqBackend=liveHqBackend({...hqDevice,...hqSourceSize});
+  const handleHqDowngrade=useCallback(()=>setWebglFailed(true),[]);
+  const enhancer=useVideoEnhancer(videoRef,hqCanvasRef,
+    hqEnabled&&hqBackend==="webgl"&&!webglFailed,handleHqDowngrade,true);
+  const hqActive=hqEnabled&&enhancer.active&&!webglFailed;
+  const measureLiveQuality=useCallback(()=>{
+    const video=videoRef.current;
+    if(!video)return;
+    const width=video.videoWidth,height=video.videoHeight;
+    setHqSourceSize(previous=>previous.width===width&&previous.height===height
+      ?previous:{width,height});
+  },[]);
+  const toggleHq=useCallback(()=>{
+    const next=!hqEnabled;
+    setHqEnabled(next);
+    if(next)setWebglFailed(false);
+    try{localStorage.setItem("zangflix:tv-hq",String(next));}catch{}
+    measureLiveQuality();
+  },[hqEnabled,measureLiveQuality]);
   const [latencyMode, setLatencyMode] = useState<LiveLatencyMode>(() => {
     if (typeof window === "undefined") return "fast";
     let saved: string | null = null;
@@ -301,6 +350,10 @@ export function LivePlayer({
     stablePlaybackSinceRef.current = null;
     everPlayedRef.current = false;
     lastResumeAttemptRef.current = 0;
+    decoderBaselineRef.current=null;
+    smoothPlaybackUntilRef.current=0;
+    setWebglFailed(false);
+    setHqSourceSize({width:0,height:0});
     setSourceIndex(0);
     setGestureRequired(false);
     setUseLegacyOnMismatch(false);
@@ -383,25 +436,42 @@ export function LivePlayer({
           break;
         }
       }
-      const hlsManaged = Boolean(hlsInstanceRef.current?.liveSyncPosition !== undefined);
+      const hlsManaged = Boolean(hlsInstanceRef.current?.engineManagesLatency);
       const decision = decideLiveCatchup({
         edge, current:video.currentTime,
-        syncPosition:hlsInstanceRef.current?.liveSyncPosition,
+        syncPosition:hlsInstanceRef.current?.liveSyncPosition??undefined,
         bufferAhead, stalled:video.readyState < 3,
         paused:video.paused, mode:latencyMode, hlsManaged,
       });
-      setIsLiveEdge(decision.behind < (latencyMode === "fast" ? 12 : 20));
-      if (decision.action === "seek") {
+      setIsLiveEdge(decision.behind < (latencyMode === "fast" ? 9 : 20));
+      const quality=typeof video.getVideoPlaybackQuality==="function"
+        ?video.getVideoPlaybackQuality():null;
+      const baseline=decoderBaselineRef.current;
+      if(quality){
+        decoderBaselineRef.current={dropped:quality.droppedVideoFrames,total:quality.totalVideoFrames};
+        if(baseline&&shouldEaseLiveCatchup({
+          droppedDelta:Math.max(0,quality.droppedVideoFrames-baseline.dropped),
+          totalDelta:Math.max(0,quality.totalVideoFrames-baseline.total),
+          bufferAhead,
+        }))smoothPlaybackUntilRef.current=Date.now()+16000;
+      }
+      if(bufferAhead<1.5)smoothPlaybackUntilRef.current=Date.now()+12000;
+      const protectingFrames=Date.now()<smoothPlaybackUntilRef.current;
+      hlsInstanceRef.current?.setPlaybackSafety?.(protectingFrames);
+      if(decision.action === "seek"&&!protectingFrames) {
         const position = Math.max(safeStart + 0.05, Math.min(edge - 0.5, decision.position));
         if (position > video.currentTime + 0.5) video.currentTime = position;
       } else if (!hlsManaged) {
-        video.playbackRate = decision.action === "speed" ? decision.rate : 1;
+        // 1–2.5% correction, never a disruptive acceleration when video
+        // drops frames or buffer is small; high-speed skips are forbidden.
+        const desired=decision.action==="speed"&&!protectingFrames?decision.rate:1;
+        if(Math.abs(video.playbackRate-desired)>0.001)video.playbackRate=desired;
       }
     };
     const onVisibility = () => {
       if (document.visibilityState === "visible") checkEdge();
     };
-    const interval = window.setInterval(checkEdge, 2500);
+    const interval = window.setInterval(checkEdge, 1250);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.clearInterval(interval);
@@ -409,6 +479,10 @@ export function LivePlayer({
       if (video.playbackRate !== 1) video.playbackRate = 1;
     };
   }, [latencyMode, streamUrl]);
+
+  useEffect(()=>{
+    hlsInstanceRef.current?.setHq?.(hqEnabled);
+  },[hqEnabled]);
 
   const toggleLatencyMode = useCallback(() => {
     setLatencyMode(previous => {
@@ -641,6 +715,8 @@ export function LivePlayer({
       return;
     }
     handlingFailureRef.current = false;
+    decoderBaselineRef.current=null;
+    smoothPlaybackUntilRef.current=0;
     let cancelled = false;
     setLoading(true);
     onPlaybackStatus?.(canal.id, "connecting");
@@ -703,7 +779,9 @@ export function LivePlayer({
         onPlaybackStatus?.(canal.id, "playing");
       }
       if (video.currentTime > 0.5) {
-        setIsLiveEdge(true);
+        // Do not overwrite the actual seekable-edge decision above on every
+        // timeupdate: the previous code permanently showed "AO VIVO" even
+        // when the decoder had accumulated several seconds of delay.
         // Um canal estável volta a ter direito a novas recuperações futuras.
         if (stablePlaybackSinceRef.current !== null && Date.now() - stablePlaybackSinceRef.current >= 45_000) {
           autoRetryCountRef.current = 0;
@@ -840,7 +918,10 @@ export function LivePlayer({
               video.muted = true;
               void player.play().catch(again => { requireGesture(again) || requireGesture(reason); });
             });
-            hlsInstanceRef.current = { destroy: () => { player.unload(); player.destroy(); } };
+            hlsInstanceRef.current = {
+              destroy: () => { player.unload(); player.destroy(); },
+              engineManagesLatency:true, // MPEG-TS already chases its own buffer.
+            };
             return;
           }
         }
@@ -854,7 +935,12 @@ export function LivePlayer({
           if (cancelled) return;
           if (Hls?.isSupported()) {
             const hasNested = attemptMode === "direct" && rawFonte?.url.includes("url=");
-            const hlsConfig: Record<string, unknown> = hlsLatencyOptions(latencyMode);
+            const hlsConfig: Record<string, unknown> = {
+              ...hlsLatencyOptions(latencyMode),
+              // HQ unlocks genuine higher available HLS renditions, subject
+              // to bandwidth and FPS ABR. Never force a 4K level.
+              capLevelToPlayerSize:!hqEnabledRef.current,
+            };
 
             if (hasNested && (Hls as any).DefaultConfig?.loader) {
               hlsConfig["loader"] = makeNestedPathLoader(Hls, rawFonte?.url || streamUrl);
@@ -928,8 +1014,18 @@ export function LivePlayer({
 
             hlsInstanceRef.current = {
               destroy: () => hls.destroy(),
+              engineManagesLatency:true,
               get liveSyncPosition() {
                 return hls.liveSyncPosition;
+              },
+              setHq:enabled=>{
+                // The HLS ABR engine can change level cap without reloading
+                // the playlist, avoiding a blackout when HQ is clicked.
+                (hls as unknown as {capLevelToPlayerSize:boolean}).capLevelToPlayerSize=!enabled;
+              },
+              setPlaybackSafety:enabled=>{
+                (hls as unknown as {config:{maxLiveSyncPlaybackRate:number}}).config.maxLiveSyncPlaybackRate=enabled?1:
+                  hlsLatencyOptions(latencyMode).maxLiveSyncPlaybackRate;
               },
             };
           } else {
@@ -1098,7 +1194,20 @@ export function LivePlayer({
         preload="none"
         webkit-playsinline="true"
         onClick={handleToggleMute}
+        onLoadedMetadata={measureLiveQuality}
+        onResize={measureLiveQuality}
+        style={{
+          opacity:hqActive?0:1,
+          filter:liveHqFilter(hqEnabled,hqActive),
+          transition:"opacity .12s ease",
+        }}
       />
+      {/* Live HQ: actual WebGL resampling/sharpening on capable source GPUs.
+          Only reveal after 8 verified frames; native video always remains the
+          decoded audio master. Secure/cross-origin sources fall back instantly. */}
+      <canvas ref={hqCanvasRef}
+        className={"ydo-live-hq-canvas"+(hqActive?" is-active":"")}
+        aria-hidden="true"/>
 
       {/* Camada de clique: clicar no vídeo muta/desmuta (ao vivo nunca pausa) */}
       <div
@@ -1231,6 +1340,14 @@ export function LivePlayer({
           </button>
         </div>
         <div className="zf-player-tools-end">
+          <button type="button"
+            className={"zf-player-action zf-live-hq-button"+(hqEnabled?" is-on":"")}
+            aria-pressed={hqEnabled}
+            aria-label={hqEnabled?"Desativar melhoria de imagem HQ":"Ativar melhoria de imagem HQ"}
+            title={hqEnabled?(hqActive?"HQ · nitidez WebGL em tempo real":"HQ · qualidade de fonte + melhoria de cor compatível"):"HQ · melhorar imagem sem interromper o canal"}
+            onClick={toggleHq}>
+            <span aria-hidden="true">HQ</span><span className="zf-live-hq-dot" aria-hidden="true"/>
+          </button>
           <div className="zf-player-settings" ref={settingsRef}>
             <button type="button" className="zf-player-action"
               aria-expanded={sourcesOpen}
@@ -1253,8 +1370,14 @@ export function LivePlayer({
                 <button type="button" className="zf-player-menu-option"
                   onClick={() => { toggleLatencyMode(); setSourcesOpen(false); }}>
                   <Gauge size={15} />
-                  <span>{latencyMode === "fast" ? "Menor atraso" : "Modo fluido · sem aceleração"}</span>
+                  <span>{latencyMode === "fast" ? "Atraso mínimo · automático" : "Modo fluido · maior buffer"}</span>
                   <span className="zf-player-menu-hint">Trocar</span>
+                </button>
+                <button type="button" className={"zf-player-menu-option"+(hqEnabled?" is-selected":"")}
+                  onClick={toggleHq} aria-pressed={hqEnabled}>
+                  <span className="zf-live-hq-menu-symbol" aria-hidden="true">HQ</span>
+                  <span>HQ · {hqEnabled?(hqActive?"Nitidez GPU ativa":"Melhoria compatível ativa"):"Melhorar imagem"}</span>
+                  <span className="zf-player-menu-hint">{hqEnabled?"Ligado":"Desligado"}</span>
                 </button>
                 <button type="button" className="zf-player-menu-option"
                   onClick={() => { handlePiPToggle(); setSourcesOpen(false); }}>

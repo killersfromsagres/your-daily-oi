@@ -1,6 +1,6 @@
 // tests/live-latency.test.ts — bun tests, pure latency policy.
 import { describe, expect, test } from "bun:test";
-import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, preferredLiveLatencyMode } from "../src/lib/live-latency";
+import { decideLiveCatchup, hlsLatencyOptions, mpegtsLatencyOptions, preferredLiveLatencyMode, shouldEaseLiveCatchup } from "../src/lib/live-latency";
 
 describe("Live latency edge policy", () => {
   test("fast mode targets fewer segments while keeping a safety buffer", () => {
@@ -17,8 +17,8 @@ describe("Live latency edge policy", () => {
     expect(stable.backBufferLength).toBeLessThanOrEqual(28);
   });
   test("sports and Premiere start with smoother buffering unless the viewer explicitly selected fast", () => {
-    expect(preferredLiveLatencyMode("Esportes", "Premiere 3")).toBe("stable");
-    expect(preferredLiveLatencyMode("TV", "SporTV 2")).toBe("stable");
+    expect(preferredLiveLatencyMode("Esportes", "Premiere 3")).toBe("fast");
+    expect(preferredLiveLatencyMode("TV", "SporTV 2")).toBe("fast");
     expect(preferredLiveLatencyMode("Esportes", "Premiere 3", "fast")).toBe("fast");
     expect(preferredLiveLatencyMode("Esportes", "Premiere 3", "stable")).toBe("stable");
     expect(preferredLiveLatencyMode("Variedades", "TV Cultura")).toBe("fast");
@@ -43,8 +43,22 @@ describe("Live latency edge policy", () => {
   });
   test("adjusts native video speed while keeping HLS speed under its own controller", () => {
     const input = { edge:100,current:90,syncPosition:97,bufferAhead:3,stalled:false,paused:false,mode:"fast" as const,hlsManaged:false };
-    expect(decideLiveCatchup(input)).toMatchObject({action:"speed",rate:1.03});
+    expect(decideLiveCatchup(input)).toMatchObject({action:"speed",rate:1.025});
     expect(decideLiveCatchup({...input,hlsManaged:true}).action).toBe("none");
     expect(decideLiveCatchup({...input,mode:"stable"}).action).toBe("none");
+  });
+  test("2-segment live target is always on with a gentle maximum rate and decoder fallback",()=>{
+    expect(hlsLatencyOptions("fast").liveSyncDurationCount).toBe(2);
+    expect(hlsLatencyOptions("fast").maxLiveSyncPlaybackRate).toBeLessThanOrEqual(1.025);
+    expect(hlsLatencyOptions("fast").capLevelOnFPSDrop).toBe(true);
+    expect(preferredLiveLatencyMode("Esportes","Premiere 3","stable")).toBe("stable");
+    expect(shouldEaseLiveCatchup({droppedDelta:4,totalDelta:30,bufferAhead:4})).toBe(true);
+    expect(shouldEaseLiveCatchup({droppedDelta:0,totalDelta:30,bufferAhead:1})).toBe(true);
+    expect(shouldEaseLiveCatchup({droppedDelta:0,totalDelta:30,bufferAhead:3})).toBe(false);
+    expect(decideLiveCatchup({edge:100,current:94,syncPosition:97,bufferAhead:2.2,
+      stalled:false,paused:false,mode:"fast",hlsManaged:false}))
+      .toMatchObject({action:"speed",rate:1.0125});
+    expect(decideLiveCatchup({edge:100,current:94,syncPosition:97,bufferAhead:2.2,
+      stalled:false,paused:false,mode:"fast",hlsManaged:true}).action).toBe("none");
   });
 });
