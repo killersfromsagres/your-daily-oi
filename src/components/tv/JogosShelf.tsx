@@ -183,10 +183,10 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
               (active ? " is-onair" : "")}
               type="button" onClick={() => onWatch(game.canalId!)}>
               <Tv size={20} aria-hidden="true"/>
-              <span><small>{channelStatus === "playing" ? "REPRODUÇÃO CONFIRMADA" :
+              <span><small>{"ASSISTIR NO CANAL · " + (channelStatus === "playing" ? "REPRODUÇÃO CONFIRMADA" :
                 channelStatus === "unavailable" ? "FONTE FALHOU · TENTAR NOVAMENTE" :
                 channelStatus === "connecting" ? "SINTONIZANDO CANAL…" :
-                "CANAL CADASTRADO · NÃO VERIFICADO"}</small><strong>{game.canalNome}</strong></span>
+                "FONTE NÃO VERIFICADA")}</small><strong>{game.canalNome}</strong></span>
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {visual.highlightWatch && (
