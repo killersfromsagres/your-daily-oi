@@ -97,6 +97,13 @@ export function mergeFootballScores(
       ...(update.minuto !== undefined ? {minuto: update.minuto} : {}),
       placarCasa: update.placarCasa ?? previous.placarCasa,
       placarFora: update.placarFora ?? previous.placarFora,
+      // ESPN detail might be temporarily unavailable; preserve previously
+      // verified scorers only if the official score has not changed.
+      ...((update.gols?.length ? {gols:update.gols} :
+        previous.gols?.length &&
+        (update.placarCasa??previous.placarCasa)===previous.placarCasa &&
+        (update.placarFora??previous.placarFora)===previous.placarFora
+          ? {gols:previous.gols} : {gols:undefined})),
       canalId: previous.canalId || update.canalId,
       canalNome: previous.canalNome || update.canalNome,
       canalLogo: previous.canalLogo || update.canalLogo,
