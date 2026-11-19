@@ -11,6 +11,7 @@ import type { ProgramaEPG } from "@/lib/epg";
 import { LiveVolumeControl } from "./LiveVolumeControl";
 import { useVideoEnhancer } from "./useVideoEnhancer";
 import { useNeuralVideoUpscaler } from "./useNeuralVideoUpscaler";
+import {isSportsLiveChannel,useSportsDeinterlacer} from "./useSportsDeinterlacer";
 import { automaticHqEnabled, visibleLiveHqStatus } from "@/lib/automatic-hq";
 import {liveHqBackend,liveHqFilter} from "@/lib/live-hq-policy";
 import { LIVE_VOLUME_KEY, clampVolume, stepVolume } from "@/lib/live-volume";
@@ -185,6 +186,8 @@ export function LivePlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const hqCanvasRef = useRef<HTMLCanvasElement>(null);
   const neuralCanvasRef = useRef<HTMLCanvasElement>(null);
+  const neural4xCanvasRef=useRef<HTMLCanvasElement>(null);
+  const deinterlaceCanvasRef=useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hlsInstanceRef = useRef<{
@@ -261,22 +264,41 @@ export function LivePlayer({
       reducedMotion:typeof window!=="undefined"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       webgpu:"gpu" in navigator};
   },[]);
-  const hqBackend=liveHqBackend({...hqDevice,...hqSourceSize});
-  const neuralWanted=hqEnabled&&hqBackend==="neural";
-  // Existing trained 2× CNN weights for *real footage* (not a CSS effect).
-  // Automatically fall back if live 50/60 fps decoding cannot keep up.
+  // Stadium, grass and fast football pans may expose interlaced combing.
+  // Motion-gated field reconstruction precedes every GPU HQ path when safe.
+  const sportsChannel=isSportsLiveChannel(canal.nome,canal.categoria);
+  const deinterlacer=useSportsDeinterlacer(
+    videoRef,deinterlaceCanvasRef,hqEnabled&&sportsChannel);
+  const processedInput={
+    canvasRef:deinterlaceCanvasRef,active:deinterlacer.active,
+  };
+  const hqBackend=liveHqBackend({...hqDevice,...hqSourceSize,sports:sportsChannel});
+  // The repository has real trained CNN 2× weights, not a native 4× model:
+  // two sequential 2× WebGPU passes can provide 4× reconstruction only on
+  // small sources and fast desktop GPUs, with immediate 2× fallback.
+  const neural4x=useNeuralVideoUpscaler(
+    videoRef,neural4xCanvasRef,
+    hqEnabled&&hqBackend==="neural-4x","movie","live",4,processedInput);
+  const neuralWanted=hqEnabled&&
+    (hqBackend==="neural"||
+      (hqBackend==="neural-4x"&&neural4x.status==="unavailable"));
   const neural=useNeuralVideoUpscaler(
-    videoRef,neuralCanvasRef,neuralWanted,"movie","live");
+    videoRef,neuralCanvasRef,neuralWanted,"movie","live",2,processedInput);
   const handleHqDowngrade=useCallback(()=>setWebglFailed(true),[]);
+  const spatialWanted=hqEnabled&&!webglFailed&&(
+    hqBackend==="spatial"||
+    (hqBackend==="neural"&&neural.status==="unavailable")||
+    (hqBackend==="neural-4x"&&neural4x.status==="unavailable"&&
+      neural.status==="unavailable"));
   const enhancer=useVideoEnhancer(videoRef,hqCanvasRef,
-    hqEnabled&&!webglFailed&&
-      (hqBackend==="spatial"||(hqBackend==="neural"&&neural.status==="unavailable")),
-    handleHqDowngrade,true);
+    spatialWanted,handleHqDowngrade,true,processedInput);
   const hqStatus=visibleLiveHqStatus({
-    enabled:hqEnabled,neuralActive:neural.active,
+    enabled:hqEnabled,neural4xActive:neural4x.active,
+    neuralActive:neural.active,
     spatialActive:enhancer.active&&!webglFailed,
+    deinterlaceActive:deinterlacer.active,
   });
-  const hqActive=hqStatus==="ai-2x"||hqStatus==="spatial";
+  const hqActive=hqStatus!=="native"&&hqStatus!=="off";
   const measureLiveQuality=useCallback(()=>{
     const video=videoRef.current;
     if(!video)return;
@@ -1201,6 +1223,8 @@ export function LivePlayer({
       className={"ydo-live-player-container" + (theaterFullscreen ? " is-theater" : "") + (rotateLandscapeFallback ? " is-landscape-fallback" : "")}
       data-controls-visible={controlsVisible}
       data-hq-renderer={hqStatus}
+      data-sports-deinterlace={deinterlacer.active?"active":
+        deinterlacer.failed?"unavailable":"pending"}
       onMouseMove={showControls}
       onTouchStart={showControls}
       onFocusCapture={showControls}
@@ -1221,10 +1245,18 @@ export function LivePlayer({
           transition:"opacity .12s ease",
         }}
       />
-      {/* HQ starts automatically: the real WebGPU CNN 2× is the first choice
-          on capable devices, then one-pass spatial edge reconstruction on
-          WebGL2. No canvas is shown until real frames have been processed;
-          decoding, audio, PiP and the low-latency clock remain on <video>. */}
+      {/* Correct combing BEFORE enlargement: the original video remains
+          the audio/latency clock and always survives GPU or CORS failure. */}
+      <canvas ref={deinterlaceCanvasRef}
+        className={"ydo-live-hq-canvas ydo-live-deinterlace-canvas"+
+          (hqStatus==="deinterlace"?" is-active":"")}
+        aria-hidden="true"/>
+      {/* Two sequential real trained CNN 2× stages = true 4× pixel output
+          only when a small source and powerful GPU can sustain live FPS. */}
+      <canvas ref={neural4xCanvasRef}
+        className={"ydo-live-hq-canvas ydo-live-ai4x-canvas"+
+          (hqStatus==="ai-4x"?" is-active":"")}
+        aria-hidden="true"/>
       <canvas ref={neuralCanvasRef}
         className={"ydo-live-hq-canvas ydo-live-ai-canvas"+(hqStatus==="ai-2x"?" is-active":"")}
         aria-hidden="true"/>
@@ -1367,9 +1399,11 @@ export function LivePlayer({
             className={"zf-player-action zf-live-hq-button"+(hqEnabled?" is-on":"")}
             aria-pressed={hqEnabled}
             aria-label={hqEnabled?"Desativar melhoria de imagem HQ":"Ativar melhoria de imagem HQ"}
-            title={hqStatus==="ai-2x"?"HQ IA · super-resolução neural 2× ativa":
-              hqStatus==="spatial"?"HQ · reconstrução espacial de pixels ativa":
-              hqEnabled?"HQ automático · qualidade de fonte e fallback seguro":
+            title={hqStatus==="ai-4x"?"HQ IA 4× · CNN 2× em duas etapas":
+              hqStatus==="ai-2x"?"HQ IA · super-resolução neural 2× ativa":
+              hqStatus==="spatial"?"HQ · reconstrução espacial e deinterlace":
+              hqStatus==="deinterlace"?"HQ · desentrelaçamento adaptativo de movimento":
+              hqEnabled?"HQ automático · melhor qualidade disponível":
                 "Ativar HQ automático"}
             onClick={toggleHq}>
             <span aria-hidden="true">HQ</span><span className="zf-live-hq-dot" aria-hidden="true"/>
@@ -1402,9 +1436,12 @@ export function LivePlayer({
                 <button type="button" className={"zf-player-menu-option"+(hqEnabled?" is-selected":"")}
                   onClick={toggleHq} aria-pressed={hqEnabled}>
                   <span className="zf-live-hq-menu-symbol" aria-hidden="true">HQ</span>
-                  <span>HQ · {hqStatus==="ai-2x"?"IA 2× real ativa":
-                    hqStatus==="spatial"?"Reconstrução de pixels":
-                    hqEnabled?(neural.status==="loading"?"Preparando IA…":"Melhoria adaptativa"):"Desativado"}</span>
+                  <span>HQ · {hqStatus==="ai-4x"?"IA 4× (duas passagens)":
+                    hqStatus==="ai-2x"?"IA 2× em tempo real":
+                    hqStatus==="spatial"?"Reconstrução espacial":
+                    hqStatus==="deinterlace"?"Deinterlace adaptativo":
+                    hqEnabled?(neural.status==="loading"||neural4x.status==="loading"?
+                      "Preparando IA…":"Processamento nativo"):"Desativado"}</span>
                   <span className="zf-player-menu-hint">{hqEnabled?"Ligado":"Desligado"}</span>
                 </button>
                 <button type="button" className="zf-player-menu-option"
