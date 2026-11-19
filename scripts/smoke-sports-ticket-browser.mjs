@@ -52,9 +52,9 @@ const STATE=`(()=>{
   visibleLiveStatus:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
     card.querySelector(".zf-ticket-status-row.is-live .zf-ticket-status")?.textContent?.includes("AO VIVO")),
   visibleLiveMinute:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
-    card.querySelector(".zf-ticket-score-phase strong")?.textContent?.trim()==="67:24"),
+    card.querySelector(".zf-ticket-score-phase strong")?.textContent?.trim()==="87:24"),
   visibleLiveScore:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
-    card.querySelector(".zf-ticket-score-pair")?.textContent?.replace(/\s+/g,"").includes("1–0")),
+    card.querySelector(".zf-ticket-score-pair")?.textContent?.replace(/\s+/g,"").includes("1–1")),
   visibleReadyWatch:!!document.querySelector(".zf-ticket-watch.is-ready"),
   computedGlassLayers:element?getComputedStyle(element).backgroundImage.slice(0,680):"",
   trueFrostedGlass:!!element?.classList.contains("zf-ticket-premium") &&
@@ -176,7 +176,7 @@ try{
    horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
    canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false,
    status:"ao-vivo",fase:"segundo-tempo",faseRotulo:"2º TEMPO",
-   minuto:"67:24",placarCasa:1,placarFora:1,
+   minuto:"87:24",placarCasa:1,placarFora:1,
    gols:[{id:"goal_a",team:"home",scorer:"Gabriel",minute:"39′"},
          {id:"goal_b",team:"away",scorer:"João Pedro",minute:"82′"}]};
  // Same-grid scheduled fixtures with differing broadcaster counts for QA.
