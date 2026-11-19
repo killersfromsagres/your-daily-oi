@@ -1,6 +1,7 @@
 /**
- * Allowlisted, first-party broadcaster pages for verified individual matches.
- * A web landing page is not an embeddable media stream or a license.
+ * Allowlisted official streaming destinations for event-exclusive services.
+ * A Premiere network listing is NOT an embeddable stream and must stay in
+ * the site's own channel selection (never open a browser link as a video).
  */
 export interface OfficialBroadcastTarget {
   href: string;
@@ -13,9 +14,6 @@ export function officialBroadcastTarget(candidate?: string | null): OfficialBroa
   try {
     const url = new URL(candidate);
     if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) return null;
-    if (url.hostname === "globoplay.globo.com" && url.pathname === "/canais/premiere/") {
-      return { href: url.href, provider: "Premiere (Globoplay)", subscriptionRequired: true };
-    }
     if (url.hostname === "www.primevideo.com" && /^\/detail\/[A-Z0-9]+\/?$/.test(url.pathname)) {
       return { href: url.href, provider: "Prime Video", subscriptionRequired: true };
     }

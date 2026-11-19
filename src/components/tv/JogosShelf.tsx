@@ -26,7 +26,7 @@ import "@/styles/football-tv-remote.css";
 
 interface JogosShelfProps {
   onSelectCanalId: (id: string) => void;
-  onExploreChannels?: () => void;
+  onExploreChannels?: (channelName?: string) => void;
   channelPlayback?: Record<string, "connecting" | "playing" | "unavailable">;
 }
 
@@ -60,7 +60,7 @@ function TeamCrest({ src, name }: { src?: string | undefined; name: string }) {
 export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   game: JogoBrasileirao;
   onWatch: (id: string) => void;
-  onExplore?: (() => void) | undefined;
+  onExplore?: ((channelName?: string) => void) | undefined;
   channelPlayback?: Record<string, "connecting" | "playing" | "unavailable"> | undefined;
 }) {
   const [channelsExpanded, setChannelsExpanded] = useState(false);
@@ -71,6 +71,8 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   const officialTarget = officialBroadcastTarget(game.transmissaoUrl);
   const officialUrl = officialTarget?.href;
   const channelStatus = game.canalId ? channelPlayback?.[game.canalId] : undefined;
+  const exploreChannel = game.canaisTransmissao?.[0];
+  const canExplore = Boolean(exploreChannel && onExplore);
   const dateParts = game.dataLocal.split("-");
   const numberDay = dateParts[2] || "--";
   const monthAbbrev = new Intl.DateTimeFormat("pt-BR", { month:"short", timeZone:"UTC" })
@@ -87,16 +89,19 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
       (watchable ? " has-channel" : "")}
       aria-label={game.casa + " contra " + game.fora + ". " + visual.statusLabel}>
       <button type="button" className="zf-ticket-main"
-        disabled={!watchable && !officialUrl}
+        disabled={!watchable && !officialUrl && !canExplore}
         onClick={() => {
           if (game.canalId) onWatch(game.canalId);
           else if (officialUrl) window.open(officialUrl, "_blank", "noopener,noreferrer");
+          else if (canExplore) onExplore?.(exploreChannel);
         }}
         aria-label={watchable
           ? "Abrir " + game.canalNome + " para " + game.casa + " contra " + game.fora
           : officialUrl
             ? "Abrir " + officialTarget?.provider + " (requer assinatura) para " + game.casa + " contra " + game.fora
-            : "Jogo " + game.casa + " contra " + game.fora + " — transmissão não confirmada"}>
+            : canExplore
+              ? "Ver o canal " + exploreChannel + " no catálogo interno do Zang Flix"
+              : "Jogo " + game.casa + " contra " + game.fora + " — transmissão não confirmada"}>
         <div className="zf-ticket-masthead">
           <span className="zf-ticket-date" aria-label={"Dia " + numberDay + " de " + monthAbbrev}>
             <strong>{numberDay}</strong><small>{monthAbbrev}</small>
@@ -178,10 +183,10 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
               (active ? " is-onair" : "")}
               type="button" onClick={() => onWatch(game.canalId!)}>
               <Tv size={20} aria-hidden="true"/>
-              <span><small>{channelStatus === "playing" ? "REPRODUÇÃO CONFIRMADA" :
+              <span><small>{"ASSISTIR NO CANAL · " + (channelStatus === "playing" ? "REPRODUÇÃO CONFIRMADA" :
                 channelStatus === "unavailable" ? "FONTE FALHOU · TENTAR NOVAMENTE" :
                 channelStatus === "connecting" ? "SINTONIZANDO CANAL…" :
-                "CANAL CADASTRADO · NÃO VERIFICADO"}</small><strong>{game.canalNome}</strong></span>
+                "FONTE NÃO VERIFICADA")}</small><strong>{game.canalNome}</strong></span>
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
             {visual.highlightWatch && (
@@ -219,13 +224,19 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
           </a>
         ) : game.canaisTransmissao?.length ? (
           <div className="zf-ticket-identified"><Tv size={16}/>
-            <span>TRANSMISSÃO INFORMADA · {game.canaisTransmissao.join(" · ")} · ainda sem canal vinculado</span>
+            <span>TRANSMISSORA IDENTIFICADA · {game.canaisTransmissao.join(" · ")} · sem fonte válida vinculada ao player</span>
+            {onExplore && (
+              <button className="zf-ticket-channels-toggle" type="button"
+                onClick={() => onExplore(exploreChannel)}>
+                Procurar canais no ZANG FLIX <ArrowRight size={14}/>
+              </button>
+            )}
           </div>
         ) : (
           <div className="zf-ticket-pending">
             <ShieldQuestion size={17}/>
             <span>Transmissão a confirmar</span>
-            {onExplore && <button type="button" onClick={onExplore}>Ver canais <ArrowRight size={14}/></button>}
+            {onExplore && <button type="button" onClick={() => onExplore()}>Ver canais <ArrowRight size={14}/></button>}
           </div>
         )}
       </div>

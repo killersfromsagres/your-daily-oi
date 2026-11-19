@@ -43,7 +43,7 @@ describe("match ticket and tactical field",()=>{
   test("the new card retains channel navigation and visible TV status",()=>{
     const component=readFileSync("src/components/tv/JogosShelf.tsx","utf8");
     expect(component).toContain("zf-ticket-watch");
-    expect(component).toContain("if(game.canalId)onWatch(game.canalId)");
+    expect(component).toMatch(/if\s*\(\s*game\.canalId\s*\)\s*onWatch\(game\.canalId\)/);
     expect(component).toContain("zf-ticket-premium");
     expect(component).toContain("zf-ticket-score-panel");
     expect(component).toContain("zf-ticket-countdown");
