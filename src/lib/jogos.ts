@@ -421,7 +421,7 @@ export async function getJogosPlacares(
       // Never propagate a cached Premiere webpage as a stream after catalog
       // refreshes. A verified network name without a watch URL needs a real
       // catalog source and a same-channel match.
-      else if (proof?.exclusive) parsed.transmissaoUrl = undefined;
+      else if (proof?.exclusive) delete parsed.transmissaoUrl;
       if (proof?.exclusive && proof.watchUrl) {
         parsed.canalId = null;
         parsed.canalNome = null;
