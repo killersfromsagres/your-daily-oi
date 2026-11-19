@@ -1,6 +1,6 @@
 // scripts/smoke-mobile-menu-navigation.mjs — browser click-through of responsive navigation.
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 const BASE="http://127.0.0.1:4197", CDP_PORT=9228;
@@ -87,6 +87,75 @@ const FIXTURE="\n<div class=\"ydo-live-player-container\" data-controls-visible=
    await evaluate("document.querySelector('#zf-player-layout-test .zf-player-menu').remove()");
   }
  }
+ // Runtime WebGL2 compilation + a synthetic combing sample, using the
+ // EXACT shader shipped in useSportsDeinterlacer.ts. Do not use mocked GLSL.
+ const source=readFileSync("src/components/player/useSportsDeinterlacer.ts","utf8");
+ const vertex=source.match(/export const LIVE_DEINTERLACE_VERTEX=\`([\\s\\S]*?)\`;/)?.[1];
+ const fragment=source.match(/export const LIVE_DEINTERLACE_FRAGMENT=\`([\\s\\S]*?)\`;/)?.[1];
+ if(!vertex||!fragment)throw Error("Deinterlace shaders not found in actual source");
+ const glTest=await evaluate(`(async()=>{
+   const canvas=document.createElement("canvas");
+   canvas.width=4;canvas.height=4;
+   const gl=canvas.getContext("webgl2",{preserveDrawingBuffer:true,antialias:false});
+   if(!gl)return {skipped:"WebGL2 unavailable in this CI browser"};
+   const vertexSrc=${JSON.stringify(vertex)};
+   const fragmentSrc=${JSON.stringify(fragment)};
+   const compile=(type,src)=>{
+     const shader=gl.createShader(type);
+     gl.shaderSource(shader,src);gl.compileShader(shader);
+     if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))
+       throw Error(gl.getShaderInfoLog(shader)||"GPU shader compile error");
+     return shader;
+   };
+   const vs=compile(gl.VERTEX_SHADER,vertexSrc);
+   const fs=compile(gl.FRAGMENT_SHADER,fragmentSrc);
+   const program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);
+   gl.linkProgram(program);
+   if(!gl.getProgramParameter(program,gl.LINK_STATUS))
+     throw Error(gl.getProgramInfoLog(program)||"GPU shader link error");
+   gl.useProgram(program);gl.viewport(0,0,4,4);
+   const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+   const position=gl.getAttribLocation(program,"a_position");
+   gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+   const tex=(unit,data)=>{
+     const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);
+     gl.bindTexture(gl.TEXTURE_2D,t);
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,4,4,0,gl.RGBA,gl.UNSIGNED_BYTE,data);
+     return t;
+   };
+   const frame=new Uint8Array(4*4*4),still=new Uint8Array(4*4*4);
+   for(let y=0;y<4;y++)for(let x=0;x<4;x++){
+     const k=(y*4+x)*4;
+     const v=y%2?240:64;
+     frame.set([v,v,v,255],k);
+     still.set([64,64,64,255],k);
+   }
+   const a=tex(0,frame),b=tex(1,still);
+   gl.uniform1i(gl.getUniformLocation(program,"u_current"),0);
+   gl.uniform1i(gl.getUniformLocation(program,"u_previous"),1);
+   gl.uniform1f(gl.getUniformLocation(program,"u_previousValid"),1);
+   gl.uniform2f(gl.getUniformLocation(program,"u_texel"),.25,.25);
+   const pixel=new Uint8Array(4);
+   const draw=()=>{
+     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+     gl.readPixels(1,1,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
+     return pixel[0];
+   };
+   const moving=draw();
+   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,b);
+   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,4,4,0,gl.RGBA,gl.UNSIGNED_BYTE,frame);
+   const staticFrame=draw();
+   return {moving,staticFrame,error:gl.getError()};
+ })()`);
+ console.log(JSON.stringify({event:"deinterlace-webgl-actual-shader",...glTest}));
+ if(!glTest.skipped&&(glTest.error!==0||glTest.moving>=185||
+     glTest.staticFrame<205||glTest.staticFrame<=glTest.moving+60))
+   throw Error("Motion deinterlace shader failed synthetic combing pixel test: "+JSON.stringify(glTest));
  // Confirm the real LivePlayer component also mounts the new toolbar, not just
  // the geometry fixture. Channel availability is tested by separate workflows.
  await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
