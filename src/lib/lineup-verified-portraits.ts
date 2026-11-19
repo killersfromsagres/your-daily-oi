@@ -78,7 +78,10 @@ export function matchDirectoryPlayer(
 ):DirectoryResult {
   const matches=verifiedRoster.flatMap(candidate=>{
     if(candidate.strSport&&!/^(soccer|football)$/i.test(candidate.strSport))return [];
-    if(candidate.strTeam&&!sameClub(candidate.strTeam,teamName))return [];
+    // A strong cross-provider ESPN ID is more authoritative than a player's
+    // current club, which can differ from the club in a past match.
+    if(candidate.strTeam&&!sameClub(candidate.strTeam,teamName)&&
+       String(candidate.idESPN||"")!==player.id)return [];
     const match=samePerson(player.name,player.id,candidate);
     return match?[{player:candidate,match}]:[];
   });
