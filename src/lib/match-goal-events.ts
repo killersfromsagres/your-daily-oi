@@ -33,7 +33,7 @@ export interface ESPNGoalSummary {
   competitions?:Array<{details?:ESPNGoalPlay[]} | null>;
 }
 export type MatchGoalClubs = {
-  homeId?:string;awayId?:string;
+  homeId?:string|undefined;awayId?:string|undefined;
 };
 const clean=(text?:string)=>String(text||"").trim().replace(/\s+/g," ").slice(0,85);
 /** Return the already elapsed match minute; do not append 45 to an
