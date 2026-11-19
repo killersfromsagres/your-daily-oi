@@ -52,9 +52,9 @@ const STATE=`(()=>{
   visibleLiveStatus:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
     card.querySelector(".zf-ticket-status-row.is-live .zf-ticket-status")?.textContent?.includes("AO VIVO")),
   visibleLiveMinute:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
-    card.querySelector(".zf-ticket-score-phase strong")?.textContent?.trim()==="67:24"),
+    card.querySelector(".zf-ticket-score-phase strong")?.textContent?.trim()==="87:24"),
   visibleLiveScore:!!Array.from(document.querySelectorAll(".zf-ticket")).find(card=>
-    card.querySelector(".zf-ticket-score-pair")?.textContent?.replace(/\s+/g,"").includes("1–0")),
+    card.querySelector(".zf-ticket-score-pair")?.textContent?.replace(/\s+/g,"").includes("1–1")),
   visibleReadyWatch:!!document.querySelector(".zf-ticket-watch.is-ready"),
   computedGlassLayers:element?getComputedStyle(element).backgroundImage.slice(0,680):"",
   trueFrostedGlass:!!element?.classList.contains("zf-ticket-premium") &&
@@ -176,17 +176,28 @@ try{
    horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
    canaisTransmissao:[],transmissao:"nao-confirmada",destaque:false,
    status:"ao-vivo",fase:"segundo-tempo",faseRotulo:"2º TEMPO",
-   minuto:"67:24",placarCasa:1,placarFora:0};
+   minuto:"87:24",placarCasa:1,placarFora:1,
+   gols:[{id:"goal_a",team:"home",scorer:"Gabriel",minute:"39′"},
+         {id:"goal_b",team:"away",scorer:"João Pedro",minute:"82′"}]};
  // Same-grid scheduled fixtures with differing broadcaster counts for QA.
  const third={...first,id:"fifa.friendly:99999",casa:"Uruguai",fora:"Chile",
-   horarioLocal:"18:30",canalId:null,canalNome:null,canaisDisponiveis:[],
+   horarioLocal:"18:30",inicioIso:new Date(Date.now()+3*60*60_000).toISOString(),
+   canalId:null,canalNome:null,canaisDisponiveis:[],
    canaisTransmissao:["Premiere"],transmissao:"nao-confirmada",destaque:false};
  const fourth={...first,id:"bra.1:99997",casa:"Cruzeiro",fora:"Palmeiras",
    liga:"Brasileirão Série A",ligaId:"bra.1",grupo:"brasileirao",
    estadio:"Estádio Mineirão",cidadeEstadio:"Belo Horizonte",
    canalId:"premiere2",canalNome:"Premiere 2",destaque:true};
+ const fifth={...first,id:"bra.1:99996",casa:"Grêmio",fora:"Bahia",
+   liga:"Brasileirão Série A",ligaId:"bra.1",grupo:"brasileirao",destaque:true,
+   status:"encerrado",fase:"encerrado",faseRotulo:"Encerrado",
+   minuto:null,placarCasa:2,placarFora:0,
+   gols:[{id:"f1",team:"home",scorer:"Pedro",minute:"19′"},
+         {id:"f2",team:"home",scorer:"Gabriel",minute:"78′"}],
+   canalId:null,canalNome:null,canaisDisponiveis:[],
+   canaisTransmissao:[],transmissao:"nao-confirmada"};
  const agenda={dataLocal:date,atualizadoEm:new Date().toISOString(),
-   jogos:[first,second,third,fourth],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
+   jogos:[first,second,third,fourth,fifth],parcial:false,fontesConsultadas:2,origem:"Visual mock"};
  const placares={...agenda,jogos:[]};
  // Synthetic 2026 Brasileirão table; production zone rules remain under test.
  const tableRows=Array.from({length:20},(_,i)=>({
@@ -257,6 +268,38 @@ try{
      board.panelWidth>device.width+1)
     throw new Error("Standings zone badges, legend or mobile width failed: "+
       JSON.stringify({device,board}));
+  const matchDetails=await evaluate(`(()=>{
+    const cards=[...document.querySelectorAll(".zf-ticket")];
+    const alternate=cards.find(card=>card.querySelector(".zf-ticket-alternate-channels"));
+    const extras=[...(alternate?.querySelectorAll(".zf-ticket-channel-choices button")||[])];
+    const live=cards.find(card=>card.querySelector(".zf-ticket-status-row.is-live .zf-ticket-status"));
+    const home=live?.querySelector(".zf-ticket-goals-team:first-child");
+    const away=live?.querySelector(".zf-ticket-goals-team:last-child");
+    const scheduled=cards.find(card=>card.querySelector(".zf-ticket-status-row.is-scheduled .zf-ticket-status"));
+    const finished=cards.find(card=>card.querySelector(".zf-ticket-status-row.is-finished .zf-ticket-status"));
+    const badgeColor=(card,phase)=>card?getComputedStyle(card.querySelector(".zf-ticket-status-row.is-"+phase+" .zf-ticket-status")).backgroundImage:"";
+    const labels=extras.map(button=>button.textContent.trim());
+    return {
+      hasAlternate:!!alternate,extraButtons:extras.length,
+      labels,autoVisible:extras.every(button=>button.getBoundingClientRect().height>20&&
+        getComputedStyle(button).display!=="none"),
+      noExpandControl:!document.querySelector(".zf-ticket-channels-toggle"),
+      goalHome:home?.textContent||"",goalAway:away?.textContent||"",
+      goalCount:live?.querySelectorAll(".zf-ticket-goal-chip").length||0,
+      scheduledColor:badgeColor(scheduled,"scheduled"),
+      finishedColor:badgeColor(finished,"finished"),
+      goalTeamsGrid:live?.querySelector(".zf-ticket-goals")
+        ?getComputedStyle(live.querySelector(".zf-ticket-goals")).gridTemplateColumns:null,
+    };
+  })()`);
+  if(!matchDetails.hasAlternate||matchDetails.extraButtons<1||
+    !matchDetails.autoVisible||!matchDetails.noExpandControl||
+    !matchDetails.goalHome.includes("Gabriel")||!matchDetails.goalHome.includes("39′")||
+    !matchDetails.goalAway.includes("João Pedro")||!matchDetails.goalAway.includes("82′")||
+    matchDetails.goalCount!==2||!matchDetails.scheduledColor||!matchDetails.finishedColor||
+    matchDetails.scheduledColor===matchDetails.finishedColor)
+      throw new Error("Goal scorer badges, scheduled/finished tint or inline channels failed: "+
+        JSON.stringify({device,matchDetails}));
   if(!state.visibleLiveStatus||!state.visibleLiveMinute||!state.visibleLiveScore||!state.visibleReadyWatch||!state.trueFrostedGlass)
     throw new Error("Live pill, minute, score, 5-minute glow and true transparency must render: "+JSON.stringify(state));
   if(!state.referenceHeader||!state.leaguePicker||!state.calendarCompact||state.referenceTitle!=="Jogos de Hoje")

@@ -1,0 +1,312 @@
+/* ZANG FLIX / match cards — premium compact alternate broadcasters,
+ * source-verified goal scorer chips, and semantic match status colors. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row.is-scheduled .zf-ticket-status {
+  color:#d6e7f7;
+  background:linear-gradient(156deg,rgba(72,113,145,.30),rgba(38,69,91,.23));
+  border:1px solid rgba(160,205,228,.42);
+  box-shadow:inset 0 1px rgba(250,255,255,.11),0 3px 12px rgba(10,29,50,.14);
+  text-shadow:0 1px 2px rgba(0,0,0,.17);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row.is-scheduled .zf-ticket-status svg {
+  color:#acd9f3;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row.is-finished .zf-ticket-status {
+  color:#d5eddf;
+  background:linear-gradient(156deg,rgba(56,110,90,.32),rgba(28,69,59,.25));
+  border:1px solid rgba(142,208,171,.42);
+  box-shadow:inset 0 1px rgba(238,255,245,.10),0 3px 12px rgba(3,23,14,.11);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row.is-finished .zf-ticket-status svg {
+  color:#94e6b9;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row.is-postponed .zf-ticket-status {
+  color:#ffe4be;
+  background:linear-gradient(156deg,rgba(145,88,37,.35),rgba(89,58,24,.27));
+  border-color:rgba(243,183,100,.44);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row.is-postponed .zf-ticket-status svg {
+  color:#ffcf93;
+}
+/* Preserve score-to-crest alignment by giving scheduled and live cards the
+ * same score/time footprint, irrespective of the number of confirmed goals. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+  justify-content:center;
+  height:152px;
+  min-height:152px;
+  max-height:152px;
+  padding:9px 0 6px;
+  gap:4px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+  height:152px;
+  min-height:152px;
+  max-height:152px;
+  flex:0 0 152px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel:has(.zf-ticket-goals) {
+  justify-content:flex-start;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel:has(.zf-ticket-goals) .zf-ticket-score-pair {
+  padding-top:3px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goals {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);
+  align-items:start;
+  gap:clamp(6px,.75vw,12px);
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:3px 11px 0;
+  border-top:1px solid rgba(202,255,231,.14);
+  height:49px;
+  min-height:49px;
+  overflow:hidden;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goals-team {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  min-width:0;
+  max-width:100%;
+  white-space:nowrap;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goals-team:first-child {grid-column:1;}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goals-team:last-child {grid-column:3;}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goal-chip {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  height:17px;
+  padding:2px 5px;
+  border:1px solid rgba(143,240,180,.20);
+  border-radius:6px;
+  color:#e2ffeb;
+  background:linear-gradient(120deg,rgba(100,211,143,.11),rgba(2,56,40,.13));
+  font-size:10px;
+  font-weight:780;
+  line-height:1.1;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goal-chip>svg {
+  width:11px;height:11px;flex:0 0 11px;
+  color:#abebc4;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-goal-name {
+  display:block;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goal-chip time {
+  flex:0 0 auto;
+  color:#a5fbc4;
+  font-size:10px;
+  font-weight:950;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-goals-more {
+  display:block;
+  height:12px;
+  font-size:9px;
+  font-weight:750;
+  line-height:1;
+  color:rgba(193,246,215,.76);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-alternate-channels {
+  display:flex;
+  align-items:flex-start;
+  flex-direction:column;
+  gap:6px;
+  margin:0;
+  padding:0 1px;
+  min-width:0;
+  width:100%;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-alternates-heading {
+  display:block;
+  width:100%;
+  margin:0;
+  padding:0 3px;
+  font-size:9px;
+  font-weight:830;
+  letter-spacing:.11em;
+  line-height:1.25;
+  color:rgba(220,245,232,.68);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices {
+  display:flex;
+  flex-flow:row nowrap;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0 2px 5px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(191,252,215,.29) transparent;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  width:auto;
+  max-width:min(190px,78%);
+  min-width:0;
+  min-height:30px;
+  padding:5px 9px;
+  border-radius:9px;
+  border:1px solid rgba(218,255,234,.25);
+  color:#e0faea;
+  background:rgba(221,255,239,.095);
+  -webkit-backdrop-filter:blur(7px);
+  backdrop-filter:blur(7px);
+  box-shadow:inset 0 1px rgba(255,255,255,.07);
+  font-size:10px;
+  font-weight:750;
+  line-height:1.25;
+  text-decoration:none;
+  cursor:pointer;
+  transition:background .15s ease,border-color .15s ease;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button:hover,
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button:focus-visible {
+  background:rgba(193,252,221,.20);
+  border-color:rgba(182,251,212,.58);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button:focus-visible {
+  outline:2px solid rgba(184,252,214,.94);
+  outline-offset:2px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button img {
+  flex:0 0 auto;
+  width:19px;height:16px;object-fit:contain;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button svg {
+  flex:0 0 13px;width:13px;height:13px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button>span:not(.zf-channel-health) {
+  flex:0 1 auto;
+  display:block;
+  max-width:135px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-channel-health {
+  width:5px;height:5px;flex:0 0 5px;
+  border-radius:50%;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-channel-health.is-playing {background:#7fffb7;}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-channel-health.is-unavailable {background:#f7bc8a;}
+@media(max-width:610px){
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+    height:146px;min-height:146px;max-height:146px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+    height:146px;min-height:146px;max-height:146px;
+    flex-basis:146px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goal-chip {
+    font-size:9px;padding:2px 3px;gap:3px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goal-chip time {font-size:9px;}
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goals {padding-inline:6px;}
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button {
+    min-height:29px;padding:5px 8px;font-size:10px;
+  }
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+  height:156px;min-height:156px;max-height:156px;
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+  height:156px;min-height:156px;max-height:156px;
+  flex-basis:156px;
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button {
+  min-height:38px;font-size:12px;
+}
+@media(prefers-reduced-motion:reduce){
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-channel-choices button {transition:none;}
+}
+
+/* Compact ticket budget: channels stay visible without turning a 3-column
+ * match grid into uneven, extra-tall cards. All game states use equal slots. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+  height:148px;min-height:148px;flex-basis:148px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-status-row {
+  height:34px;min-height:34px;flex-basis:34px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+  height:124px;min-height:124px;max-height:124px;
+  padding:5px 0 4px;gap:2px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+  height:124px;min-height:124px;max-height:124px;flex-basis:124px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel:has(.zf-ticket-goals)
+ .zf-ticket-score-pair > strong {
+  font-size:clamp(30px,2.5vw,36px);
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goals {
+  height:43px;min-height:43px;padding-top:1px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-goal-chip {
+  height:17px;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-lineup-single-button {
+  min-height:59px;
+}
+@media(max-width:610px) {
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+    height:146px;min-height:146px;flex-basis:146px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+    height:122px;min-height:122px;max-height:122px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+    height:122px;min-height:122px;max-height:122px;flex-basis:122px;
+  }
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel:has(.zf-ticket-goals)
+   .zf-ticket-score-pair > strong {font-size:31px;}
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-score-panel {
+  height:132px;min-height:132px;max-height:132px;
+}
+html[data-zf-platform="tv"] .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-time-block {
+  height:132px;min-height:132px;max-height:132px;flex-basis:132px;
+}
+
+/* Keep cards within the established mobile height budget (including the
+ * formerly hidden alternate broadcaster row) without clipping club crests. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+  height:140px;min-height:140px;flex-basis:140px;
+}
+@media(max-width:610px) {
+  .zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-teams {
+    height:138px;min-height:138px;flex-basis:138px;
+  }
+}
+
+/* Avoid the old 760px desktop ticket regression while keeping crest and
+ * scorer typography unchanged. Stadium/goal rows remain position-aligned. */
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-match-meta {
+  padding:4px 0 0;
+}
+.zgame-card.zf-ticket.zf-ticket-premium .zf-ticket-broadcast {
+  padding-top:5px;
+}

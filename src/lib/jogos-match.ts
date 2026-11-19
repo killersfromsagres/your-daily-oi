@@ -1,4 +1,5 @@
 // src/lib/jogos-match.ts — server/browser, fixture normalization and Brazilian timezone logic.
+import {parseESPNGoalEvents,type ESPNGoalPlay,type MatchGoal} from "./match-goal-events";
 export const SPORTS_ZONE = "America/Sao_Paulo";
 export interface JogoBrasileirao {
   id: string;
@@ -27,6 +28,8 @@ export interface JogoBrasileirao {
   minuto?: string | null;
   placarCasa: number | null;
   placarFora: number | null;
+  /** Scorers credited by verified match-play data only, not score guesses. */
+  gols?: MatchGoal[]|undefined;
   destaque: boolean;
   canalId: string | null;
   canalNome: string | null;
@@ -120,6 +123,7 @@ export function fixturePriority(j: JogoBrasileirao): number {
 type ESPNTeam = { homeAway?: string; score?: string | number; team?: { id?: string; displayName?: string; shortDisplayName?: string; logo?: string; logos?: { href?: string }[] } };
 type ESPNCompetition = {
   date?: string;
+  details?: ESPNGoalPlay[];
   venue?: { fullName?: string; name?: string; address?: { city?:string; country?:string; countryCode?:string } };
   competitors?: ESPNTeam[];
   notes?: { headline?: string }[];
@@ -183,6 +187,8 @@ export function parseSoccerMatchPhase(value?: ESPNMatchStatus): {
 }
 export type ESPNEvent = {
   id?: string;
+  keyEvents?: ESPNGoalPlay[];
+  scoringPlays?: ESPNGoalPlay[];
   date?: string;
   status?: ESPNMatchStatus;
   competitions?: ESPNCompetition[];
@@ -238,6 +244,12 @@ export function parseESPNFixture(event: ESPNEvent, liga: LigaFutebol, data: stri
     liga: liga.name, ligaId: liga.id, ligaLogo: null, grupo: liga.grupo,
     status, fase: phase.fase, faseRotulo: phase.rotulo, minuto: phase.minuto,
     placarCasa: parseScore(home.score), placarFora: parseScore(away.score),
+    ...(status!=="agendado"&&status!=="adiado"?(()=>{
+      const events=parseESPNGoalEvents(event,{
+        homeId:home.team?.id,awayId:away.team?.id,
+      });
+      return events.length?{gols:events}:{};
+    })():{}),
     destaque: liga.id === "bra.1" || liga.id === "uefa.champions" || isFeaturedTeam(homeName) || isFeaturedTeam(awayName),
     canalId: null, canalNome: null, canalLogo: null, transmissao: "nao-confirmada",
   };

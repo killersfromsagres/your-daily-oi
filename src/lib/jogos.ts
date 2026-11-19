@@ -7,6 +7,7 @@ import { fetchSportsDbFixtures, mergeProviderFixtures } from "./football-backup"
 import { getBrazilianSportsDbBroadcasts } from "./football-broadcasts";
 import { sameBroadcastFixture, verifiedBroadcastEvidence } from "./broadcast-verified";
 import { applyVerifiedResult } from "./football-result-verified";
+import { getESPNGoalEvents } from "./match-goal-events";
 import {
   LIGAS_FUTEBOL, addDaysUTC, brBroadcastsFromESPN, dataBrasilia, fixturePriority,
   isValidSportsDate, normalizeSoccerName, parseESPNFixture,
@@ -266,6 +267,47 @@ async function annotateBroadcasts(
   }
   return matches;
 }
+/**
+ * Load the scorer timeline only for fixtures with an actual recorded score.
+ * Every ESPN event supplies both team IDs; missing IDs, canceled goals or
+ * unavailable event details are never converted into fabricated scorers.
+ */
+type GoalSource = {leagueId:string;eventId:string;homeId:string;awayId:string};
+function goalSource(event:ESPNEvent,leagueId:string):GoalSource|null {
+  const competition=event.competitions?.[0];
+  const home=competition?.competitors?.find(c=>c.homeAway==="home")?.team?.id;
+  const away=competition?.competitors?.find(c=>c.homeAway==="away")?.team?.id;
+  if(!event.id||!home||!away||home===away)return null;
+  return {leagueId,eventId:event.id,homeId:home,awayId:away};
+}
+async function enrichMatchGoals(
+  games:readonly JogoBrasileirao[],
+  metadata:ReadonlyMap<string,GoalSource>,
+  limit=12,
+):Promise<void> {
+  const candidates=games.filter(game=>{
+    const hasScore=(game.placarCasa??0)+(game.placarFora??0)>0;
+    return metadata.has(game.id)&&hasScore&&
+      (game.status==="ao-vivo"||game.status==="encerrado")&&
+      !game.gols?.length;
+  }).sort((a,b)=>{
+    const rank=(g:JogoBrasileirao)=>
+      (g.status==="ao-vivo"?1000:0)+fixturePriority(g);
+    return rank(b)-rank(a);
+  }).slice(0,limit);
+  let cursor=0;
+  await Promise.all(Array.from({length:Math.min(4,candidates.length)},async()=>{
+    while(cursor<candidates.length){
+      const game=candidates[cursor++]!;
+      const ids=metadata.get(game.id)!;
+      const goals=await getESPNGoalEvents(ids.leagueId,ids.eventId,{
+        homeId:ids.homeId,awayId:ids.awayId,
+      },game.status==="encerrado");
+      if(goals.length)game.gols=goals;
+    }
+  }));
+}
+
 async function getFresh(date: string): Promise<JogosHojeResponse> {
   // Independent, keyless schedule provider: fixes "0 jogos" during national-team
   // breaks and when the ESPN feed omits competitions that play that day.
@@ -309,6 +351,14 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
     return found;
   });
   const games = await annotateBroadcasts(fixtures, date, brazilianBroadcasters, backupBroadcasts);
+  // The full schedule can include final matches when the page is opened later;
+  // recover the scorer list from verified ESPN event details, without blocking
+  // agenda rendering on sources that do not provide a timeline.
+  const firstPartyGoalIds=new Map(primary.flatMap(({item,raw})=>{
+    const meta=goalSource(raw,item.ligaId);
+    return meta?[[item.id,meta] as const]:[];
+  }));
+  await enrichMatchGoals(games,firstPartyGoalIds,8);
   games.sort((a,b) => {
     const timeA = Date.parse(a.inicioIso), timeB = Date.parse(b.inicioIso);
     return timeA - timeB || fixturePriority(b) - fixturePriority(a);
@@ -398,14 +448,20 @@ export async function getJogosPlacares(
     if (!successes) throw new Error("Provedor de placares indisponível");
 
     const previous = new Map((fixtureCache.get(date)?.value.jogos || []).map(g => [g.id, g]));
+    const goalIds=new Map<string,GoalSource>();
     const byId = new Map<string, JogoBrasileirao>();
     for (const { event, liga, leagueLogo } of items) {
       const initial = parseESPNFixture(event, liga, date);
       if (!initial) continue;
       const parsed = applyVerifiedResult(initial);
+      const goalIdsForMatch=goalSource(event,liga.id);
+      if(goalIdsForMatch)goalIds.set(parsed.id,goalIdsForMatch);
       parsed.ligaLogo = leagueLogo;
       const older = previous.get(parsed.id);
       if (!parsed.cidadeEstadio && older?.cidadeEstadio) parsed.cidadeEstadio = older.cidadeEstadio;
+      if(!parsed.gols?.length&&older?.gols?.length &&
+         parsed.placarCasa===older.placarCasa &&
+         parsed.placarFora===older.placarFora)parsed.gols=older.gols;
       if (older?.transmissaoUrl) parsed.transmissaoUrl = older.transmissaoUrl;
       if (older?.canalId) {
         parsed.canalId = older.canalId;
@@ -484,6 +540,9 @@ export async function getJogosPlacares(
       }
     }
 
+    // Fetch event scorers on the same 30s scoreboard refresh. The detail
+    // service is cached separately and limited to 4 parallel HTTP requests.
+    await enrichMatchGoals([...byId.values()],goalIds,12);
     return {
       dataLocal: date,
       atualizadoEm: new Date().toISOString(),
