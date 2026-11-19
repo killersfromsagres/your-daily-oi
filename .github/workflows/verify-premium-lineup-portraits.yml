@@ -1,0 +1,44 @@
+name: Verify premium real-photo football lineups
+on:
+  push:
+    branches: [feat/lineup-premium-real-portraits-coaches-20261118]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/components/sports/MatchLineups.tsx"
+      - "src/components/sports/TeamLineupBoard.tsx"
+      - "src/lib/football-lineups.ts"
+      - "src/lib/lineup-photo-source.ts"
+      - "src/lib/lineup-evidence.ts"
+      - "src/styles/lineup-glass-premium.css"
+      - "tests/lineup-premium-portraits.test.ts"
+      - "scripts/smoke-sports-ticket-browser.mjs"
+      - ".github/workflows/verify-premium-lineup-portraits.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lineup-portraits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install project dependencies
+        run: bun install --frozen-lockfile
+      - name: Lineup identities, player portraits, coach photos and tactics
+        run: bun test tests/lineup-premium-portraits.test.ts tests/football-providers-lineups.test.ts tests/lineup-tactics.test.ts tests/sports-ticket-lineup.test.ts tests/sports-results-and-streaming.test.ts
+      - name: Strict sports and lineup type safety
+        run: bun scripts/typecheck-sports.mjs
+      - name: Compile production UI
+        run: bun run build
+      - name: Responsive browser / TV match-card and lineup screenshot checks
+        run: bun scripts/smoke-sports-ticket-browser.mjs
+      - name: Retain visual artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match-lineup-premium-portraits-browser
+          path: artifacts/sports-ticket-*.png
+          if-no-files-found: warn
+          retention-days: 7

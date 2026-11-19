@@ -354,6 +354,30 @@ try{
   await evaluate('Array.from(document.querySelectorAll(".zf-lineup-single-button")).find(button=>button.getAttribute("aria-label")==="Ver escalações de Moldova e Kazakhstan").click()');
   const opened=await waitFor(x=>x.dialog && !!x.activeSide && x.players===11);
   if(opened.attackingGoal)throw new Error("Attacking goal marking is still present");
+  const premiumLineup=await evaluate(`(()=>{
+    const modal=document.querySelector(".zf-lineup-dialog");
+    const pitch=modal?.querySelector(".zf-formation-pitch");
+    const portraits=[...(modal?.querySelectorAll(".zf-formation-player-avatar .zf-formation-portrait")||[])];
+    const coach=modal?.querySelector(".zf-formation-coach");
+    const evidence=modal?.querySelector(".zf-lineup-evidence");
+    const clubRibbon=modal?.querySelector(".zf-lineup-match-ribbon");
+    return {
+      matchRibbon:!!clubRibbon,
+      evidence:!!evidence&&evidence.textContent.includes("11 titulares publicados"),
+      source:evidence?.textContent||"",
+      coachPhotoWidth:coach?.querySelector(".zf-formation-coach-photo")?.getBoundingClientRect().width||0,
+      portraits:portraits.length,
+      portraitLinks:portraits.filter(p=>p.querySelector('img[src^="https://a.espncdn.com/"]')).length,
+      correctBackground:!!pitch&&getComputedStyle(pitch).backgroundImage.includes("rgb(22, 97, 74)"),
+      maxWidth:modal?.getBoundingClientRect().width||0,
+    };
+  })()`);
+  if(!premiumLineup.matchRibbon||!premiumLineup.evidence||
+     premiumLineup.coachPhotoWidth<40||premiumLineup.portraits!==11||
+     !premiumLineup.correctBackground||
+     premiumLineup.maxWidth>device.width+1)
+    throw new Error("Premium tactical pitch/portraits/team evidence missing: "+
+      JSON.stringify({device,premiumLineup}));
   const rows=await evaluate('Array.from(document.querySelectorAll(".zf-formation-row")).map(row=>row.children.length)');
   if(JSON.stringify(rows)!=="[1,5,3,2]")throw new Error("Incorrect formation rows: "+JSON.stringify(rows));
   const overlaps=await evaluate(`Array.from(document.querySelectorAll(".zf-formation-row")).some(row=>{

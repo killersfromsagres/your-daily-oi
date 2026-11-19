@@ -1,13 +1,14 @@
 // src/lib/football-lineups.ts — ESPN match rosters + TheSportsDB lineup, server-only.
 // Never invent starters/coach/photos before the provider releases the lineup.
-import { LIGAS_FUTEBOL } from "./jogos-match";
+import { LIGAS_FUTEBOL, normalizeSoccerName } from "./jogos-match";
 import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
+import { enrichKnownLineupPhotos, photoFromSportsDbRecord } from "./lineup-photo-source";
 export type { PlayerPosition } from "./football-positions";
 export interface LineupPlayer {
   id:string;name:string;number:string|null;position:string;
   group:PlayerPosition;photo:string|null;grid:string|null;
 }
-export interface LineupCoach {name:string;photo:string|null;}
+export interface LineupCoach {name:string;photo:string|null;id?:string|null;}
 export interface LineupTeam {
   name:string;formation:string|null;crest:string|null;
   coach:LineupCoach|null;starting:LineupPlayer[];substitutes:LineupPlayer[];
@@ -45,9 +46,9 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
     if(entry.strFormation&&!team.formation)team.formation=nameOf(entry.strFormation);
     const role=nameOf(entry.strPosition);
     if(!name)continue;
-    const photo=safePhoto(entry.strCutout)||safePhoto(entry.strThumb)||safePhoto(entry.strRender);
+    const photo=photoFromSportsDbRecord(entry);
     if(/manager|head coach|treinador|t[eé]cnico|coach/i.test(role)){
-      team.coach={name,photo};
+      team.coach={name,photo,id:/^\d{1,12}$/.test(String(entry.idPlayer||""))?String(entry.idPlayer):null};
       continue;
     }
     const player:LineupPlayer={
@@ -68,6 +69,40 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
       :!complete?"Escalação parcial: o provedor ainda não liberou todos os titulares.":"Escalações disponíveis.",
   };
 }
+/**
+ * Enrich only people already included in the verified event's published roster.
+ * A photo lookup may fail; that leaves the true athlete/coach name with a
+ * neutral fallback instead of assigning a photograph to the wrong person.
+ */
+export async function enrichSportsDbMatchPhotos(
+  original:MatchLineups,
+):Promise<MatchLineups> {
+  // Prioritize BOTH coaches, then interleave home/away starters so the free
+  // provider lookup budget cannot consume every request on just one squad.
+  const candidates:Array<{id:string;hasPhoto:boolean}>=[];
+  for(const team of original.equipes){
+    if(team.coach?.id)candidates.push({id:team.coach.id,hasPhoto:!!team.coach.photo});
+  }
+  for(const kind of ["starting","substitutes"] as const){
+    const longest=Math.max(0,...original.equipes.map(team=>team[kind].length));
+    for(let i=0;i<longest;i++){
+      for(const team of original.equipes){
+        const player=team[kind][i];
+        if(player)candidates.push({id:player.id,hasPhoto:!!player.photo});
+      }
+    }
+  }
+  const photos=await enrichKnownLineupPhotos(candidates,12);
+  if(!photos.size)return original;
+  return {...original,equipes:original.equipes.map(team=>({
+    ...team,
+    coach:team.coach?{...team.coach,photo:team.coach.photo||
+      (team.coach.id?photos.get(team.coach.id):null)||null}:null,
+    starting:team.starting.map(player=>({...player,photo:player.photo||photos.get(player.id)||null})),
+    substitutes:team.substitutes.map(player=>({...player,photo:player.photo||photos.get(player.id)||null})),
+  }))};
+}
+
 type ESPNPlayer={
   athlete?:{id?:string;displayName?:string;fullName?:string;headshot?:{href?:string}|string};
   position?:{name?:string;displayName?:string;abbreviation?:string};
@@ -82,7 +117,7 @@ type ESPNTeam={
 };
 type ESPNSummary={
   rosters?:ESPNTeam[];
-  boxscore?:{form?:Array<{team?:{displayName?:string;logo?:string};formation?:string;coach?:{name?:string;displayName?:string;headshot?:{href?:string}}}>};
+  boxscore?:{form?:Array<{team?:{id?:string;displayName?:string;logo?:string};formation?:string;coach?:{name?:string;displayName?:string;headshot?:{href?:string}}}>};
 };
 function headshot(athlete:ESPNPlayer["athlete"]):string|null {
   const photo=athlete?.headshot;
@@ -93,7 +128,16 @@ function headshot(athlete:ESPNPlayer["athlete"]):string|null {
 }
 export function parseESPNLineups(jogo:string,raw:ESPNSummary):MatchLineups {
   const teams=(Array.isArray(raw.rosters)?raw.rosters:[]).slice(0,2).map((item,index):LineupTeam=>{
-    const form=raw.boxscore?.form?.[index];
+    // ESPN sometimes returns rosters and boxscore forms in different orders.
+    // Match by an actual team identifier/name; never assign another club's
+    // manager or tactical setup solely by the index of a response array.
+    const form=raw.boxscore?.form?.find(entry=>{
+      const a=item.team,b=entry.team;
+      if(a?.id&&b?.id&&a.id===b.id)return true;
+      const left=normalizeSoccerName(a?.displayName||a?.name||"");
+      const right=normalizeSoccerName(b?.displayName||"");
+      return !!left&&!!right&&left===right;
+    });
     const coach=item.coach||item.coaches?.[0]||form?.coach;
     const crew:LineupCoach|null=coach&&nameOf(coach.displayName||coach.name)?
       {name:nameOf(coach.displayName||coach.name),photo:typeof coach.headshot==="string"
@@ -156,7 +200,9 @@ export async function getMatchLineups(jogo:string):Promise<MatchLineups>{
       });
       if(!response.ok)throw new Error("TheSportsDB lineup HTTP "+response.status);
       const json=await response.json() as {lineup?:SportsDbLine[]|null};
-      payload=parseSportsDbLineups(jogo,Array.isArray(json.lineup)?json.lineup:[]);
+      payload=await enrichSportsDbMatchPhotos(
+        parseSportsDbLineups(jogo,Array.isArray(json.lineup)?json.lineup:[]),
+      );
     }else{
       const idx=jogo.lastIndexOf(":"), league=jogo.slice(0,idx), event=jogo.slice(idx+1);
       const url="https://site.api.espn.com/apis/site/v2/sports/soccer/"+

@@ -2,12 +2,15 @@
 // src/components/sports/MatchLineups.tsx — separate team buttons + full-size lineup dialog.
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronRight, RefreshCw, Shirt, Users, X } from "lucide-react";
+import { BadgeCheck, ChevronRight, Clock3, RefreshCw, Shirt, Users, X } from "lucide-react";
 import type { JogoBrasileirao } from "@/lib/jogos-match";
 import type { MatchLineups } from "@/lib/football-lineups";
 import { selectLineupTeam, type TeamSide } from "@/lib/lineup-selection";
+import { lineupEvidence } from "@/lib/lineup-evidence";
+import { buildTacticalLayout } from "@/lib/lineup-tactics";
 import { TeamLineupBoard } from "./TeamLineupBoard";
 import "@/styles/sports-ticket-lineup.css";
+import "@/styles/lineup-glass-premium.css";
 
 const cache = new Map<string,{data:MatchLineups;time:number}>();
 function currentCache(id:string) {
@@ -36,6 +39,7 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
   const selected=side?selectLineupTeam(game,data,side):null;
   const selectedName=side==="away"?game.fora:game.casa;
   const selectedCrest=side==="away"?game.escudoFora:game.escudoCasa;
+  const evidence=lineupEvidence(data,selected,selected?.starting.length ? buildTacticalLayout(selected) : null);
 
   useEffect(()=>{
     // Do not leave old team photos visible when navigating to a new fixture.
@@ -123,17 +127,28 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
         <section className="zf-lineup-dialog" role="dialog" aria-modal="true" aria-labelledby={headingId}>
           <header className="zf-lineup-dialog-header">
             <div className="zf-lineup-dialog-brand">
-              <span>ZANG <b>FLIX</b></span><small>FOOTBALL STUDIO / MATCH CENTER</small>
+              <span>ESCALAÇÕES <b>DO JOGO</b></span>
+              <small>{game.liga} · Dados publicados pelos provedores</small>
             </div>
             <button ref={closeRef} type="button" className="zf-lineup-close"
               aria-label="Fechar escalação" onClick={()=>setSide(null)}><X size={20}/></button>
           </header>
+          <div className="zf-lineup-match-ribbon" aria-label={game.casa+" contra "+game.fora}>
+            <span className="zf-lineup-ribbon-club"><LocalCrest src={game.escudoCasa} name={game.casa}/>
+              <strong>{game.casa}</strong></span>
+            <span className="zf-lineup-ribbon-vs">
+              {game.placarCasa!==null&&game.placarFora!==null
+                ? game.placarCasa+" : "+game.placarFora : "×"}
+            </span>
+            <span className="zf-lineup-ribbon-club"><LocalCrest src={game.escudoFora} name={game.fora}/>
+              <strong>{game.fora}</strong></span>
+          </div>
           <div className="zf-lineup-dialog-club" id={headingId}>
             <LocalCrest src={selectedCrest} name={selectedName}/>
             <div>
               <span>ESCALAÇÃO · {side==="home"?"MANDANTE":"VISITANTE"}</span>
               <h2>{selectedName}</h2>
-              <p>{selected?.formation?"Formação "+selected.formation:"Formação não informada"} · {(selected?.starting.length||0)} titulares divulgados</p>
+              <p>{selected?.formation?"Formação "+selected.formation:"Formação não informada"} · {evidence.publishedPlayers}/11 titulares publicados</p>
             </div>
             <button type="button" className="zf-lineup-refresh"
               onClick={()=>setVersion(v=>v+1)} disabled={loading} aria-label="Atualizar escalação">
@@ -151,6 +166,14 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
             </button>
           </nav>
           <div className="zf-lineup-dialog-body">
+            <div className="zf-lineup-evidence" data-completeness={evidence.status}>
+              <span className="zf-lineup-evidence-status">
+                <BadgeCheck size={15} aria-hidden="true"/>{evidence.label}
+              </span>
+              <span className="zf-lineup-evidence-source">
+                <Clock3 size={14} aria-hidden="true"/>{evidence.source} · {evidence.updatedLabel}
+              </span>
+            </div>
             {loading&&!data?<div className="zf-lineup-message" role="status">
               <RefreshCw className="is-spinning" size={24}/> Consultando titulares…
             </div>:
@@ -164,9 +187,12 @@ export function MatchLineups({game}:{game:JogoBrasileirao}) {
               <button type="button" onClick={()=>setVersion(v=>v+1)}>Atualizar escalação</button>
             </div>:
             <>
-              {!data?.completa&&<p className="zf-lineup-partial">Escalação parcial · apenas jogadores publicados pela fonte</p>}
+              <p className="zf-lineup-precision-note" role="status">
+                <BadgeCheck size={15} aria-hidden="true"/>
+                <span><strong>{evidence.tacticalLabel}</strong> · {evidence.detail}</span>
+              </p>
               <TeamLineupBoard team={selected}/>
-              <p className="zf-lineup-source">Fonte: {data?.origem} · Cores identificam o setor de cada jogador. A distribuição no campo depende dos dados táticos disponíveis.</p>
+              <p className="zf-lineup-source">Fonte esportiva: {data?.origem} · {evidence.updatedLabel}. As fotos identificam atletas por ID do provedor. Nenhuma posição, foto ou escalação ausente é inventada.</p>
             </>}
           </div>
         </section>
