@@ -159,7 +159,7 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
                       goals.map(g=>g.scorer+" "+g.minute+(g.penalty?" de pênalti":"")).join(", ")}>
                     {goals.slice(-2).map(goal=><span className="zf-ticket-goal-chip" key={goal.id}
                       title={goal.scorer+" · "+goal.minute+(goal.penalty?" · pênalti":"")}>
-                      <span className="zf-goal-ball" aria-hidden="true">⚽</span>
+                      <FootballIcon size={11}/>
                       <span className="zf-goal-name">{goal.scorer}</span>
                       <time>{goal.minute}</time>
                     </span>)}
