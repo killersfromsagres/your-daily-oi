@@ -5,7 +5,9 @@
  * Some TV providers deliver 25i/30i source fields into a nominally
  * progressive decoded frame. The codec/browser may also already deinterlace
  * the source; therefore this filter adapts PER PIXEL and requires BOTH
- * alternating-line contrast and temporal motion before fixing a scanline.
+ * alternating-line contrast, two-line field cadence and temporal motion
+ * before fixing a scanline. This prevents false correction of progressive
+ * detail during fast camera pans.
  *
  * Previous frame and current frame stay as GPU textures; no CPU readback or
  * second live network request. Real interpolation requires source pixels to
@@ -47,12 +49,39 @@ void main(){
  vec3 center=src(v_uv);
  vec3 above=src(v_uv-vec2(0.,u_texel.y));
  vec3 below=src(v_uv+vec2(0.,u_texel.y));
+ // A moving *progressive* edge can satisfy zigzag + temporal motion.
+ // Require the alternating two-line cadence of interlaced fields as well.
+ // This prevents deinterlacing ordinary sharp details during camera pans.
  float zigzag=max(0.,abs(luma(center)-(luma(above)+luma(below))*.5)
                         -abs(luma(above)-luma(below))*.5);
+ vec3 twoAbove=src(v_uv-vec2(0.,2.*u_texel.y));
+ vec3 twoBelow=src(v_uv+vec2(0.,2.*u_texel.y));
+ float sameFieldError=(abs(luma(center)-luma(twoAbove))+
+                       abs(luma(center)-luma(twoBelow)))*.5;
+ float lineContrast=min(abs(luma(center)-luma(above)),
+                        abs(luma(center)-luma(below)));
+ float interlaced=smoothstep(.045,.15,zigzag)*
+                  smoothstep(.05,.14,lineContrast)*
+                  (1.-smoothstep(.035,.11,sameFieldError));
+ // Require support across three adjacent columns; one-pixel text, thin
+ // pitch lines and isolated compression ringing must remain untouched.
+ float support=0.;
+ for(int i=-2;i<=2;i+=2){
+   vec2 uv=v_uv+vec2(float(i)*u_texel.x,0.);
+   float c=luma(src(uv));
+   float a=luma(src(uv-vec2(0.,u_texel.y)));
+   float b=luma(src(uv+vec2(0.,u_texel.y)));
+   float a2=luma(src(uv-vec2(0.,2.*u_texel.y)));
+   float b2=luma(src(uv+vec2(0.,2.*u_texel.y)));
+   float mismatch=max(0.,abs(c-(a+b)*.5)-abs(a-b)*.5);
+   float repeated=(abs(c-a2)+abs(c-b2))*.5;
+   support+=smoothstep(.045,.15,mismatch)*
+            (1.-smoothstep(.035,.11,repeated));
+ }
  vec3 earlier=texture(u_previous,v_uv).rgb;
  float moved=abs(luma(center)-luma(earlier));
- float confidence=smoothstep(.035,.15,zigzag)*smoothstep(.008,.055,moved)
-                  *u_previousValid;
+ float confidence=interlaced*smoothstep(1.15,2.25,support)*
+                  smoothstep(.012,.055,moved)*u_previousValid;
  // Reconstruct ONLY the combed scanline from adjacent lines. Estimate the
  // local edge slope so fine field markings do not become blurred ladders.
  vec3 leftAbove=src(v_uv+u_texel*vec2(-1.,-1.));
