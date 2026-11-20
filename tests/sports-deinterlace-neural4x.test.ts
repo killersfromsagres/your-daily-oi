@@ -2,7 +2,7 @@ import {describe,expect,test} from "bun:test";
 import {readFileSync} from "node:fs";
 import {liveHqBackend} from "../src/lib/live-hq-policy";
 import {visibleLiveHqStatus} from "../src/lib/automatic-hq";
-import {combingConfidence,isSportsLiveChannel,
+import {combingConfidence,fieldCadenceConfidence,isSportsLiveChannel,
   LIVE_DEINTERLACE_FRAGMENT} from "../src/components/player/useSportsDeinterlacer";
 
 const desktop={
@@ -33,6 +33,18 @@ describe("football motion deinterlace before neural enlargement",()=>{
       center:.2,above:.2,below:.2,previous:.2,
     })).toBe(0);
   });
+  test("rejects a moving progressive line without a repeating interlaced field",()=>{
+    expect(fieldCadenceConfidence({
+      center:.9,above:.1,below:.1,twoAbove:.9,twoBelow:.9,previous:.1,
+    })).toBeGreaterThan(.9);
+    // A genuine narrow 1-pixel line also moves, but must remain sharp.
+    expect(fieldCadenceConfidence({
+      center:.9,above:.1,below:.1,twoAbove:.1,twoBelow:.1,previous:.1,
+    })).toBe(0);
+    expect(fieldCadenceConfidence({
+      center:.9,above:.1,below:.1,twoAbove:.9,twoBelow:.9,previous:.9,
+    })).toBe(0);
+  });
   test("GPU shader uses previous frame and aligned diagonals, preserving progressive frames",()=>{
     expect(LIVE_DEINTERLACE_FRAGMENT).toContain("uniform sampler2D u_previous");
     expect(LIVE_DEINTERLACE_FRAGMENT).toContain("u_previousValid");
@@ -40,6 +52,9 @@ describe("football motion deinterlace before neural enlargement",()=>{
     expect(LIVE_DEINTERLACE_FRAGMENT).toContain("float zigzag");
     expect(LIVE_DEINTERLACE_FRAGMENT).toContain("diagA");
     expect(LIVE_DEINTERLACE_FRAGMENT).toContain("oddLine");
+    expect(LIVE_DEINTERLACE_FRAGMENT).toContain("sameFieldError");
+    expect(LIVE_DEINTERLACE_FRAGMENT).toContain("twoAbove");
+    expect(LIVE_DEINTERLACE_FRAGMENT).toContain("support+=");
     expect(LIVE_DEINTERLACE_FRAGMENT).toContain("mix(center,estimate,confidence*oddLine");
     const code=readFileSync("src/components/player/useSportsDeinterlacer.ts","utf8");
     expect(code).toContain("video.requestVideoFrameCallback");
