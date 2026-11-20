@@ -22,12 +22,15 @@ export function providerPhoto(input:unknown):string|null {
     return url.href;
   }catch{return null;}
 }
+/** Keep every verified image of the SAME athlete. Some thumbnail CDNs
+ * return 404 while their cutout or render still exists. The browser can
+ * advance to the next real photograph without matching an unrelated face. */
+export function portraitCandidatesFromSportsDbRecord(record:SportsDbPhotoRecord):string[] {
+  return [...new Set([record.strThumb,record.strCutout,record.strRender]
+    .map(providerPhoto).filter((url):url is string=>!!url))];
+}
 export function photoFromSportsDbRecord(record:SportsDbPhotoRecord):string|null {
-  // Portrait thumbnail has the correct framing for circular face avatars.
-  // Full-body cutout/render is only used when the thumbnail is absent.
-  return providerPhoto(record.strThumb) ||
-    providerPhoto(record.strCutout) ||
-    providerPhoto(record.strRender);
+  return portraitCandidatesFromSportsDbRecord(record)[0]||null;
 }
 async function photoByPlayerId(id:string):Promise<string|null> {
   if(!/^\d{1,12}$/.test(id))return null;
