@@ -2,7 +2,7 @@
 // Never invent starters/coach/photos before the provider releases the lineup.
 import { LIGAS_FUTEBOL, normalizeSoccerName } from "./jogos-match";
 import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
-import { enrichKnownLineupPhotos, photoFromSportsDbRecord, portraitCandidatesFromSportsDbRecord } from "./lineup-photo-source";
+import { enrichKnownLineupPhotos, portraitCandidatesFromSportsDbRecord } from "./lineup-photo-source";
 import { enrichESPNPortraits } from "./lineup-verified-portraits";
 import { loadVerifiedEventCoaches, matchFixtureClub } from "./lineup-match-coaches";
 export type { PlayerPosition } from "./football-positions";
