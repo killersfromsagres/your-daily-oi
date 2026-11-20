@@ -7,7 +7,7 @@ import { buildTacticalLayout, positionBadge, POSITION_SECTORS } from "@/lib/line
 import { requestMatchPortrait } from "@/lib/lineup-client-portraits";
 
 function Photo({ src, name, fallback=null, alternates=[], gameId, personId, role="player" }: {
-  src:string|null;name:string;fallback?:string|null|undefined;alternates?:string[];
+  src:string|null;name:string;fallback?:string|null|undefined;alternates?:string[]|undefined;
   gameId?:string|undefined;personId?:string|undefined;role?:"player"|"coach";
 }) {
   const [alternate,setAlternate]=useState<string|null>(null);
