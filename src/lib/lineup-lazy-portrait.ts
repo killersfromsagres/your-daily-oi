@@ -6,7 +6,8 @@
  */
 import {getMatchLineups,validLineupId} from "./football-lineups";
 import {matchDirectoryPlayer,samePerson,type DirectoryPlayer} from "./lineup-verified-portraits";
-import {photoFromSportsDbRecord} from "./lineup-photo-source";
+import {photoFromSportsDbRecord,photoByPlayerId,providerPhoto} from "./lineup-photo-source";
+import {allowedSportsPortrait} from "./lineup-image-route";
 import {matchFixtureClub} from "./lineup-match-coaches";
 const cache=new Map<string,{expires:number;photo:string|null}>();
 const pending=new Map<string,Promise<string|null>>();
@@ -53,6 +54,26 @@ async function discover(name:string,id:string,team:string):Promise<string|null>{
   pending.set(key,work);
   return work;
 }
+/** Additional official ESPN profile lookup: only the numeric ID published in
+ * this fixture is used; arbitrary name-to-face matching is never accepted. */
+async function espnAthletePortrait(gameId:string,personId:string):Promise<string|null>{
+  if(gameId.startsWith("sportsdb:")||!/^\d{3,12}$/.test(personId))return null;
+  const league=gameId.slice(0,gameId.lastIndexOf(":"));
+  const url="https://site.web.api.espn.com/apis/common/v3/sports/soccer/"+
+    encodeURIComponent(league)+"/athletes/"+personId+"/overview";
+  try{
+    const response=await fetch(url,{signal:AbortSignal.timeout(2400),headers:{Accept:"application/json"}});
+    if(!response.ok)return null;
+    const json=await response.json() as {
+      athlete?:{id?:string|number;headshot?:{href?:string}|string};
+    };
+    const player=json.athlete;
+    if(!player || (player.id!=null&&String(player.id)!==personId))return null;
+    const raw=typeof player.headshot==="string"?player.headshot:player.headshot?.href;
+    const photo=providerPhoto(raw);
+    return photo&&allowedSportsPortrait(photo)?photo:null;
+  }catch{return null;}
+}
 export async function lookupMatchPersonPhoto(gameId:string,personId:string,role:string):Promise<string|null>{
   if(!validLineupId(gameId)||personId.length>50||!personId.trim())throw new RangeError("Invalid person");
   const lineup=await getMatchLineups(gameId);
@@ -60,11 +81,17 @@ export async function lookupMatchPersonPhoto(gameId:string,personId:string,role:
     if(role==="coach"){
       const coach=team.coach;
       if(coach&&(coach.id===personId||personId==="coach:"+team.name)){
-        return discover(coach.name,coach.id||"",team.name);
+        return (gameId.startsWith("sportsdb:")&&coach.id
+          ?await photoByPlayerId(coach.id):null) ||
+          await discover(coach.name,coach.id||"",team.name) ||
+          await espnAthletePortrait(gameId,coach.id||"");
       }
     }else{
       const player=[...team.starting,...team.substitutes].find(p=>p.id===personId);
-      if(player)return discover(player.name,player.id,team.name);
+      if(player)return (gameId.startsWith("sportsdb:")
+          ?await photoByPlayerId(player.id):null) ||
+          await discover(player.name,player.id,team.name) ||
+          await espnAthletePortrait(gameId,player.id);
     }
   }
   return null;
