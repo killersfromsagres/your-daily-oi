@@ -29,6 +29,26 @@ export function combingConfidence(input:{
   return smooth(.035,.15,comb)*smooth(.008,.055,movement);
 }
 
+/** Unit-testable cadence guard used by the GPU filter. A progressive
+ * moving horizontal line has no same-field repeat two scanlines away. */
+export function fieldCadenceConfidence(input:{
+  center:number;above:number;below:number;twoAbove:number;
+  twoBelow:number;previous:number;
+}):number {
+  const {center,above,below,twoAbove,twoBelow,previous}=input;
+  const smooth=(a:number,b:number,x:number)=>{
+    const t=Math.max(0,Math.min(1,(x-a)/(b-a)));
+    return t*t*(3-2*t);
+  };
+  const zigzag=Math.max(0,Math.abs(center-(above+below)*.5)-
+    Math.abs(above-below)*.5);
+  const lineContrast=Math.min(Math.abs(center-above),Math.abs(center-below));
+  const fieldError=(Math.abs(center-twoAbove)+Math.abs(center-twoBelow))*.5;
+  return smooth(.045,.15,zigzag)*smooth(.05,.14,lineContrast)*
+    (1-smooth(.035,.11,fieldError))*
+    smooth(.012,.055,Math.abs(center-previous));
+}
+
 export const LIVE_DEINTERLACE_VERTEX=`#version 300 es
 in vec2 a_position;
 out vec2 v_uv;
