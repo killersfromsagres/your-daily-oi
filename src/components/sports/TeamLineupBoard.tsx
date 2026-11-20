@@ -6,15 +6,15 @@ import type { LineupPlayer, LineupTeam } from "@/lib/football-lineups";
 import { buildTacticalLayout, positionBadge, POSITION_SECTORS } from "@/lib/lineup-tactics";
 import { requestMatchPortrait } from "@/lib/lineup-client-portraits";
 
-function Photo({ src, name, fallback=null, gameId, personId, role="player" }: {
-  src:string|null;name:string;fallback?:string|null|undefined;
+function Photo({ src, name, fallback=null, alternates=[], gameId, personId, role="player" }: {
+  src:string|null;name:string;fallback?:string|null|undefined;alternates?:string[];
   gameId?:string|undefined;personId?:string|undefined;role?:"player"|"coach";
 }) {
   const [alternate,setAlternate]=useState<string|null>(null);
   const [attempt,setAttempt]=useState(0);
   const [searched,setSearched]=useState(false);
   const [loaded,setLoaded]=useState(false);
-  const candidates=[...new Set([src,fallback,alternate].filter((url):url is string=>!!url))];
+  const candidates=[...new Set([src,...alternates,fallback,alternate].filter((url):url is string=>!!url))];
   const urls=candidates.flatMap(url=>{
     let local:string|null=null;
     try{
@@ -27,16 +27,21 @@ function Photo({ src, name, fallback=null, gameId, personId, role="player" }: {
   });
   useEffect(()=>{
     setAlternate(null);setAttempt(0);setSearched(false);setLoaded(false);
-  },[src,fallback,gameId,personId,role]);
+  },[src,fallback,alternates.join("|"),gameId,personId,role]);
   useEffect(()=>{
-    if(attempt<urls.length||searched||!gameId||!personId)return;
+    // ESPN IDs may point to images that do not exist. Start verified
+    // alternate discovery while those first CDN images are being attempted,
+    // rather than waiting for every timeout in a 22-player lineup.
+    const alreadyVerified=candidates.some(url=>/https:\/\/(?:r2\.|www\.)?thesportsdb\.com\//i.test(url));
+    if(searched||!gameId||!personId||
+       (attempt<urls.length&&alreadyVerified&&!!src))return;
     setSearched(true);
     let active=true;
     void requestMatchPortrait(gameId,personId,role).then(photo=>{
       if(active && photo && !candidates.includes(photo))setAlternate(photo);
     });
     return()=>{active=false;};
-  },[attempt,urls.length,searched,gameId,personId,role]);
+  },[attempt,urls.length,searched,gameId,personId,role,src,alternates.join("|")]);
   const initials=name.split(" ").filter(Boolean).slice(-2)
     .map(part=>part.charAt(0)).join("").toUpperCase()||"?";
   const active=urls[attempt];
@@ -63,7 +68,7 @@ function Player({ player, gameId }: { player: LineupPlayer;gameId?:string|undefi
       data-position={role.code} data-player-id={player.id}
       aria-label={description} tabIndex={0} title={description}>
       <div className="zf-formation-player-avatar">
-        <Photo name={player.name} src={player.photo} fallback={player.photoFallback} gameId={gameId} personId={player.id}/>
+        <Photo name={player.name} src={player.photo} fallback={player.photoFallback} alternates={player.photoAlternates} gameId={gameId} personId={player.id}/>
         {player.number && <span className="zf-formation-shirt" aria-hidden="true">{player.number}</span>}
       </div>
       <strong>{player.number && <span>{player.number} </span>}{player.name}</strong>
@@ -110,7 +115,7 @@ export function TeamLineupBoard({ team, gameId }: { team: LineupTeam; gameId?:st
       <div className="zf-formation-extras">
         <div className="zf-formation-coach">
           <span className="zf-formation-coach-photo">
-            <Photo name={team.coach?.name || "Técnico"} src={team.coach?.photo || null} fallback={team.coach?.photoFallback} gameId={gameId} personId={team.coach ? team.coach.id || "coach:"+team.name : undefined} role="coach"/>
+            <Photo name={team.coach?.name || "Técnico"} src={team.coach?.photo || null} fallback={team.coach?.photoFallback} alternates={team.coach?.photoAlternates} gameId={gameId} personId={team.coach ? team.coach.id || "coach:"+team.name : undefined} role="coach"/>
           </span>
           <div className="zf-formation-coach-info">
             <small>COMISSÃO TÉCNICA</small>
@@ -130,7 +135,7 @@ export function TeamLineupBoard({ team, gameId }: { team: LineupTeam; gameId?:st
                 <div key={player.id} className="zf-formation-bench-player"
                   aria-label={player.name+" · "+player.position} title={player.position}>
                   <span className="zf-formation-bench-photo">
-                    <Photo name={player.name} src={player.photo} fallback={player.photoFallback} gameId={gameId} personId={player.id}/>
+                    <Photo name={player.name} src={player.photo} fallback={player.photoFallback} alternates={player.photoAlternates} gameId={gameId} personId={player.id}/>
                   </span>
                   <span className="zf-formation-bench-player-name">{player.name}</span>
                   {player.number && <b>{player.number}</b>}
