@@ -552,14 +552,15 @@ export async function resolveSushiEpisodeStream(
       /<button\b[^>]*data-embed=["'](\d+)["'][^>]*data-player-name=["']([^"']*)["'][^>]*>/gi;
     let b;
     while ((b = bRegex.exec(epHtml)) !== null) {
-      buttons.push({ embedId: b[1], name: b[2] });
+      if (!b[1]) continue;
+      buttons.push({ embedId: b[1], name: b[2] ?? "" });
     }
 
     // Se não encontrou pelo regex completo, tenta data-embed direto
     if (buttons.length === 0) {
       const idMatches = epHtml.matchAll(/data-embed=["'](\d+)["']/g);
       for (const m of idMatches) {
-        if (!buttons.some((btn) => btn.embedId === m[1])) {
+        if (m[1] && !buttons.some((btn) => btn.embedId === m[1])) {
           buttons.push({ embedId: m[1], name: "Sushi Player" });
         }
       }
