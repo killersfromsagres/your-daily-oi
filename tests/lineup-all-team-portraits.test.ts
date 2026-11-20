@@ -7,9 +7,22 @@ import {verifiedSameFixture,eventManagers,loadVerifiedEventCoaches,matchFixtureC
 import {selectVerifiedSearchPortrait,lookupMatchPersonPhoto}
   from "../src/lib/lineup-lazy-portrait";
 import {allowedSportsPortrait,serveLineupPhoto} from "../src/lib/lineup-image-route";
+import {portraitCandidatesFromSportsDbRecord} from "../src/lib/lineup-photo-source";
 import {getMatchLineups} from "../src/lib/football-lineups";
 
 describe("verified portrait identity and multi-provider resolution",()=>{
+  test("same-athlete thumbnails, cutouts and renders are retained as real fallbacks",()=>{
+    expect(portraitCandidatesFromSportsDbRecord({
+      strThumb:"https://r2.thesportsdb.com/images/media/player/thumb/123.png",
+      strCutout:"https://r2.thesportsdb.com/images/media/player/cutout/123.png",
+      strRender:"https://r2.thesportsdb.com/images/media/player/render/123.png",
+    })).toHaveLength(3);
+    expect(portraitCandidatesFromSportsDbRecord({
+      strThumb:"https://r2.thesportsdb.com/images/media/player/thumb/123.png",
+      strCutout:"http://unsafe.example/fake.png",
+      strRender:"https://r2.thesportsdb.com/images/media/player/thumb/123.png",
+    })).toHaveLength(1);
+  });
   test("cross-provider ESPN ID wins over a stale current club; cannot assign similar names blindly",()=>{
     expect(samePerson("Hugo Souza","123",{idESPN:"123",strPlayer:"Hugo Nogueira de Souza"})).toBe("id");
     expect(samePerson("Hugo Souza","123",{idESPN:"456",strPlayer:"Hugo Souza"})).toBeNull();
@@ -129,6 +142,8 @@ describe("visible all-match progressive photos and glass style",()=>{
     expect(ui).toContain('"/api/lineup-foto?u="');
     expect(ui).toContain('data-portrait={loaded?"real":"fallback"}');
     expect(ui).toContain('role="coach"');
+    expect(ui).toContain("alternates={player.photoAlternates}");
+    expect(ui).toContain("requestMatchPortrait(gameId,personId,role)");
     expect(server).toContain('url.pathname === "/api/lineup-foto"');
     expect(server).toContain('url.pathname === "/api/lineup-pessoa"');
   });
