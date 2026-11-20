@@ -2,15 +2,15 @@
 // Never invent starters/coach/photos before the provider releases the lineup.
 import { LIGAS_FUTEBOL, normalizeSoccerName } from "./jogos-match";
 import { resolveFootballPosition, type PlayerPosition } from "./football-positions";
-import { enrichKnownLineupPhotos, photoFromSportsDbRecord } from "./lineup-photo-source";
+import { enrichKnownLineupPhotos, photoFromSportsDbRecord, portraitCandidatesFromSportsDbRecord } from "./lineup-photo-source";
 import { enrichESPNPortraits } from "./lineup-verified-portraits";
 import { loadVerifiedEventCoaches, matchFixtureClub } from "./lineup-match-coaches";
 export type { PlayerPosition } from "./football-positions";
 export interface LineupPlayer {
   id:string;name:string;number:string|null;position:string;
-  group:PlayerPosition;photo:string|null;photoFallback?:string|null;grid:string|null;
+  group:PlayerPosition;photo:string|null;photoFallback?:string|null;photoAlternates?:string[];grid:string|null;
 }
-export interface LineupCoach {name:string;photo:string|null;id?:string|null;photoFallback?:string|null;}
+export interface LineupCoach {name:string;photo:string|null;id?:string|null;photoFallback?:string|null;photoAlternates?:string[];}
 export interface LineupTeam {
   name:string;formation:string|null;crest:string|null;
   espnTeamId?:string|null;
@@ -49,15 +49,16 @@ export function parseSportsDbLineups(jogo:string,raw:SportsDbLine[]):MatchLineup
     if(entry.strFormation&&!team.formation)team.formation=nameOf(entry.strFormation);
     const role=nameOf(entry.strPosition);
     if(!name)continue;
-    const photo=photoFromSportsDbRecord(entry);
+    const photoOptions=portraitCandidatesFromSportsDbRecord(entry);
+    const photo=photoOptions[0]||null;
     if(/manager|head coach|treinador|t[eé]cnico|coach/i.test(role)){
-      team.coach={name,photo,id:/^\d{1,12}$/.test(String(entry.idPlayer||""))?String(entry.idPlayer):null};
+      team.coach={name,photo,photoAlternates:photoOptions.slice(1),id:/^\d{1,12}$/.test(String(entry.idPlayer||""))?String(entry.idPlayer):null};
       continue;
     }
     const player:LineupPlayer={
       id:String(entry.idPlayer||entry.idLineup||name),
       name,number:entry.intSquadNumber==null?null:String(entry.intSquadNumber),
-      position:role||"Posição não informada",group:groupPosition(role),photo,grid:null,
+      position:role||"Posição não informada",group:groupPosition(role),photo,photoAlternates:photoOptions.slice(1),grid:null,
     };
     if(entry.strSubstitute==="No")team.starting.push(player);
     else if(entry.strSubstitute==="Yes")team.substitutes.push(player);
