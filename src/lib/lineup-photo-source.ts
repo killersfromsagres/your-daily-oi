@@ -32,7 +32,7 @@ export function portraitCandidatesFromSportsDbRecord(record:SportsDbPhotoRecord)
 export function photoFromSportsDbRecord(record:SportsDbPhotoRecord):string|null {
   return portraitCandidatesFromSportsDbRecord(record)[0]||null;
 }
-async function photoByPlayerId(id:string):Promise<string|null> {
+export async function photoByPlayerId(id:string):Promise<string|null> {
   if(!/^\d{1,12}$/.test(id))return null;
   const known=photoCache.get(id);
   if(known&&known.expires>Date.now())return known.url;
