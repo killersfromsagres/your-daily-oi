@@ -507,6 +507,12 @@
       "logo": "https://upload.wikimedia.org/wikipedia/commons/c/c0/DumDum_logo.svg"
     },
     {
+      "id": "e",
+      "nome": "E!",
+      "categoria": "Variedades",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/e!.png"
+    },
+    {
       "id": "espn",
       "nome": "ESPN",
       "categoria": "Esportes",
@@ -1195,6 +1201,12 @@
       "logo": "https://i.imgur.com/3rM8nL2.png"
     },
     {
+      "id": "sabor-e-arte",
+      "nome": "Sabor & Arte",
+      "categoria": "Variedades",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/sabor-e-arte.png"
+    },
+    {
       "id": "sbc-kids",
       "nome": "SBC Kids",
       "categoria": "Infantil",
@@ -1494,9 +1506,15 @@
       "logo": "https://img.faz-o-eli.online/ufcfightpass.png"
     },
     {
+      "id": "universal-premiere",
+      "nome": "Universal Premiere",
+      "categoria": "Séries",
+      "logo": "https://mondrian.claro.com.br/channels/inverse/universal-premiere.png"
+    },
+    {
       "id": "universal-reality",
       "nome": "Universal Reality",
-      "categoria": "Filmes e Séries",
+      "categoria": "Variedades",
       "logo": "https://mondrian.claro.com.br/channels/inverse/universal-reality.png"
     },
     {
@@ -1536,5 +1554,5 @@
       "logo": "https://img.faz-o-eli.online/xsports.png"
     }
   ],
-  "updatedAt": "2026-11-19T14:29:12.987Z"
+  "updatedAt": "2026-11-20T14:06:01.186Z"
 }
