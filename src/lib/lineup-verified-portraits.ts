@@ -3,9 +3,9 @@
  * schedule. A roster row must already exist in the event's ESPN lineup.
  * No third-party person is added to that lineup or assigned as a manager.
  */
-import {providerPhoto,photoFromSportsDbRecord} from "./lineup-photo-source";
+import {photoFromSportsDbRecord,portraitCandidatesFromSportsDbRecord} from "./lineup-photo-source";
 
-export type IdentityPlayer={id:string;name:string;photo:string|null;photoFallback?:string|null};
+export type IdentityPlayer={id:string;name:string;photo:string|null;photoFallback?:string|null;photoAlternates?:string[]};
 export type IdentityCoach={id?:string|null;name:string;photo:string|null;photoFallback?:string|null};
 export type IdentityTeam={
   name:string;espnTeamId?:string|null;
@@ -159,9 +159,12 @@ export async function enrichESPNPortraits<T extends IdentityTeam>(
   return teams.map((team,index)=>{
     const directory=found[index]||[];
     const withPhoto=<P extends IdentityPlayer>(p:P):P=>{
-      const matched=verifiedImageFromRoster(p,team.name,directory);
-      if(!matched)return p;
-      return {...p,photo:matched,photoFallback:p.photo||null};
+      const {player}=matchDirectoryPlayer(p,team.name,directory);
+      if(!player)return p;
+      const photos=portraitCandidatesFromSportsDbRecord(player);
+      if(!photos.length)return p;
+      return {...p,photo:photos[0]!,photoFallback:p.photo||null,
+        photoAlternates:[...new Set([...(p.photoAlternates||[]),...photos.slice(1)])]};
     };
     return {...team,starting:team.starting.map(withPhoto),
       substitutes:team.substitutes.map(withPhoto)};
