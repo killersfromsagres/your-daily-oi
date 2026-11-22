@@ -99,6 +99,11 @@
       "logo": "https://img.faz-o-eli.online/adultswim.png"
     },
     {
+      "id": "agro-canal",
+      "nome": "Agro Canal",
+      "categoria": "TV Aberta"
+    },
+    {
       "id": "agro-mais",
       "nome": "Agro Mais",
       "categoria": "Variedades",
@@ -336,6 +341,11 @@
       "logo": "https://vipcanais.net/images/cazetv.png"
     },
     {
+      "id": "chef-tv",
+      "nome": "Chef TV",
+      "categoria": "TV Aberta"
+    },
+    {
       "id": "cinemax",
       "nome": "Cinemax",
       "categoria": "Filmes e Séries",
@@ -346,6 +356,12 @@
       "nome": "Classique Faroeste",
       "categoria": "Filmes e Séries",
       "logo": "https://i.imgur.com/c6uFj7A.png"
+    },
+    {
+      "id": "cnbc",
+      "nome": "CNBC",
+      "categoria": "Notícias",
+      "logo": "https://www.portaldosjornalistas.com.br/wp-content/uploads/2024/09/CNBC-logo.webp"
     },
     {
       "id": "cnn-brasil",
@@ -555,10 +571,27 @@
       "logo": "https://img.faz-o-eli.online/espn6.png"
     },
     {
+      "id": "euronews",
+      "nome": "EuroNews",
+      "categoria": "Notícias",
+      "logo": "https://yt3.googleusercontent.com/mzF9dxkU1hpd_zUYk626Cz_GzyzMUjFjhbVauEiKazpyuOtOx8gRhiiLWpsdeVaD2TTFOBE=s900-c-k-c0x00ffffff-no-rj"
+    },
+    {
+      "id": "fashion-tv",
+      "nome": "Fashion TV",
+      "categoria": "Variedades"
+    },
+    {
       "id": "fifa-portugues",
       "nome": "FIFA+ Português",
       "categoria": "Esportes",
       "logo": "https://mondrian.claro.com.br/channels/inverse/fifa-plus.png"
+    },
+    {
+      "id": "film-e-arts",
+      "nome": "Film&Arts",
+      "categoria": "Filmes e Séries",
+      "logo": "https://static.guiadetv.com/channel/fiUIa3E6ZmxBMqxMjafkkZKkqzoZX83NOgeEZ9BR.png"
     },
     {
       "id": "fish-tv",
@@ -699,6 +732,34 @@
       "logo": "https://i.imgur.com/yxjPno5.png"
     },
     {
+      "id": "hallo-anime",
+      "nome": "Hallo Anime",
+      "categoria": "Infantil"
+    },
+    {
+      "id": "hallo-classic",
+      "nome": "Hallo Classic",
+      "categoria": "Filmes e Séries",
+      "logo": "https://www.rlnetpoa.com.br/images/canais/Hallo!%20Classic.png"
+    },
+    {
+      "id": "hallo-doc",
+      "nome": "Hallo Doc",
+      "categoria": "Documentários",
+      "logo": "https://www.rlnetpoa.com.br/images/canais/Hallo!%20Doc.png"
+    },
+    {
+      "id": "hallo-movies",
+      "nome": "Hallo Movies",
+      "categoria": "Filmes e Séries"
+    },
+    {
+      "id": "hallo-series",
+      "nome": "Hallo Series",
+      "categoria": "Filmes e Séries",
+      "logo": "https://www.rlnetpoa.com.br/images/canais/Hallo!%20S%C3%A9ries.png"
+    },
+    {
       "id": "hbo",
       "nome": "HBO",
       "categoria": "Filmes e Séries",
@@ -787,6 +848,17 @@
       "nome": "Kuriakos Kids",
       "categoria": "Infantil",
       "logo": "https://i.imgur.com/SRX6EPY.png"
+    },
+    {
+      "id": "leo-e-lully-tv",
+      "nome": "Leo & Lully TV",
+      "categoria": "Infantil",
+      "logo": "https://yt3.googleusercontent.com/ytc/AIdro_mNFNHKsUigLPQnS8S2soUnUSTBLCMpm0WD89iDmER7=s900-c-k-c0x00ffffff-no-rj"
+    },
+    {
+      "id": "lifetime",
+      "nome": "Lifetime",
+      "categoria": "Filmes e Séries"
     },
     {
       "id": "loading-tv",
@@ -1250,7 +1322,7 @@
     },
     {
       "id": "sony-movies",
-      "nome": "SONY Movies",
+      "nome": "Sony Movies",
       "categoria": "Filmes e Séries",
       "logo": "https://www.tvlogo.org/brazil/sony-movies-br.png"
     },
@@ -1554,5 +1626,5 @@
       "logo": "https://img.faz-o-eli.online/xsports.png"
     }
   ],
-  "updatedAt": "2026-11-20T14:06:01.186Z"
+  "updatedAt": "2026-11-22T13:25:19.123Z"
 }
