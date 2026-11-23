@@ -39,6 +39,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      - name: Validate consistent quality colors and no misleading missing-data badges
+        run: bun test tests/verified-media-quality.test.ts tests/vod-quality-probe.test.ts
       - name: Validate quality evidence, frame measurement, CAM policy and episode cache
         run: bun test tests/vod-quality-probe.test.ts tests/verified-media-quality.test.ts tests/vod-source-quality.test.ts tests/vod-reliability.test.ts
       - name: Compile VOD modules

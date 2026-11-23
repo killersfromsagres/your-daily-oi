@@ -6,9 +6,17 @@ import {validateMediaQualityKey} from "../src/server/vod-quality";
 describe("VOD catalog-wide source metadata",()=>{
   test("HLS master reports highest listed variant, not poster dimensions",()=>{
     const master="#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1800000,RESOLUTION=1280x720\n720.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=3200000,RESOLUTION=1920x1080\n1080.m3u8\n";
-    expect(parseHlsQuality(master)).toMatchObject({label:"FULL HD 1080p",evidence:"manifest",verified:false});
+    expect(parseHlsQuality(master)).toMatchObject({label:"FULL HD",evidence:"manifest",verified:false});
     expect(parseHlsQuality("#EXTM3U\n#EXTINF:4,\nsegment.ts")).toBeNull();
     expect(parseHlsQuality("<html>no</html>")).toBeNull();
+  });
+  test("nonstandard encodes map 800p to HD+, provider claims stay unverified",()=>{
+    expect(parseHlsQuality("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1200000,RESOLUTION=1920x816\nindex.m3u8"))
+      .toMatchObject({tier:"hdplus",label:"HD+",verified:false});
+    const claim=declaredQuality({url:"https://cdn.example.org/film.mp4",
+      name:"Versão 816p",quality:"816p"});
+    expect(claim).toMatchObject({label:"HD+",tier:"hdplus",evidence:"declared",verified:false});
+    expect(claim?.detail).toContain("declarada");
   });
   test("DASH MPD exposes encoded variant resolution",()=>{
     expect(parseDashQuality('<MPD><Period><AdaptationSet mimeType="video/mp4"><Representation width="3840" height="2160"/></AdaptationSet></Period></MPD>'))
@@ -23,7 +31,7 @@ describe("VOD catalog-wide source metadata",()=>{
     bytes[32]=0;
     view.setUint32(24+84,1920*65536,false);
     view.setUint32(24+88,1080*65536,false);
-    expect(parseMp4Quality(bytes)).toMatchObject({label:"FULL HD 1080p",evidence:"container"});
+    expect(parseMp4Quality(bytes)).toMatchObject({label:"FULL HD",evidence:"container"});
     expect(parseMp4Quality(bytes.subarray(0,50))).toBeNull();
   });
   test("blocked, unrelated or private hosts cannot become a quality probe",()=>{
@@ -40,10 +48,10 @@ describe("VOD catalog-wide source metadata",()=>{
   });
   test("declared resolution never pretends to be measured",()=>{
     const source={url:"https://cdn.example.org/test.mp4",name:"1080p",quality:"1080p"};
-    expect(declaredQuality(source)).toMatchObject({label:"FULL HD 1080p · informado",verified:false});
+    expect(declaredQuality(source)).toMatchObject({label:"FULL HD",verified:false});
     expect(describeMediaQuality([source],null).verified).toBe(false);
     const observed={...qualityFromDimensions(1280,720)!,sourceFingerprint:"foo",observedAt:Date.now()};
-    expect(describeMediaQuality([source],observed).label).toBe("HD 720p");
+    expect(describeMediaQuality([source],observed).label).toBe("HD");
     expect(bestQualityFinding([declaredQuality(source),parseHlsQuality(
       "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\nx.m3u8\n")
     ])?.evidence).toBe("manifest");

@@ -3,7 +3,7 @@
  * posters. No arbitrary URL endpoint: URLs must originate from catalog sources.
  */
 import type {StreamSource} from "./types";
-import {qualityFromDimensions, type MediaQualityBadgeInfo} from "./verified-media-quality";
+import {qualityFromDimensions,qualityLabelForHeight,type MediaQualityBadgeInfo} from "./verified-media-quality";
 import {advertisedVodResolution,rejectedVodSourceReason,shortlistVodSources,playableVodSources} from "./vod-source-quality";
 
 export type QualityEvidence="manifest"|"container"|"declared"|"cam"|"unknown";
@@ -15,7 +15,7 @@ export interface SourceQualityFinding extends MediaQualityBadgeInfo{
 }
 const MAX_MANIFEST_BYTES=96*1024;
 const MAX_MP4_BYTES=256*1024;
-const TIMEOUT_MS=4400;
+const TIMEOUT_MS=3600;
 const DENIED_HOST=/^(?:localhost|.*\.localhost|.*\.local|.*\.internal|metadata\.google\.internal)$/i;
 
 export function safeVodProbeUrl(raw:string):URL|null{
@@ -95,12 +95,10 @@ export function declaredQuality(source:Pick<StreamSource,"url"|"name"|"quality">
     tier:"cam",label:"CAM · CINEMA",detail:"Fonte marcada como gravação de cinema; não é uma medição visual.",
     verified:false,evidence:"cam",checkedAt:now};
   const height=advertisedVodResolution(source);
-  if(height===null)return null;
-  const nominal=height>=2160?"4K UHD":height>=1440?"QHD 1440p":height>=1080?
-    "FULL HD 1080p":height>=720?"HD 720p":height>=480?"SD 480p":"BAIXA "+height+"p";
-  const tier=height>=2160?"4k":height>=1440?"qhd":height>=1080?"fullhd":height>=720?"hd":height>=480?"sd":"low";
-  return {tier,label:nominal+" · informado",
-    detail:"Qualidade declarada pelo fornecedor, ainda não confirmada em manifesto ou vídeo.",
+  const named=height===null?null:qualityLabelForHeight(height);
+  if(!named)return null;
+  return {...named,
+    detail:"Qualidade "+height+"p declarada pelo fornecedor; não confirmada em manifesto ou vídeo.",
     verified:false,evidence:"declared",checkedAt:now};
 }
 export function bestQualityFinding(items:readonly (SourceQualityFinding|null)[]):SourceQualityFinding|null{
@@ -128,13 +126,13 @@ async function readLimited(response:Response,maxBytes:number):Promise<Uint8Array
   for(const part of chunks){output.set(part,at);at+=part.length}
   return output;
 }
-async function fetchProbe(url:URL,bytes:number,isManifest:boolean):Promise<{data:Uint8Array;mime:string}|null>{
+async function fetchProbe(url:URL,bytes:number,isManifest:boolean,tail=false):Promise<{data:Uint8Array;mime:string}|null>{
   let current=url;
   for(let i=0;i<3;i++){
     const response=await fetch(current.toString(),{
       redirect:"manual",signal:AbortSignal.timeout(TIMEOUT_MS),
       headers:isManifest?{Accept:"application/vnd.apple.mpegurl,application/dash+xml,text/plain,*/*"}:
-        {Range:"bytes=0-"+(bytes-1),Accept:"video/mp4,application/octet-stream,*/*"},
+        {Range:tail?"bytes=-"+bytes:"bytes=0-"+(bytes-1),Accept:"video/mp4,application/octet-stream,*/*"},
     });
     if([301,302,303,307,308].includes(response.status)){
       const location=response.headers.get("location");await response.body?.cancel().catch(()=>{});
@@ -143,7 +141,9 @@ async function fetchProbe(url:URL,bytes:number,isManifest:boolean):Promise<{data
       if(!redirected)return null;
       current=redirected;continue;
     }
-    if(!response.ok||response.status===204){await response.body?.cancel().catch(()=>{});return null;}
+    if(!response.ok||response.status===204||(tail&&response.status!==206)){
+      await response.body?.cancel().catch(()=>{});return null;
+    }
     return {data:await readLimited(response,bytes),mime:response.headers.get("content-type")||""};
   }
   return null;
@@ -154,28 +154,46 @@ export async function probeExistingVodSources(sources:readonly StreamSource[]):P
     // explicit capture markers on every available catalog source.
     return declaredQuality(sources[0]!);
   }
-  const primary=shortlistVodSources(sources,3);
-  const selected=primary.length?primary:playableVodSources(sources).slice(0,3);
+  // Check up to four distinct legitimate candidates, not only two.
+  // Providers may return an HLS media playlist without RESOLUTION, while an
+  // alternative CDN provides a master playlist or an inspectable MP4 header.
+  const primary=shortlistVodSources(sources,4);
+  const selected=primary.length?primary:playableVodSources(sources).slice(0,4);
   if(!selected.length)return null;
-  // Do not probe every title at page load; caller caches by catalog ID and
-  // drives a bounded global client queue.
-  const findings=await Promise.all(selected.slice(0,2).map(async source=>{
+  const inspect=async(source:StreamSource):Promise<SourceQualityFinding|null>=>{
     const advertised=declaredQuality(source);
     const uri=safeVodProbeUrl(source.url);
     if(!uri)return advertised;
     const manifest=/\.m3u8?(?:$|[?])/i.test(uri.pathname+uri.search)||
-      /\.mpd(?:$|[?])/i.test(uri.pathname+uri.search)||source.format==="hls"||source.format==="dash";
+      /\.mpd(?:$|[?])/i.test(uri.pathname+uri.search)||
+      source.format==="hls"||source.format==="dash";
     try{
       const result=await fetchProbe(uri,manifest?MAX_MANIFEST_BYTES:MAX_MP4_BYTES,manifest);
       if(!result||/text\/html/i.test(result.mime))return advertised;
       const header=new TextDecoder().decode(result.data.subarray(0,160));
-      const isText=manifest||/mpegurl|dash\+xml|text\/plain/.test(result.mime)||header.startsWith("#EXTM3U");
-      const found=isText?(() => {
+      const isText=manifest||/mpegurl|dash\+xml|text\/plain/i.test(result.mime)||
+        header.startsWith("#EXTM3U")||header.includes("<MPD");
+      const parsed=isText?(()=>{
         const text=new TextDecoder().decode(result.data);
         return parseHlsQuality(text)||parseDashQuality(text);
       })():parseMp4Quality(result.data);
-      return found||advertised;
-    }catch{return advertised;}
-  }));
-  return bestQualityFinding(findings);
+      if(parsed)return parsed;
+      if(!isText&&/mp4|octet-stream/i.test(result.mime)){
+        // Non-faststart MP4 files often put moov/tkhd at the end.
+        // A bounded suffix is examined only when the server supports Range.
+        const last=await fetchProbe(uri,MAX_MP4_BYTES,false,true);
+        const tailParsed=last?parseMp4Quality(last.data):null;
+        if(tailParsed)return tailParsed;
+      }
+      return advertised;
+    }catch{return advertised}
+  };
+  const first=await Promise.all(selected.slice(0,2).map(inspect));
+  let best=bestQualityFinding(first);
+  if(best?.evidence==="manifest"||best?.evidence==="container")return best;
+  if(selected.length>2){
+    const others=await Promise.all(selected.slice(2,4).map(inspect));
+    best=bestQualityFinding([...first,...others]);
+  }
+  return best;
 }
