@@ -1,3 +1,4 @@
+import tvCinemaCss from "../styles/tv-cinema.css?url";
 import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -13,7 +14,7 @@ export const Route=createFileRoute("/tv-title")({
     type:search["type"]==="s"||search["type"]==="a"?"s"===search["type"]?"s" as const:"a" as const:"f" as const,
   }),
   component:TvTitle,
-  head:()=>({meta:[{title:"ZANG FLIX TV — Detalhes"}]})
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss}],meta:[{title:"ZANG FLIX TV — Detalhes"}]})
 });
 function TvTitle(){
   const {id,type}=Route.useSearch();

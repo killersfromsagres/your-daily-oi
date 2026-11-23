@@ -1,3 +1,4 @@
+import tvCinemaCss from "../styles/tv-cinema.css?url";
 import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -29,7 +30,7 @@ function normalize(value:string){
 const BASE_CATEGORIES=["Todos","Favoritos","Recentes"];
 export const Route=createFileRoute("/tv-live")({
   component:TvLive,
-  head:()=>({meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss}],meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
 });
 function TvLive(){
   const navigate=useNavigate();
