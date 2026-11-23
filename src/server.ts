@@ -29,6 +29,7 @@ import { selectTvFeatured } from "./lib/tv-featured";
 import { selectTvHeroCandidates } from "./lib/tv-featured-candidates";
 import { getTvHeroArt } from "./lib/tv-hero-art";
 import { TV_APP_BUILD, TV_APP_PROTOCOL } from "./lib/tv-build";
+import {mediaQualityApi} from "./server/vod-quality";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
 import { playableVodSources, shortlistVodSources } from "./lib/vod-source-quality";
 
@@ -2090,6 +2091,10 @@ export default {
       }
       if (url.pathname === "/api/item") {
         return await handleItemApi(url);
+      }
+      if (url.pathname === "/api/qualidade") {
+        if(request.method !== "GET")return jsonResponse({error:"Método inválido"},405);
+        return await mediaQualityApi(url);
       }
       if (url.pathname === "/api/saimo-vod") {
         return await handleSaimoVodProxy(request, url);
