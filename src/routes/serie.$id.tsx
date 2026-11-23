@@ -10,6 +10,7 @@ import { getEpisodeProgress, getEpisodePercentage, getEpisodeStatus, countWatche
 import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
 import "@/styles/episode-progress.css";
 import { EpisodeArtwork } from "@/components/catalog/EpisodeArtwork";
+import { VerifiedQualityBadge } from "@/components/catalog/VerifiedQualityBadge";
 import "@/styles/episode-artwork.css";
 
 export const Route = createFileRoute("/serie/$id")({
@@ -404,20 +405,7 @@ function SeriesDetailPage() {
                   SÉRIE
                 </span>
 
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: "800",
-                    letterSpacing: "0.06em",
-                    color: "#ffffff",
-                    backgroundColor: "rgba(255, 255, 255, 0.12)",
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
-                    padding: "3px 9px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  FULL HD 1080P
-                </span>
+                <VerifiedQualityBadge media={{type:"s",id:serie.id}} />
 
                 <span
                   style={{
@@ -925,6 +913,8 @@ function SeriesDetailPage() {
                             >
                               {item.duracao || "Duração não informada"}
                             </div>
+                            <div><VerifiedQualityBadge compact
+                              media={{type:"s",id:serie.id,season:selectedSeason,episode:item.numero}} /></div>
                             <p
                               style={{
                                 fontSize: "0.82rem",
