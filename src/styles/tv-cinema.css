@@ -206,3 +206,45 @@ html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] 
  .zf-tenfoot-home .zf-immersive-shelves{padding-left:76px}
 }
 @media(prefers-reduced-motion:reduce){.zf-tv-sidemenu,.zf-tv-sidemenu nav button span,.zf-tenfoot-home .zf-poster-tile{transition:none!important}}
+
+
+/* TCL/Android TV 2.3: single-decoder playback. The old desktop live player
+   is intentionally not rendered here. The connection panel is stable while
+   the finite retry plan advances, removing flashing loading overlays. */
+.zf-tenfoot-live .zf-tv-player-frame{
+  aspect-ratio:16/9;
+  width:min(100%,calc((100vh - 205px)*16/9));
+  max-width:1650px;
+  min-height:0;
+  margin:6px auto 0;
+  overflow:hidden;
+  background:#000;
+  border:1px solid #3a4558;
+  border-radius:12px;
+}
+.zf-tv-stream{position:relative;isolation:isolate;width:100%;height:100%;aspect-ratio:16/9;background:#000;overflow:hidden}
+.zf-tv-stream-video{display:block;width:100%;height:100%;object-fit:contain;background:#000}
+.zf-tv-stream-status{
+  position:absolute;inset:0;z-index:4;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:13px;padding:50px 7%;
+  background:linear-gradient(135deg,#0a0d1bee,#0c1018ed);
+  color:#f8f7ff;text-align:center;
+}
+.zf-tv-stream-status strong{font-size:clamp(20px,2.1vw,37px);font-weight:800;letter-spacing:-.04em}
+.zf-tv-stream-status p{max-width:620px;margin:0;color:#b9c6d5;font-size:clamp(14px,1.1vw,19px);line-height:1.55}
+.zf-tv-stream-light{width:11px;height:11px;border-radius:50%;background:#c2a2fc;box-shadow:0 0 0 7px #a285fa24;flex:none}
+.zf-tv-stream-status button{
+  display:inline-flex;align-items:center;gap:12px;justify-content:center;
+  margin-top:13px;padding:15px 25px;border:1px solid #caaafa;
+  background:#d8bdfb;border-radius:10px;color:#171021;
+  font-size:17px;font-weight:790;
+}
+.zf-tv-stream-error{background:linear-gradient(145deg,#13172a,#0d0b12)}
+.zf-tv-stream-error svg{color:#bda4e9}
+.zf-tv-stream-mute{
+  position:absolute;right:19px;bottom:20px;z-index:5;
+  width:49px;height:49px;border-radius:50%;border:1px solid #ffffff60;
+  display:grid;place-items:center;background:#121723b9;color:#fff
+}
+@media(max-width:800px){.zf-tenfoot-live .zf-tv-player-frame{width:100%}.zf-tv-stream-status{padding:25px}}

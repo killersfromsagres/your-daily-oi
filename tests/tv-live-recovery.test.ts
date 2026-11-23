@@ -31,7 +31,7 @@ describe("TCL live player — bounded recovery",()=>{
   expect(app).toContain("onPlaybackStatus={onPlaybackStatus}");
   expect(player).toContain("data-tv-native-stream");
   expect(player).toContain("if(!plan.length)");
-  expect(player).toContain("report(\\"unavailable\\")".replaceAll("\\",""));
+  expect(player).toContain('report("unavailable")');
   expect(player).toContain("window.setTimeout");
   expect(player).toContain("void video.play()");
  });
