@@ -77,7 +77,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
           if(done||cancelled)return;
           done=true;
           cleanup();
-          resolve({failure});
+          resolve({failure:{reason,status}});
         };
         const successful=()=>{
           if(confirmed||cancelled||done)return;
