@@ -26,14 +26,14 @@ export function tvReadFocus(route: string) {
 
 function canFocus(el: HTMLElement) {
   if (!el.getClientRects().length || el.closest("[inert],[hidden],[aria-hidden='true']")) return false;
-  return window.getComputedStyle(el).visibility !== "hidden";
+  return true;
 }
 
 function focusTarget(el: HTMLElement | undefined) {
   if (!el) return false;
   el.focus({ preventScroll: true });
   // Avoid expensive smooth scrolling and focus animations on lower-end TV SoCs.
-  el.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
+  requestAnimationFrame(()=>{ if(document.activeElement===el) el.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" }); });
   return true;
 }
 
@@ -49,7 +49,7 @@ export function useTvFocus({ route, root, onBack, playerOpen = false }: TvFocusO
   useEffect(() => {
     const container = root.current;
     if (!container) return;
-    let frame = requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
       const remembered = tvReadFocus(route);
       const controls = [...container.querySelectorAll<HTMLElement>(TV_FOCUS_SELECTOR)].filter(canFocus);
       const target = controls.find(el => el.dataset["tvFocus"] === remembered) ??
@@ -71,6 +71,7 @@ export function useTvFocus({ route, root, onBack, playerOpen = false }: TvFocusO
       }
       if (playerOpen) return;
       const active = document.activeElement;
+      if (active instanceof HTMLInputElement && (key === "Select" || key === "Enter")) return;
       if (key === "Select" || (key === "Enter" && event.keyCode === 23)) {
         if (active instanceof HTMLElement && container.contains(active)) {
           event.preventDefault(); event.stopImmediatePropagation(); active.click();
