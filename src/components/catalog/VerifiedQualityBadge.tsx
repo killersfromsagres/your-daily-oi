@@ -14,6 +14,7 @@ interface Props{
 export function VerifiedQualityBadge({media,streams=EMPTY_STREAMS,compact=false,className=""}:Props){
   const target=useRef<HTMLSpanElement>(null);
   const [remote,setRemote]=useState<MediaQualityBadgeInfo|null>(null);
+  const [probeState,setProbeState]=useState<"idle"|"loading"|"complete">("idle");
   const [visible,setVisible]=useState(false);
   const [quality,setQuality]=useState<MediaQualityBadgeInfo>(()=>
     describeMediaQuality(streams,null,{seriesAggregate:media.type!=="f"&&media.episode===undefined}));
@@ -34,11 +35,12 @@ export function VerifiedQualityBadge({media,streams=EMPTY_STREAMS,compact=false,
   useEffect(()=>{
     let mounted=true;
     setRemote(null);
-    if(!visible||!media.id)return;
+    if(!visible||!media.id){setProbeState("idle");return;}
+    setProbeState("loading");
     // Single global queue limits expensive provider metadata requests even
     // when 40 poster cards become visible at the same time.
     void requestCatalogQuality(media).then(data=>{
-      if(mounted)setRemote(data);
+      if(mounted){setRemote(data);setProbeState("complete");}
     });
     return()=>{mounted=false};
   },[visible,media.id,media.type,media.season,media.episode]);
@@ -55,9 +57,16 @@ export function VerifiedQualityBadge({media,streams=EMPTY_STREAMS,compact=false,
     };
   },[media.type,media.id,media.season,media.episode,streams,remote]);
 
+  const display=quality.tier==="unknown"&&probeState==="loading"
+    ?{...quality,label:"ANALISANDO…",
+      detail:"Consultando metadados das fontes reais deste título."}
+    :quality.tier==="unknown"&&probeState==="complete"
+      ?{...quality,label:"SEM DADOS",
+        detail:"Nenhuma resolução confiável pôde ser obtida das fontes disponíveis. Não é correto inventar HD ou 4K."}
+      :quality;
   return <span ref={target} className={(compact?"ydo-badge ":"")+className}
-    data-video-quality={quality.tier} data-quality-verified={quality.verified}
-    title={quality.detail} aria-label={quality.label+". "+quality.detail}
+    data-video-quality={display.tier} data-quality-verified={display.verified}
+    title={display.detail} aria-label={display.label+". "+display.detail}
     style={compact?undefined:{
       fontSize:"0.75rem",fontWeight:800,letterSpacing:"0.04em",
       color:quality.tier==="cam"?"#ffb0ad":quality.verified?"#e8d8ff":"#d6d9e2",
@@ -65,6 +74,6 @@ export function VerifiedQualityBadge({media,streams=EMPTY_STREAMS,compact=false,
       border:quality.tier==="cam"?"1px solid rgba(255,115,115,.4)":"1px solid rgba(255,255,255,.22)",
       padding:"3px 9px",borderRadius:6,
     }}>
-    {quality.label}
+    {display.label}
   </span>;
 }
