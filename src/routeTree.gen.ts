@@ -17,6 +17,9 @@ import { Route as LancamentosRouteImport } from './routes/lancamentos'
 import { Route as MinhaListaRouteImport } from './routes/minha-lista'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as TvAppRouteImport } from './routes/tv-app'
+import { Route as TvHomeRouteImport } from './routes/tv-home'
+import { Route as TvLiveRouteImport } from './routes/tv-live'
+import { Route as TvTitleRouteImport } from './routes/tv-title'
 import { Route as AnimeIdRouteImport } from './routes/anime.$id'
 import { Route as FilmeIdRouteImport } from './routes/filme.$id'
 import { Route as GenerosSlugRouteImport } from './routes/generos.$slug'
@@ -68,6 +71,21 @@ const TvRoute = TvRouteImport.update({
 const TvAppRoute = TvAppRouteImport.update({
   id: '/tv-app',
   path: '/tv-app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvHomeRoute = TvHomeRouteImport.update({
+  id: '/tv-home',
+  path: '/tv-home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvLiveRoute = TvLiveRouteImport.update({
+  id: '/tv-live',
+  path: '/tv-live',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvTitleRoute = TvTitleRouteImport.update({
+  id: '/tv-title',
+  path: '/tv-title',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnimeIdRoute = AnimeIdRouteImport.update({
@@ -140,6 +158,9 @@ export interface FileRoutesByFullPath {
   '/minha-lista': typeof MinhaListaRoute
   '/tv': typeof TvRouteWithChildren
   '/tv-app': typeof TvAppRoute
+  '/tv-home': typeof TvHomeRoute
+  '/tv-live': typeof TvLiveRoute
+  '/tv-title': typeof TvTitleRoute
   '/anime/$id': typeof AnimeIdRoute
   '/filme/$id': typeof FilmeIdRoute
   '/generos/$slug': typeof GenerosSlugRoute
@@ -161,6 +182,9 @@ export interface FileRoutesByTo {
   '/lancamentos': typeof LancamentosRoute
   '/minha-lista': typeof MinhaListaRoute
   '/tv-app': typeof TvAppRoute
+  '/tv-home': typeof TvHomeRoute
+  '/tv-live': typeof TvLiveRoute
+  '/tv-title': typeof TvTitleRoute
   '/anime/$id': typeof AnimeIdRoute
   '/filme/$id': typeof FilmeIdRoute
   '/generos/$slug': typeof GenerosSlugRoute
@@ -184,6 +208,9 @@ export interface FileRoutesById {
   '/minha-lista': typeof MinhaListaRoute
   '/tv': typeof TvRouteWithChildren
   '/tv-app': typeof TvAppRoute
+  '/tv-home': typeof TvHomeRoute
+  '/tv-live': typeof TvLiveRoute
+  '/tv-title': typeof TvTitleRoute
   '/anime/$id': typeof AnimeIdRoute
   '/filme/$id': typeof FilmeIdRoute
   '/generos/$slug': typeof GenerosSlugRoute
@@ -208,6 +235,9 @@ export interface FileRouteTypes {
     | '/minha-lista'
     | '/tv'
     | '/tv-app'
+    | '/tv-home'
+    | '/tv-live'
+    | '/tv-title'
     | '/anime/$id'
     | '/filme/$id'
     | '/generos/$slug'
@@ -229,6 +259,9 @@ export interface FileRouteTypes {
     | '/lancamentos'
     | '/minha-lista'
     | '/tv-app'
+    | '/tv-home'
+    | '/tv-live'
+    | '/tv-title'
     | '/anime/$id'
     | '/filme/$id'
     | '/generos/$slug'
@@ -251,6 +284,9 @@ export interface FileRouteTypes {
     | '/minha-lista'
     | '/tv'
     | '/tv-app'
+    | '/tv-home'
+    | '/tv-live'
+    | '/tv-title'
     | '/anime/$id'
     | '/filme/$id'
     | '/generos/$slug'
@@ -274,6 +310,9 @@ export interface RootRouteChildren {
   MinhaListaRoute: typeof MinhaListaRoute
   TvRoute: typeof TvRouteWithChildren
   TvAppRoute: typeof TvAppRoute
+  TvHomeRoute: typeof TvHomeRoute
+  TvLiveRoute: typeof TvLiveRoute
+  TvTitleRoute: typeof TvTitleRoute
   AnimeIdRoute: typeof AnimeIdRoute
   FilmeIdRoute: typeof FilmeIdRoute
   GenerosSlugRoute: typeof GenerosSlugRoute
@@ -340,6 +379,27 @@ declare module '@tanstack/react-router' {
       path: '/tv-app'
       fullPath: '/tv-app'
       preLoaderRoute: typeof TvAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tv-home': {
+      id: '/tv-home'
+      path: '/tv-home'
+      fullPath: '/tv-home'
+      preLoaderRoute: typeof TvHomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tv-live': {
+      id: '/tv-live'
+      path: '/tv-live'
+      fullPath: '/tv-live'
+      preLoaderRoute: typeof TvLiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tv-title': {
+      id: '/tv-title'
+      path: '/tv-title'
+      fullPath: '/tv-title'
+      preLoaderRoute: typeof TvTitleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/anime/$id': {
@@ -454,6 +514,9 @@ const rootRouteChildren: RootRouteChildren = {
   MinhaListaRoute: MinhaListaRoute,
   TvRoute: TvRouteWithChildren,
   TvAppRoute: TvAppRoute,
+  TvHomeRoute: TvHomeRoute,
+  TvLiveRoute: TvLiveRoute,
+  TvTitleRoute: TvTitleRoute,
   AnimeIdRoute: AnimeIdRoute,
   FilmeIdRoute: FilmeIdRoute,
   GenerosSlugRoute: GenerosSlugRoute,
