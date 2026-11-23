@@ -1,3 +1,4 @@
+import {qualityBadgePalette,tierFromQualityLabel} from "@/lib/verified-media-quality";
 "use client";
 import { fullscreenProgressFraction } from "@/lib/fullscreen-orientation";
 import { useEffect, useRef, useState } from "react";
@@ -220,11 +221,16 @@ export function PlayerControls({
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
             {(() => {
-              const effectiveQuality = detectedQuality || "A VERIFICAR";
-              const is4k = Boolean(detectedQuality && /4K/.test(detectedQuality));
+              const qualityTier=tierFromQualityLabel(detectedQuality||"");
+              const color=qualityBadgePalette(qualityTier);
+              const effectiveQuality=qualityTier==="unknown"?"AUTO":({
+                cam:"CAM · CINEMA",low:"BAIXA",sd:"SD",hd:"HD",
+                hdplus:"HD+",fullhd:"FULL HD",qhd:"FULL HD+","4k":"4K UHD",
+                unknown:"AUTO"} as const)[qualityTier];
               return (
                 <button type="button"
                   className="ydo-2k-badge"
+                  data-video-quality={qualityTier}
                   aria-expanded={showQualityInfo}
                   aria-label={"Detalhes da qualidade: "+effectiveQuality}
                   onClick={()=>setShowQualityInfo(previous=>!previous)}
@@ -236,9 +242,9 @@ export function PlayerControls({
                     fontWeight: "800",
                     padding: "2px 6px",
                     borderRadius: "4px",
-                    backgroundColor: is4k ? "rgba(232, 180, 74, 0.25)" : "rgba(255, 255, 255, 0.15)",
-                    color: is4k ? "#e8b44a" : "#fff",
-                    border: is4k ? "1px solid rgba(232, 180, 74, 0.4)" : "1px solid rgba(255, 255, 255, 0.15)",
+                    backgroundColor:color.background,
+                    color:color.color,
+                    border:"1px solid "+color.border,
                     letterSpacing: "0.05em",
                   }}
                 >
