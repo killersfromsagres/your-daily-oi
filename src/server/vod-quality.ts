@@ -73,7 +73,7 @@ export async function checkCatalogMediaQuality(key:MediaQualityKey):Promise<Remo
       }
     }catch{/* A failed metadata probe must never affect video playback. */}
     const result:RemoteMediaQuality={type:key.type,id:key.id,
-      ...(key.season!==undefined?{season:key.season,episode:key.episode}:{}),
+      ...(key.season!==undefined&&key.episode!==undefined?{season:key.season,episode:key.episode}:{}),
       finding,checkedAt:Date.now(),...(sampledEpisode?{sampledEpisode}:{})};
     if(cache.size>2400){
       for(const [k,v] of cache){if(v.expires<Date.now())cache.delete(k);}
