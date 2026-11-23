@@ -41,16 +41,21 @@ jobs:
           python3 android/scripts/build-icons.py
       - name: Build installable Android APK
         working-directory: android
-        run: gradle --no-daemon --stacktrace assembleDebug
+        run: gradle --no-daemon --stacktrace assembleMobileDebug assembleTelevisionDebug
       - name: Verify installable package and prepare download filename
         run: |
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          test -s android/app/build/outputs/apk/mobile/debug/app-mobile-debug.apk
+          test -s android/app/build/outputs/apk/television/debug/app-television-debug.apk
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/ZANG-FLIX-Android.apk
-          cp dist/ZANG-FLIX-Android.apk dist/ZANG-FLIX-TV.apk
+          cp android/app/build/outputs/apk/mobile/debug/app-mobile-debug.apk dist/ZANG-FLIX-Android.apk
+          cp android/app/build/outputs/apk/television/debug/app-television-debug.apk dist/ZANG-FLIX-TV.apk
+          # Distinct package identities prevent replacing the mobile app with TV UI.
+          "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-TV.apk | grep -F "package: name='com.zangflix.tv'"
+          "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-Android.apk | grep -F "package: name='com.zangflix.app'"
           "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-TV.apk | grep -F "leanback-launchable-activity"
           sha256sum dist/ZANG-FLIX-Android.apk dist/ZANG-FLIX-TV.apk | tee dist/SHA256SUMS.txt
           "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose dist/ZANG-FLIX-Android.apk
+          "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose dist/ZANG-FLIX-TV.apk
       - name: Keep build artifact available for diagnostics
         uses: actions/upload-artifact@v4
         with:

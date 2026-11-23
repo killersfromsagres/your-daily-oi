@@ -203,6 +203,25 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       const suggestions = rankSearchSuggestions([...items.values()], q.slice(0, 80), 8);
       return jsonResponse({ items: suggestions }, 200, "private, max-age=15");
     }
+    // Fast TV-only feed: fixed-sized metadata payload without streams, full
+    // episode trees, TMDB hydrations, or the complete desktop catalog JSON.
+    if (url.searchParams.get("tv") === "1") {
+      const { items } = await loadCatalog();
+      const pool = uniqueCatalogItems(items).filter(item => Boolean(item.posterUrl));
+      const groups = [
+        { id: "movies", title: "Filmes para assistir", type: "f" },
+        { id: "series", title: "Séries para maratonar", type: "s" },
+        { id: "animes", title: "Universo anime", type: "a" },
+      ] as const;
+      const rows = groups.map(group => ({
+        ...group,
+        items: pool.filter(item => item.type === group.type).slice(0, 24)
+          .map(item => ({ id: item.id, type: item.type, title: cleanDisplayTitle(item.title),
+            posterUrl: item.posterUrl ?? "" })),
+      }));
+      return jsonResponse({ rows }, 200, "private, max-age=45");
+    }
+
     const { items, highlights } = await loadCatalog();
 
     if (q) {

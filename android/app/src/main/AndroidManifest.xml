@@ -4,7 +4,7 @@
   <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
   <application android:label="ZANG FLIX" android:icon="@mipmap/ic_launcher"
     android:roundIcon="@mipmap/ic_launcher_round" android:banner="@drawable/tv_banner"
-    android:theme="@android:style/Theme.Material.NoActionBar" android:usesCleartextTraffic="false" android:allowBackup="false">
+    android:theme="@android:style/Theme.Material.NoActionBar" android:hardwareAccelerated="true" android:usesCleartextTraffic="false" android:allowBackup="false">
     <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
