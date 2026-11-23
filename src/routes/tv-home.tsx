@@ -1,3 +1,4 @@
+import tvCinemaCss from "../styles/tv-cinema.css?url";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, Heart, House, Info, ListVideo, Play, Search, Sparkles, Tv2, X } from "lucide-react";
@@ -21,7 +22,7 @@ const mediaLabel:Record<MediaType,string> = {f:"FILME",s:"SÉRIE",a:"ANIME"};
 
 export const Route=createFileRoute("/tv-home")({
   component:TvHome,
-  head:()=>({meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss}],meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
 });
 
 function TvHome(){
