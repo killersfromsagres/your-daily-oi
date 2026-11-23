@@ -71,6 +71,68 @@ function TvHome() {
     return () => document.removeEventListener("keydown", back, true);
   }, [searchOpen]);
 
+  // Deterministic D-pad movements inside poster rails and search results.
+  // Generic nearest-element navigation is a fallback for navigation controls.
+  useEffect(() => {
+    const focus = (target: HTMLElement | undefined | null) => {
+      if (!target) return false;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+      return true;
+    };
+    const onDpad = (event: globalThis.KeyboardEvent) => {
+      if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return;
+      const key = remoteKey(event);
+      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(key)) return;
+      const target = event.target;
+      const poster = target.closest<HTMLElement>(".zf-tvh-poster");
+      if (poster) {
+        const tracks = [...document.querySelectorAll<HTMLElement>(".zf-tvh-track")];
+        const track = poster.closest<HTMLElement>(".zf-tvh-track");
+        if (!track) return;
+        const row = tracks.indexOf(track);
+        const cards = [...track.querySelectorAll<HTMLElement>(".zf-tvh-poster")];
+        const col = cards.indexOf(poster);
+        let next: HTMLElement | undefined | null;
+        if (key === "ArrowLeft") next = cards[col - 1];
+        else if (key === "ArrowRight") next = cards[col + 1];
+        else if (key === "ArrowDown" && row + 1 < tracks.length) {
+          const nextCards = tracks[row + 1]?.querySelectorAll<HTMLElement>(".zf-tvh-poster");
+          next = nextCards?.[Math.min(col, nextCards.length - 1)];
+        } else if (key === "ArrowUp") {
+          const previous = tracks[row - 1];
+          const previousCards = previous?.querySelectorAll<HTMLElement>(".zf-tvh-poster");
+          next = previousCards?.[Math.min(col, previousCards.length - 1)] ?? initial.current;
+        }
+        if (next && focus(next)) {
+          event.preventDefault(); event.stopPropagation();
+        } else {
+          // Prevent skipping to unrelated buttons beyond the current shelf.
+          event.preventDefault(); event.stopPropagation();
+        }
+        return;
+      }
+      const suggestion = target.closest<HTMLElement>(".zf-tvh-suggestion");
+      if (suggestion) {
+        const suggestions = [...document.querySelectorAll<HTMLElement>(".zf-tvh-suggestion")];
+        const index = suggestions.indexOf(suggestion);
+        const columns = window.matchMedia("(max-width: 700px)").matches ? 1 : 2;
+        const nextIndex = key === "ArrowLeft" ? index - 1 : key === "ArrowRight" ? index + 1
+          : key === "ArrowDown" ? index + columns : index - columns;
+        const sameRow = Math.floor(index / columns) === Math.floor(nextIndex / columns);
+        const next = (key === "ArrowLeft" || key === "ArrowRight") && !sameRow
+          ? null : suggestions[nextIndex];
+        if (focus(next ?? (key === "ArrowUp" && nextIndex < 0 ? inputRef.current :
+          key === "ArrowDown" && nextIndex >= suggestions.length ?
+          document.querySelector<HTMLElement>(".zf-tvh-view-all") : null))) {
+          event.preventDefault(); event.stopPropagation();
+        }
+      }
+    };
+    document.addEventListener("keydown", onDpad, true);
+    return () => document.removeEventListener("keydown", onDpad, true);
+  }, []);
+
   const choose = (item: TvItem) => {
     setSearchOpen(false);
     if (item.type === "f") void navigate({ to: "/filme/$id", params: { id: item.id } });
