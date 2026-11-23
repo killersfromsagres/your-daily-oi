@@ -1,228 +1,187 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { ArrowRight, Clapperboard, Film, Gamepad2, Play, Search, TvMinimal, X } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { Check, ChevronRight, Heart, Play, Search, Tv2, X } from "lucide-react";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
-import { searchSuggestionPath, type SearchSuggestion } from "@/lib/search-suggestions";
-import { installTvRemoteNavigation, remoteKey } from "@/lib/tv-remote";
+import { getProgress, getSavedList, toggleSaved } from "@/lib/storage";
+import { useTvFocus, tvReadFocus } from "@/lib/tv-focus";
+import { remoteKey } from "@/lib/tv-remote";
+import type { SearchSuggestion } from "@/lib/search-suggestions";
 
-type TvItem = Pick<SearchSuggestion, "id" | "type" | "title" | "posterUrl">;
-type TvRow = { id: string; title: string; type: "f" | "s" | "a"; items: TvItem[] };
-type Section = "home" | "f" | "s" | "a";
-const SECTIONS: { id: Section; title: string }[] = [
-  { id: "home", title: "Início" }, { id: "f", title: "Filmes" },
-  { id: "s", title: "Séries" }, { id: "a", title: "Animes" },
+type MediaType = "f" | "s" | "a";
+interface TvItem { id:string; type:MediaType; title:string; posterUrl:string; backdropUrl?:string; overview?:string; year?:number|null }
+interface TvRow { id:string; title:string; type:MediaType; items:TvItem[] }
+interface TvPayload { rows:TvRow[]; hero?:TvItem|null }
+type Section = "all" | MediaType | "saved";
+const navOptions:ReadonlyArray<{key:Section;title:string}> = [
+  {key:"all",title:"Início"},{key:"f",title:"Filmes"},{key:"s",title:"Séries"},{key:"a",title:"Animes"},{key:"saved",title:"Minha lista"}
 ];
-const LABEL: Record<TvItem["type"], string> = { f: "Filme", s: "Série", a: "Anime" };
+const mediaLabel:Record<MediaType,string> = {f:"FILME",s:"SÉRIE",a:"ANIME"};
 
-export const Route = createFileRoute("/tv-home")({
-  component: TvHome,
-  head: () => ({ meta: [{ title: "ZANG FLIX TV — Feito para controle remoto" }] }),
+export const Route=createFileRoute("/tv-home")({
+  component:TvHome,
+  head:()=>({meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
 });
-function TvHome() {
-  const navigate = useNavigate();
-  const [section, setSection] = useState<Section>("home");
-  const [rows, setRows] = useState<TvRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const { suggestions, status } = useLiveSuggestions(query, searchOpen);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const searchTrigger = useRef<HTMLButtonElement>(null);
-  const firstSuggestion = useRef<HTMLButtonElement>(null);
-  const initial = useRef<HTMLButtonElement>(null);
-  const visibleRows = useMemo(() => section === "home" ? rows : rows.filter(row => row.type === section), [rows, section]);
 
-  useEffect(() => {
-    try { localStorage.setItem("zf-tv-mode", "true"); } catch { /* storage disabled */ }
-    document.documentElement.dataset["zfPlatform"] = "tv";
-    window.dispatchEvent(new Event("zf-tv-mode-change"));
-    const dispose = installTvRemoteNavigation();
-    const controller = new AbortController();
-    fetch("/api/catalogo?tv=1", { signal: controller.signal })
-      .then(async response => {
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        return response.json() as Promise<{ rows: TvRow[] }>;
+function TvHome(){
+  const navigate=useNavigate();
+  const root=useRef<HTMLElement>(null);
+  const searchInput=useRef<HTMLInputElement>(null);
+  const [section,setSection]=useState<Section>("all");
+  const [rows,setRows]=useState<TvRow[]>([]);
+  const [hero,setHero]=useState<TvItem|null>(null);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState(false);
+  const [searchOpen,setSearchOpen]=useState(false);
+  const [query,setQuery]=useState("");
+  const [saved,setSaved]=useState<string[]>([]);
+  const [progress,setProgress]=useState<string[]>([]);
+  const {suggestions,status}=useLiveSuggestions(query,searchOpen);
+  const onBack=useCallback(()=>{
+    if(searchOpen){setSearchOpen(false);setQuery("");requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-tv-focus="open-search"]')?.focus());}
+    else if(section!=="all")setSection("all");
+    else if(window.history.length>1)window.history.back();
+  },[searchOpen,section,navigate]);
+  useTvFocus({route:"home",root,onBack});
+
+  useEffect(()=>{
+    setSaved(getSavedList());
+    setProgress(getProgress().filter(p=>p.currentTime>30).map(p=>p.contentId||p.id));
+    const controller=new AbortController();
+    fetch("/api/catalogo?tv=1",{signal:controller.signal})
+      .then(async r=>{if(!r.ok)throw Error("Erro "+r.status);return r.json() as Promise<TvPayload>})
+      .then(data=>{
+        if(controller.signal.aborted)return;
+        const valid=Array.isArray(data.rows)?data.rows.filter(r=>Array.isArray(r.items)):[];
+        setRows(valid);
+        setHero(data.hero||valid.flatMap(r=>r.items)[0]||null);
       })
-      .then(payload => { if (!controller.signal.aborted) setRows(Array.isArray(payload.rows) ? payload.rows : []); })
-      .catch(() => { if (!controller.signal.aborted) setError(true); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    const frame = requestAnimationFrame(() => initial.current?.focus({ preventScroll: true }));
-    return () => { cancelAnimationFrame(frame); controller.abort(); dispose(); };
-  }, []);
+      .catch(()=>{if(!controller.signal.aborted)setError(true)})
+      .finally(()=>{if(!controller.signal.aborted)setLoading(false)});
+    return()=>controller.abort();
+  },[]);
+  useEffect(()=>{
+    if(!searchOpen)return;
+    const frame=requestAnimationFrame(()=>searchInput.current?.focus({preventScroll:true}));
+    return()=>cancelAnimationFrame(frame);
+  },[searchOpen]);
 
-  useEffect(() => {
-    if (!searchOpen) return;
-    const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-    return () => cancelAnimationFrame(frame);
-  }, [searchOpen]);
+  // Shelves render after the compact API returns. Restore the last movie
+  // selection only when the user has not started navigating somewhere else.
+  useEffect(()=>{
+    if(loading||searchOpen)return;
+    const id=tvReadFocus("home");
+    if(!id.startsWith("poster-"))return;
+    const frame=requestAnimationFrame(()=>{
+      const element=[...root.current?.querySelectorAll<HTMLElement>("[data-tv-focus]")||[]]
+        .find(node=>node.dataset["tvFocus"]===id);
+      if(element)element.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[loading,searchOpen]);
 
-  useEffect(() => {
-    if (!searchOpen) return;
-    // Capture Android, Tizen and webOS Back ahead of generic history navigation.
-    const back = (event: globalThis.KeyboardEvent) => {
-      const key = remoteKey(event);
-      if ((key === "Escape" || key === "BrowserBack") && !event.defaultPrevented) {
-        event.preventDefault(); event.stopPropagation();
-        setSearchOpen(false); searchTrigger.current?.focus({ preventScroll: true });
-      }
-    };
-    document.addEventListener("keydown", back, true);
-    return () => document.removeEventListener("keydown", back, true);
-  }, [searchOpen]);
+  const allItems=useMemo(()=>rows.flatMap(r=>r.items),[rows]);
+  const uniqueSaved=useMemo(()=>allItems.filter((item,i)=>saved.includes(item.id)&&allItems.findIndex(other=>other.id===item.id)===i).slice(0,20),[allItems,saved]);
+  const watching=useMemo(()=>allItems.filter((item,i)=>progress.includes(item.id)&&allItems.findIndex(other=>other.id===item.id)===i).slice(0,18),[allItems,progress]);
+  const shelves=useMemo(()=>{
+    const base=section==="all"?rows:section==="saved"?[]:rows.filter(row=>row.type===section);
+    const leading:TvRow[]=[];
+    if((section==="saved"||section==="all")&&uniqueSaved.length)leading.push({id:"saved",title:"Minha lista",type:"f",items:uniqueSaved});
+    if(section==="all"&&watching.length)leading.unshift({id:"continue",title:"Continue assistindo",type:"f",items:watching});
+    return [...leading,...base];
+  },[rows,section,uniqueSaved,watching]);
 
-  // Deterministic D-pad movements inside poster rails and search results.
-  // Generic nearest-element navigation is a fallback for navigation controls.
-  useEffect(() => {
-    const focus = (target: HTMLElement | undefined | null) => {
-      if (!target) return false;
-      target.focus({ preventScroll: true });
-      target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
-      return true;
-    };
-    const onDpad = (event: globalThis.KeyboardEvent) => {
-      if (event.defaultPrevented || !(event.target instanceof HTMLElement)) return;
-      const key = remoteKey(event);
-      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(key)) return;
-      const target = event.target;
-      const poster = target.closest<HTMLElement>(".zf-tvh-poster");
-      if (poster) {
-        const tracks = [...document.querySelectorAll<HTMLElement>(".zf-tvh-track")];
-        const track = poster.closest<HTMLElement>(".zf-tvh-track");
-        if (!track) return;
-        const row = tracks.indexOf(track);
-        const cards = [...track.querySelectorAll<HTMLElement>(".zf-tvh-poster")];
-        const col = cards.indexOf(poster);
-        let next: HTMLElement | undefined | null;
-        if (key === "ArrowLeft") next = cards[col - 1];
-        else if (key === "ArrowRight") next = cards[col + 1];
-        else if (key === "ArrowDown" && row + 1 < tracks.length) {
-          const nextCards = tracks[row + 1]?.querySelectorAll<HTMLElement>(".zf-tvh-poster");
-          next = nextCards?.[Math.min(col, nextCards.length - 1)];
-        } else if (key === "ArrowUp") {
-          const previous = tracks[row - 1];
-          const previousCards = previous?.querySelectorAll<HTMLElement>(".zf-tvh-poster");
-          next = previousCards?.[Math.min(col, previousCards.length - 1)] ?? initial.current;
-        }
-        if (next && focus(next)) {
-          event.preventDefault(); event.stopPropagation();
-        } else {
-          // Prevent skipping to unrelated buttons beyond the current shelf.
-          event.preventDefault(); event.stopPropagation();
-        }
-        return;
-      }
-      const suggestion = target.closest<HTMLElement>(".zf-tvh-suggestion");
-      if (suggestion) {
-        const suggestions = [...document.querySelectorAll<HTMLElement>(".zf-tvh-suggestion")];
-        const index = suggestions.indexOf(suggestion);
-        const columns = window.matchMedia("(max-width: 700px)").matches ? 1 : 2;
-        const nextIndex = key === "ArrowLeft" ? index - 1 : key === "ArrowRight" ? index + 1
-          : key === "ArrowDown" ? index + columns : index - columns;
-        const sameRow = Math.floor(index / columns) === Math.floor(nextIndex / columns);
-        const next = (key === "ArrowLeft" || key === "ArrowRight") && !sameRow
-          ? null : suggestions[nextIndex];
-        if (focus(next ?? (key === "ArrowUp" && nextIndex < 0 ? inputRef.current :
-          key === "ArrowDown" && nextIndex >= suggestions.length ?
-          document.querySelector<HTMLElement>(".zf-tvh-view-all") : null))) {
-          event.preventDefault(); event.stopPropagation();
-        }
-      }
-    };
-    document.addEventListener("keydown", onDpad, true);
-    return () => document.removeEventListener("keydown", onDpad, true);
-  }, []);
-
-  const choose = (item: TvItem) => {
-    setSearchOpen(false);
-    if (item.type === "f") void navigate({ to: "/filme/$id", params: { id: item.id } });
-    else if (item.type === "a") void navigate({ to: "/anime/$id", params: { id: item.id } });
-    else void navigate({ to: "/serie/$id", params: { id: item.id } });
+  const openItem=useCallback((item:Pick<TvItem,"id"|"type">)=>{
+    void navigate({to:"/tv-title",search:{id:item.id,type:item.type}});
+  },[navigate]);
+  const addSaved=()=>{
+    if(!hero)return;
+    toggleSaved(hero.id);setSaved(getSavedList());
   };
-  const viewAll = () => {
-    if (query.trim()) {
-      setSearchOpen(false);
-      void navigate({ to: "/busca", search: { q: query.trim() } });
+  const searchKeys=(event:KeyboardEvent<HTMLInputElement>)=>{
+    const key=remoteKey(event.nativeEvent);
+    if(key==="Enter"||key==="Select"){
+      event.preventDefault();
+      if(suggestions[0])openItem(suggestions[0]);
+      else if(query.trim()&&status!=="loading")void navigate({to:"/busca",search:{q:query.trim()}});
     }
   };
-  const searchKeys = (event: KeyboardEvent<HTMLInputElement>) => {
-    const key = remoteKey(event.nativeEvent);
-    if (key === "ArrowDown") {
-      event.preventDefault();
-      (firstSuggestion.current ?? document.querySelector<HTMLElement>(".zf-tvh-view-all"))?.focus();
-    } else if (key === "Enter") {
-      event.preventDefault();
-      // Enter selects the first exact suggestion; ↓ lets the user choose another.
-      if (suggestions[0]) choose(suggestions[0]);
-      else if (status !== "loading") viewAll();
-    }
-  };
+  const spotlight=hero??shelves[0]?.items[0]??null;
 
-  return <main className="zf-tvh" aria-label="Aplicativo ZANG FLIX para TV">
-    <header className="zf-tvh-top">
-      <div className="zf-tvh-brand">ZANG <span>FLIX</span><small>TV</small></div>
-      <nav className="zf-tvh-nav" aria-label="Categorias do aplicativo">
-        {SECTIONS.map(nav => <button key={nav.id} ref={nav.id === "home" ? initial : undefined}
-          data-tv-initial-focus={nav.id === "home" ? "" : undefined}
-          type="button" className={section === nav.id ? "is-current" : ""}
-          aria-pressed={section === nav.id}
-          onClick={() => { setSection(nav.id); setSearchOpen(false); }}>{nav.title}</button>)}
-        <Link to="/tv" className="zf-tvh-navlink"><TvMinimal size={18}/> TV ao vivo</Link>
-        <Link to="/futebol" className="zf-tvh-navlink">Futebol</Link>
-      </nav>
-      <button type="button" ref={searchTrigger} className="zf-tvh-search-trigger"
-        aria-label="Abrir pesquisa" aria-expanded={searchOpen} onClick={() => setSearchOpen(!searchOpen)}>
-        <Search size={25}/><span>Buscar</span>
-      </button>
-    </header>
-    {searchOpen ? <section className="zf-tvh-search" aria-label="Pesquisar catálogo">
-      <div className="zf-tvh-search-head"><div><small>ENCONTRE SEU PRÓXIMO PLAY</small><h1>O que vamos assistir?</h1></div>
-        <button type="button" onClick={() => { setSearchOpen(false); searchTrigger.current?.focus(); }}><X size={24}/> Fechar</button>
-      </div>
-      <label className="zf-tvh-search-field"><Search size={27}/>
-        <input ref={inputRef} type="search" value={query} onChange={e => setQuery(e.target.value)}
-          onKeyDown={searchKeys} placeholder="Filmes, séries e animes…" autoComplete="off"
-          aria-label="Digite o nome do título" spellCheck={false}/>
-        {query && <button type="button" aria-label="Limpar" onClick={() => { setQuery(""); inputRef.current?.focus(); }}><X size={22}/></button>}
-      </label>
-      <p className="zf-tvh-hint"><Gamepad2 size={18}/> Use ↓ para selecionar, OK para abrir e Voltar para sair.</p>
-      {query.trim() ? <>
-        <h2>{status === "loading" ? "Procurando…" : "Sugestões"}</h2>
-        <div className="zf-tvh-suggestions" role="listbox" aria-label="Sugestões encontradas">
-          {suggestions.map((item, i) => <button key={item.type + ":" + item.id}
-            ref={i === 0 ? firstSuggestion : undefined} className="zf-tvh-suggestion"
-            role="option" aria-selected={false} type="button" onClick={() => choose(item)}>
-            {item.posterUrl ? <img src={item.posterUrl} alt="" loading={i > 2 ? "lazy" : "eager"} decoding="async"/> :
-              <span className="zf-tvh-fallback">{item.title.slice(0, 2)}</span>}
-            <span className="zf-tvh-result-copy"><strong>{item.title}</strong><small>{LABEL[item.type]}{item.year ? " · " + item.year : ""}</small></span>
-            <ArrowRight size={22}/></button>)}
-          {status === "error" && <p role="status">Sugestões indisponíveis. Tente a busca completa.</p>}
-          {status === "ready" && suggestions.length === 0 && <p role="status">Nenhum título encontrado.</p>}
+  return <main className="zf-tenfoot zf-tenfoot-home" ref={root} data-tv-exclusive="true">
+    {!searchOpen ? <>
+      <section className="zf-immersive-hero" aria-label="Destaque">
+        {spotlight?.backdropUrl||spotlight?.posterUrl
+          ? <img className="zf-hero-backdrop" src={spotlight.backdropUrl||spotlight.posterUrl}
+             alt="" decoding="async" fetchPriority="high"/>
+          : <div className="zf-hero-fallback" aria-hidden/>}
+        <div className="zf-hero-shade" aria-hidden/>
+        <header className="zf-tenfoot-nav" data-tv-row="nav">
+          <span className="zf-tenfoot-logo" aria-label="ZANG FLIX">ZANG <b>FLIX</b></span>
+          {navOptions.map(option=><button type="button" key={option.key}
+            data-tv-focus={"nav-"+option.key} data-tv-start={option.key==="all"?"":undefined}
+            aria-pressed={section===option.key} className={section===option.key?"is-selected":""}
+            onClick={()=>setSection(option.key)}>{option.title}</button>)}
+          <button type="button" data-tv-focus="nav-live" onClick={()=>void navigate({to:"/tv-live"})}><Tv2 size={15}/> TV ao vivo</button>
+          <button type="button" data-tv-focus="open-search" className="zf-tenfoot-magnify" aria-label="Pesquisar"
+            onClick={()=>setSearchOpen(true)}><Search size={24}/></button>
+        </header>
+        <div className="zf-hero-copy">
+          <span className="zf-hero-kicker">{spotlight?mediaLabel[spotlight.type]:"ZANG FLIX ORIGINAL"} <i/> SEU PRÓXIMO PLAY</span>
+          <h1>{spotlight?.title||"Seu próximo filme começa aqui."}</h1>
+          <p>{spotlight?.overview||"Filmes, séries e animes. Escolha com seu controle, assista na sua TV."}</p>
+          <div className="zf-hero-actions" data-tv-row="hero">
+            <button type="button" data-tv-focus="hero-play" className="zf-hero-play"
+              onClick={()=>spotlight&&openItem(spotlight)} disabled={!spotlight}><Play size={20} fill="currentColor"/> Assistir</button>
+            <button type="button" data-tv-focus="hero-save" className="zf-hero-save"
+              onClick={addSaved} disabled={!spotlight} aria-label={spotlight&&saved.includes(spotlight.id)?"Remover da minha lista":"Adicionar à minha lista"}>
+              {spotlight&&saved.includes(spotlight.id)?<Check size={23}/>:<Heart size={23}/>}
+            </button>
+          </div>
         </div>
-        <button type="button" className="zf-tvh-view-all" onClick={viewAll}>Ver todos os resultados <ArrowRight size={20}/></button>
-      </> : <p className="zf-tvh-empty">Digite uma palavra para encontrar o título que deseja.</p>}
-    </section> : <>
-      <section className="zf-tvh-hero">
-        <div className="zf-tvh-eyebrow">FEITO PARA SUA TELA GRANDE</div>
-        <h1>Seu cinema.<br/><em>Seu controle.</em></h1>
-        <p>Uma navegação descomplicada para a sala de estar. Explore pelas setas e pressione OK para assistir.</p>
-        <button type="button" onClick={() => setSearchOpen(true)}><Search size={22}/> Encontrar um título <ArrowRight size={19}/></button>
-        <div className="zf-tvh-hero-mark" aria-hidden="true"><Film size={80}/><b>ZANG FLIX</b><Play size={35}/></div>
       </section>
-      {loading ? <p className="zf-tvh-state" role="status">Preparando seu catálogo…</p> :
-        error ? <p className="zf-tvh-state" role="alert">Não foi possível carregar. <button type="button" onClick={() => location.reload()}>Tentar novamente</button></p> :
-        <div className="zf-tvh-rows">
-          {visibleRows.map(row => <section key={row.id} className="zf-tvh-row" aria-label={row.title}>
-            <div className="zf-tvh-row-head"><h2>{row.title}</h2><span>← Explorar →</span></div>
-            <div className="zf-tvh-track">{row.items.map(item => <Link key={item.type + ":" + item.id}
-              to={searchSuggestionPath(item)} className="zf-tvh-poster" aria-label={"Abrir " + item.title}>
-              {item.posterUrl ? <img src={item.posterUrl} alt="" loading="lazy" decoding="async"/> :
-                <span className="zf-tvh-fallback">{item.title.slice(0,2)}</span>}
-              <strong>{item.title}</strong><small>{LABEL[item.type]}</small></Link>)}</div>
+      {loading?<p className="zf-tenfoot-notice" role="status">Carregando sua experiência de TV…</p>:
+        error?<p className="zf-tenfoot-notice" role="alert">Não foi possível carregar o catálogo. <button type="button" data-tv-focus="retry" data-tv-row="notice" onClick={()=>location.reload()}>Tentar novamente</button></p>:
+        <div className="zf-immersive-shelves">
+          {shelves.map((shelf,index)=><section className="zf-tenfoot-shelf" key={shelf.id} aria-label={shelf.title}>
+            <div className="zf-shelf-heading"><h2>{shelf.title}</h2><span>{index===0?"SUA SELEÇÃO":""}</span></div>
+            <div className="zf-shelf-track" data-tv-row={"shelf-"+shelf.id}>
+              {shelf.items.map(item=><button type="button" className="zf-poster-tile"
+                 key={item.type+":"+item.id} data-tv-focus={"poster-"+shelf.id+"-"+item.id}
+                 aria-label={"Abrir "+item.title} onClick={()=>openItem(item)}>
+                 {item.posterUrl?<img src={item.posterUrl} alt="" loading="lazy" decoding="async" width={188} height={278}/>
+                   :<span className="zf-poster-blank">{item.title.slice(0,2)}</span>}
+                 <span className="zf-poster-title">{item.title}</span>
+              </button>)}
+            </div>
           </section>)}
-          {visibleRows.length === 0 && <p className="zf-tvh-state">Nenhum título disponível nesta categoria.</p>}
+          {!shelves.length&&<p className="zf-tenfoot-notice">Nenhum título encontrado nesta categoria.</p>}
         </div>}
-      <footer className="zf-tvh-footer">Use as setas para navegar · OK para selecionar · Voltar para retornar</footer>
-    </>}
+    </>:<section className="zf-tenfoot-search" aria-label="Busca para TV">
+      <header className="zf-search-heading"><div><span>BUSCA RÁPIDA</span><h1>O que vamos assistir?</h1></div>
+        <button type="button" data-tv-focus="search-close" data-tv-row="search-top"
+          onClick={()=>{setSearchOpen(false);setQuery("")}}><X size={23}/> Fechar</button>
+      </header>
+      <div className="zf-search-input-row" data-tv-row="search-input">
+        <Search size={24}/>
+        <input type="search" ref={searchInput} data-tv-focus="search-input" value={query}
+           onChange={event=>setQuery(event.target.value)} onKeyDown={searchKeys}
+           placeholder="Digite um filme, uma série ou um anime" aria-label="Pesquisar títulos" autoComplete="off" spellCheck={false}/>
+      </div>
+      <p className="zf-search-remote-hint">↓ Escolher sugestão · OK Abrir · Voltar Fechar</p>
+      {query.trim()&&<>
+        <h2 className="zf-search-subtitle">{status==="loading"?"Buscando títulos…":"Sugestões para você"}</h2>
+        <div className="zf-search-results">
+          {suggestions.map((item,index)=><div className="zf-search-result-row" data-tv-row={"search-"+Math.floor(index/4)} key={item.type+item.id}>
+            <button className="zf-search-tile" data-tv-focus={"suggestion-"+item.type+"-"+item.id} type="button"
+              onClick={()=>openItem(item)}>
+              {item.posterUrl?<img src={item.posterUrl} alt="" loading="lazy" decoding="async"/>:<span>{item.title.slice(0,2)}</span>}
+              <strong>{item.title}</strong><small>{mediaLabel[item.type]}</small>
+              <ChevronRight size={15}/></button>
+          </div>)}
+          {status==="ready"&&!suggestions.length&&<p>Nenhum resultado. Experimente outra palavra.</p>}
+          {status==="error"&&<p>A busca não respondeu. Tente novamente.</p>}
+        </div>
+      </>}
+    </section>}
   </main>;
 }

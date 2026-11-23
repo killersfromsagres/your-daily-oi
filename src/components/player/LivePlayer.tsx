@@ -54,6 +54,8 @@ export interface LivePlayerProps {
   onSourcesExhausted?: () => void;
   /** Older deployments expose /api/live-proxy but not /api/tv/stream. */
   proxyBackend?: "checking" | "catalog" | "legacy" | "unavailable";
+  /** TV app low-power profile: prefer native decoder over GPU image enhancement. */
+  preferNativeDecoder?: boolean;
 }
 
 // Carregamento único por CDN, mesmo após trocar rapidamente de canal ou fonte.
@@ -182,6 +184,7 @@ export function LivePlayer({
   onPlaybackStatus,
   onSourcesExhausted,
   proxyBackend = "catalog",
+  preferNativeDecoder = false,
 }: LivePlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hqCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -245,12 +248,13 @@ export function LivePlayer({
   // HQ starts automatically on every channel. An explicit previous user
   // choice of "false" is honored after hydration; avoid a server/client
   // markup mismatch from reading localStorage during the initial render.
-  const [hqEnabled,setHqEnabled]=useState(true);
+  const [hqEnabled,setHqEnabled]=useState(!preferNativeDecoder);
   useEffect(()=>{
     let saved:string|null=null;
     try{saved=window.localStorage.getItem("zangflix:tv-hq");}catch{}
+    if(preferNativeDecoder){setHqEnabled(false);return;}
     setHqEnabled(automaticHqEnabled(saved));
-  },[]);
+  },[preferNativeDecoder]);
   const hqEnabledRef=useRef(hqEnabled);
   hqEnabledRef.current=hqEnabled;
   const [webglFailed,setWebglFailed]=useState(false);

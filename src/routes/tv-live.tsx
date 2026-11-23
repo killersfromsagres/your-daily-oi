@@ -1,0 +1,218 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Pause, Play, RefreshCw, Search, Tv2, Volume2, VolumeX, X } from "lucide-react";
+import type { CanalTV } from "@/lib/canais";
+import { fetchCanaisFallbackClient } from "@/lib/canais";
+import { detectTvProxyBackend, type TvProxyBackend } from "@/lib/tv-backend";
+import { useTvFocus } from "@/lib/tv-focus";
+import { remoteKey } from "@/lib/tv-remote";
+
+const LivePlayer=lazy(()=>import("@/components/player/LivePlayer").then(module=>({default:module.LivePlayer})));
+const FAVORITES_KEY="zangflix:tv-favorites";
+const LAST_KEY="zangflix:tv-last-channel";
+const RECENTS_KEY="zangflix:tv-recents-v1";
+type CatalogResponse={canais:CanalTV[];categorias:string[]};
+function readList(key:string):string[]{
+  try {
+    const data:unknown=JSON.parse(localStorage.getItem(key)??"[]");
+    return Array.isArray(data)?data.filter((id):id is string=>typeof id==="string").slice(0,120):[];
+  } catch {return [];}
+}
+function saveList(key:string,ids:string[]){
+  try {localStorage.setItem(key,JSON.stringify(ids))}catch{/* storage disabled */}
+}
+function normalize(value:string){
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+}
+const BASE_CATEGORIES=["Todos","Favoritos","Recentes"];
+export const Route=createFileRoute("/tv-live")({
+  component:TvLive,
+  head:()=>({meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
+});
+function TvLive(){
+  const navigate=useNavigate();
+  const root=useRef<HTMLElement>(null);
+  const playerRef=useRef<HTMLDivElement>(null);
+  const lastFocusedId=useRef("");
+  const sourceRefreshAt=useRef(0);
+  const [channels,setChannels]=useState<CanalTV[]>([]);
+  const [categories,setCategories]=useState<string[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [refreshing,setRefreshing]=useState(false);
+  const [error,setError]=useState("");
+  const [category,setCategory]=useState("Todos");
+  const [search,setSearch]=useState("");
+  const [favorites,setFavorites]=useState<string[]>([]);
+  const [recents,setRecents]=useState<string[]>([]);
+  const [limit,setLimit]=useState(48);
+  const [activeId,setActiveId]=useState("");
+  const [status,setStatus]=useState<"connecting"|"playing"|"unavailable">("connecting");
+  const [backend,setBackend]=useState<TvProxyBackend|"checking">("checking");
+  const [muted,setMuted]=useState(false);
+
+  const load=useCallback(async(force=false,signal?:AbortSignal)=>{
+    if(force)setRefreshing(true);
+    try{
+      const response=await fetch(force?"/api/canais?refresh=1":"/api/canais",{...(signal?{signal}:{}),cache:"no-store"});
+      if(!response.ok)throw Error("HTTP "+response.status);
+      const data=await response.json() as CatalogResponse;
+      if(!Array.isArray(data.canais))throw Error("Resposta inválida");
+      if(signal?.aborted)return;
+      setChannels(data.canais);
+      setCategories(Array.isArray(data.categorias)?data.categorias:[]);
+      setError("");
+    }catch(e){
+      if(signal?.aborted)return;
+      try {
+        const fallback=await fetchCanaisFallbackClient();
+        if(signal?.aborted)return;
+        if(!fallback.canais.length)throw Error("Sem catálogo");
+        setChannels(fallback.canais);
+        setCategories(fallback.categorias);
+        setError("Serviço principal indisponível: mostrando lista de contingência.");
+      }catch{
+        if(!signal?.aborted)setError(e instanceof Error?e.message:"Não foi possível carregar a lista de canais");
+      }
+    }finally{
+      if(!signal?.aborted){setLoading(false);setRefreshing(false)}
+    }
+  },[]);
+  useEffect(()=>{
+    setFavorites(readList(FAVORITES_KEY));
+    setRecents(readList(RECENTS_KEY));
+    const c=new AbortController();
+    void load(false,c.signal);
+    void detectTvProxyBackend().then(setBackend).catch(()=>setBackend("unavailable"));
+    return()=>c.abort();
+  },[load]);
+  useEffect(()=>setLimit(48),[category,search]);
+
+  const filtered=useMemo(()=>{
+    const term=normalize(search.trim());
+    let result=channels.filter(ch=>{
+      if(category==="Favoritos"&&!favorites.includes(ch.id))return false;
+      if(category==="Recentes"&&!recents.includes(ch.id))return false;
+      if(!BASE_CATEGORIES.includes(category)&&ch.categoria!==category)return false;
+      return !term||normalize(ch.nome+" "+ch.categoria).includes(term);
+    });
+    if(category==="Recentes")return [...result].sort((a,b)=>recents.indexOf(a.id)-recents.indexOf(b.id));
+    return [...result].sort((a,b)=>Number(b.fontes.length>0)-Number(a.fontes.length>0)||a.nome.localeCompare(b.nome,"pt-BR"));
+  },[channels,category,search,favorites,recents]);
+  const active=useMemo(()=>channels.find(ch=>ch.id===activeId)||null,[channels,activeId]);
+  const visible=filtered.slice(0,limit);
+  const onBack=useCallback(()=>{
+    if(activeId){
+      setActiveId("");
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        const target=[...document.querySelectorAll<HTMLElement>("[data-tv-channel]")].find(el=>el.dataset["tvChannel"]===lastFocusedId.current);
+        target?.focus({preventScroll:true});
+      }));
+    }else if(search){setSearch("");}
+    else void navigate({to:"/tv-home"});
+  },[activeId,search,navigate]);
+  useTvFocus({route:"live",root,onBack});
+  const choose=(ch:CanalTV)=>{
+    if(!ch.fontes.length){setError("Este canal está sem fonte de transmissão. Atualize para tentar novamente.");return;}
+    lastFocusedId.current=ch.id;
+    setStatus("connecting");
+    setActiveId(ch.id);
+    try{localStorage.setItem(LAST_KEY,ch.id)}catch{}
+    setRecents(previous=>{
+      const next=[ch.id,...previous.filter(x=>x!==ch.id)].slice(0,18);
+      saveList(RECENTS_KEY,next);return next;
+    });
+  };
+  const toggleFavorite=(id:string)=>{
+    setFavorites(prev=>{
+      const next=prev.includes(id)?prev.filter(x=>x!==id):[id,...prev];
+      saveList(FAVORITES_KEY,next);return next;
+    });
+  };
+  const cycle=(offset:number)=>{
+    const valid=channels.filter(c=>c.fontes.length>0);
+    if(!valid.length)return;
+    const index=valid.findIndex(c=>c.id===activeId);
+    const next=valid[(index+offset+valid.length)%valid.length];
+    if(next)choose(next);
+  };
+  const video=()=>playerRef.current?.querySelector("video")??null;
+  const togglePlay=()=>{
+    const el=video();if(!el)return;
+    if(el.paused)void el.play().catch(()=>{});else el.pause();
+  };
+  const toggleMute=()=>{
+    const el=video();if(!el)return;
+    el.muted=!el.muted;setMuted(el.muted);
+  };
+  useEffect(()=>{
+    if(!activeId)return;
+    const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-back"]')?.focus());
+    return()=>cancelAnimationFrame(frame);
+  },[activeId]);
+  return <main className="zf-tenfoot zf-tenfoot-live" ref={root} data-tv-exclusive="true">
+    {!active ? <>
+      <header className="zf-live-top" data-tv-row="live-nav">
+        <button type="button" data-tv-focus="live-back" data-tv-start onClick={()=>void navigate({to:"/tv-home"})}><ArrowLeft size={20}/> Voltar</button>
+        <div className="zf-tenfoot-logo">ZANG <b>FLIX</b> <span>LIVE</span></div>
+        <button type="button" data-tv-focus="live-refresh" onClick={()=>void load(true)} disabled={refreshing}><RefreshCw size={19}/> Atualizar</button>
+      </header>
+      <section className="zf-live-intro">
+        <div className="zf-tenfoot-rail-caption">GUIA DE CANAIS</div>
+        <h1>TV ao vivo<span>.</span></h1>
+        <p>Escolha uma categoria, encontre seu canal e pressione OK para assistir.</p>
+        <label className="zf-live-search" data-tv-row="live-search">
+          <Search size={22}/><input data-tv-focus="live-input" type="search" value={search}
+            onChange={e=>setSearch(e.target.value)} placeholder="Pesquisar canal" aria-label="Pesquisar canal" autoComplete="off"/>
+          {search&&<button data-tv-focus="live-clear" type="button" aria-label="Limpar" onClick={()=>setSearch("")}><X size={18}/></button>}
+        </label>
+      </section>
+      <nav className="zf-live-filters" data-tv-row="live-filters" aria-label="Categorias dos canais">
+        {[...BASE_CATEGORIES,...categories.filter(c=>!BASE_CATEGORIES.includes(c))].map(cat=>
+          <button type="button" data-tv-focus={"live-cat-"+cat} key={cat}
+             aria-pressed={category===cat} className={category===cat?"is-active":""}
+             onClick={()=>setCategory(cat)}>{cat}</button>)}
+      </nav>
+      {error&&<div className="zf-live-error" role="alert">{error}</div>}
+      {loading?<p className="zf-tenfoot-notice" role="status">Carregando canais…</p>:
+        <section className="zf-live-catalog" aria-label="Escolher canal">
+          <div className="zf-live-catalog-head"><h2>{category==="Todos"?"Explore os canais":category}</h2><span>{filtered.length} opções</span></div>
+          <div className="zf-live-grid">
+            {visible.map((ch,i)=><button type="button" className={"zf-live-card"+(ch.fontes.length?"":" is-offline")}
+              key={ch.id} data-tv-channel={ch.id} data-tv-focus={"channel-"+ch.id} data-tv-row={"channel-row-"+Math.floor(i/5)}
+              onClick={()=>choose(ch)} aria-label={"Selecionar "+ch.nome}>
+              <span className="zf-live-card-image">{ch.logo&&/^https:\/\//i.test(ch.logo)
+                ?<img src={ch.logo} alt="" loading="lazy" decoding="async" onError={e=>e.currentTarget.style.display="none"}/>
+                :<strong>{ch.nome.slice(0,3)}</strong>}</span>
+              <span className="zf-live-card-copy"><strong>{ch.nome}</strong><small>{ch.categoria}</small></span>
+              <span className={ch.fontes.length?"zf-live-status":"zf-live-status is-unavailable"}>{ch.fontes.length?"SELECIONAR":"SEM FONTE"}</span>
+            </button>)}
+          </div>
+          {visible.length<filtered.length&&<button type="button" data-tv-row="live-more" data-tv-focus="load-more"
+            className="zf-live-more" onClick={()=>setLimit(n=>n+40)}>Mostrar mais canais <ChevronRight size={18}/></button>}
+          {!filtered.length&&<p className="zf-tenfoot-notice">Nenhum canal corresponde à sua busca.</p>}
+        </section>}
+    </>:<section className="zf-tv-player-screen" aria-label={"Assistindo "+active.nome}>
+        <div className="zf-tv-player-toolbar" data-tv-row="player-toolbar">
+          <button type="button" data-tv-focus="player-back" data-tv-start onClick={()=>onBack()}><ArrowLeft size={22}/> Voltar aos canais</button>
+          <div className="zf-tv-player-title"><span className="zf-live-dot"/> <strong>{active.nome}</strong><small>{status==="playing"?"AO VIVO":status==="connecting"?"Conectando…":"Transmissão indisponível"}</small></div>
+          <button type="button" data-tv-focus="player-prev" onClick={()=>cycle(-1)} aria-label="Canal anterior"><ChevronLeft size={22}/></button>
+          <button type="button" data-tv-focus="player-next" onClick={()=>cycle(1)} aria-label="Próximo canal"><ChevronRight size={22}/></button>
+          <button type="button" data-tv-focus="player-favorite" aria-label="Favoritar canal" onClick={()=>toggleFavorite(active.id)}>
+            <Heart size={20} fill={favorites.includes(active.id)?"currentColor":"none"}/></button>
+        </div>
+        <div ref={playerRef} className="zf-tv-player-frame">
+          <Suspense fallback={<p className="zf-tenfoot-notice" role="status">Preparando transmissão…</p>}>
+            <LivePlayer key={active.id} canal={active} proxyBackend={backend} preferNativeDecoder
+              onNextCanal={()=>cycle(1)} onPrevCanal={()=>cycle(-1)}
+              onPlaybackStatus={(id,next)=>{if(id===active.id)setStatus(next)}}
+              onSourcesExhausted={()=>{if(Date.now()-sourceRefreshAt.current>60_000){sourceRefreshAt.current=Date.now();void load(true)}}}/>
+          </Suspense>
+        </div>
+        <footer className="zf-tv-player-bottom" data-tv-row="player-actions">
+          <button type="button" data-tv-focus="player-play" onClick={togglePlay}><Play size={19}/><Pause size={18}/> Reproduzir / Pausar</button>
+          <button type="button" data-tv-focus="player-mute" onClick={toggleMute}>{muted?<VolumeX size={20}/>:<Volume2 size={20}/>} Som</button>
+          <span>Use o botão Voltar do controle para escolher outro canal</span>
+        </footer>
+      </section>}
+  </main>;
+}
