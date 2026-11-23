@@ -51,7 +51,7 @@ describe("VOD catalog-wide source metadata",()=>{
     expect(declaredQuality(source)).toMatchObject({label:"FULL HD",verified:false});
     expect(describeMediaQuality([source],null).verified).toBe(false);
     const observed={...qualityFromDimensions(1280,720)!,sourceFingerprint:"foo",observedAt:Date.now()};
-    expect(describeMediaQuality([source],observed).label).toBe("HD 720p");
+    expect(describeMediaQuality([source],observed).label).toBe("HD");
     expect(bestQualityFinding([declaredQuality(source),parseHlsQuality(
       "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000000,RESOLUTION=1280x720\nx.m3u8\n")
     ])?.evidence).toBe("manifest");
