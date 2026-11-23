@@ -26,6 +26,9 @@ import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/
 import { isFriday13EditionActive, selectFriday13Movies } from "./lib/friday13-edition";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
 import { selectTvFeatured } from "./lib/tv-featured";
+import { selectTvHeroCandidates } from "./lib/tv-featured-candidates";
+import { getTvHeroArt } from "./lib/tv-hero-art";
+import { TV_APP_BUILD, TV_APP_PROTOCOL } from "./lib/tv-build";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
 import { playableVodSources, shortlistVodSources } from "./lib/vod-source-quality";
 
@@ -187,11 +190,35 @@ async function handleTvFeaturedApi():Promise<Response> {
   try {
     const {items,highlights}=await loadCatalog();
     const pool=uniqueCatalogItems(items).filter(item=>item.type==="f"&&Boolean(item.posterUrl));
-    const selected=selectRotatingHero(pool,highlights,TOP_BLOCKBUSTERS,Date.now(),8);
-    const hydrated=await getFeaturedHero(pool,highlights,selected);
+    const candidates=selectTvHeroCandidates(pool,highlights,POPULAR_HD_BACKDROPS,
+      TOP_BLOCKBUSTERS,18);
+    const hydrated=await Promise.all(candidates.map(async item=>{
+      if(item.tmdb?.backdropUrl)return item;
+      // Known widescreen artwork is already approved. Only titles with a TMDB
+      // identity require a remote lookup (one bounded request, no cast/videos).
+      const known=Object.keys(POPULAR_HD_BACKDROPS).some(key=>
+        normalizeTitle(item.title)===key || normalizeTitle(item.title).startsWith(key+" "));
+      if(known||!item.tmdbId)return item;
+      const cached=heroArtworkCache.get(item.id);
+      const lite=cached?.expires && cached.expires>Date.now()
+        ? null : await getTvHeroArt(item.tmdbId);
+      const backdrop=lite?.backdropUrl || cached?.data.tmdb?.backdropUrl;
+      if(!backdrop)return item;
+      const tmdb={
+        overview:lite?.overview||item.tmdb?.overview||"",
+        voteAverage:lite?.rating??item.tmdb?.voteAverage??0,
+        backdropPath:item.tmdb?.backdropPath??null,
+        backdropUrl:backdrop,trailerId:item.tmdb?.trailerId??null,
+        cast:item.tmdb?.cast??[],
+        releaseYear:lite?.year??item.tmdb?.releaseYear??null,
+      };
+      const enriched={...item,tmdb};
+      heroArtworkCache.set(item.id,{data:enriched,expires:Date.now()+86400000});
+      return enriched;
+    }));
     const heroes=selectTvFeatured(hydrated,highlights,
       POPULAR_HD_BACKDROPS,TOP_BLOCKBUSTERS,Date.now(),8);
-    return jsonResponse({heroes},200,"private, max-age=240");
+    return jsonResponse({heroes,tvBuild:TV_APP_BUILD},200,"private, max-age=240");
   }catch(error){
     console.error("[TvFeatured] Falha nos banners:",error);
     return jsonResponse({heroes:[],error:"Banners indisponíveis"},503);
@@ -250,7 +277,7 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
         });
       }
       const hero = heroes[0] ?? null;
-      return jsonResponse({ rows, heroes, hero, refreshWindowMs: HERO_ROTATION_MS },
+      return jsonResponse({ rows, heroes, hero, tvBuild: TV_APP_BUILD, refreshWindowMs: HERO_ROTATION_MS },
         200,"private, max-age=90");
     }
 
@@ -2046,6 +2073,11 @@ export default {
 
       if (url.pathname === "/api/catalogo") {
         return await handleCatalogoApi(url);
+      }
+      if (url.pathname === "/api/tv/build") {
+        return jsonResponse({version:TV_APP_BUILD,protocol:TV_APP_PROTOCOL,
+          features:["tv-hero-hd","tv-stream-finite","tv-only-interface"]},
+          200,"no-cache, no-store, must-revalidate");
       }
       if (url.pathname === "/api/tv/featured") {
         return await handleTvFeaturedApi();
