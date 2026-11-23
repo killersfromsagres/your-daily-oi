@@ -36,7 +36,15 @@ for(const kind of ["f","s","a"]){
           "&tipo="+encodeURIComponent(kind));
         const ep=Array.isArray(detail.seasons)?detail.seasons.flatMap(s=>s.episodes||[])
           .find(e=>Array.isArray(e.streams)&&e.streams.length):null;
-        const sources=kind==="f"?detail.streams||[]:ep?.streams||[];
+        let sources=kind==="f"?detail.streams||[]:ep?.streams||[];
+        if(!sources.length){
+          try{
+            const tipo=kind==="f"?"movie":"series";
+            const resolved=await getJson("/api/resolve-vod?id="+encodeURIComponent(item.id)+
+              "&tipo="+tipo+"&temp="+(ep?.seasonNumber||1)+"&ep="+(ep?.episodeNumber||1));
+            sources=Array.isArray(resolved.sources)?resolved.sources:[];
+          }catch{/* Provider may be unavailable. */}
+        }
         const finding=await probeExistingVodSources(sources);
         const evidence=finding?.evidence||"unknown";
         stats[evidence]=(stats[evidence]||0)+1;

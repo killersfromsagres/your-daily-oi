@@ -38,7 +38,7 @@ export function requestCatalogQuality(key:MediaQualityKey):Promise<MediaQualityB
         params.set("temp",String(key.season));params.set("ep",String(key.episode));
       }
       const response=await fetch("/api/qualidade?"+params.toString(),{
-        cache:"no-store",signal:AbortSignal.timeout(11500),
+        cache:"no-store",signal:AbortSignal.timeout(19000),
       });
       if(!response.ok)throw Error("Quality API unavailable");
       const result=await response.json() as QualityResponse;

@@ -1,4 +1,5 @@
 import {loadCatalog,getStreamsForItem,getSeasonsForSeries} from "../lib/catalog";
+import {resolveVodStreams} from "../lib/saimo-stream";
 import type {CatalogItem,StreamSource,EpisodeItem} from "../lib/types";
 import {qualityKey,type MediaKind,type MediaQualityKey} from "../lib/verified-media-quality";
 import {probeExistingVodSources,type SourceQualityFinding} from "../lib/vod-quality-probe";
@@ -63,9 +64,27 @@ export async function checkCatalogMediaQuality(key:MediaQualityKey):Promise<Remo
     let finding:SourceQualityFinding|null=null;
     let sampledEpisode:{season:number;episode:number}|undefined;
     try{
-      const sources=await sourceList(item,key);
-      sampledEpisode=sources.sampledEpisode;
-      finding=await probeExistingVodSources(sources.sources);
+      const collected=await sourceList(item,key);
+      sampledEpisode=collected.sampledEpisode;
+      let sources=collected.sources;
+      // Catalog deliberately loads all streams on demand, and older movies
+      // may have no direct file in the archive. Use the same provider resolver
+      // as the player, but only for an exact catalog ID and with a time bound.
+      if(!sources.length){
+        const providerTask=resolveVodStreams({
+          tipo:key.type==="f"?"movie":"series",id:item.id,
+          ...(item.tmdbId?{tmdbId:item.tmdbId}:{}),
+          title:item.title,
+          ...(item.catalogTitle?{catalogTitle:item.catalogTitle}:{}),
+          season:key.season??sampledEpisode?.season??1,
+          episode:key.episode??sampledEpisode?.episode??1,
+        });
+        sources=await Promise.race([
+          providerTask,
+          new Promise<StreamSource[]>(resolve=>setTimeout(()=>resolve([]),4500)),
+        ]);
+      }
+      finding=await probeExistingVodSources(sources);
       if(finding&&sampledEpisode&&key.type!=="f"&&key.episode===undefined){
         finding={...finding,detail:
           "Amostra: temporada "+sampledEpisode.season+", episódio "+sampledEpisode.episode+
