@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useRef,useState} from "react";
-import {AlertCircle,Play,RefreshCw,Volume2,VolumeX} from "lucide-react";
+import {AlertCircle,Play,RefreshCw} from "lucide-react";
 import type {CanalTV} from "@/lib/canais";
 import {adjustTvQuality,tvBufferedSeconds,tvCatchupAction,tvSeekableEnd} from "@/lib/tv-playback-optimizer";
 import {
@@ -28,7 +28,6 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
   const [attempt,setAttempt]=useState(0);
   const [reason,setReason]=useState("");
   const [requiresGesture,setRequiresGesture]=useState(false);
-  const [muted,setMuted]=useState(false);
   const plan=useMemo(()=>tvPlaybackPlan(canal,9),[canal.id,canal.fontes]);
 
   useEffect(()=>{
@@ -347,12 +346,8 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
 
   const retry=()=>{setGeneration(current=>current+1);setReason("");setRequiresGesture(false)};
   const startFromUser=()=>retryRef.current();
-  const switchMute=()=>{
-    const video=videoRef.current;if(!video)return;
-    video.muted=!video.muted;setMuted(video.muted);
-  };
   return <div className="zf-tv-stream" data-tv-native-stream="true" data-stream-stage={stage}>
-    <video ref={videoRef} autoPlay playsInline preload="none" className="zf-tv-stream-video"
+    <video ref={videoRef} autoPlay playsInline preload="none" tabIndex={-1} className="zf-tv-stream-video"
       aria-label={"Transmissão "+canal.nome}/>
     {stage==="connecting"&&!requiresGesture&&
       <div className="zf-tv-stream-status" role="status" aria-live="polite">
@@ -376,10 +371,6 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
       aria-label="Qualidade automática: ajuste de resolução conforme a rede e desempenho da TV">
       AUTO · ADAPTATIVA
     </span>}
-    {stage==="playing"&&<button type="button" className="zf-tv-stream-mute"
-      data-tv-focus="stream-mute" onClick={switchMute} aria-label={muted?"Ativar som":"Silenciar"}>
-      {muted?<VolumeX size={20}/>:<Volume2 size={20}/>}
-    </button>}
   </div>;
 }
 type ShakaGlobal={polyfill?:{installAll?:()=>void};Player?:{new():any;isBrowserSupported?:()=>boolean}};
