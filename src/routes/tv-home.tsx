@@ -73,7 +73,9 @@ function TvHome() {
 
   const choose = (item: TvItem) => {
     setSearchOpen(false);
-    void navigate({ to: searchSuggestionPath(item) });
+    if (item.type === "f") void navigate({ to: "/filme/$id", params: { id: item.id } });
+    else if (item.type === "a") void navigate({ to: "/anime/$id", params: { id: item.id } });
+    else void navigate({ to: "/serie/$id", params: { id: item.id } });
   };
   const viewAll = () => {
     if (query.trim()) {

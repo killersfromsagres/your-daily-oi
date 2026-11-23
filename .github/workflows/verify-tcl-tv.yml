@@ -36,6 +36,8 @@ jobs:
         run: bun test tests/tv-home.test.ts tests/tv-app-design.test.ts tests/tv-install.test.ts tests/search-autocomplete.test.ts
       - name: Compile client and server routes
         run: bun run build
+      - name: Strict TypeScript diagnostics for new TV modules
+        run: bun scripts/typecheck-tcl.mjs
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 20
