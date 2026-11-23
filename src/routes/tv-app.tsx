@@ -35,7 +35,7 @@ function TvAppPage(){
  const [selected,setSelected]=useState<TvInstallPlatform>("tcl-android");
  const [tv,setTv]=useState(false);
  const optionsRef=useRef<HTMLDivElement>(null);
- const selectedDevice=devices.find(device=>device.id===selected) || devices[0];
+ const selectedDevice=devices.find(device=>device.id===selected) ?? devices[0]!;
  const onDeviceKeys=(event:KeyboardEvent<HTMLDivElement>)=>{
   const step=event.key==="ArrowRight"||event.key==="ArrowDown"?1:
     event.key==="ArrowLeft"||event.key==="ArrowUp"?-1:0;
@@ -43,8 +43,9 @@ function TvAppPage(){
   const focused=(event.target as HTMLElement).closest<HTMLButtonElement>("[data-tv-device]");
   if(!focused)return;
   event.preventDefault();
-  const index=devices.findIndex(device=>device.id===focused.dataset.tvDevice);
+  const index=devices.findIndex(device=>device.id===focused.dataset["tvDevice"]);
   const next=devices[(index+step+devices.length)%devices.length];
+  if(!next)return;
   setSelected(next.id);
   optionsRef.current?.querySelector<HTMLButtonElement>('[data-tv-device="'+next.id+'"]')?.focus();
  };

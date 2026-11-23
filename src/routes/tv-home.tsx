@@ -35,7 +35,7 @@ function TvHome() {
 
   useEffect(() => {
     try { localStorage.setItem("zf-tv-mode", "true"); } catch { /* storage disabled */ }
-    document.documentElement.dataset.zfPlatform = "tv";
+    document.documentElement.dataset["zfPlatform"] = "tv";
     window.dispatchEvent(new Event("zf-tv-mode-change"));
     const dispose = installTvRemoteNavigation();
     const controller = new AbortController();
