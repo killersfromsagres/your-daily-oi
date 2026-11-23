@@ -63,6 +63,7 @@ export function TvLibrary({type,onOpen}:Props){
     <nav className="zf-tv-library-genres" data-tv-row="library-genres" aria-label={"Gêneros de "+TITLES[type]}>
       {["Todos",...genres.map(g=>g.name)].map((value,index)=>
         <button type="button" key={value} data-tv-focus={"library-genre-"+index}
+          data-tv-left-target={index===0?"nav-"+type:undefined}
           aria-pressed={genre===value} className={genre===value?"is-active":""}
           onClick={()=>changeGenre(value)}>
           {value}{index>0&&<small>{genres[index-1]?.count.toLocaleString("pt-BR")}</small>}
@@ -72,6 +73,7 @@ export function TvLibrary({type,onOpen}:Props){
       {items.map((item,index)=><button type="button" key={item.type+":"+item.id}
         className="zf-tv-library-card" data-tv-focus={"library-poster-"+item.type+"-"+item.id}
         data-tv-row={"library-row-"+Math.floor(index/6)}
+        data-tv-left-target={index%6===0?"nav-"+type:undefined}
         onClick={()=>onOpen(item)} aria-label={"Ver "+item.title}>
         {item.posterUrl
           ?<img src={item.posterUrl} loading="lazy" decoding="async" width={210} height={315} alt=""/>

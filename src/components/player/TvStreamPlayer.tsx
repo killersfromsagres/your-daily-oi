@@ -367,10 +367,6 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
       <p>{reason}</p>
       <button type="button" data-tv-focus="stream-retry" onClick={retry}><RefreshCw size={18}/> Tentar novamente</button>
     </div>}
-    {stage==="playing"&&<span className="zf-tv-stream-quality-status"
-      aria-label="Qualidade automática: ajuste de resolução conforme a rede e desempenho da TV">
-      AUTO · ADAPTATIVA
-    </span>}
   </div>;
 }
 type ShakaGlobal={polyfill?:{installAll?:()=>void};Player?:{new():any;isBrowserSupported?:()=>boolean}};
