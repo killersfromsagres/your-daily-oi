@@ -4,6 +4,7 @@ import { Play, Info, Plus, Check, ChevronLeft, ChevronRight, Volume2, VolumeX, S
 import { Link } from "@tanstack/react-router";
 import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSizedHeroImage } from "@/lib/hero-images";
+import { VerifiedQualityBadge } from "./VerifiedQualityBadge";
 
 export interface HeroItem {
   id: string;
@@ -181,7 +182,7 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved, editio
           {hero.voteAverage ? (
             <span className="ydo-hero-score"><Star size={15} className="zf-rating-icon" fill="currentColor" aria-hidden="true" /> {hero.voteAverage.toFixed(1)}</span>
           ) : null}
-          <span className="ydo-hero-quality">{hero.quality || "FULL HD"}</span>
+          <VerifiedQualityBadge media={{type:hero.type,id:hero.id}} />
           {hero.genres?.slice(0, 3).map((g) => (
             <span key={g} className="ydo-hero-genre">
               {g}

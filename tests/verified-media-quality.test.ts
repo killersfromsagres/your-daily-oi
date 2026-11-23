@@ -60,5 +60,10 @@ describe("Truthful quality badges for all VOD media",()=>{
     const card=read("../src/components/catalog/MediaCard.tsx");
     expect(card).not.toContain('const is4k =');
     expect(card).toContain("<VerifiedQualityBadge");
+    const hero=read("../src/components/catalog/HeroSection.tsx");
+    expect(hero).not.toContain('hero.quality || "FULL HD"');
+    expect(hero).toContain("<VerifiedQualityBadge");
+    const index=read("../src/routes/index.tsx");
+    expect(index).not.toContain('quality: item.streams.some(stream => stream.quality?.includes("4K"))');
   });
 });
