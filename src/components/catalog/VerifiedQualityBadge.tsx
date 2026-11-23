@@ -3,13 +3,14 @@ import {useEffect,useState} from "react";
 import type {StreamSource} from "@/lib/types";
 import {QUALITY_CHANGED_EVENT,describeMediaQuality,readVerifiedMediaQuality,
   type MediaQualityBadgeInfo,type MediaQualityKey} from "@/lib/verified-media-quality";
+const EMPTY_STREAMS:readonly StreamSource[]=[];
 interface Props{
   media:MediaQualityKey;
   streams?:readonly StreamSource[];
   compact?:boolean;
   className?:string;
 }
-export function VerifiedQualityBadge({media,streams=[],compact=false,className=""}:Props){
+export function VerifiedQualityBadge({media,streams=EMPTY_STREAMS,compact=false,className=""}:Props){
   const [quality,setQuality]=useState<MediaQualityBadgeInfo>(()=>
     describeMediaQuality(streams,null,{seriesAggregate:media.type!=="f"&&media.episode===undefined}));
   useEffect(()=>{
