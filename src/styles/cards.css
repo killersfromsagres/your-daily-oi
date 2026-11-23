@@ -126,8 +126,13 @@
   position: absolute;
   top: 8px;
   left: 8px;
+  right: 8px;
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 4px;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .ydo-badge {
@@ -394,4 +399,20 @@
   .zf-media-carousel__track { scroll-behavior: auto; }
   .zf-media-carousel__arrow,
   .zf-media-carousel__fade { transition: none; }
+}
+
+
+/* Opaque, legible quality labels over bright posters, including on TVs and
+ * low-end phones. No backdrop blur or per-frame filter. */
+.ydo-card-badges .zf-quality-badge{
+  flex:0 0 auto;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color-scheme:dark;
+  opacity:1!important;
+  -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion:reduce){
+  .zf-quality-badge{transition:none!important;animation:none!important;}
 }

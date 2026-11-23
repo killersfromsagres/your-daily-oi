@@ -57,6 +57,8 @@ export function MediaCard({
               alt=""
               loading="lazy"
               decoding="async"
+              width={350}
+              height={525}
               onError={() => setImgFailed(true)}
               className="ydo-card-img"
               draggable={false}

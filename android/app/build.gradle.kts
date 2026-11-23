@@ -23,8 +23,8 @@ android {
       applicationId = "com.zangflix.tv"
       buildConfigField("boolean", "TV_EDITION", "true")
       manifestPlaceholders["appLabel"] = "ZANG FLIX TV"
-      versionCode = 10
-      versionName = "2.5.0"
+      versionCode = 11
+      versionName = "2.6.0"
     }
   }
   buildFeatures { buildConfig = true }
