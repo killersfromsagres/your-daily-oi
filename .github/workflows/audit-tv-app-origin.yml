@@ -1,0 +1,41 @@
+name: Audit published TV app origin
+on:
+  pull_request:
+    paths:
+      - 'src/routes/tv-home.tsx'
+      - 'src/routes/tv-live.tsx'
+      - 'src/server.ts'
+      - 'src/lib/tv-featured.ts'
+      - 'src/lib/tv-build.ts'
+      - 'scripts/audit-tv-runtime.mjs'
+      - '.github/workflows/audit-tv-app-origin.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/routes/tv-home.tsx'
+      - 'src/routes/tv-live.tsx'
+      - 'src/server.ts'
+      - 'src/lib/tv-featured.ts'
+      - 'src/lib/tv-build.ts'
+      - 'scripts/audit-tv-runtime.mjs'
+      - '.github/workflows/audit-tv-app-origin.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Verify real published Lovable origin (no media transfer)
+        env:
+          TV_AUDIT_ORIGIN: https://zangflix.lovable.app
+          TV_AUDIT_VERSION: '2.4.0'
+        run: bun scripts/audit-tv-runtime.mjs
+      - name: Diagnose alternative Vercel origin
+        env:
+          TV_AUDIT_ORIGIN: https://zangflix.vercel.app
+          TV_AUDIT_VERSION: '2.4.0'
+        run: bun scripts/audit-tv-runtime.mjs
