@@ -296,3 +296,15 @@ html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] 
   .zf-tenfoot-live .zf-tv-player-frame.is-tv-fullscreen{height:100dvh!important}
   .zf-tenfoot-live .zf-tv-fullscreen-exit{font-size:13px;padding:9px 12px}
 }
+
+/* Indicator and restrained hardware-composited tuning, not fake AI upscaling. */
+.zf-tenfoot-live .zf-tv-stream-quality-status{
+  position:absolute;bottom:22px;left:21px;z-index:5;
+  padding:8px 11px;border-radius:7px;
+  background:#111826b7;color:#e3e8f2;border:1px solid #ffffff24;
+  font-size:11px;font-weight:800;letter-spacing:.055em;
+  pointer-events:none;
+}
+.zf-tenfoot-live.is-tv-cinema .zf-tv-stream-quality-status{
+  bottom:29px;left:27px;
+}

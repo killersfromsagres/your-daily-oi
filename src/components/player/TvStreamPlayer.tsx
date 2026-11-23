@@ -374,7 +374,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
     </div>}
     {stage==="playing"&&<span className="zf-tv-stream-quality-status"
       aria-label="Qualidade automática: ajuste de resolução conforme a rede e desempenho da TV">
-      AUTO · HD
+      AUTO · ADAPTATIVA
     </span>}
     {stage==="playing"&&<button type="button" className="zf-tv-stream-mute"
       data-tv-focus="stream-mute" onClick={switchMute} aria-label={muted?"Ativar som":"Silenciar"}>
