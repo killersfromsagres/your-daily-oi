@@ -4,6 +4,12 @@ on:
     paths:
       - 'src/routes/tv-home.tsx'
       - 'src/lib/tv-featured.ts'
+      - 'src/lib/tv-hero-art.ts'
+      - 'src/lib/tv-featured-candidates.ts'
+      - 'src/lib/tv-hero-client.ts'
+      - 'src/lib/tv-build.ts'
+      - 'tests/tv-featured-candidates.test.ts'
+      - 'tests/tv-hero-client.test.ts'
       - 'src/lib/tv-playback-plan.ts'
       - 'src/components/player/TvStreamPlayer.tsx'
       - 'tests/tv-featured.test.ts'
@@ -26,6 +32,12 @@ on:
     paths:
       - 'src/routes/tv-home.tsx'
       - 'src/lib/tv-featured.ts'
+      - 'src/lib/tv-hero-art.ts'
+      - 'src/lib/tv-featured-candidates.ts'
+      - 'src/lib/tv-hero-client.ts'
+      - 'src/lib/tv-build.ts'
+      - 'tests/tv-featured-candidates.test.ts'
+      - 'tests/tv-hero-client.test.ts'
       - 'src/lib/tv-playback-plan.ts'
       - 'src/components/player/TvStreamPlayer.tsx'
       - 'tests/tv-featured.test.ts'
@@ -53,7 +65,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: TV navigation and installation tests
-        run: bun test tests/tv-home.test.ts tests/tv-featured.test.ts tests/tv-live-recovery.test.ts tests/tv-focus.test.ts tests/tv-app-design.test.ts tests/tv-install.test.ts tests/search-autocomplete.test.ts
+        run: bun test tests/tv-home.test.ts tests/tv-featured-candidates.test.ts tests/tv-hero-client.test.ts tests/tv-featured.test.ts tests/tv-live-recovery.test.ts tests/tv-focus.test.ts tests/tv-app-design.test.ts tests/tv-install.test.ts tests/search-autocomplete.test.ts
       - name: Compile client and server routes
         run: bun run build
       - name: Strict TypeScript diagnostics for new TV modules

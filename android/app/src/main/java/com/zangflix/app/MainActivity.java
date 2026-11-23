@@ -19,35 +19,49 @@ import android.webkit.WebSettings;
 
 public final class MainActivity extends Activity {
   private WebView web;
+  private boolean tvEdition;
+  private static final String TV_RUNTIME_VERSION = "2.4.0";
   private View customView;
   private int previousOrientation;
   private int previousSystemUi;
   private int previousWindowFlags;
   private WebChromeClient.CustomViewCallback customCallback;
   private static final String HOME = "https://zangflix.lovable.app/";
-  private static final String TV_HOME = "https://zangflix.lovable.app/tv-home?zf-tv-app=androidtv";
+  private static final String TV_HOME = "https://zangflix.lovable.app/tv-home?zf-tv-app=androidtv&tvVersion=240";
   @Override public void onCreate(Bundle state) {
     super.onCreate(state);
     UiModeManager mode=(UiModeManager)getSystemService(UI_MODE_SERVICE);
     boolean television=BuildConfig.TV_EDITION || (mode!=null && mode.getCurrentModeType()==Configuration.UI_MODE_TYPE_TELEVISION);
     setVolumeControlStream(AudioManager.STREAM_MUSIC);
+    tvEdition=television;
     if(television)setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     web = new WebView(this);
     web.setFocusable(true);web.setFocusableInTouchMode(true);web.requestFocus();
     web.setBackgroundColor(0xff090a10);
     web.getSettings().setJavaScriptEnabled(true);
+    // Clear cached HTML only when the TV APK upgrades. Keep viewing progress.
+    if(television && !TV_RUNTIME_VERSION.equals(getPreferences(0).getString("tvRuntimeCacheVersion",""))){
+      web.clearCache(true);
+      getPreferences(0).edit().putString("tvRuntimeCacheVersion",TV_RUNTIME_VERSION).apply();
+    }
     web.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
     web.getSettings().setSupportZoom(false);
     web.getSettings().setBuiltInZoomControls(false);
     web.getSettings().setLoadWithOverviewMode(true);
     web.getSettings().setUseWideViewPort(true);
     // Identify the actual installed Android APK, not a Chrome PWA shortcut.
-    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.3":""));
+    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.4":""));
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(false);
     web.getSettings().setAllowFileAccess(false);
     web.getSettings().setAllowContentAccess(false);
     web.setWebViewClient(new WebViewClient() {
+      @Override public void onPageFinished(WebView view,String url){
+        super.onPageFinished(view,url);
+        if(tvEdition && url!=null && url.startsWith("https://zangflix.lovable.app/")){
+          view.postDelayed(()->checkPublishedTvVersion(view),7000);
+        }
+      }
       @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         Uri uri = request.getUrl();
         if ("https".equals(uri.getScheme()) && "zangflix.lovable.app".equals(uri.getHost())) return false;
@@ -80,6 +94,21 @@ public final class MainActivity extends Activity {
     });
     setContentView(web);
     web.loadUrl(television ? TV_HOME : HOME);
+  }
+  /** The APK is a WebView shell and does not contain the hosted web bundles. */
+  private void checkPublishedTvVersion(WebView view){
+    if(web!=view || isFinishing())return;
+    String js="(function(){"
+      +"var ok=document.querySelector('[data-tv-build=\\\"2.4.0\\\"]');"
+      +"if(ok){var old=document.getElementById('zf-host-version-warning');if(old)old.remove();return 'ready';}"
+      +"if(!document.body)return 'no-body';"
+      +"if(document.getElementById('zf-host-version-warning'))return 'already';"
+      +"var w=document.createElement('div');w.id='zf-host-version-warning';"
+      +"w.textContent='ATENÇÃO: esta TV está abrindo uma versão antiga do site. Publique a atualização 2.4.0 no Lovable para receber os novos banners e o player corrigido.';"
+      +"w.style.cssText='position:fixed;z-index:2147483647;left:8%;right:8%;bottom:3%;padding:16px 20px;border-radius:12px;background:#251a32;color:#fff;border:2px solid #cfb1ff;font:600 16px system-ui;line-height:1.4;box-shadow:0 10px 30px #0009';"
+      +"document.body.appendChild(w);return 'old';"
+      +"})()";
+    try{view.evaluateJavascript(js,null);}catch(Exception ignored){}
   }
   @Override public void onBackPressed() {
     if (customView != null) { web.getWebChromeClient().onHideCustomView(); return; }
