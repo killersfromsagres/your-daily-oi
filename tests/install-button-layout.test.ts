@@ -17,8 +17,10 @@ describe("Site install button placement",()=>{
     expect(native).toContain('HOME = "https://zangflix.lovable.app/"');
     expect(native).toContain('"zangflix.lovable.app".equals(uri.getHost())');
     expect(native).not.toContain("zangflix.vercel.app");
-    expect(gradle).toContain("versionCode = 4");
-    expect(page).toContain("https://zangflix.lovable.app/tv-app");
+    expect(gradle).toContain("versionCode = 5");
+    expect(gradle).toContain("assemble");    expect(gradle).toContain('applicationId = "com.zangflix.tv"');
+    expect(native).toContain('TV_HOME = "https://zangflix.lovable.app/tv-home');
+    expect(page).toContain("https://zangflix.lovable.app/tv-home");
     expect(page).not.toContain("zangflix.vercel.app");
   });
   test("installed runtime suppresses duplicate APK offers",()=>{
