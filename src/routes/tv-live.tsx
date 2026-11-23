@@ -201,7 +201,7 @@ function TvLive(){
         </div>
         <div ref={playerRef} className="zf-tv-player-frame">
           <Suspense fallback={<p className="zf-tenfoot-notice" role="status">Preparando transmissão…</p>}>
-            <LivePlayer key={active.id} canal={active} proxyBackend={backend}
+            <LivePlayer key={active.id} canal={active} proxyBackend={backend} preferNativeDecoder
               onNextCanal={()=>cycle(1)} onPrevCanal={()=>cycle(-1)}
               onPlaybackStatus={(id,next)=>{if(id===active.id)setStatus(next)}}
               onSourcesExhausted={()=>{void load(true)}}/>
