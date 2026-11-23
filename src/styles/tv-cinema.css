@@ -248,3 +248,13 @@ html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] 
   display:grid;place-items:center;background:#121723b9;color:#fff
 }
 @media(max-width:800px){.zf-tenfoot-live .zf-tv-player-frame{width:100%}.zf-tv-stream-status{padding:25px}}
+
+
+/* TV-only graceful banner composition when the published catalog lacks
+   an official widescreen image. Do not mislabel a portrait poster as HD. */
+.zf-tenfoot-home .zf-tv-poster-artwork{position:absolute;inset:0;overflow:hidden;z-index:-3;background:#171a29}
+.zf-tenfoot-home .zf-tv-poster-artwork-blur{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(45px) brightness(.4);opacity:.82}
+.zf-tenfoot-home .zf-tv-poster-artwork-cover{position:absolute;right:10%;top:9%;height:82%;width:auto;max-width:36%;object-fit:contain;box-shadow:0 0 70px #0007;border-radius:9px}
+.zf-tenfoot-home .zf-tv-update-warning{position:relative;z-index:8;margin:-35px clamp(16px,6vw,120px) 55px clamp(76px,9vw,185px);
+  max-width:1000px;border:1px solid #dfa66c7d;background:#2b221bdd;color:#ffe7cf;
+  padding:13px 18px;border-radius:10px;font-size:15px;font-weight:650;line-height:1.45}

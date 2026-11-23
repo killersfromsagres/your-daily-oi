@@ -1,3 +1,4 @@
+import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Heart, Play, Tv2 } from "lucide-react";
@@ -52,7 +53,7 @@ function TvTitle(){
       else void navigate({to:"/assistir/serie/$id/$temp/$ep",params});
     }
   };
-  return <main className="zf-tenfoot zf-tenfoot-detail" data-tv-exclusive="true" ref={root}>
+  return <main className="zf-tenfoot zf-tenfoot-detail" data-tv-exclusive="true" data-tv-build={TV_APP_BUILD} ref={root}>
     <header className="zf-detail-head" data-tv-row="detail-nav">
       <button type="button" data-tv-focus="detail-back" data-tv-start onClick={back}><ArrowLeft size={23}/> Voltar</button>
       <div className="zf-tenfoot-logo">ZANG <b>FLIX</b></div>

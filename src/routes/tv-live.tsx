@@ -1,3 +1,4 @@
+import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Pause, Play, RefreshCw, Search, Tv2, Volume2, VolumeX, X } from "lucide-react";
@@ -195,7 +196,7 @@ function TvLive(){
     const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-back"]')?.focus());
     return()=>cancelAnimationFrame(frame);
   },[activeId]);
-  return <main className="zf-tenfoot zf-tenfoot-live" ref={root} data-tv-exclusive="true">
+  return <main className="zf-tenfoot zf-tenfoot-live" ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!active ? <>
       <header className="zf-live-top" data-tv-row="live-nav">
         <button type="button" data-tv-focus="live-back" data-tv-start onClick={()=>void navigate({to:"/tv-home"})}><ArrowLeft size={20}/> Voltar</button>

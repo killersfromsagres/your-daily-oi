@@ -5,6 +5,8 @@ import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { getProgress, getSavedList, toggleSaved } from "@/lib/storage";
 import { useTvFocus, tvReadFocus } from "@/lib/tv-focus";
 import { remoteKey } from "@/lib/tv-remote";
+import {TV_APP_BUILD} from "@/lib/tv-build";
+import {tvHeroesFromResponse} from "@/lib/tv-hero-client";
 import type { SearchSuggestion } from "@/lib/search-suggestions";
 
 type MediaType = "f" | "s" | "a";
@@ -32,6 +34,8 @@ function TvHome(){
   const [hero,setHero]=useState<TvItem|null>(null);
   const [heroes,setHeroes]=useState<TvItem[]>([]);
   const [heroIndex,setHeroIndex]=useState(0);
+  const [failedBackdrops,setFailedBackdrops]=useState<string[]>([]);
+  const [serverOutdated,setServerOutdated]=useState(false);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState(false);
   const [searchOpen,setSearchOpen]=useState(false);
@@ -57,7 +61,7 @@ function TvHome(){
         const valid=Array.isArray(data.rows)?data.rows.filter(r=>Array.isArray(r.items)):[];
         setRows(valid);
         setHero(data.hero||valid.flatMap(r=>r.items)[0]||null);
-        setHeroes(Array.isArray(data.heroes)?data.heroes.filter(item=>Boolean(item.backdropUrl)).slice(0,8):[]);
+        setHeroes(tvHeroesFromResponse(data));
         setHeroIndex(0);
       })
       .catch(()=>{if(!controller.signal.aborted)setError(true)})
@@ -65,27 +69,41 @@ function TvHome(){
     return()=>controller.abort();
   },[]);
   useEffect(()=>{
-    if(loading||heroes.length>=6||requestedExtraArtwork.current)return;
+    // The native APK may be newer than the web service at its configured host.
+    // Report a version mismatch instead of silently showing an empty banner.
+    const controller=new AbortController();
+    void fetch("/api/tv/build",{signal:controller.signal,cache:"no-store"})
+      .then(async response=>response.ok?response.json():null)
+      .then(data=>{if(!controller.signal.aborted)setServerOutdated(!data||data.version!==TV_APP_BUILD)})
+      .catch(()=>{if(!controller.signal.aborted)setServerOutdated(true)});
+    return()=>controller.abort();
+  },[]);
+  useEffect(()=>{
+    if(loading||heroes.length>=8||requestedExtraArtwork.current)return;
     requestedExtraArtwork.current=true;
     const controller=new AbortController();
-    const timeout=window.setTimeout(()=>controller.abort(),8000);
-    void fetch("/api/tv/featured",{signal:controller.signal})
-      .then(async response=>{
-        if(!response.ok)throw new Error("HD indisponível");
-        return response.json() as Promise<{heroes:TvItem[]}>;
-      })
-      .then(data=>{
-        if(controller.signal.aborted||!Array.isArray(data.heroes))return;
-        setHeroes(current=>{
-          const unique=new Map(current.map(item=>[item.id,item] as const));
-          for(const item of data.heroes){
-            if(item.backdropUrl&&!unique.has(item.id))unique.set(item.id,item);
-          }
-          return [...unique.values()].slice(0,8);
-        });
-      }).catch(()=>{/* Keep the proven static-HD selection. */})
-      .finally(()=>window.clearTimeout(timeout));
-    return()=>{controller.abort();window.clearTimeout(timeout)};
+    const timer=window.setTimeout(()=>controller.abort(),19000);
+    const fetchHeroes=async(path:string)=>{
+      const response=await fetch(path,{signal:controller.signal,cache:"no-store"});
+      if(!response.ok)throw Error("HTTP "+response.status);
+      const data:unknown=await response.json();
+      return tvHeroesFromResponse(data);
+    };
+    void (async()=>{
+      let selection:TvItem[]=[];
+      try{selection=await fetchHeroes("/api/tv/featured")}
+      catch{
+        // Older deployed backends supplied this endpoint long before /api/tv/featured.
+        try{selection=await fetchHeroes("/api/destaques")}catch{}
+      }
+      if(controller.signal.aborted)return;
+      setHeroes(current=>{
+        const unique=new Map(current.map(item=>[item.id,item] as const));
+        for(const item of selection)if(!unique.has(item.id))unique.set(item.id,item);
+        return [...unique.values()].slice(0,8);
+      });
+    })().finally(()=>window.clearTimeout(timer));
+    return()=>{controller.abort();window.clearTimeout(timer)};
   },[loading,heroes.length]);
 
   useEffect(()=>{
@@ -157,7 +175,7 @@ function TvHome(){
   };
   const spotlight=heroes[heroIndex]??hero??shelves[0]?.items[0]??null;
 
-  return <main className="zf-tenfoot zf-tenfoot-home" ref={root} data-tv-exclusive="true">
+  return <main className="zf-tenfoot zf-tenfoot-home" ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!searchOpen ? <>
       <aside className="zf-tv-sidemenu" aria-label="Navegação do ZANG FLIX TV">
         <span className="zf-tv-sidemenu-mark" aria-hidden="true">Z<span>F</span></span>
@@ -183,10 +201,16 @@ function TvHome(){
         <div className="zf-tv-sidemenu-hint" aria-hidden="true">Use ← para navegar</div>
       </aside>
       <section className="zf-immersive-hero" aria-label="Destaques de filmes">
-        {spotlight?.backdropUrl
+        {spotlight?.backdropUrl&&!failedBackdrops.includes(spotlight.id)
           ? <img key={spotlight.id} className="zf-hero-backdrop" src={spotlight.backdropUrl}
-              alt="" decoding="async" fetchPriority={heroIndex===0?"high":"auto"}/>
-          : <div className="zf-hero-fallback" aria-hidden="true"/>}
+              alt="" decoding="async" fetchPriority={heroIndex===0?"high":"auto"}
+              onError={()=>setFailedBackdrops(current=>current.includes(spotlight.id)?current:[...current,spotlight.id])}/>
+          : spotlight?.posterUrl
+            ? <div className="zf-tv-poster-artwork" aria-hidden="true">
+                <img src={spotlight.posterUrl} className="zf-tv-poster-artwork-blur" alt=""/>
+                <img src={spotlight.posterUrl} className="zf-tv-poster-artwork-cover" alt=""/>
+              </div>
+            : <div className="zf-hero-fallback" aria-hidden="true"/>}
         <div className="zf-hero-shade" aria-hidden="true"/>
         <header className="zf-tv-headline"><span className="zf-tenfoot-logo">ZANG <b>FLIX</b></span><span>FILMES · SÉRIES · AO VIVO</span></header>
         <div className="zf-hero-copy">
@@ -219,6 +243,7 @@ function TvHome(){
           </div>}
         </div>
       </section>
+      {serverOutdated&&<div className="zf-tv-update-warning" role="status">A versão publicada da TV está desatualizada. Os banners HD e os canais podem não funcionar até atualizar a hospedagem.</div>}
       {loading?<p className="zf-tenfoot-notice" role="status">Carregando sua experiência de TV…</p>:
         error?<p className="zf-tenfoot-notice" role="alert">Não foi possível carregar o catálogo. <button type="button" data-tv-focus="retry" data-tv-row="notice" onClick={()=>location.reload()}>Tentar novamente</button></p>:
         <div className="zf-immersive-shelves">
