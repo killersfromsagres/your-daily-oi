@@ -102,10 +102,10 @@ function TvLive(){
   const onBack=useCallback(()=>{
     if(activeId){
       setActiveId("");
-      requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
         const target=[...document.querySelectorAll<HTMLElement>("[data-tv-channel]")].find(el=>el.dataset["tvChannel"]===lastFocusedId.current);
         target?.focus({preventScroll:true});
-      });
+      }));
     }else if(search){setSearch("");}
     else void navigate({to:"/tv-home"});
   },[activeId,search,navigate]);

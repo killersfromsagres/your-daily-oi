@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { Check, ChevronRight, Heart, Play, Search, Tv2, X } from "lucide-react";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { getProgress, getSavedList, toggleSaved } from "@/lib/storage";
-import { useTvFocus } from "@/lib/tv-focus";
+import { useTvFocus, tvReadFocus } from "@/lib/tv-focus";
 import { remoteKey } from "@/lib/tv-remote";
 import type { SearchSuggestion } from "@/lib/search-suggestions";
 
@@ -64,6 +64,20 @@ function TvHome(){
     const frame=requestAnimationFrame(()=>searchInput.current?.focus({preventScroll:true}));
     return()=>cancelAnimationFrame(frame);
   },[searchOpen]);
+
+  // Shelves render after the compact API returns. Restore the last movie
+  // selection only when the user has not started navigating somewhere else.
+  useEffect(()=>{
+    if(loading||searchOpen)return;
+    const id=tvReadFocus("home");
+    if(!id.startsWith("poster-"))return;
+    const frame=requestAnimationFrame(()=>{
+      const element=[...root.current?.querySelectorAll<HTMLElement>("[data-tv-focus]")||[]]
+        .find(node=>node.dataset["tvFocus"]===id);
+      if(element)element.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[loading,searchOpen]);
 
   const allItems=useMemo(()=>rows.flatMap(r=>r.items),[rows]);
   const uniqueSaved=useMemo(()=>allItems.filter((item,i)=>saved.includes(item.id)&&allItems.findIndex(other=>other.id===item.id)===i).slice(0,20),[allItems,saved]);
