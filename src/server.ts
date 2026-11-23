@@ -219,7 +219,23 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
           .map(item => ({ id: item.id, type: item.type, title: cleanDisplayTitle(item.title),
             posterUrl: item.posterUrl ?? "" })),
       }));
-      return jsonResponse({ rows }, 200, "private, max-age=45");
+      // Prefer a legitimate widescreen image already documented for this exact
+      // title. Do not request a large TMDB batch or fabricate a movie image.
+      const spotlight = pool.find(item => item.type === "f" &&
+        Object.keys(POPULAR_HD_BACKDROPS).some(key => normalizeTitle(item.title).includes(key))) ||
+        pool.find(item => item.type === "f" && Boolean(item.tmdb?.backdropUrl)) ||
+        pool.find(item => item.type === "f") || null;
+      const titleKey = spotlight ? normalizeTitle(spotlight.title) : "";
+      const backdrop = spotlight?.tmdb?.backdropUrl ??
+        Object.entries(POPULAR_HD_BACKDROPS).find(([key])=>titleKey.includes(key))?.[1] ??
+        spotlight?.posterUrl ?? "";
+      const hero = spotlight ? {
+        id: spotlight.id, type: spotlight.type, title: cleanDisplayTitle(spotlight.title),
+        posterUrl: spotlight.posterUrl ?? "", backdropUrl: backdrop,
+        overview: spotlight.tmdb?.overview ?? "",
+        year: spotlight.tmdb?.releaseYear ?? null,
+      } : null;
+      return jsonResponse({ rows, hero }, 200, "private, max-age=45");
     }
 
     const { items, highlights } = await loadCatalog();
