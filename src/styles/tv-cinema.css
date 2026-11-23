@@ -133,3 +133,76 @@
 
 /* Native TV watch mode hides only web chrome, preserving the playback core. */
 html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] .zf-mobile-dock,html[data-zf-tv-app-watch="true"] .ambient-glow{display:none!important}
+
+
+/* TV 2.2: ten-foot streaming direction. Everything is scoped under TV-only roots.
+   The normal ZANG FLIX website, header, TV web catalog and player are untouched. */
+.zf-tenfoot-home{background:#07080f;color:#f8f7fc}
+.zf-tv-sidemenu{position:fixed;z-index:27;top:0;left:0;bottom:0;width:78px;max-width:90vw;display:flex;flex-direction:column;gap:20px;align-items:stretch;padding:38px 11px 24px;background:linear-gradient(90deg,#080a17e8,#080a1788 82%,#080a1700);transition:width 130ms ease,background-color 130ms ease;overflow-x:hidden}
+.zf-tv-sidemenu:focus-within{width:264px;background:#0a0e1bed;box-shadow:17px 0 55px #0008}
+.zf-tv-sidemenu-mark{display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:900;letter-spacing:-.12em;width:54px;height:51px;flex:none}
+.zf-tv-sidemenu-mark span{color:#bba2f3}
+.zf-tv-sidemenu nav{display:flex;flex-direction:column;gap:9px;margin-top:23px}
+.zf-tv-sidemenu nav>div{height:57px;flex:none}
+.zf-tv-sidemenu nav button{width:100%;height:56px;display:flex;align-items:center;gap:25px;white-space:nowrap;border:1px solid transparent;border-radius:12px;background:transparent;color:#bcc4d1;padding:0 16px;text-align:left;font-size:18px;font-weight:690}
+.zf-tv-sidemenu nav button>svg{width:22px;min-width:22px;flex:none}
+.zf-tv-sidemenu nav button span{opacity:0;white-space:nowrap;transition:opacity 95ms ease}
+.zf-tv-sidemenu:focus-within nav button span{opacity:1}
+.zf-tv-sidemenu nav button.is-selected{background:#f1edff17;color:#e4d7ff;border-color:#e2d4ff22}
+.zf-tv-sidemenu nav button:focus{background:#d4b8ff25!important;color:#fff}
+.zf-tv-sidemenu-hint{margin-top:auto;opacity:0;color:#b6adc6;font-size:12px;letter-spacing:.03em;white-space:nowrap;padding:0 10px}
+.zf-tv-sidemenu:focus-within .zf-tv-sidemenu-hint{opacity:1}
+.zf-tv-headline{position:absolute;left:clamp(120px,8vw,190px);right:5.7vw;top:0;height:115px;display:flex;align-items:center;justify-content:space-between;gap:20px;z-index:4}
+.zf-tv-headline>span:last-child{font-size:11px;font-weight:730;letter-spacing:.21em;color:#cfd3dbb4}
+.zf-tenfoot-home .zf-immersive-hero{min-height:clamp(540px,78vh,870px);background:#14172c}
+.zf-tenfoot-home .zf-hero-backdrop{width:100%;height:100%;object-fit:cover;object-position:center 35%}
+.zf-tenfoot-home .zf-hero-shade{background:linear-gradient(90deg,#070811ef 0%,#070811cc 27%,#090b185f 59%,#090b1830 100%),linear-gradient(0deg,#07080f 0%,#07080f15 38%,#07080f88 100%)}
+.zf-tenfoot-home .zf-hero-copy{padding:clamp(160px,23vh,285px) 0 150px clamp(127px,8.7vw,188px);max-width:64%;width:960px}
+.zf-tenfoot-home .zf-hero-kicker{color:#cabaf2;letter-spacing:.18em;font-size:12px;font-weight:850}
+.zf-hero-dot{width:8px;height:8px;border-radius:50%;background:#9160e7;display:inline-block;box-shadow:0 0 12px #9f6afe66}
+.zf-tenfoot-home .zf-hero-copy h1{font-size:clamp(43px,4.9vw,88px);letter-spacing:-.06em;line-height:1.08;margin:20px 0 12px;max-width:780px}
+.zf-hero-details{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 13px;color:#d5d9e4;font-size:14px;font-weight:730}
+.zf-hero-details span{padding:5px 0}
+.zf-hero-details span+span:before{content:"•";margin-right:12px;color:#b1a2c6}
+.zf-hero-details span:last-child{font-size:11px;font-weight:820;letter-spacing:.07em;color:#d9b9ff}
+.zf-tenfoot-home .zf-hero-copy p{font-size:clamp(16px,1.15vw,22px);color:#d9dbe4;max-width:590px;line-height:1.63}
+.zf-tenfoot-home .zf-hero-actions{gap:13px;margin-top:28px}
+.zf-tenfoot-home .zf-hero-play{background:#f5f2fb;color:#101015;font-size:17px;font-weight:850;min-width:191px;box-shadow:0 4px 25px #0006}
+.zf-hero-details-button{display:inline-flex;align-items:center;justify-content:center;gap:10px;border:1px solid #ffffff42;border-radius:10px;padding:0 23px;min-height:52px;background:#2a2b399e;color:#fff;font-size:17px;font-weight:750}
+.zf-tenfoot-home .zf-hero-save{background:#1d2335a8;border-color:#ffffff6f}
+.zf-tv-banner-switch{display:flex;align-items:center;gap:14px;margin-top:30px}
+.zf-tv-banner-switch button{display:grid;place-items:center;width:38px;height:38px;flex:none;color:#fff;background:#ffffff16;border:1px solid #ffffff40;border-radius:50%}
+.zf-tv-banner-switch button:focus{background:#9677cd6e}
+.zf-tv-banner-progress{display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums;color:#d9d7e6;font-size:12px;letter-spacing:.12em;font-weight:840}
+.zf-tv-banner-progress i{display:block;width:44px;height:2px;background:linear-gradient(90deg,#ae85f2,#fff4);border-radius:8px}
+.zf-tenfoot-home .zf-immersive-shelves{margin-top:-84px;padding-left:clamp(126px,8.8vw,193px)}
+.zf-tenfoot-home .zf-shelf-track{padding-top:13px;padding-bottom:26px;gap:clamp(12px,1.1vw,20px)}
+.zf-tenfoot-home .zf-shelf-heading h2{font-size:clamp(21px,1.65vw,31px);color:#f9f7fd}
+.zf-tenfoot-home .zf-poster-tile{flex-basis:clamp(145px,12vw,223px);border:2px solid #ffffff25;border-radius:10px;transition:transform 100ms ease,border-color 100ms ease;background:#151824}
+.zf-tenfoot-home .zf-poster-tile[data-tv-focus]:focus{transform:scale(1.035);border-color:#f0e6ff;background:#2b2441}
+.zf-tenfoot-home .zf-poster-title{font-size:clamp(13px,.92vw,17px)}
+.zf-tenfoot-live .zf-live-card{background:#121727;border-color:#ffffff24}
+.zf-tenfoot-live .zf-live-card:focus{background:#23283a;border-color:#d9c6ff}
+.zf-tenfoot-live .zf-live-card-image{background:linear-gradient(135deg,#222b3c,#0d1221)}
+.zf-tenfoot-live .zf-live-filters button.is-active{background:#d1b5ff;color:#171126;border-color:#d1b5ff}
+.zf-tv-playback-help{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;max-width:1650px;margin:10px auto 0;padding:19px;border:1px solid #a78ed25f;border-radius:12px;background:#211831d9}
+.zf-tv-playback-help p{flex:1;min-width:250px;margin:0;font-size:16px;color:#e3d9f5}
+.zf-tv-playback-help button{display:inline-flex;align-items:center;gap:8px;border-radius:9px;padding:13px 16px;border:1px solid #a88bd0;color:#fff;background:#4c3c69;font-size:15px;font-weight:750}
+.zf-tv-playback-help button:first-of-type{background:#e6d4ff;color:#151320}
+@media(max-width:1200px){
+ .zf-tenfoot-home .zf-hero-copy{max-width:75%;padding-left:115px}
+ .zf-tv-headline{left:115px}
+ .zf-tv-headline>span:last-child{display:none}
+ .zf-tenfoot-home .zf-immersive-shelves{padding-left:110px}
+}
+@media(max-width:700px){
+ .zf-tv-sidemenu{width:62px;padding:18px 5px}
+ .zf-tv-sidemenu:focus-within{width:210px}
+ .zf-tv-sidemenu nav button{padding:0 12px;gap:15px}
+ .zf-tenfoot-home .zf-hero-copy{max-width:100%;padding-left:80px;padding-right:23px;padding-top:182px}
+ .zf-tv-headline{left:80px;height:75px}
+ .zf-tenfoot-home .zf-hero-copy h1{font-size:40px}
+ .zf-tenfoot-home .zf-hero-actions{flex-wrap:wrap}
+ .zf-tenfoot-home .zf-immersive-shelves{padding-left:76px}
+}
+@media(prefers-reduced-motion:reduce){.zf-tv-sidemenu,.zf-tv-sidemenu nav button span,.zf-tenfoot-home .zf-poster-tile{transition:none!important}}

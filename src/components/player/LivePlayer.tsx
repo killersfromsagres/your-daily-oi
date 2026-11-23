@@ -779,7 +779,7 @@ export function LivePlayer({
         console.warn(`[LivePlayer] Timeout ao conectar na fonte ${sourceIndex + 1} (${attemptMode})`);
         handleFatalError(false, attemptMode === "proxy" ? 0 : undefined);
       }
-    }, 18000);
+    }, preferNativeDecoder ? 12000 : 18000);
 
     const requireGesture = (reason: unknown): boolean => {
       if (!needsPlaybackGesture(reason) || cancelled) return false;
