@@ -4,7 +4,7 @@
  * video element reports the decoded frame dimensions.
  */
 import type {CatalogItem,StreamSource} from "./types";
-import {rejectedVodSourceReason} from "./vod-source-quality";
+import {advertisedVodResolution,rejectedVodSourceReason} from "./vod-source-quality";
 
 export type MediaKind="f"|"s"|"a";
 export type QualityTier="4k"|"qhd"|"fullhd"|"hd"|"sd"|"low"|"unknown"|"cam";
@@ -118,18 +118,36 @@ export function camCaptureEvidence(sources:readonly Pick<StreamSource,"url"|"qua
 export function describeMediaQuality(
   sources:readonly Pick<StreamSource,"url"|"quality"|"name">[],
   measured:VerifiedMediaQuality|null,
-  opts:{seriesAggregate?:boolean}={},
+  opts:{seriesAggregate?:boolean;remote?:MediaQualityBadgeInfo|null}={},
 ):MediaQualityBadgeInfo{
   if(measured){
     return {tier:measured.tier,label:measured.label,verified:true,
       detail:(opts.seriesAggregate?"Último episódio reproduzido: ":"Resolução realmente medida: ")+
         measured.width+"×"+measured.height+". Última verificação; pode variar conforme a fonte e a reprodução."};
   }
+  if(opts.remote&&opts.remote.tier!=="unknown"){
+    // Manifest/container describe the source, not an already-decoded frame.
+    return {...opts.remote,verified:false};
+  }
   if(camCaptureEvidence(sources))return {tier:"cam",label:"CAM · CINEMA",verified:false,
     detail:"A fonte foi identificada como gravação de cinema pela descrição ou pelo arquivo. Qualidade baixa; fonte bloqueada para reprodução."};
+  // Do not pretend a provider claim is an observed resolution. Still show it
+  // explicitly so fresh visitors aren't left with every title as unknown.
+  const heights=sources.filter(s=>!rejectedVodSourceReason(s))
+    .map(advertisedVodResolution).filter((v):v is number=>v!==null);
+  const height=heights.length?Math.max(...heights):null;
+  if(height!==null){
+    const tier:QualityTier=height>=2160?"4k":height>=1440?"qhd":
+      height>=1080?"fullhd":height>=720?"hd":height>=480?"sd":"low";
+    const name=height>=2160?"4K UHD":height>=1440?"QHD 1440p":
+      height>=1080?"FULL HD 1080p":height>=720?"HD 720p":
+      height>=480?"SD "+height+"p":"BAIXA "+height+"p";
+    return {tier,label:name+" · informado",verified:false,
+      detail:"Qualidade declarada pela fonte, não comprovada no vídeo. A medição real substituirá este selo durante a reprodução."};
+  }
   return {tier:"unknown",label:"A VERIFICAR",verified:false,
-    detail:opts.seriesAggregate?"A resolução varia por episódio e fonte. Será medida ao reproduzir.":
-      "Sem medição real. A resolução será identificada quando o vídeo começar a reproduzir."};
+    detail:opts.seriesAggregate?"A resolução varia por episódio e fonte. O catálogo será consultado em busca de metadados.":
+      "Sem informação confiável da fonte. O catálogo será consultado e o vídeo medido ao reproduzir."};
 }
 export function qualityForCatalogItem(item:Pick<CatalogItem,"type"|"id"|"streams">,
   measured:VerifiedMediaQuality|null):MediaQualityBadgeInfo{
