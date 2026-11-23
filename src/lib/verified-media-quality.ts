@@ -46,7 +46,7 @@ export function qualityKey(input:MediaQualityKey):string{
 /** Consistent public badges for decoded frames, source manifests, and provider claims.
  * Resolution is retained in detail/tooltip; no arbitrary 816p in the button.
  * Full HD+ represents QHD and other >1080p non-4K rasters, not exact 1080p. */
-export function qualityLabelForHeight(height:number):{tier:QualityTier;label:string}|null{
+export function qualityLabelForHeight(height:number):{tier:Exclude<QualityTier,"unknown"|"cam">;label:string}|null{
   if(!Number.isFinite(height)||height<100||height>8000)return null;
   if(height>=2160)return {tier:"4k",label:"4K UHD"};
   if(height>1080)return {tier:"qhd",label:"FULL HD+"};
