@@ -7,7 +7,9 @@ if (run.error) throw run.error;
 const lines = (run.stdout+"\n"+run.stderr).split(/\r?\n/);
 const diagnostics = lines.filter(line => /^src\/.*error TS\d+:/.test(line));
 const scoped = diagnostics.filter(line => {
-  if (/^src\/lib\/(?:movie-source-identity|movie-details-client|saimo-vod-url|vod-source-quality|playback-start|types)\.ts\(/.test(line)) return true;
+  if (/^src\/lib\/(?:movie-source-identity|movie-details-client|saimo-vod-url|vod-source-quality|vod-quality-probe|vod-quality-client|verified-media-quality|playback-start|types)\.ts\(/.test(line)) return true;
+  if (/^src\/server\/vod-quality\.ts\(/.test(line)) return true;
+  if (/^src\/components\/catalog\/VerifiedQualityBadge\.tsx\(/.test(line)) return true;
   if (/^src\/routes\/filme\.\$id\.tsx/.test(line)) return true;
   if (/^src\/routes\/assistir\.(?:filme|serie|anime)\.\$id/.test(line)) return true;
   const match = line.match(/^src\/(lib\/[^(/]+\.ts|components\/player\/[^(/]+\.tsx?|server\.ts)\((\d+),/);

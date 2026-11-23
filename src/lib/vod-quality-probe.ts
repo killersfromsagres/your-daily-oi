@@ -4,7 +4,7 @@
  */
 import type {StreamSource} from "./types";
 import {qualityFromDimensions, type MediaQualityBadgeInfo} from "./verified-media-quality";
-import {advertisedVodResolution,rejectedVodSourceReason,shortlistVodSources} from "./vod-source-quality";
+import {advertisedVodResolution,rejectedVodSourceReason,shortlistVodSources,playableVodSources} from "./vod-source-quality";
 
 export type QualityEvidence="manifest"|"container"|"declared"|"cam"|"unknown";
 export interface SourceQualityFinding extends MediaQualityBadgeInfo{
@@ -149,7 +149,8 @@ async function fetchProbe(url:URL,bytes:number,isManifest:boolean):Promise<{data
   return null;
 }
 export async function probeExistingVodSources(sources:readonly StreamSource[]):Promise<SourceQualityFinding|null>{
-  const selected=shortlistVodSources(sources,3);
+  const primary=shortlistVodSources(sources,3);
+  const selected=primary.length?primary:playableVodSources(sources).slice(0,3);
   if(!selected.length)return null;
   // Do not probe every title at page load; caller caches by catalog ID and
   // drives a bounded global client queue.

@@ -19,7 +19,7 @@ describe("Truthful quality badges for all VOD media",()=>{
   });
   test("claims in titles or source metadata never constitute verified pixels",()=>{
     const high=describeMediaQuality([source("https://cdn.test/film.4K.m3u8","Ultra 4K","4K")],null);
-    expect(high).toMatchObject({label:"A VERIFICAR",verified:false});
+    expect(high).toMatchObject({label:"4K UHD · informado",verified:false});
     expect(camCaptureEvidence([source("https://cdn.test/movie.ts","MPEG-TS","1080p")])).toBe(false);
     expect(camCaptureEvidence([source("https://cdn.test/movie.HDCAM.mp4","Filmagem de cinema")])).toBe(true);
     expect(describeMediaQuality([source("https://cdn.test/movie.camrip.mp4")],null))
