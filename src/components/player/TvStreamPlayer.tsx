@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from "react";
 import {AlertCircle,Play,RefreshCw,Volume2,VolumeX} from "lucide-react";
 import type {CanalTV} from "@/lib/canais";
+import {adjustTvQuality,tvBufferedSeconds,tvCatchupAction,tvSeekableEnd} from "@/lib/tv-playback-optimizer";
 import {
   tvFailureMessage,tvPlaybackPlan,tvSkipSameSource,
   type TvConnectionReason,type TvPlaybackAttempt,
@@ -47,7 +48,19 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
         let done=false;
         let started=false;
         let confirmed=false;
-         let hls:{destroy:()=>void}|null=null;
+         let hls:{
+          destroy:()=>void;
+          autoLevelCapping:number;
+          currentLevel:number;
+          levels:ReadonlyArray<{height:number}>;
+          liveSyncPosition:number|null;
+        }|null=null;
+        let lastSampleAt=Date.now();
+        let lastCatchupAt=0;
+        let droppedAtSample=0;
+        let framesAtSample=0;
+        let stableWindows=0;
+        let lastStruggling=false;
         let mpeg:{destroy:()=>void;unload?:()=>void}|null=null;
         let shaka:{destroy:()=>Promise<unknown>|void}|null=null;
         let beginTime=0;
@@ -67,6 +80,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
           try{mpeg?.unload?.();mpeg?.destroy()}catch{}
           try{void shaka?.destroy()}catch{}
           hls=null;mpeg=null;shaka=null;
+          video.playbackRate=1;
           video.pause();video.removeAttribute("src");video.load();
         };
         teardown=()=>{
@@ -100,8 +114,51 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
           if(Math.abs(video.currentTime-beginTime)>.45||frames()-startFrames>=2)successful();
         };
         const onStall=()=>{
-          // A brief buffering pause is normal. The progress clock decides
-          // whether the stream has really stalled, never this event alone.
+          // The progress clock handles normal HLS buffering without retries.
+        };
+        const maintainTvVideo=()=>{
+          if(!confirmed||done||cancelled||video.paused||document.hidden)return;
+          const now=Date.now();
+          // One short observation every 6 seconds; no canvas or CPU-bound filter.
+          if(now-lastSampleAt<6000)return;
+          lastSampleAt=now;
+          const playback=video.getVideoPlaybackQuality?.();
+          const total=playback?.totalVideoFrames??0;
+          const dropped=playback?.droppedVideoFrames??0;
+          const decodedDelta=framesAtSample>0?Math.max(0,total-framesAtSample):0;
+          const droppedDelta=droppedAtSample>0?Math.max(0,dropped-droppedAtSample):0;
+          framesAtSample=total;droppedAtSample=dropped;
+          const ahead=tvBufferedSeconds(video);
+          lastStruggling=decodedDelta>=24 &&
+            droppedDelta/Math.max(1,decodedDelta)>0.11;
+          if(hls&&hls.levels.length){
+            const adjustment=adjustTvQuality({
+              droppedDelta,decodedDelta,bufferAhead:ahead,
+              currentLevel:hls.currentLevel,previousCap:hls.autoLevelCapping,
+              stableWindows,maximumLevel:hls.levels.length-1,
+            });
+            stableWindows=adjustment.stableWindows;
+            if(hls.autoLevelCapping!==adjustment.cap)
+              hls.autoLevelCapping=adjustment.cap;
+          }
+          const edge=tvSeekableEnd(video);
+          if(edge===null)return;
+          const sync=hls?.liveSyncPosition;
+          const decision=tvCatchupAction({
+            seekableEnd:edge,currentTime:video.currentTime,bufferAhead:ahead,
+            paused:video.paused,stalled:video.readyState<3,
+            decoderStruggling:lastStruggling,hlsManaged:Boolean(hls||mpeg),
+            ...(typeof sync==="number"&&Number.isFinite(sync)?{syncPosition:sync}:{}),
+          });
+          if(decision.action==="seek"&&now-lastCatchupAt>30000){
+            // Bounded catch-up only when more than 22s behind a healthy edge.
+            lastCatchupAt=now;
+            video.currentTime=Math.min(decision.position,edge-0.65);
+          }else if(decision.action==="speed"&&!hls&&!mpeg){
+            video.playbackRate=decision.rate;
+          }else if(!hls&&!mpeg&&video.playbackRate!==1){
+            video.playbackRate=1;
+          }
         };
         const onVideoError=()=>{
           if(cancelled||done)return;
@@ -138,6 +195,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
             if(started)onTime();
             return;
           }
+          maintainTvVideo();
           const current=video.currentTime;
           const currentFrames=frames();
           if(Math.abs(current-lastTime)>.3||currentFrames-lastFrames>=2){
@@ -166,9 +224,14 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
               if(cancelled||done)return;
               if(Hls.isSupported()){
                 const instance=new Hls({
-                  enableWorker:true,lowLatencyMode:false,
-                  maxBufferLength:14,maxMaxBufferLength:25,
-                  liveSyncDurationCount:3,liveMaxLatencyDurationCount:7,
+                  // Hardware decoding and ABR, not a heavy GPU/AI shader.
+                  enableWorker:true,lowLatencyMode:true,
+                  capLevelToPlayerSize:false,capLevelOnFPSDrop:true,
+                  fpsDroppedMonitoringPeriod:6000,fpsDroppedMonitoringThreshold:0.12,
+                  maxBufferLength:11,maxMaxBufferLength:21,backBufferLength:10,
+                  liveSyncDurationCount:3,liveMaxLatencyDurationCount:8,
+                  maxLiveSyncPlaybackRate:1.025,
+                  abrEwmaFastLive:3,abrEwmaSlowLive:8,
                   manifestLoadingTimeOut:7500,levelLoadingTimeOut:7500,
                   fragLoadingTimeOut:9500,
                 });
@@ -205,8 +268,12 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
               const lib=imported.default??imported;
               if(!lib.isSupported()){finish("unsupported");return;}
               const instance=lib.createPlayer({type:"mpegts",url:candidate.url,isLive:true,cors:true},{
-                enableWorker:false,enableStashBuffer:true,stashInitialSize:256*1024,
+                // Small protected buffer, hardware decode and gentle live-edge chase.
+                enableWorker:false,enableStashBuffer:true,stashInitialSize:192*1024,
+                liveBufferLatencyChasing:true,liveBufferLatencyMaxLatency:4.5,
+                liveBufferLatencyMinRemain:1.8,
                 lazyLoad:false,autoCleanupSourceBuffer:true,
+                autoCleanupMaxBackwardDuration:38,autoCleanupMinBackwardDuration:12,
               });
               mpeg=instance;
               instance.on(lib.Events.ERROR,()=>finish("network"));
@@ -305,6 +372,10 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
       <p>{reason}</p>
       <button type="button" data-tv-focus="stream-retry" onClick={retry}><RefreshCw size={18}/> Tentar novamente</button>
     </div>}
+    {stage==="playing"&&<span className="zf-tv-stream-quality-status"
+      aria-label="Qualidade automática: ajuste de resolução conforme a rede e desempenho da TV">
+      AUTO · HD
+    </span>}
     {stage==="playing"&&<button type="button" className="zf-tv-stream-mute"
       data-tv-focus="stream-mute" onClick={switchMute} aria-label={muted?"Ativar som":"Silenciar"}>
       {muted?<VolumeX size={20}/>:<Volume2 size={20}/>}
