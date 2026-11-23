@@ -44,7 +44,7 @@ interface PlayerControlsProps {
   rotatedLandscape?: boolean;
   sources: Array<{ name: string; audio: string; quality?: string; format?: string }>;
   currentSourceIndex: number;
-  detectedQuality?: string;
+  detectedQuality?: string | undefined;
   onPlay: () => void;
   onPause: () => void;
   onSeek: (t: number) => void;
