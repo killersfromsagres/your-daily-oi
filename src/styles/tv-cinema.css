@@ -258,3 +258,53 @@ html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] 
 .zf-tenfoot-home .zf-tv-update-warning{position:relative;z-index:8;margin:-35px clamp(16px,6vw,120px) 55px clamp(76px,9vw,185px);
   max-width:1000px;border:1px solid #dfa66c7d;background:#2b221bdd;color:#ffe7cf;
   padding:13px 18px;border-radius:10px;font-size:15px;font-weight:650;line-height:1.45}
+
+
+/* TCL native TV cinema mode. Completely separate from the site's web player.
+   No reparenting or remounting the video: keeps hardware decoder alive. */
+.zf-tenfoot-live.is-tv-cinema{padding:0;overflow:hidden}
+.zf-tenfoot-live.is-tv-cinema .zf-tv-player-toolbar,
+.zf-tenfoot-live.is-tv-cinema .zf-tv-player-bottom{display:none}
+.zf-tenfoot-live .zf-tv-player-frame.is-tv-fullscreen{
+  position:fixed!important;inset:0!important;z-index:90;
+  width:100vw!important;height:100dvh!important;
+  max-width:none!important;max-height:none!important;min-height:0!important;
+  margin:0!important;padding:0;border:0!important;border-radius:0!important;
+  aspect-ratio:auto!important;background:#000;
+}
+.zf-tenfoot-live .zf-tv-player-frame.is-tv-fullscreen .zf-tv-stream{
+  width:100%;height:100%;aspect-ratio:auto;min-height:0;
+}
+.zf-tenfoot-live .zf-tv-player-frame.is-tv-fullscreen .zf-tv-stream-video{
+  width:100%;height:100%;object-fit:contain;
+}
+.zf-tenfoot-live .zf-tv-fullscreen-exit{
+  position:absolute;top:clamp(15px,2.8vh,39px);right:clamp(18px,3.3vw,56px);
+  z-index:60;display:flex;gap:10px;align-items:center;
+  min-height:48px;padding:11px 17px;border-radius:9px;
+  color:#fff;background:#0c111bc7;border:1px solid #c6b5eaa8;
+  font-size:15px;font-weight:760;
+}
+.zf-tenfoot-live .zf-tv-fullscreen-exit:focus{
+  position:absolute;outline-offset:3px;box-shadow:0 0 0 5px #aa88ee54;
+}
+.zf-tenfoot-live .zf-tv-fullscreen-action{
+  color:#e8deff;background:#29253b;border-color:#806d9b;
+}
+.zf-tenfoot-live.is-tv-cinema .zf-tv-stream-mute{bottom:28px;right:29px}
+@media(max-width:800px){
+  .zf-tenfoot-live .zf-tv-player-frame.is-tv-fullscreen{height:100dvh!important}
+  .zf-tenfoot-live .zf-tv-fullscreen-exit{font-size:13px;padding:9px 12px}
+}
+
+/* Indicator and restrained hardware-composited tuning, not fake AI upscaling. */
+.zf-tenfoot-live .zf-tv-stream-quality-status{
+  position:absolute;bottom:22px;left:21px;z-index:5;
+  padding:8px 11px;border-radius:7px;
+  background:#111826b7;color:#e3e8f2;border:1px solid #ffffff24;
+  font-size:11px;font-weight:800;letter-spacing:.055em;
+  pointer-events:none;
+}
+.zf-tenfoot-live.is-tv-cinema .zf-tv-stream-quality-status{
+  bottom:29px;left:27px;
+}

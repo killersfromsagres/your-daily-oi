@@ -2,7 +2,7 @@ import tvCinemaCss from "../styles/tv-cinema.css?url";
 import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Pause, Play, RefreshCw, Search, Tv2, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Maximize2, Minimize2, Pause, Play, RefreshCw, Search, Tv2, Volume2, VolumeX, X } from "lucide-react";
 import type { CanalTV } from "@/lib/canais";
 import { fetchCanaisFallbackClient } from "@/lib/canais";
 
@@ -52,6 +52,8 @@ function TvLive(){
   const [activeId,setActiveId]=useState("");
   const [status,setStatus]=useState<"connecting"|"playing"|"unavailable">("connecting");
   const [muted,setMuted]=useState(false);
+  // TV-only theater viewport. Never changes desktop or mobile player layouts.
+  const [cinema,setCinema]=useState(false);
 
   const load=useCallback(async(force=false,signal?:AbortSignal)=>{
     if(force)setRefreshing(true);
@@ -139,6 +141,11 @@ function TvLive(){
   const active=useMemo(()=>channels.find(ch=>ch.id===activeId)||null,[channels,activeId]);
   const visible=filtered.slice(0,limit);
   const onBack=useCallback(()=>{
+    if(cinema){
+      setCinema(false);
+      requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-fullscreen"]')?.focus({preventScroll:true}));
+      return;
+    }
     if(activeId){
       activeIdRef.current="";playingIdRef.current="";
       setActiveId("");
@@ -148,7 +155,7 @@ function TvLive(){
       }));
     }else if(search){setSearch("");}
     else void navigate({to:"/tv-home"});
-  },[activeId,search,navigate]);
+  },[activeId,search,navigate,cinema]);
   useTvFocus({route:"live",root,onBack});
   const choose=(ch:CanalTV)=>{
     if(!ch.fontes.length){setError("Este canal está sem fonte de transmissão. Atualize para tentar novamente.");return;}
@@ -156,6 +163,7 @@ function TvLive(){
     activeIdRef.current=ch.id;
     playingIdRef.current="";
     setStatus("connecting");
+    setCinema(false);
     setActiveId(ch.id);
     try{localStorage.setItem(LAST_KEY,ch.id)}catch{}
     setRecents(previous=>{
@@ -175,6 +183,7 @@ function TvLive(){
     const index=valid.findIndex(c=>c.id===activeId);
     const next=valid[(index+offset+valid.length)%valid.length];
     if(next){
+      setCinema(false);
       activeIdRef.current=next.id;
       playingIdRef.current="";
       lastFocusedId.current=next.id;
@@ -194,10 +203,12 @@ function TvLive(){
   };
   useEffect(()=>{
     if(!activeId)return;
-    const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-back"]')?.focus());
+    const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>(
+      cinema?'[data-tv-focus="player-fullscreen-exit"]':'[data-tv-focus="player-back"]'
+    )?.focus({preventScroll:true}));
     return()=>cancelAnimationFrame(frame);
-  },[activeId]);
-  return <main className="zf-tenfoot zf-tenfoot-live" ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
+  },[activeId,cinema]);
+  return <main className={"zf-tenfoot zf-tenfoot-live"+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!active ? <>
       <header className="zf-live-top" data-tv-row="live-nav">
         <button type="button" data-tv-focus="live-back" data-tv-start onClick={()=>void navigate({to:"/tv-home"})}><ArrowLeft size={20}/> Voltar</button>
@@ -248,15 +259,24 @@ function TvLive(){
           <button type="button" data-tv-focus="player-favorite" aria-label="Favoritar canal" onClick={()=>toggleFavorite(active.id)}>
             <Heart size={20} fill={favorites.includes(active.id)?"currentColor":"none"}/></button>
         </div>
-        <div ref={playerRef} className="zf-tv-player-frame">
+        <div ref={playerRef} className={"zf-tv-player-frame"+(cinema?" is-tv-fullscreen":"")} aria-label={cinema?"Vídeo em tela cheia":"Janela de vídeo"}>
           <Suspense fallback={<p className="zf-tenfoot-notice" role="status">Preparando transmissão…</p>}>
             <TvStreamPlayer key={active.id} canal={active}
               onPlaybackStatus={onPlaybackStatus}/>
           </Suspense>
+          {cinema&&<button type="button" className="zf-tv-fullscreen-exit"
+            data-tv-focus="player-fullscreen-exit" data-tv-start
+            onClick={()=>setCinema(false)} aria-label="Sair da tela cheia">
+            <Minimize2 size={19}/> Sair da tela cheia
+          </button>}
         </div>
         <footer className="zf-tv-player-bottom" data-tv-row="player-actions">
           <button type="button" data-tv-focus="player-play" onClick={togglePlay}><Play size={19}/><Pause size={18}/> Reproduzir / Pausar</button>
           <button type="button" data-tv-focus="player-mute" onClick={toggleMute}>{muted?<VolumeX size={20}/>:<Volume2 size={20}/>} Som</button>
+          <button type="button" className="zf-tv-fullscreen-action" data-tv-focus="player-fullscreen"
+            onClick={()=>setCinema(true)} aria-label="Ampliar transmissão para tela cheia">
+            <Maximize2 size={21}/> Tela cheia
+          </button>
           <span>Use o botão Voltar do controle para escolher outro canal</span>
         </footer>
       </section>}

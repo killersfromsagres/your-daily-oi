@@ -12,6 +12,9 @@ on:
       - 'tests/tv-hero-client.test.ts'
       - 'src/lib/tv-playback-plan.ts'
       - 'src/components/player/TvStreamPlayer.tsx'
+      - 'src/components/icons/TvAnimeFrameIcon.tsx'
+      - 'src/lib/tv-playback-optimizer.ts'
+      - 'tests/tv-theater-latency.test.ts'
       - 'tests/tv-featured.test.ts'
       - 'tests/tv-web-isolation.test.ts'
       - 'src/components/player/LivePlayer.tsx'
@@ -68,7 +71,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: TV navigation and installation tests
-        run: bun test tests/tv-web-isolation.test.ts tests/tv-home.test.ts tests/tv-featured-candidates.test.ts tests/tv-hero-client.test.ts tests/tv-featured.test.ts tests/tv-live-recovery.test.ts tests/tv-focus.test.ts tests/tv-app-design.test.ts tests/tv-install.test.ts tests/search-autocomplete.test.ts
+        run: bun test tests/tv-theater-latency.test.ts tests/tv-web-isolation.test.ts tests/tv-home.test.ts tests/tv-featured-candidates.test.ts tests/tv-hero-client.test.ts tests/tv-featured.test.ts tests/tv-live-recovery.test.ts tests/tv-focus.test.ts tests/tv-app-design.test.ts tests/tv-install.test.ts tests/search-autocomplete.test.ts
       - name: Compile client and server routes
         run: bun run build
       - name: Strict TypeScript diagnostics for new TV modules
