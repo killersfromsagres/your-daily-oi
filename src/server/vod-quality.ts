@@ -14,8 +14,11 @@ const pending=new Map<string,Promise<RemoteMediaQuality>>();
 const READY_TTL=8*60*60*1000,EMPTY_TTL=12*60*1000;
 export function validateMediaQualityKey(type:string|null,id:string|null,
   season:string|null,episode:string|null):MediaQualityKey|null{
+  // Real catalog IDs can be normalized titles with spaces, accents and punctuation
+  // (e.g. "007 estrada para o milhao"), not only ASCII slugs.
+  // No arbitrary URL is fetched from this ID: it must resolve in loadCatalog().
   if(!["f","s","a"].includes(type||"")||!id||
-     id.length>160||!/^[\w.-]+$/.test(id))return null;
+    id.length>220||/[\x00-\x1f\x7f]/.test(id)||/^\w+:\/\//.test(id))return null;
   if(season!==null&&(!/^\d{1,3}$/.test(season)||Number(season)>99))return null;
   if(episode!==null&&(!/^\d{1,4}$/.test(episode)||Number(episode)>2000))return null;
   if((season===null)!==(episode===null))return null;

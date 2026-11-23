@@ -46,6 +46,10 @@ describe("VOD catalog-wide source metadata",()=>{
   test("media ID and season/episode are strictly validated against catalog",()=>{
     expect(validateMediaQualityKey("f","movie-123",null,null)).toMatchObject({type:"f",id:"movie-123"});
     expect(validateMediaQualityKey("s","one-piece","1","12")).toMatchObject({season:1,episode:12});
+    expect(validateMediaQualityKey("s","007 estrada para o milhao",null,null))
+      .toMatchObject({id:"007 estrada para o milhao",type:"s"});
+    expect(validateMediaQualityKey("a","One Piece (Dublado)",null,null))
+      .toMatchObject({type:"a",id:"One Piece (Dublado)"});
     expect(validateMediaQualityKey("s","one-piece","1",null)).toBeNull();
     expect(validateMediaQualityKey("f","https://localhost",null,null)).toBeNull();
   });
