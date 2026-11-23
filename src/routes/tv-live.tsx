@@ -57,8 +57,13 @@ function TvLive(){
 
   const load=useCallback(async(force=false,signal?:AbortSignal)=>{
     if(force)setRefreshing(true);
+    const requestController=new AbortController();
+    const abort=()=>requestController.abort();
+    const deadline=window.setTimeout(abort,12000);
+    signal?.addEventListener("abort",abort,{once:true});
     try{
-      const response=await fetch(force?"/api/canais?refresh=1":"/api/canais",{...(signal?{signal}:{}),cache:"no-store"});
+      const response=await fetch(force?"/api/canais?refresh=1":"/api/canais",
+        {signal:requestController.signal,cache:"no-store"});
       if(!response.ok)throw Error("HTTP "+response.status);
       const data=await response.json() as CatalogResponse;
       if(!Array.isArray(data.canais))throw Error("Resposta inválida");
@@ -75,7 +80,17 @@ function TvLive(){
     }catch(e){
       if(signal?.aborted)return;
       try {
-        const fallback=await fetchCanaisFallbackClient();
+        // An inaccessible origin should become an error, never an eternal spinner.
+        let timer:number|undefined;
+        let fallback:CatalogResponse;
+        try {
+          fallback=await Promise.race([
+            fetchCanaisFallbackClient(),
+            new Promise<never>((_,reject)=>{
+              timer=window.setTimeout(()=>reject(new Error("Tempo limite do catálogo de canais")),10000);
+            }),
+          ]);
+        } finally {if(timer!==undefined)window.clearTimeout(timer)}
         if(signal?.aborted)return;
         if(!fallback.canais.length)throw Error("Sem catálogo");
         setChannels(previous=>reuseUnchangedLiveChannels(previous,
@@ -89,6 +104,8 @@ function TvLive(){
         if(!signal?.aborted)setError(e instanceof Error?e.message:"Não foi possível carregar a lista de canais");
       }
     }finally{
+      window.clearTimeout(deadline);
+      signal?.removeEventListener("abort",abort);
       if(!signal?.aborted){setLoading(false);setRefreshing(false)}
     }
   },[]);

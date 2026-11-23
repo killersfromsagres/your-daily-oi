@@ -200,7 +200,7 @@ function TvHome(){
           </div>}
           <p>{spotlight?.overview||"Descubra filmes, séries e animes selecionados para você. Navegue com o controle remoto."}</p>
           <div className="zf-hero-actions" data-tv-row="hero">
-            <button type="button" data-tv-focus="hero-play" className="zf-hero-play"
+            <button type="button" data-tv-focus="hero-play" data-tv-left-target="nav-all" className="zf-hero-play"
               onClick={playHero} disabled={!spotlight}><Play size={20} fill="currentColor"/> Assistir agora</button>
             <button type="button" data-tv-focus="hero-details" className="zf-hero-details-button"
               onClick={()=>spotlight&&openItem(spotlight)} disabled={!spotlight}><Info size={21}/> Detalhes</button>
@@ -225,8 +225,9 @@ function TvHome(){
           {shelves.map((shelf,index)=><section className="zf-tenfoot-shelf" key={shelf.id} aria-label={shelf.title}>
             <div className="zf-shelf-heading"><h2>{shelf.title}</h2><span>{index===0?"SUA SELEÇÃO":""}</span></div>
             <div className="zf-shelf-track" data-tv-row={"shelf-"+shelf.id}>
-              {shelf.items.map(item=><button type="button" className="zf-poster-tile"
+              {shelf.items.map((item,position)=><button type="button" className="zf-poster-tile"
                  key={item.type+":"+item.id} data-tv-focus={"poster-"+shelf.id+"-"+item.id}
+                 data-tv-left-target={position===0?"nav-all":undefined}
                  aria-label={"Abrir "+item.title} onClick={()=>openItem(item)}>
                  {item.posterUrl?<img src={item.posterUrl} alt="" loading="lazy" decoding="async" width={188} height={278}/>
                    :<span className="zf-poster-blank">{item.title.slice(0,2)}</span>}
