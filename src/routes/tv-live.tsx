@@ -8,6 +8,7 @@ import { fetchCanaisFallbackClient } from "@/lib/canais";
 
 import { reuseUnchangedLiveChannels, retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
 import { useTvFocus } from "@/lib/tv-focus";
+import { remoteKey } from "@/lib/tv-remote";
 
 
 const TvStreamPlayer=lazy(()=>import("@/components/player/TvStreamPlayer").then(module=>({default:module.TvStreamPlayer})));
@@ -54,6 +55,7 @@ function TvLive(){
   const [muted,setMuted]=useState(false);
   const [paused,setPaused]=useState(false);
   const [cinemaControls,setCinemaControls]=useState(false);
+  const [hudActivity,setHudActivity]=useState(0);
   // TV-only theater viewport. Never changes desktop or mobile player layouts.
   const [cinema,setCinema]=useState(false);
 
@@ -185,7 +187,8 @@ function TvLive(){
     const index=valid.findIndex(c=>c.id===activeId);
     const next=valid[(index+offset+valid.length)%valid.length];
     if(next){
-      setCinema(false);setCinemaControls(false);setPaused(false);setMuted(false);
+      if(cinema){setCinemaControls(true);setHudActivity(n=>n+1)}
+      setPaused(false);setMuted(false);
       activeIdRef.current=next.id;
       playingIdRef.current="";
       lastFocusedId.current=next.id;
@@ -193,7 +196,7 @@ function TvLive(){
       setActiveId(next.id);
       setRecents(previous=>{const updated=[next.id,...previous.filter(x=>x!==next.id)].slice(0,18);saveList(RECENTS_KEY,updated);return updated;});
     }
-  },[channels,activeId]);
+  },[channels,activeId,cinema]);
   const video=()=>playerRef.current?.querySelector("video")??null;
   const togglePlay=()=>{
     const el=video();if(!el)return;
@@ -225,7 +228,7 @@ function TvLive(){
     if(!cinema||!cinemaControls)return;
     const timer=window.setTimeout(()=>setCinemaControls(false),2000);
     return()=>window.clearTimeout(timer);
-  },[cinema,cinemaControls]);
+  },[cinema,cinemaControls,hudActivity]);
   useEffect(()=>{
     if(!cinema||cinemaControls)return;
     const frame=requestAnimationFrame(()=>video()?.focus({preventScroll:true}));
@@ -237,7 +240,7 @@ function TvLive(){
       if(!["ArrowLeft","ArrowRight","ArrowDown","ArrowUp","Enter","Select","MediaPlayPause"].includes(event.key)&&
          ![37,38,39,40,13,23].includes(event.keyCode))return;
       event.preventDefault();event.stopPropagation();
-      setCinemaControls(true);
+      setCinemaControls(true);setHudActivity(n=>n+1);
       requestAnimationFrame(()=>requestAnimationFrame(()=>
         root.current?.querySelector<HTMLElement>('[data-tv-focus="cinema-play"]')?.focus({preventScroll:true})));
     };
@@ -249,8 +252,24 @@ function TvLive(){
     const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-back"]')?.focus({preventScroll:true}));
     return()=>cancelAnimationFrame(frame);
   },[activeId]);
-  const enterCinema=()=>{setCinemaControls(true);setCinema(true)};
+  const revealHud=()=>{setCinemaControls(true);setHudActivity(n=>n+1)};
+  const enterCinema=()=>{revealHud();setCinema(true)};
   const exitCinema=()=>{setCinema(false);setCinemaControls(false)};
+  useEffect(()=>{
+    if(!activeId)return;
+    const handler=(event:KeyboardEvent)=>{
+      const key=remoteKey(event);
+      if(!["MediaPlayPause","MediaPlay","MediaPause"].includes(key))return;
+      const el=video();
+      if(!el)return;
+      event.preventDefault();event.stopImmediatePropagation();
+      if(key==="MediaPause"||key==="MediaPlayPause"&&!el.paused)el.pause();
+      else void el.play().catch(()=>{});
+      if(cinema){setCinemaControls(true);setHudActivity(n=>n+1)}
+    };
+    document.addEventListener("keydown",handler,true);
+    return()=>document.removeEventListener("keydown",handler,true);
+  },[activeId,cinema]);
 
   return <main className={"zf-tenfoot zf-tenfoot-live"+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!active ? <>
@@ -317,12 +336,12 @@ function TvLive(){
                 onClick={exitCinema} aria-label="Sair da tela cheia"><Minimize2 size={19}/> Sair da tela cheia</button>
             </div>
             <div className="zf-tv-cinema-actions" data-tv-row="cinema-actions">
-              <button type="button" data-tv-focus="cinema-prev" onClick={()=>cycle(-1)} aria-label="Canal anterior"><ChevronLeft size={23}/> Anterior</button>
-              <button type="button" data-tv-focus="cinema-play" onClick={togglePlay}
+              <button type="button" data-tv-focus="cinema-prev" onClick={()=>{cycle(-1);revealHud()}} aria-label="Canal anterior"><ChevronLeft size={23}/> Anterior</button>
+              <button type="button" data-tv-focus="cinema-play" onClick={()=>{togglePlay();revealHud()}}
                 aria-label={paused?"Reproduzir":"Pausar"}>{paused?<Play size={22}/>:<Pause size={22}/>} {paused?"Reproduzir":"Pausar"}</button>
-              <button type="button" data-tv-focus="cinema-mute" onClick={toggleMute}
+              <button type="button" data-tv-focus="cinema-mute" onClick={()=>{toggleMute();revealHud()}}
                 aria-label={muted?"Ativar som":"Silenciar"}>{muted?<VolumeX size={22}/>:<Volume2 size={22}/>} {muted?"Ativar som":"Silenciar"}</button>
-              <button type="button" data-tv-focus="cinema-next" onClick={()=>cycle(1)} aria-label="Próximo canal">Próximo <ChevronRight size={23}/></button>
+              <button type="button" data-tv-focus="cinema-next" onClick={()=>{cycle(1);revealHud()}} aria-label="Próximo canal">Próximo <ChevronRight size={23}/></button>
             </div>
             <small>Os controles desaparecem automaticamente · Setas do controle para mostrar</small>
           </div>}

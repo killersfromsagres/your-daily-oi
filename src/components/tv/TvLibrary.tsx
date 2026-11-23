@@ -87,10 +87,10 @@ export function TvLibrary({type,onOpen}:Props){
       {error} <button type="button" data-tv-focus="library-retry" data-tv-row="library-retry" onClick={()=>setRetry(r=>r+1)}>Tentar novamente</button>
     </div>}
     {!busy&&!error&&!items.length&&<p className="zf-tv-library-message">Nenhum título neste gênero.</p>}
-    {!busy&&!error&&page<pageCount&&page<MAX_PAGES&&<button type="button"
+    {!error&&page<pageCount&&page<MAX_PAGES&&<button type="button"
       className="zf-tv-library-more" data-tv-focus="library-more" data-tv-row="library-more"
-      onClick={()=>setPage(n=>n+1)}>
-      Carregar mais títulos <ChevronRight size={20}/>
+      aria-disabled={busy} onClick={()=>{if(!busy)setPage(n=>n+1)}}>
+      {busy?"Carregando…":"Carregar mais títulos"} <ChevronRight size={20}/>
     </button>}
     <footer className="zf-tv-library-footer">{items.length.toLocaleString("pt-BR")} de {total.toLocaleString("pt-BR")} títulos</footer>
   </section>;

@@ -28,7 +28,9 @@ export function indexTvLibrary(catalog:Map<string,CatalogItem>):Record<TvLibrary
     seen.add(key);
     data[item.type].push({
       id:item.id,type:item.type,title:cleanDisplayTitle(item.title),
-      posterUrl:item.posterUrl||"",
+      posterUrl:(item.posterUrl||"").replace(
+        /^https:\/\/image\.tmdb\.org\/t\/p\/(?:original|w\d+)\//i,
+        "https://image.tmdb.org/t/p/w500/"),
       genres:(item.genres||[]).filter(Boolean),
     });
   }
