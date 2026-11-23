@@ -24,6 +24,7 @@ import { proxyUrlForSaimoRelay } from "@/lib/saimo-vod-url";
 import { bestVodSourceIndex, playableVodSources, nextVodSourceIndex, advertisedVodResolution, betterMeasuredVodSourceIndex } from "@/lib/vod-source-quality";
 import { shouldChangeServerOnStartup } from "@/lib/playback-start";
 import { dubbedVodSources } from "@/lib/dubbed-audio";
+import {qualityFromDimensions,writeVerifiedMediaQuality,type MediaKind} from "@/lib/verified-media-quality";
 
 // Cache negativo de sessão para estágio 0 (HLS probe) do relay Saimo
 const stage0FailedRelays = new Map<string, number>();
@@ -41,6 +42,9 @@ interface OwnPlayerProps {
   preferredAudio?: "dub" | "leg" | undefined;
   expectedRuntimeMin?: number | undefined;
   contentType?: "movie" | "series" | "anime" | undefined;
+  contentId?: string | undefined;
+  season?: number | undefined;
+  episode?: number | undefined;
   onNextEpisode?: () => void | undefined;
   nextEpisodeLabel?: string | undefined;
   openingEndSeconds?: number | undefined;
@@ -152,6 +156,9 @@ export function OwnPlayer({
   preferredAudio = "dub",
   expectedRuntimeMin,
   contentType = "movie",
+  contentId,
+  season,
+  episode,
   onNextEpisode,
   nextEpisodeLabel,
   openingEndSeconds,
@@ -371,22 +378,25 @@ export function OwnPlayer({
     try { localStorage.setItem("zangflix:ai-upscale", String(next)); } catch {}
   }, [hqEnabled, hqStrategy]);
 
+  const lastRecordedQualityRef=useRef("");
   const updateVideoResolution = useCallback(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    const h = v.videoHeight;
-    const w = v.videoWidth;
-    if (w > 0 && h > 0) {
-      setHqSourceSize(prev => prev.width === w && prev.height === h
-        ? prev : {width: w, height: h});
-    }
-    if (h >= 2160 || w >= 3840) setDetectedQuality("4K");
-    else if (h >= 1440 || w >= 2560) setDetectedQuality("2K");
-    else if (h >= 1080 || w >= 1920) setDetectedQuality("1080p");
-    else if (h >= 720 || w >= 1280) setDetectedQuality("720p");
-    else if (h >= 480) setDetectedQuality("480p");
-    else if (h > 0) setDetectedQuality(`${h}p`);
-  }, []);
+    const video=videoRef.current;
+    if(!video)return;
+    const quality=qualityFromDimensions(video.videoWidth,video.videoHeight);
+    // Measure the decoded source, not a title, source filename or the device's display.
+    if(!quality||video.readyState<2)return;
+    setHqSourceSize(previous=>previous.width===quality.width&&previous.height===quality.height
+      ?previous:{width:quality.width,height:quality.height});
+    setDetectedQuality(previous=>previous===quality.label?previous:quality.label);
+    const active=orderedStreams[sourceIndex];
+    // Store only after actual playback; user may switch servers or episodes.
+    if(!active?.url||!contentId||video.currentTime<0.3||video.paused)return;
+    const key=[contentType,contentId,season,episode,active.url,quality.width,quality.height].join("|");
+    if(lastRecordedQualityRef.current===key)return;
+    const kind:MediaKind=contentType==="movie"?"f":contentType==="anime"?"a":"s";
+    if(writeVerifiedMediaQuality({type:kind,id:contentId,season,episode},
+      active.url,quality.width,quality.height))lastRecordedQualityRef.current=key;
+  },[orderedStreams,sourceIndex,contentId,contentType,season,episode]);
 
   const lastTimeRef = useRef(initialTime);
 
@@ -1085,6 +1095,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
         onLoadedMetadata={measureAndImproveQuality}
         onCanPlay={measureAndImproveQuality}
         onResize={measureAndImproveQuality}
+        onPlaying={updateVideoResolution}
+        onTimeUpdate={updateVideoResolution}
         style={{
           opacity: enhancedActive ? 0 : 1,
           // Hardware-accelerated color tuning: zero extra frame copies.
@@ -1336,7 +1348,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
           rotatedLandscape={rotateLandscapeFallback}
           sources={sources}
           currentSourceIndex={sourceIndex}
-          detectedQuality={detectedQuality || sources[sourceIndex]?.quality || "Auto"}
+          detectedQuality={detectedQuality ?? undefined}
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={engine.seek}

@@ -219,16 +219,14 @@ export function PlayerControls({
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
             {(() => {
-              const effectiveQuality = (
-                detectedQuality ||
-                sources[currentSourceIndex]?.quality ||
-                "1080p"
-              ).toUpperCase();
-              const is4k = effectiveQuality.includes("4K");
+              const effectiveQuality = detectedQuality || "A VERIFICAR";
+              const is4k = Boolean(detectedQuality && /4K/.test(detectedQuality));
               return (
                 <span
                   className="ydo-2k-badge"
-                  title={`Qualidade real: ${effectiveQuality}`}
+                  title={detectedQuality
+                    ? `Resolução decodificada nesta reprodução: ${effectiveQuality}. Pode mudar com o bitrate adaptativo.`
+                    : "Resolução ainda não medida. O nome da fonte não comprova 4K ou Full HD."}
                   style={{
                     fontSize: "0.65rem",
                     fontWeight: "800",
@@ -277,8 +275,9 @@ export function PlayerControls({
                   <div className="zf-server-list" role="listbox" aria-label="Servidores disponíveis">
                     {sources.map((s, i) => {
                       const isActive = i === currentSourceIndex;
-                      const quality = isActive && detectedQuality && detectedQuality !== "Auto"
-                        ? detectedQuality : s.quality;
+                      const quality = isActive && detectedQuality
+                        ? detectedQuality
+                        : s.quality && s.quality !== "Auto" ? s.quality + " (informado)" : null;
                       return (
                         <button
                           key={i}
