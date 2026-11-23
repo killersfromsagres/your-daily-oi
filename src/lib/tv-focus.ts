@@ -1,7 +1,7 @@
 /** Deterministic D-pad focus manager for the TV-only routes.
  * Uses one capture listener; never participates in the desktop/mobile UI.
  */
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { remoteKey } from "@/lib/tv-remote";
 
 export type TvDirection = "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown";
@@ -46,6 +46,9 @@ export interface TvFocusOptions {
 }
 
 export function useTvFocus({ route, root, onBack, playerOpen = false }: TvFocusOptions) {
+  const onBackRef=useRef(onBack);
+  const playerOpenRef=useRef(playerOpen);
+  onBackRef.current=onBack;playerOpenRef.current=playerOpen;
   useEffect(() => {
     const container = root.current;
     if (!container) return;
@@ -65,11 +68,11 @@ export function useTvFocus({ route, root, onBack, playerOpen = false }: TvFocusO
       const key = remoteKey(event);
       if (key === "BrowserBack" || key === "Escape" ||
         (key === "Backspace" && !(event.target instanceof HTMLInputElement))) {
-        if (!onBack) return;
-        event.preventDefault(); event.stopImmediatePropagation(); onBack();
+        if (!onBackRef.current) return;
+        event.preventDefault(); event.stopImmediatePropagation(); onBackRef.current();
         return;
       }
-      if (playerOpen) return;
+      if (playerOpenRef.current) return;
       const active = document.activeElement;
       if (active instanceof HTMLInputElement && (key === "Select" || key === "Enter")) return;
       if (key === "Select" || (key === "Enter" && event.keyCode === 23)) {
@@ -121,5 +124,5 @@ export function useTvFocus({ route, root, onBack, playerOpen = false }: TvFocusO
       container.removeEventListener("focusin", remember);
       document.removeEventListener("keydown", onKey, true);
     };
-  }, [route, root, onBack, playerOpen]);
+  }, [route, root]);
 }
