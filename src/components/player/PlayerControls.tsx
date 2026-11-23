@@ -95,7 +95,8 @@ export function PlayerControls({
 }: PlayerControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [showServers, setShowServers] = useState(false);
-  useEffect(()=>{onMenuInteraction?.(showSettings||showServers);},[showSettings,showServers,onMenuInteraction]);
+  const [showQualityInfo,setShowQualityInfo]=useState(false);
+  useEffect(()=>{onMenuInteraction?.(showSettings||showServers||showQualityInfo);},[showSettings,showServers,showQualityInfo,onMenuInteraction]);
   const serversRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -214,7 +215,7 @@ export function PlayerControls({
           </div>
 
           {/* Tempo Decorrido / Duração + Badge de Resolução Real */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "6px", position:"relative" }}>
             <span className="ydo-time tabular">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
@@ -222,8 +223,11 @@ export function PlayerControls({
               const effectiveQuality = detectedQuality || "A VERIFICAR";
               const is4k = Boolean(detectedQuality && /4K/.test(detectedQuality));
               return (
-                <span
+                <button type="button"
                   className="ydo-2k-badge"
+                  aria-expanded={showQualityInfo}
+                  aria-label={"Detalhes da qualidade: "+effectiveQuality}
+                  onClick={()=>setShowQualityInfo(previous=>!previous)}
                   title={detectedQuality
                     ? `Resolução decodificada nesta reprodução: ${effectiveQuality}. Pode mudar com o bitrate adaptativo.`
                     : "Resolução ainda não medida. O nome da fonte não comprova 4K ou Full HD."}
@@ -239,9 +243,21 @@ export function PlayerControls({
                   }}
                 >
                   {effectiveQuality}
-                </span>
+                </button>
               );
             })()}
+            {showQualityInfo&&<div role="status"
+              style={{position:"absolute",bottom:"calc(100% + 11px)",left:0,zIndex:40,
+                width:"min(270px,70vw)",padding:"12px 14px",borderRadius:9,
+                background:"rgba(18,20,33,.98)",border:"1px solid rgba(255,255,255,.23)",
+                boxShadow:"0 9px 28px #0008",fontSize:12,lineHeight:1.5,
+                textAlign:"left",color:"#f3f1ff"}}>
+              <strong>Qualidade do vídeo</strong>
+              <div style={{marginTop:5}}>{detectedQuality
+                ? detectedQuality+" — resolução medida nos quadros recebidos pelo player."
+                : "Aguardando resolução real. Nome do arquivo e qualidade da capa não comprovam HD ou 4K."}</div>
+              <div style={{opacity:.7,marginTop:6}}>Pode variar conforme a fonte e o bitrate adaptativo. HQ/IA não altera a resolução original.</div>
+            </div>}
           </div>
         </div>
 
