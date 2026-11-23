@@ -133,3 +133,35 @@ export async function getTmdbData(tmdbId: number, type: "f" | "s", options: {hig
     return null;
   }
 }
+
+
+/** One lightweight official backdrop request for the TV-only hero selection.
+ * Reuses the existing server's configured API credentials; no cast/video fetch. */
+export async function getTmdbHeroLite(tmdbId:number):Promise<{
+  backdropUrl:string;overview:string;year:number|null;rating:number;
+}|null>{
+  if(!Number.isSafeInteger(tmdbId)||tmdbId<=0)return null;
+  const uri=BASE+"/movie/"+tmdbId+"?language=pt-BR";
+  const parse=async(r:Response)=>{
+    if(!r.ok)return null;
+    const d=await r.json() as Record<string,unknown>;
+    const path=typeof d["backdrop_path"]==="string"?d["backdrop_path"]:"";
+    if(!/^\/[a-z0-9_\-/]+\.(jpg|png|webp)$/i.test(path))return null;
+    const rawDate=typeof d["release_date"]==="string"?d["release_date"]:"";
+    return {backdropUrl:"https://image.tmdb.org/t/p/w1280"+path,
+      overview:typeof d["overview"]==="string"?d["overview"]:"",
+      rating:typeof d["vote_average"]==="number"?d["vote_average"]:0,
+      year:/^\d{4}-/.test(rawDate)?Number(rawDate.slice(0,4)):null};
+  };
+  try{
+    const r=await fetch(uri,{headers:{Authorization:"Bearer "+TOKEN},
+      signal:AbortSignal.timeout(4600)});
+    const data=await parse(r);
+    if(data)return data;
+  }catch{/* fall back to TMDB key */}
+  try{
+    const r=await fetch(uri+"&api_key="+encodeURIComponent(API_KEY),{
+      signal:AbortSignal.timeout(4600)});
+    return await parse(r);
+  }catch{return null}
+}
