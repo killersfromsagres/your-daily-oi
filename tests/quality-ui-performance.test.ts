@@ -72,6 +72,12 @@ describe("Catalog badges stay legible and animations stay light",()=>{
       (globalThis as {IntersectionObserver?:unknown}).IntersectionObserver=previous;
     }
   });
+  test("decorative full-screen grain is disabled on mobile and TV",()=>{
+    const css=read("../src/styles.css");
+    expect(css).toContain("@media (max-width:900px), (prefers-reduced-motion:reduce)");
+    expect(css).toContain("body:has(.zf-tenfoot)::before{display:none}");
+    expect(css).toContain(".skeleton{animation:none}");
+  });
   test("the hero uses responsive CDN delivery, cards reserve dimensions",()=>{
     const hero=read("../src/components/catalog/HeroSection.tsx");
     const card=read("../src/components/catalog/MediaCard.tsx");

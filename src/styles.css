@@ -256,3 +256,18 @@ h1, h2, h3, h4, h5, h6 {
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+
+/* Performance/accessibility: remove the fixed full-screen turbulence blend
+ * on compact devices and behind the native TV shell. The effect is decorative
+ * and can incur large compositor repaint costs when catalog rows scroll. */
+@media (max-width:900px), (prefers-reduced-motion:reduce){
+  body::before{display:none}
+}
+@supports selector(body:has(.zf-tenfoot)){
+  body:has(.zf-tenfoot)::before{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .skeleton{animation:none}
+}
