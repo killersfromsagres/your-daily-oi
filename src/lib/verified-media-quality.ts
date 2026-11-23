@@ -7,7 +7,7 @@ import type {CatalogItem,StreamSource} from "./types";
 import {advertisedVodResolution,rejectedVodSourceReason} from "./vod-source-quality";
 
 export type MediaKind="f"|"s"|"a";
-export type QualityTier="4k"|"qhd"|"fullhd"|"hd"|"sd"|"low"|"unknown"|"cam";
+export type QualityTier="4k"|"qhd"|"fullhd"|"hdplus"|"hd"|"sd"|"low"|"unknown"|"cam";
 export interface VerifiedMediaQuality{
   tier:Exclude<QualityTier,"unknown"|"cam">;
   label:string;
@@ -43,18 +43,55 @@ export function qualityKey(input:MediaQualityKey):string{
       :base+":last";
 }
 
-/** Do not promote an ultrawide 1920×800 source to 1080p just by width. */
+/** Consistent public badges for decoded frames, source manifests, and provider claims.
+ * Resolution is retained in detail/tooltip; no arbitrary 816p in the button.
+ * Full HD+ represents QHD and other >1080p non-4K rasters, not exact 1080p. */
+export function qualityLabelForHeight(height:number):{tier:QualityTier;label:string}|null{
+  if(!Number.isFinite(height)||height<100||height>8000)return null;
+  if(height>=2160)return {tier:"4k",label:"4K UHD"};
+  if(height>1080)return {tier:"qhd",label:"FULL HD+"};
+  if(height>=1080)return {tier:"fullhd",label:"FULL HD"};
+  if(height>=800)return {tier:"hdplus",label:"HD+"};
+  if(height>=720)return {tier:"hd",label:"HD"};
+  if(height>=480)return {tier:"sd",label:"SD"};
+  return {tier:"low",label:"BAIXA"};
+}
+/** Do not promote an ultrawide 1920×800 source to Full HD by width alone. */
 export function qualityFromDimensions(width:number,height:number):Pick<VerifiedMediaQuality,"tier"|"label"|"width"|"height">|null{
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<128||height<100||width>10000||height>8000)return null;
   const longSide=Math.max(width,height);
   const shortSide=Math.min(width,height);
-  // Treat portrait video by its smaller axis, never by the tall dimension.
-  if(longSide>=3800&&shortSide>=1600)return {tier:"4k",label:"4K UHD",width,height};
-  if(shortSide>=1440&&longSide>=2200)return {tier:"qhd",label:shortSide===1440?"QHD 1440p":"QHD "+shortSide+"p",width,height};
-  if(shortSide>=1080&&longSide>=1440)return {tier:"fullhd",label:shortSide===1080?"FULL HD 1080p":"FULL HD "+shortSide+"p",width,height};
-  if(shortSide>=720&&longSide>=960)return {tier:"hd",label:shortSide===720?"HD 720p":"HD "+shortSide+"p",width,height};
-  if(shortSide>=480)return {tier:"sd",label:"SD "+shortSide+"p",width,height};
-  return {tier:"low",label:"BAIXA "+shortSide+"p",width,height};
+  // 3840×1600 is a genuine cropped UHD movie; 1920×800 remains HD+.
+  const fourK=longSide>=3800&&shortSide>=1600;
+  const named=qualityLabelForHeight(fourK?2160:Math.min(shortSide,2159));
+  if(!named)return null;
+  return {...named,width,height};
+}
+export interface QualityBadgePalette{color:string;background:string;border:string}
+export function qualityBadgePalette(tier:QualityTier):QualityBadgePalette{
+  switch(tier){
+    case "4k":return {color:"#ffe3a0",background:"rgba(191,132,24,.25)",border:"rgba(255,205,87,.67)"};
+    case "qhd":return {color:"#ebc7ff",background:"rgba(145,62,207,.24)",border:"rgba(209,133,249,.56)"};
+    case "fullhd":return {color:"#e1d4ff",background:"rgba(116,76,218,.24)",border:"rgba(181,149,255,.60)"};
+    case "hdplus":return {color:"#9df4f0",background:"rgba(18,133,147,.24)",border:"rgba(77,220,223,.57)"};
+    case "hd":return {color:"#b8ddff",background:"rgba(37,98,203,.24)",border:"rgba(120,184,255,.56)"};
+    case "sd":return {color:"#e1e3e8",background:"rgba(94,103,118,.25)",border:"rgba(180,188,201,.50)"};
+    case "low":return {color:"#efc5b4",background:"rgba(137,76,59,.24)",border:"rgba(199,140,120,.47)"};
+    case "cam":return {color:"#ffc2c0",background:"rgba(174,48,48,.22)",border:"rgba(255,115,115,.54)"};
+    default:return {color:"#c8ced8",background:"rgba(93,104,120,.16)",border:"rgba(163,173,190,.35)"};
+  }
+}
+export function tierFromQualityLabel(label:string):QualityTier{
+  const value=label.toUpperCase();
+  if(/CAM|CINEMA/.test(value))return "cam";
+  if(/4K|UHD|2160P/.test(value))return "4k";
+  if(/QHD|1440P|FULL HD\+/.test(value))return "qhd";
+  if(/FULL HD|1080P/.test(value))return "fullhd";
+  if(/HD\+|80\dP|8[1-9]\dP|9\d\dP|10[0-7]\dP/.test(value))return "hdplus";
+  if(/720P|\bHD\b/.test(value))return "hd";
+  if(/SD|480P/.test(value))return "sd";
+  if(/BAIXA|360P|240P/.test(value))return "low";
+  return "unknown";
 }
 
 export function sourceFingerprint(url:string):string{
@@ -72,7 +109,7 @@ function validRecord(v:unknown,now:number):v is VerifiedMediaQuality{
     typeof r.sourceFingerprint==="string"&&typeof r.width==="number"&&
     typeof r.height==="number"&&typeof r.observedAt==="number"&&
     now-r.observedAt<=MAX_AGE_MS&&r.observedAt<=now+60000&&
-    qualityFromDimensions(r.width,r.height)?.tier===r.tier;
+    qualityFromDimensions(r.width,r.height)!==null;
 }
 function readAll(storage:Pick<Storage,"getItem">,now=Date.now()):RecordMap{
   try{
@@ -80,8 +117,13 @@ function readAll(storage:Pick<Storage,"getItem">,now=Date.now()):RecordMap{
     if(!raw||raw.length>100_000)return {};
     const input:unknown=JSON.parse(raw);
     if(!input||typeof input!=="object"||Array.isArray(input))return {};
-    return Object.fromEntries(Object.entries(input).filter(([key,rec])=>
-      key.length<260&&validRecord(rec,now))) as RecordMap;
+    return Object.fromEntries(Object.entries(input).flatMap(([key,rec])=>{
+      if(key.length>=260||!validRecord(rec,now))return [];
+      const actual=qualityFromDimensions(rec.width,rec.height);
+      // Migrate legacy cached "HD 800p" and "FULL HD 1080p" records.
+      // Never let a stale label overwrite an actual measured resolution.
+      return actual?[[key,{...rec,...actual}]]:[];
+    })) as RecordMap;
   }catch{return {}}
 }
 export function readVerifiedMediaQuality(key:MediaQualityKey,storage?:Pick<Storage,"getItem">):VerifiedMediaQuality|null{
@@ -136,14 +178,10 @@ export function describeMediaQuality(
   const heights=sources.filter(s=>!rejectedVodSourceReason(s))
     .map(advertisedVodResolution).filter((v):v is number=>v!==null);
   const height=heights.length?Math.max(...heights):null;
-  if(height!==null){
-    const tier:QualityTier=height>=2160?"4k":height>=1440?"qhd":
-      height>=1080?"fullhd":height>=720?"hd":height>=480?"sd":"low";
-    const name=height>=2160?"4K UHD":height>=1440?"QHD 1440p":
-      height>=1080?"FULL HD 1080p":height>=720?"HD 720p":
-      height>=480?"SD "+height+"p":"BAIXA "+height+"p";
-    return {tier,label:name+" · informado",verified:false,
-      detail:"Qualidade declarada pela fonte, não comprovada no vídeo. A medição real substituirá este selo durante a reprodução."};
+  const named=height!==null?qualityLabelForHeight(height):null;
+  if(named){
+    return {...named,label:named.label,verified:false,
+      detail:"Resolução "+height+"p declarada pelo fornecedor (não verificada). A medição real substituirá este selo durante a reprodução."};
   }
   return {tier:"unknown",label:"A VERIFICAR",verified:false,
     detail:opts.seriesAggregate?"A resolução varia por episódio e fonte. O catálogo será consultado em busca de metadados.":
