@@ -1,0 +1,25 @@
+name: Audit TV channel origin transport
+on:
+  pull_request:
+    paths:
+      - 'scripts/audit-tv-live-sources.mjs'
+      - '.github/workflows/audit-tv-live-sources.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit-tv-live-sources.mjs'
+      - '.github/workflows/audit-tv-live-sources.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-channel-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Check response codes of published catalog proxies, no video download
+        env:
+          TV_AUDIT_ORIGIN: https://zangflix.lovable.app
+        run: bun scripts/audit-tv-live-sources.mjs
