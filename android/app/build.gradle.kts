@@ -16,11 +16,13 @@ android {
       dimension = "formFactor"
       applicationId = "com.zangflix.app"
       buildConfigField("boolean", "TV_EDITION", "false")
+      manifestPlaceholders["appLabel"] = "ZANG FLIX"
     }
     create("television") {
       dimension = "formFactor"
       applicationId = "com.zangflix.tv"
       buildConfigField("boolean", "TV_EDITION", "true")
+      manifestPlaceholders["appLabel"] = "ZANG FLIX TV"
     }
   }
   buildFeatures { buildConfig = true }
