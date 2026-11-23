@@ -1,5 +1,5 @@
-import {qualityBadgePalette,tierFromQualityLabel} from "@/lib/verified-media-quality";
 "use client";
+import {qualityBadgePalette,tierFromQualityLabel} from "@/lib/verified-media-quality";
 import { fullscreenProgressFraction } from "@/lib/fullscreen-orientation";
 import { useEffect, useRef, useState } from "react";
 import {

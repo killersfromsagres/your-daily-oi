@@ -42,6 +42,17 @@ export function advertisedVodResolution(source: {url:string; quality?:string | u
   if (/\b(?:480p?|sd)\b/.test(value)) return 480;
   if (/\b360p?\b/.test(value)) return 360;
   if (/\b240p?\b/.test(value)) return 240;
+  // Formats such as 800p, 816p and 900p occur in cinematic encodes.
+  // This is provider-declared height, not verified video dimensions.
+  const heights=[...value.matchAll(/\b(\d{3,4})p\b/gi)]
+    .map(match=>Number(match[1]))
+    .filter(height=>height>=240&&height<=4320);
+  if(heights.length)return Math.max(...heights);
+  const raster=value.match(/\b(\d{3,4})\s*x\s*(\d{3,4})\b/);
+  if(raster){
+    const short=Math.min(Number(raster[1]),Number(raster[2]));
+    if(short>=240&&short<=4320)return short;
+  }
   return null;
 }
 
