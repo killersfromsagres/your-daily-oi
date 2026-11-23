@@ -5,6 +5,7 @@ describe("TV-only cinematic experience",()=>{
   test("TV home uses compact metadata and reference-style hero + shelves",()=>{
     const s=read("../src/routes/tv-home.tsx");
     expect(s).toContain('"/api/catalogo?tv=1"');
+    expect(s).toContain("<TvLibrary type={section} onOpen={openItem}/>");
     expect(s).toContain('className="zf-immersive-hero"');
     expect(s).toContain('className="zf-immersive-shelves"');
     expect(s).toContain("useTvFocus(");
