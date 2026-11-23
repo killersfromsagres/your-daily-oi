@@ -25,6 +25,7 @@ import { APP_VERSION } from "./lib/version";
 import type { CatalogItem, SeasonItem, HighlightRow, StreamSource } from "./lib/types";
 import { isFriday13EditionActive, selectFriday13Movies } from "./lib/friday13-edition";
 import { selectRotatingHero, HERO_ROTATION_MS } from "./lib/hero-rotation";
+import { selectTvFeatured } from "./lib/tv-featured";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
 import { playableVodSources, shortlistVodSources } from "./lib/vod-source-quality";
 
@@ -206,8 +207,13 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
     // Fast TV-only feed: fixed-sized metadata payload without streams, full
     // episode trees, TMDB hydrations, or the complete desktop catalog JSON.
     if (url.searchParams.get("tv") === "1") {
-      const { items } = await loadCatalog();
+      const { items, highlights } = await loadCatalog();
       const pool = uniqueCatalogItems(items).filter(item => Boolean(item.posterUrl));
+      // The TV app gets real 16:9 movie artwork, not a stretched portrait
+      // poster or eight expensive TMDB hydration calls on every app launch.
+      const heroes = selectTvFeatured(pool,highlights,POPULAR_HD_BACKDROPS,
+        TOP_BLOCKBUSTERS,Date.now(),8);
+      const featuredIds = new Set(heroes.map(item=>item.id));
       const groups = [
         { id: "movies", title: "Filmes para assistir", type: "f" },
         { id: "series", title: "Séries para maratonar", type: "s" },
@@ -215,27 +221,20 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       ] as const;
       const rows = groups.map(group => ({
         ...group,
-        items: pool.filter(item => item.type === group.type).slice(0, 24)
+        items: pool.filter(item => item.type === group.type).slice(0, 26)
           .map(item => ({ id: item.id, type: item.type, title: cleanDisplayTitle(item.title),
             posterUrl: item.posterUrl ?? "" })),
       }));
-      // Prefer a legitimate widescreen image already documented for this exact
-      // title. Do not request a large TMDB batch or fabricate a movie image.
-      const spotlight = pool.find(item => item.type === "f" &&
-        Object.keys(POPULAR_HD_BACKDROPS).some(key => normalizeTitle(item.title).includes(key))) ||
-        pool.find(item => item.type === "f" && Boolean(item.tmdb?.backdropUrl)) ||
-        pool.find(item => item.type === "f") || null;
-      const titleKey = spotlight ? normalizeTitle(spotlight.title) : "";
-      const backdrop = spotlight?.tmdb?.backdropUrl ??
-        Object.entries(POPULAR_HD_BACKDROPS).find(([key])=>titleKey.includes(key))?.[1] ??
-        spotlight?.posterUrl ?? "";
-      const hero = spotlight ? {
-        id: spotlight.id, type: spotlight.type, title: cleanDisplayTitle(spotlight.title),
-        posterUrl: spotlight.posterUrl ?? "", backdropUrl: backdrop,
-        overview: spotlight.tmdb?.overview ?? "",
-        year: spotlight.tmdb?.releaseYear ?? null,
-      } : null;
-      return jsonResponse({ rows, hero }, 200, "private, max-age=45");
+      if (featuredIds.size) {
+        rows.unshift({
+          id:"featured",title:"Grandes filmes em destaque",type:"f",
+          items: heroes.map(item=>({id:item.id,type:item.type,
+            title:cleanDisplayTitle(item.title),posterUrl:item.posterUrl})),
+        });
+      }
+      const hero = heroes[0] ?? null;
+      return jsonResponse({ rows, heroes, hero, refreshWindowMs: HERO_ROTATION_MS },
+        200,"private, max-age=90");
     }
 
     const { items, highlights } = await loadCatalog();
