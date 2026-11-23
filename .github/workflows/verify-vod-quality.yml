@@ -45,3 +45,8 @@ jobs:
         run: bun scripts/typecheck-vod.mjs
       - name: Build client and server
         run: bun run build
+      - name: Sample the published movie, series and anime catalogue without downloading videos
+        env:
+          VOD_AUDIT_ORIGIN: https://zangflix.lovable.app
+          VOD_AUDIT_PER_TYPE: '12'
+        run: bun scripts/audit-vod-quality.mjs
