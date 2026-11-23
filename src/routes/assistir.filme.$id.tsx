@@ -152,6 +152,7 @@ function WatchMoviePage() {
       >
         <OwnPlayer
           contentType="movie"
+          contentId={effectiveMovie.id}
           streams={streams}
           poster={effectiveMovie.tmdb?.backdropUrl || effectiveMovie.posterUrl}
           title={catalogDisplayTitle(effectiveMovie)}

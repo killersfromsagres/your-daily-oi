@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Play, Heart, Star, X, Film, Check, Users, Clock, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { CatalogItem, StreamSource } from "@/lib/types";
-import { catalogDisplayTitle, detectQuality } from "@/lib/catalog";
+import { catalogDisplayTitle } from "@/lib/catalog";
+import { VerifiedQualityBadge } from "@/components/catalog/VerifiedQualityBadge";
 import { getMovieDetails, peekMovieDetails } from "@/lib/movie-details-client";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 
@@ -116,18 +117,6 @@ function MovieDetailPage() {
   const titleDisplay = catalogDisplayTitle(movie);
   const runtimeDisplay = formatRuntime(movie.tmdb?.runtime);
 
-  const movieQuality = (() => {
-    if (!movie) return "AUTO";
-    const allStreams = [...(movie.streams || []), ...extraStreams];
-    const qualities = allStreams
-      .map((s) => s.quality || detectQuality(s.url, movie.title))
-      .filter(Boolean);
-    if (qualities.some((q) => /4k|2160|uhd/i.test(q)) || /4k|2160|uhd/i.test(movie.title)) return "4K ULTRA HD";
-    if (qualities.some((q) => /2k|1440|qhd/i.test(q)) || /2k|1440|qhd/i.test(movie.title)) return "2K QUAD HD";
-    if (qualities.some((q) => /720|720p/i.test(q)) && !qualities.some((q) => /1080|fhd/i.test(q))) return "HD 720P";
-    if (qualities.some((q) => /480|480p|sd/i.test(q)) && !qualities.some((q) => /1080|720/i.test(q))) return "SD 480P";
-    return "AUTO";
-  })();
 
   return (
     <div
@@ -317,21 +306,9 @@ function MovieDetailPage() {
                   FILME
                 </span>
 
-                {/* Badge de Qualidade Real Exibida */}
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: "800",
-                    letterSpacing: "0.06em",
-                    color: movieQuality.includes("4K") ? "#e8b44a" : "#ffffff",
-                    backgroundColor: movieQuality.includes("4K") ? "rgba(232, 180, 74, 0.15)" : "rgba(255, 255, 255, 0.12)",
-                    border: movieQuality.includes("4K") ? "1px solid rgba(232, 180, 74, 0.4)" : "1px solid rgba(255, 255, 255, 0.25)",
-                    padding: "3px 9px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  {movieQuality}
-                </span>
+                {/* Resolução decodificada em reprodução, nunca estimada pelo título. */}
+                <VerifiedQualityBadge media={{type:"f",id:movie.id}}
+                  streams={movie.streams} />
 
                 {/* Badge de Duração */}
                 <span

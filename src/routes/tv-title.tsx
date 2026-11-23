@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Heart, Play, Tv2 } from "lucide-react";
 import { useTvFocus } from "@/lib/tv-focus";
 import { getSavedList, toggleSaved } from "@/lib/storage";
 import type { CatalogItem } from "@/lib/types";
+import { VerifiedQualityBadge } from "@/components/catalog/VerifiedQualityBadge";
 
 type MediaType = "f" | "s" | "a";
 export const Route=createFileRoute("/tv-title")({
@@ -71,6 +72,8 @@ function TvTitle(){
             <span className="zf-tenfoot-rail-caption">{item.type==="f"?"FILME":item.type==="a"?"ANIME":"SÉRIE"} · ZANG FLIX TV</span>
             <h1>{item.tmdb?.title||item.title}</h1>
             <p>{item.tmdb?.overview||"Selecione Assistir para começar."}</p>
+            <div style={{margin:"15px 0 16px"}}><VerifiedQualityBadge
+              media={{type:item.type,id:item.id}} streams={item.streams}/></div>
             <div className="zf-detail-actions" data-tv-row="detail-actions">
               <button className="zf-hero-play" type="button" data-tv-focus="detail-play" onClick={play}>
                 <Play size={20} fill="currentColor"/> Assistir
@@ -101,6 +104,8 @@ function TvTitle(){
               }}>
               {ep.thumbUrl?<img src={ep.thumbUrl} alt="" loading="lazy" decoding="async"/>:<span className="zf-detail-episode-placeholder"><Play size={32}/></span>}
               <strong>{ep.episodeNumber}. {ep.title||ep.name||"Episódio "+ep.episodeNumber}</strong>
+              <VerifiedQualityBadge media={{type:item.type,id:item.id,season:ep.seasonNumber,episode:ep.episodeNumber}}
+                streams={ep.streams}/>
             </button>)}</div>
         </section>:null}
       </>}

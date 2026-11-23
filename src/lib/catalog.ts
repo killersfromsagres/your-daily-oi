@@ -86,7 +86,7 @@ function isValidUrl(url: string): boolean {
 }
 
 /**
- * Detecta a qualidade/resolução real de um stream a partir da URL e/ou metadados
+ * Identifica apenas resolução ANUNCIADA na URL/metadados. A real é medida do vídeo.
  */
 export function detectQuality(url: string, title?: string): string {
   const height = advertisedVodResolution({url, name:title});

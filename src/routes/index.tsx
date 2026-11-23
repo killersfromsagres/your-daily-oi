@@ -155,10 +155,6 @@ function HomePage() {
       voteAverage: item.tmdb?.voteAverage,
       hasDub: item.streams.some(stream => stream.audio === "dub"),
       hasLeg: item.streams.some(stream => stream.audio === "leg"),
-      quality: item.streams.some(stream => stream.quality?.includes("4K"))
-        ? "4K ULTRA HD"
-        : item.streams.some(stream => stream.quality?.includes("2K"))
-          ? "2K QUAD HD" : item.streams.find(stream => /^(1080p|720p|480p)$/i.test(stream.quality || ""))?.quality || "AUTO",
     }));
   }, [featuredHero, items, friday13, friday13Movies, friday13Hero]);
 

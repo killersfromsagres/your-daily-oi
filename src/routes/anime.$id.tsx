@@ -8,6 +8,7 @@ import { cleanDisplayTitle } from "@/lib/catalog";
 import { getSavedList, toggleSaved as toggleSavedStorage } from "@/lib/storage";
 import { EpisodeProgressControls } from "@/components/catalog/EpisodeProgressControls";
 import { EpisodeArtwork } from "@/components/catalog/EpisodeArtwork";
+import { VerifiedQualityBadge } from "@/components/catalog/VerifiedQualityBadge";
 import "@/styles/episode-artwork.css";
 import { countWatchedEpisodes } from "@/lib/episode-progress";
 import "@/styles/episode-progress.css";
@@ -350,20 +351,7 @@ function AnimeDetailPage() {
                   ANIME
                 </span>
 
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: "800",
-                    letterSpacing: "0.06em",
-                    color: "#ffffff",
-                    backgroundColor: "rgba(255, 255, 255, 0.12)",
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
-                    padding: "3px 9px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  FULL HD 1080P
-                </span>
+                <VerifiedQualityBadge media={{type:"a",id:anime.id}} />
 
                 {/* Badge de Estúdio (AniList) */}
                 {anime.tmdb?.studio && (
@@ -659,6 +647,8 @@ function AnimeDetailPage() {
                           <div className="zf-anime-episode-copy">
                             <small>TEMPORADA {selectedSeason} · EP {String(ep.episodeNumber).padStart(2, "0")}</small>
                             <strong>{title}</strong>
+                            <VerifiedQualityBadge compact streams={ep.streams}
+                              media={{type:"a",id:anime.id,season:selectedSeason,episode:ep.episodeNumber}} />
                             {meta?.sinopse && <p>{meta.sinopse}</p>}
                           </div>
                         </Link>

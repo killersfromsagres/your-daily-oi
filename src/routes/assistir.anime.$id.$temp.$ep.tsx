@@ -200,6 +200,9 @@ function WatchAnimePage() {
       >
         <OwnPlayer
           contentType="anime"
+          contentId={effectiveAnime.id}
+          season={Number(temp)}
+          episode={Number(ep)}
           streams={streams}
           {...(effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl ? {poster: effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl} : {})}
           title={effectiveAnime.title || "Anime"}

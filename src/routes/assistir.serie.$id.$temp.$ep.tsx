@@ -199,6 +199,9 @@ function WatchSeriesPage() {
       >
         <OwnPlayer
           contentType="series"
+          contentId={effectiveSerie.id}
+          season={Number(temp)}
+          episode={Number(ep)}
           streams={streams}
           {...(effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl ? {poster: effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl} : {})}
           title={effectiveSerie.title}

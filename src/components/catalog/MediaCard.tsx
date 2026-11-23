@@ -4,6 +4,7 @@ import { Play, Plus, Check, Star } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { CatalogItem } from "@/lib/types";
 import { catalogDisplayTitle, isAnimeItem } from "@/lib/catalog";
+import { VerifiedQualityBadge } from "./VerifiedQualityBadge";
 
 interface MediaCardProps {
   item: CatalogItem;
@@ -32,9 +33,6 @@ export function MediaCard({
     !hasStreamsOrEpisodes &&
     Boolean(item.tmdb?.releaseYear && item.tmdb.releaseYear > new Date().getFullYear());
 
-  const is4k =
-    /4k|2160|uhd/i.test(item.title) ||
-    item.streams.some((s) => /4k|2160|uhd/i.test(s.quality || ""));
   const detailPath =
     item.type === "a" || (item.type === "s" && isAnimeItem(item))
       ? `/anime/${item.id}`
@@ -110,19 +108,8 @@ export function MediaCard({
                 Em breve
               </span>
             )}
-            {is4k && (
-              <span
-                className="ydo-badge"
-                style={{
-                  backgroundColor: "rgba(232, 180, 74, 0.2)",
-                  color: "#e8b44a",
-                  borderColor: "rgba(232, 180, 74, 0.4)",
-                  fontWeight: "800",
-                }}
-              >
-                4K
-              </span>
-            )}
+            <VerifiedQualityBadge media={{type:item.type,id:item.id}}
+              streams={item.streams} compact />
             {hasDub && <span className="ydo-badge">DUB</span>}
             {hasLeg && <span className="ydo-badge ydo-badge-leg">LEG</span>}
           </div>

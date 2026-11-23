@@ -1,0 +1,41 @@
+name: Verified quality badges — VOD
+on:
+  pull_request:
+    paths:
+      - 'src/lib/verified-media-quality.ts'
+      - 'src/components/catalog/VerifiedQualityBadge.tsx'
+      - 'src/components/catalog/MediaCard.tsx'
+      - 'src/components/player/OwnPlayer.tsx'
+      - 'src/components/player/PlayerControls.tsx'
+      - 'src/routes/filme.$id.tsx'
+      - 'src/routes/serie.$id.tsx'
+      - 'src/routes/anime.$id.tsx'
+      - 'src/routes/assistir.*'
+      - 'src/routes/tv-title.tsx'
+      - 'tests/verified-media-quality.test.ts'
+      - '.github/workflows/verify-vod-quality.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/verified-media-quality.ts'
+      - 'src/components/catalog/VerifiedQualityBadge.tsx'
+      - 'src/components/player/OwnPlayer.tsx'
+      - 'src/components/player/PlayerControls.tsx'
+      - 'tests/verified-media-quality.test.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Validate quality evidence, frame measurement, CAM policy and episode cache
+        run: bun test tests/verified-media-quality.test.ts tests/vod-source-quality.test.ts tests/vod-reliability.test.ts
+      - name: Compile VOD modules
+        run: bun scripts/typecheck-vod.mjs
+      - name: Build client and server
+        run: bun run build
