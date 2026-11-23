@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'src/lib/verified-media-quality.ts'
+      - 'src/lib/quality-badge-observer.ts'
+      - 'src/components/catalog/HeroSection.tsx'
+      - 'src/styles/cards.css'
+      - 'tests/quality-ui-performance.test.ts'
       - 'src/lib/vod-quality-probe.ts'
       - 'src/lib/vod-quality-client.ts'
       - 'src/server/vod-quality.ts'
@@ -40,9 +44,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Validate consistent quality colors and no misleading missing-data badges
-        run: bun test tests/verified-media-quality.test.ts tests/vod-quality-probe.test.ts
+        run: bun test tests/quality-ui-performance.test.ts tests/verified-media-quality.test.ts tests/vod-quality-probe.test.ts
       - name: Validate quality evidence, frame measurement, CAM policy and episode cache
-        run: bun test tests/vod-quality-probe.test.ts tests/verified-media-quality.test.ts tests/vod-source-quality.test.ts tests/vod-reliability.test.ts
+        run: bun test tests/quality-ui-performance.test.ts tests/vod-quality-probe.test.ts tests/verified-media-quality.test.ts tests/vod-source-quality.test.ts tests/vod-reliability.test.ts
       - name: Compile VOD modules
         run: bun scripts/typecheck-vod.mjs
       - name: Build client and server
