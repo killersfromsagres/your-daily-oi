@@ -15,7 +15,7 @@ describe("TV-only cinematic experience",()=>{
     const root=read("../src/routes/__root.tsx");
     const home=read("../src/routes/tv-home.tsx");
     expect(root).toContain('["/tv-home", "/tv-live", "/tv-title"]');
-    expect(root).toContain("!isDedicatedTvHome && <Header />");
+    expect(root).toContain("!isDedicatedTvHome && !tvWatch && <Header />");
     expect(home).toContain('navigate({to:"/tv-live"})');
     const live=read("../src/routes/tv-live.tsx");
     expect(live).not.toContain("TvView");
