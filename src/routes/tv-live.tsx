@@ -52,7 +52,7 @@ function TvLive(){
   const load=useCallback(async(force=false,signal?:AbortSignal)=>{
     if(force)setRefreshing(true);
     try{
-      const response=await fetch(force?"/api/canais?refresh=1":"/api/canais",{signal,cache:"no-store"});
+      const response=await fetch(force?"/api/canais?refresh=1":"/api/canais",{...(signal?{signal}:{}),cache:"no-store"});
       if(!response.ok)throw Error("HTTP "+response.status);
       const data=await response.json() as CatalogResponse;
       if(!Array.isArray(data.canais))throw Error("Resposta inválida");
