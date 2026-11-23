@@ -47,9 +47,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
         let done=false;
         let started=false;
         let confirmed=false;
-        let initializing=false;
-        let failure:Failure|null=null;
-        let hls:{destroy:()=>void}|null=null;
+         let hls:{destroy:()=>void}|null=null;
         let mpeg:{destroy:()=>void;unload?:()=>void}|null=null;
         let shaka:{destroy:()=>Promise<unknown>|void}|null=null;
         let beginTime=0;
@@ -71,10 +69,13 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
           hls=null;mpeg=null;shaka=null;
           video.pause();video.removeAttribute("src");video.load();
         };
-        teardown=cleanup;
+        teardown=()=>{
+          if(!done){done=true;cleanup();resolve({failure:{reason:"unavailable",status:null}})}
+          else cleanup();
+        };
         const finish=(reason:TvConnectionReason,status:number|null=null)=>{
           if(done||cancelled)return;
-          done=true;failure={reason,status};
+          done=true;
           cleanup();
           resolve({failure});
         };
@@ -109,7 +110,6 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
         };
         const startPlayback=()=>{
           if(cancelled||done)return;
-          initializing=true;
           const play=video.play();
           void play.catch(error=>{
             if(cancelled||done)return;
@@ -120,7 +120,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
               return;
             }
             finish("decoder");
-          }).finally(()=>{initializing=false;});
+          });
         };
         retryRef.current=()=>{
           if(!requiresGesture && !video.paused)return;
@@ -177,8 +177,9 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
                 instance.on(Hls.Events.MANIFEST_PARSED,()=>startPlayback());
                 instance.on(Hls.Events.ERROR,(_event,data)=>{
                   if(cancelled||done)return;
-                  const code=Number(data?.response?.code||data?.response?.status||
-                    data?.networkDetails?.status||0);
+                  const response=data?.response as {code?:number;status?:number}|undefined;
+                  const network=data?.networkDetails as {status?:number}|undefined;
+                  const code=Number(response?.code??response?.status??network?.status??0);
                   const detail=String(data?.details||"");
                   const permanent=[401,403,404,409,410,429].includes(code);
                   if(permanent){
@@ -310,7 +311,7 @@ export function TvStreamPlayer({canal,onPlaybackStatus,onSourcesExhausted}:Props
     </button>}
   </div>;
 }
-type ShakaGlobal={polyfill?:{installAll?:()=>void};Player?:new()=>any};
+type ShakaGlobal={polyfill?:{installAll?:()=>void};Player?:{new():any;isBrowserSupported?:()=>boolean}};
 let shakaPromise:Promise<ShakaGlobal|null>|null=null;
 async function loadShakaForTv():Promise<ShakaGlobal|null>{
   if(typeof window==="undefined")return null;
