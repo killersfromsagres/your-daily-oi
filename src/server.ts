@@ -445,7 +445,7 @@ async function handleStreamApi(url: URL): Promise<Response> {
 
   if (id.includes(":")) {
     const partes = id.split(":");
-    id = partes[0];
+    id = partes[0] || id;
   }
 
   const { items } = await loadCatalog();
