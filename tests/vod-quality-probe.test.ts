@@ -33,6 +33,11 @@ describe("VOD catalog-wide source metadata",()=>{
     expect(safeVodProbeUrl("https://localhost/video.mp4")).toBeNull();
     expect(safeVodProbeUrl("https://cdn.example.org/movie.m3u8")).not.toBeNull();
   });
+  test("CAM requires explicit source evidence across all alternatives",async()=>{
+    const {probeExistingVodSources}=await import("../src/lib/vod-quality-probe");
+    const onlyCam=[{url:"https://cdn.example.org/film.camrip.mp4",audio:"dub" as const}];
+    expect(await probeExistingVodSources(onlyCam)).toMatchObject({label:"CAM · CINEMA",evidence:"cam"});
+  });
   test("declared resolution never pretends to be measured",()=>{
     const source={url:"https://cdn.example.org/test.mp4",name:"1080p",quality:"1080p"};
     expect(declaredQuality(source)).toMatchObject({label:"FULL HD 1080p · informado",verified:false});

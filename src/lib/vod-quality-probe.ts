@@ -149,6 +149,11 @@ async function fetchProbe(url:URL,bytes:number,isManifest:boolean):Promise<{data
   return null;
 }
 export async function probeExistingVodSources(sources:readonly StreamSource[]):Promise<SourceQualityFinding|null>{
+  if(sources.length>0&&sources.every(s=>rejectedVodSourceReason(s)==="cinema")){
+    // Never classify a low-bitrate legitimate rip as CAM. This requires
+    // explicit capture markers on every available catalog source.
+    return declaredQuality(sources[0]!);
+  }
   const primary=shortlistVodSources(sources,3);
   const selected=primary.length?primary:playableVodSources(sources).slice(0,3);
   if(!selected.length)return null;
@@ -162,7 +167,7 @@ export async function probeExistingVodSources(sources:readonly StreamSource[]):P
       /\.mpd(?:$|[?])/i.test(uri.pathname+uri.search)||source.format==="hls"||source.format==="dash";
     try{
       const result=await fetchProbe(uri,manifest?MAX_MANIFEST_BYTES:MAX_MP4_BYTES,manifest);
-      if(!result)return advertised;
+      if(!result||/text\/html/i.test(result.mime))return advertised;
       const header=new TextDecoder().decode(result.data.subarray(0,160));
       const isText=manifest||/mpegurl|dash\+xml|text\/plain/.test(result.mime)||header.startsWith("#EXTM3U");
       const found=isText?(() => {
