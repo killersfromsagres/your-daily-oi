@@ -241,7 +241,12 @@ export function Header({ onSearch }: HeaderProps) {
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown" && suggestions.length) {
       event.preventDefault();
-      setActiveSuggestion(prev => prev >= suggestions.length - 1 ? 0 : prev + 1);
+      if (platform === "tv") {
+        setActiveSuggestion(0);
+        searchContainerRef.current?.querySelector<HTMLButtonElement>(".zf-search-result")?.focus();
+      } else {
+        setActiveSuggestion(prev => prev >= suggestions.length - 1 ? 0 : prev + 1);
+      }
     } else if (event.key === "ArrowUp" && suggestions.length) {
       event.preventDefault();
       setActiveSuggestion(prev => prev <= 0 ? suggestions.length - 1 : prev - 1);

@@ -54,6 +54,7 @@ export function SearchSuggestionList({
               <button key={item.type + ":" + item.id} id={id + "-option-" + index}
                 type="button" role="option" aria-selected={activeIndex === index}
                 className={"zf-search-result" + (activeIndex === index ? " is-active" : "")}
+                onFocus={() => onActiveChange(index)}
                 onMouseEnter={() => onActiveChange(index)}
                 onClick={() => onChoose(item)}>
                 <span className="zf-search-poster">

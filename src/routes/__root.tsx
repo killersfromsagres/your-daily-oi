@@ -4,12 +4,14 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import tvExperienceCss from "../styles/tv-experience.css?url";
 import tvAppPremiumCss from "../styles/tv-app-premium.css?url";
+import tvHomeCss from "../styles/tv-home.css?url";
 import friday13Css from "../styles/friday13-edition.css?url";
 import { Friday13EditionProvider } from "@/components/catalog/Friday13Edition";
 import mobileCatalogCss from "../styles/mobile-catalog-filters.css?url";
@@ -112,6 +114,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: friday13Css },
       { rel: "stylesheet", href: tvExperienceCss },
       { rel: "stylesheet", href: tvAppPremiumCss },
+      { rel: "stylesheet", href: tvHomeCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
@@ -141,11 +144,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const isDedicatedTvHome = useRouterState({ select: state => state.location.pathname === "/tv-home" });
   return (
     <QueryClientProvider client={queryClient}>
       <Friday13EditionProvider>
-      <div className="ambient-glow" aria-hidden />
-      <Header />
+      {!isDedicatedTvHome && <div className="ambient-glow" aria-hidden />}
+      {!isDedicatedTvHome && <Header />}
       <Outlet />
       </Friday13EditionProvider>
     </QueryClientProvider>

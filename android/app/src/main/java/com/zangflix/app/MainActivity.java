@@ -15,6 +15,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebSettings;
 
 public final class MainActivity extends Activity {
   private WebView web;
@@ -24,18 +25,24 @@ public final class MainActivity extends Activity {
   private int previousWindowFlags;
   private WebChromeClient.CustomViewCallback customCallback;
   private static final String HOME = "https://zangflix.lovable.app/";
+  private static final String TV_HOME = "https://zangflix.lovable.app/tv-home?zf-tv-app=androidtv";
   @Override public void onCreate(Bundle state) {
     super.onCreate(state);
     UiModeManager mode=(UiModeManager)getSystemService(UI_MODE_SERVICE);
-    boolean television=mode!=null && mode.getCurrentModeType()==Configuration.UI_MODE_TYPE_TELEVISION;
+    boolean television=BuildConfig.TV_EDITION || (mode!=null && mode.getCurrentModeType()==Configuration.UI_MODE_TYPE_TELEVISION);
     setVolumeControlStream(AudioManager.STREAM_MUSIC);
     if(television)setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     web = new WebView(this);
     web.setFocusable(true);web.setFocusableInTouchMode(true);web.requestFocus();
     web.setBackgroundColor(0xff090a10);
     web.getSettings().setJavaScriptEnabled(true);
+    web.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+    web.getSettings().setSupportZoom(false);
+    web.getSettings().setBuiltInZoomControls(false);
+    web.getSettings().setLoadWithOverviewMode(true);
+    web.getSettings().setUseWideViewPort(true);
     // Identify the actual installed Android APK, not a Chrome PWA shortcut.
-    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/1.1" + (television?" ZangFlixTV/1.1":""));
+    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.0":""));
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(false);
     web.getSettings().setAllowFileAccess(false);
@@ -72,7 +79,7 @@ public final class MainActivity extends Activity {
       }
     });
     setContentView(web);
-    web.loadUrl(HOME);
+    web.loadUrl(television ? TV_HOME : HOME);
   }
   @Override public void onBackPressed() {
     if (customView != null) { web.getWebChromeClient().onHideCustomView(); return; }

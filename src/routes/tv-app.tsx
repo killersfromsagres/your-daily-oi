@@ -13,7 +13,7 @@ export const Route=createFileRoute("/tv-app")({
 
 const TV_APK_URL=ANDROID_APK_URL.replace("ZANG-FLIX-Android.apk","ZANG-FLIX-TV.apk");
 const LG_RELEASE="https://github.com/killersfromsagres/your-daily-oi/releases/download/webos-latest/ZANG-FLIX-webOS.ipk";
-const WEB_URL="https://zangflix.lovable.app/tv-app";
+const WEB_URL="https://zangflix.lovable.app/tv-home";
 type DeviceInfo = {
   id:TvInstallPlatform;
   name:string;
@@ -25,7 +25,7 @@ type DeviceInfo = {
 };
 const TCL_LOGO="https://upload.wikimedia.org/wikipedia/commons/2/2a/Logo_of_the_TCL_Corporation.svg";
 const devices:DeviceInfo[]=[
-  {id:"tcl-android",name:"TCL",subtitle:"Google TV / Android TV",logo:TCL_LOGO,status:"APK disponível",statusType:"ready",accent:"tcl"},
+  {id:"tcl-android",name:"TCL",subtitle:"Google TV / Android TV",logo:TCL_LOGO,status:"App TV dedicado",statusType:"ready",accent:"tcl"},
   {id:"samsung",name:"Samsung",subtitle:"Samsung Tizen",logo:"/tv-brands/samsung.svg",status:"Versão web",statusType:"browser",accent:"samsung"},
   {id:"lg",name:"LG",subtitle:"LG webOS",logo:"/tv-brands/lg.svg",status:"IPK de testes",statusType:"test",accent:"lg"},
   {id:"tcl-roku",name:"TCL Roku",subtitle:"Roku OS",logo:"/tv-brands/roku.svg",status:"App Roku pendente",statusType:"unavailable",accent:"roku"},
@@ -35,7 +35,7 @@ function TvAppPage(){
  const [selected,setSelected]=useState<TvInstallPlatform>("tcl-android");
  const [tv,setTv]=useState(false);
  const optionsRef=useRef<HTMLDivElement>(null);
- const selectedDevice=devices.find(device=>device.id===selected) || devices[0];
+ const selectedDevice=devices.find(device=>device.id===selected) ?? devices[0]!;
  const onDeviceKeys=(event:KeyboardEvent<HTMLDivElement>)=>{
   const step=event.key==="ArrowRight"||event.key==="ArrowDown"?1:
     event.key==="ArrowLeft"||event.key==="ArrowUp"?-1:0;
@@ -43,8 +43,9 @@ function TvAppPage(){
   const focused=(event.target as HTMLElement).closest<HTMLButtonElement>("[data-tv-device]");
   if(!focused)return;
   event.preventDefault();
-  const index=devices.findIndex(device=>device.id===focused.dataset.tvDevice);
+  const index=devices.findIndex(device=>device.id===focused.dataset["tvDevice"]);
   const next=devices[(index+step+devices.length)%devices.length];
+  if(!next)return;
   setSelected(next.id);
   optionsRef.current?.querySelector<HTMLButtonElement>('[data-tv-device="'+next.id+'"]')?.focus();
  };
@@ -71,16 +72,17 @@ function TvAppPage(){
   <Link to="/" className="zf-tv-app-back"><ChevronLeft size={18}/> Voltar ao início</Link>
   <section className="zf-tv-premium-hero" aria-labelledby="zf-tv-hero-title">
    <div className="zf-tv-hero-copy">
-    <div className="zf-tv-eyebrow"><Tv size={14} aria-hidden="true"/> ZANG FLIX PARA TELA GRANDE</div>
-    <h1 id="zf-tv-hero-title">Seu próximo play.<br/><em>Agora na TV.</em></h1>
-    <p>Uma experiência feita para a sala de estar. Encontre a instalação certa para seu sistema, com interface preparada para o controle remoto.</p>
+    <div className="zf-tv-eyebrow"><Tv size={14} aria-hidden="true"/> ZANG FLIX TV · NOVA EXPERIÊNCIA</div>
+    <h1 id="zf-tv-hero-title">Sua TV merece<br/><em>outra experiência.</em></h1>
+    <p>Uma interface desenhada do zero para o controle remoto: foco visível, busca direta, categorias mais simples e carregamento reduzido. Escolha o sistema correto para instalar.</p>
     <div className="zf-tv-hero-actions">
      <a href="#zf-tv-install-title" className="zf-tv-hero-primary">Escolher minha TV <ArrowRight size={17}/></a>
-     <button type="button" className="zf-tv-hero-secondary" onClick={toggle}><Gamepad2 size={17}/>{tv?"Desativar modo TV":"Experimentar modo TV"}</button>
+     <Link to="/tv-home" className="zf-tv-hero-secondary"><Gamepad2 size={17}/> Prévia da interface TV <ArrowRight size={16}/></Link>
     </div>
     <div className="zf-tv-hero-facts">
-     <span><Check size={15}/> Navegação por controle</span>
-     <span><Check size={15}/> Guia por plataforma</span>
+     <span><Check size={15}/> Foco visível em cada cartão</span>
+     <span><Check size={15}/> Sugestões selecionáveis</span>
+     <span><Check size={15}/> APK exclusivo TCL</span>
     </div>
    </div>
    <div className="zf-tv-visual" aria-hidden="true">
@@ -105,6 +107,11 @@ function TvAppPage(){
      <div><span className="zf-tv-section-label">CONFIGURAÇÃO EM POUCOS PASSOS</span>
       <h2 id="zf-tv-install-title">Qual é a sua televisão?</h2>
       <p>Escolha a marca e o sistema para visualizar o método de instalação disponível.</p></div>
+   </div>
+   <div className="zf-tv-app-platform-note">
+      <span><Gamepad2 size={18}/> CONTROLE REMOTO</span>
+      <strong>Setas para navegar. OK para selecionar. Voltar para retornar.</strong>
+      <Link to="/tv-home">Conhecer interface TV <ArrowRight size={16}/></Link>
    </div>
    <div className="zf-tv-device-options" ref={optionsRef} onKeyDown={onDeviceKeys} aria-label="Escolher sistema da televisão">
     {devices.map(device=><button key={device.id} type="button" data-tv-device={device.id}
@@ -132,12 +139,12 @@ function TvAppPage(){
     {selected==="tcl-android"&&<div>
       <div className="zf-tv-install-type"><ShieldCheck size={17}/> APK Android TV compatível</div>
       <h3>TCL Google TV / Android TV</h3>
-      <p>O ZANG FLIX já possui um APK com ícone e acesso pelo menu de aplicativos Android TV. Não está publicado na Play Store; o arquivo deve ser transferido e instalado com autorização da TV.</p>
+      <p>Uma edição exclusiva para TCL com Google TV ou Android TV, separada do aplicativo de celular. Ela inicia na interface TV, com navegação por setas, categorias compactas e busca com foco visível. Instalação manual, fora da Play Store.</p>
       <a data-tv-initial-focus className="zf-tv-install-cta" href={TV_APK_URL}><Download size={18}/> Baixar APK para TV <ArrowRight size={17}/></a>
       <ol><li>Baixe o APK no celular ou computador, usando o link acima.</li>
        <li>Envie o arquivo à TV por pendrive ou transferência na mesma rede.</li>
        <li>Na TV, autorize a instalação de aplicativos externos para o gerenciador de arquivos e abra o APK.</li>
-       <li>Abra ZANG FLIX em <strong>Aplicativos</strong>; navegue usando as setas e o botão OK.</li></ol>
+       <li>Abra <strong>ZANG FLIX TV</strong> em Aplicativos. Setas movimentam o foco, OK escolhe e Voltar retorna.</li></ol>
       <small className="zf-tv-install-note"><Info size={15}/> A disponibilidade de instalação depende do Android/Google TV da sua TCL. Não instale APKs em Roku, Tizen ou webOS.</small>
     </div>}
 
@@ -146,8 +153,8 @@ function TvAppPage(){
       <h3>Samsung Smart TV</h3>
       <p>Samsung não instala APK Android. Um aplicativo nativo requer projeto Tizen, assinatura com certificado Samsung e testes na TV. A loja exige aprovação; apps que apenas abrem um site sofrem restrições.</p>
       <a className="zf-tv-install-cta" href={WEB_URL}><Globe size={18}/> Abrir versão TV no navegador <ArrowRight size={17}/></a>
-      <ol><li>Abra o navegador da Samsung e digite <strong>zangflix.lovable.app</strong>.</li>
-       <li>Acesse <strong>Modo TV</strong> nesta página para navegar com o controle.</li>
+      <ol><li>Abra o navegador da Samsung e acesse <strong>zangflix.lovable.app/tv-home</strong>.</li>
+       <li>Navegue usando as setas, OK e Voltar, conforme a compatibilidade do navegador.</li>
        <li>Para instalar um aplicativo Tizen de desenvolvimento, use o projeto em <strong>tv/samsung-tizen</strong> com o Tizen Studio no computador e um certificado Samsung.</li></ol>
       <a className="zf-tv-install-resource" href="https://developer.samsung.com/smarttv/develop/getting-started/using-sdk/tv-device.html" target="_blank" rel="noopener noreferrer">Procedimento oficial Samsung <ExternalLink size={14}/></a>
       <small className="zf-tv-install-note"><Info size={15}/> A versão Tizen ainda depende de assinatura, validação em uma TV física e eventual aprovação na loja; não existe instalação direta pelo navegador.</small>
@@ -156,7 +163,7 @@ function TvAppPage(){
     {selected==="lg"&&<div>
       <div className="zf-tv-install-type"><MonitorPlay size={17}/> Projeto LG webOS hospedado</div>
       <h3>LG Smart TV (webOS)</h3>
-      <p>Foi preparada uma versão webOS que inicia a experiência ZANG FLIX pela internet. O pacote IPK é para instalação de desenvolvimento e precisa do <strong>Developer Mode</strong> da LG e de um computador; não se instala como APK.</p>
+      <p>Foi preparada uma versão webOS que abre a nova interface TV pela internet. O pacote IPK é para instalação de desenvolvimento e precisa do <strong>Developer Mode</strong> da LG e de um computador; não se instala como APK.</p>
       <a className="zf-tv-install-cta" href={LG_RELEASE} target="_blank" rel="noopener noreferrer"><Download size={18}/> Versão webOS para testes <ExternalLink size={16}/></a>
       <ol><li>Na TV, instale e ative o aplicativo oficial <strong>Developer Mode</strong>.</li>
        <li>Baixe o pacote <strong>ZANG-FLIX-webOS.ipk</strong> na página de versões do projeto.</li>
@@ -179,6 +186,18 @@ function TvAppPage(){
    </div>
   </section>
 
+  <section className="zf-tv-controls-spotlight" aria-labelledby="zf-tv-controls-title">
+    <div><span className="zf-tv-section-label">PENSADO PARA O CONTROLE</span>
+      <h2 id="zf-tv-controls-title">Você sempre sabe onde está.</h2>
+      <p>Um contorno de alto contraste identifica o item selecionado ao navegar entre filmes e sugestões. Você não precisa de cursor de mouse.</p>
+      <Link to="/tv-home">Testar a interface TV <ArrowRight size={16}/></Link>
+    </div>
+    <div className="zf-tv-controls-steps" aria-label="Controles principais">
+      <div><strong>01</strong><span>↑ ↓ ← →</span><small>Explore categorias e títulos</small></div>
+      <div><strong>02</strong><span>OK</span><small>Abra o item selecionado</small></div>
+      <div><strong>03</strong><span>VOLTAR</span><small>Feche a pesquisa ou retorne</small></div>
+    </div>
+  </section>
   <div className="zf-tv-below-heading"><span>MAIS POSSIBILIDADES</span><h2>Do seu jeito. Na sua tela.</h2></div>
   <div className="zf-tv-install-grid zf-tv-install-extra">
    <section>

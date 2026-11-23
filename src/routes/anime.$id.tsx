@@ -112,7 +112,7 @@ function AnimeDetailPage() {
   };
 
   const closeDialog = () => {
-    void navigate({ to: "/animes" });
+    void navigate({ to: "/animes", search: { categoria: undefined } });
   };
 
   if (loading) {

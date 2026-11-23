@@ -110,3 +110,25 @@
 @media(max-width:760px){.zf-tv-app-page{padding:92px 16px 70px}.zf-tv-premium-hero{grid-template-columns:1fr;gap:16px;padding:26px 23px;min-height:0;border-radius:22px}.zf-tv-hero-copy h1{font-size:clamp(37px,9vw,56px)}.zf-tv-hero-copy>p{font-size:13px}.zf-tv-visual{height:250px;max-width:450px;margin:-9px auto -10px}.zf-tv-hardware{width:min(80%,390px)}.zf-tv-screen-head>span{font-size:6px}.zf-tv-screen-feature strong{font-size:24px}.zf-tv-screen-rail i{height:32px}.zf-tv-remote{right:7%;bottom:11px;transform:scale(.83) rotate(12deg)}.zf-tv-visual-caption{right:0}.zf-tv-app-page .zf-tv-install-detail ol{grid-template-columns:1fr}.zf-tv-app-page .zf-tv-install-guide{border-radius:18px;padding:20px}.zf-tv-app-page .zf-tv-install-lead h2{font-size:23px}.zf-tv-install-lead-icon{height:43px;flex-basis:43px}.zf-tv-hero-actions{margin-top:20px}.zf-tv-hero-facts{margin-top:18px}}
 @media(max-width:470px){.zf-tv-app-page .zf-tv-device-options{gap:8px}.zf-tv-app-page .zf-tv-device-option{min-height:143px;padding:11px;border-radius:12px;gap:7px}.zf-tv-device-brand{height:30px}.zf-tv-device-brand img{height:24px;max-width:80px}.zf-tv-device-tcl .zf-tv-device-brand img{height:28px;width:45px}.zf-tv-device-copy strong{font-size:12px!important}.zf-tv-device-copy small{font-size:10px!important}.zf-tv-device-status{font-size:8px;padding:4px 6px}.zf-tv-install-panel-heading>span{max-width:115px;line-height:1.5}.zf-tv-install-panel-heading>div{flex-direction:column;align-items:flex-end;gap:3px}.zf-tv-visual{height:215px}.zf-tv-screen{border-width:6px}.zf-tv-screen-feature{margin-top:12%}.zf-tv-screen-feature strong{font-size:20px}.zf-tv-screen-rail{margin-top:4%}.zf-tv-screen-rail i{height:27px}.zf-tv-remote{right:1%;bottom:5px;transform:scale(.68) rotate(12deg)}.zf-tv-hero-facts{gap:8px}.zf-tv-hero-primary,.zf-tv-hero-secondary{font-size:11px;padding:0 11px;min-height:43px}}
 @media(prefers-reduced-motion:reduce){.zf-tv-hardware,.zf-tv-remote,.zf-tv-install-detail-animated{animation:none!important}.zf-tv-app-page *{transition-duration:0s!important;scroll-behavior:auto!important}}
+
+/* TV APP 2.0 — installation pages with visual system guidance. */
+.zf-tv-premium-hero{background:radial-gradient(ellipse 50% 100% at 94% 35%,#32435677,transparent 85%),linear-gradient(128deg,#202a3b 0%,#101722 60%,#121923 100%);border-color:#bfcad533}
+.zf-tv-app-page .zf-tv-hero-primary{background:#f2d3a1;color:#111720}
+.zf-tv-app-page .zf-tv-hero-secondary{border-color:#798fa558;background:#26344455;color:#f6f7fa}
+.zf-tv-app-platform-note{display:flex;gap:18px;align-items:center;justify-content:space-between;margin:24px 0 20px;padding:18px 21px;border-radius:14px;background:linear-gradient(110deg,#26313cbb,#171f2ac9);border:1px solid #bfcbd626}
+.zf-tv-app-platform-note>span{display:inline-flex;gap:9px;align-items:center;font-size:10px;font-weight:850;letter-spacing:.14em;color:#f3d49e;white-space:nowrap}
+.zf-tv-app-platform-note strong{font-size:13px;font-weight:620;color:#d7e0e8}
+.zf-tv-app-platform-note a{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;color:#f6dda8;font-size:12px;font-weight:800}
+.zf-tv-controls-spotlight{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:40px;align-items:center;margin:55px auto 35px;padding:clamp(24px,4vw,52px);background:#121a25;border:1px solid #57647855;border-radius:22px}
+.zf-tv-controls-spotlight h2{font-size:clamp(26px,2.8vw,43px);letter-spacing:-.055em;line-height:1.12;color:#f6f3ed;margin:14px 0 12px}
+.zf-tv-controls-spotlight p{line-height:1.7;font-size:14px;color:#a8b7c8;max-width:500px}
+.zf-tv-controls-spotlight a{display:inline-flex;align-items:center;gap:8px;color:#f2d2a2;font-size:13px;font-weight:800;margin-top:15px}
+.zf-tv-controls-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.zf-tv-controls-steps>div{display:flex;min-height:163px;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:12px;border:1px solid #8592a833;border-radius:13px;padding:19px 15px;background:#ffffff08}
+.zf-tv-controls-steps strong{font-size:11px;color:#bfa57b;letter-spacing:.12em}
+.zf-tv-controls-steps span{font-weight:850;font-size:clamp(16px,1.8vw,24px);color:#f6edda;letter-spacing:.015em}
+.zf-tv-controls-steps small{font-size:12px;line-height:1.5;color:#acbac8}
+.zf-tv-app-page .zf-tv-device-option:focus-visible{box-shadow:0 0 0 5px #d7b97744}
+html[data-zf-platform="tv"] .zf-search-result:focus{outline:4px solid #f3d5aa!important;outline-offset:3px;box-shadow:0 0 0 8px #ead2ab3d;background:#333c48}
+@media(max-width:900px){.zf-tv-controls-spotlight{grid-template-columns:1fr;gap:25px}.zf-tv-app-platform-note{flex-wrap:wrap;gap:12px}}
+@media(max-width:550px){.zf-tv-app-platform-note{padding:16px}.zf-tv-app-platform-note strong{flex-basis:100%;order:3}.zf-tv-controls-spotlight{margin:35px auto}.zf-tv-controls-steps{gap:7px}.zf-tv-controls-steps>div{min-height:145px;padding:13px 9px}.zf-tv-controls-steps small{font-size:10px}}
