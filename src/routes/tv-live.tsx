@@ -34,6 +34,7 @@ function TvLive(){
   const root=useRef<HTMLElement>(null);
   const playerRef=useRef<HTMLDivElement>(null);
   const lastFocusedId=useRef("");
+  const sourceRefreshAt=useRef(0);
   const [channels,setChannels]=useState<CanalTV[]>([]);
   const [categories,setCategories]=useState<string[]>([]);
   const [loading,setLoading]=useState(true);
@@ -204,7 +205,7 @@ function TvLive(){
             <LivePlayer key={active.id} canal={active} proxyBackend={backend} preferNativeDecoder
               onNextCanal={()=>cycle(1)} onPrevCanal={()=>cycle(-1)}
               onPlaybackStatus={(id,next)=>{if(id===active.id)setStatus(next)}}
-              onSourcesExhausted={()=>{void load(true)}}/>
+              onSourcesExhausted={()=>{if(Date.now()-sourceRefreshAt.current>60_000){sourceRefreshAt.current=Date.now();void load(true)}}}/>
           </Suspense>
         </div>
         <footer className="zf-tv-player-bottom" data-tv-row="player-actions">

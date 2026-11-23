@@ -1,7 +1,7 @@
 /* ZANG FLIX TV — isolated ten-foot design system.
    Every selector is scoped to the dedicated .zf-tenfoot root.
    Web, mobile, /tv and player styles remain unchanged. */
-.zf-tenfoot{--zf-tv-text:#f7f7fa;--zf-tv-muted:#b9c1cc;--zf-tv-violet:#8e39e9;--zf-tv-outline:#eee6ff;box-sizing:border-box;min-height:100vh;background:#080a10;color:var(--zf-tv-text);font-family:system-ui,"Segoe UI",Arial,sans-serif;font-synthesis:none;padding:0 0 70px;overflow-x:clip;contain:layout style}
+.zf-tenfoot{--zf-tv-text:#f7f7fa;--zf-tv-muted:#b9c1cc;--zf-tv-violet:#8e39e9;--zf-tv-outline:#eee6ff;box-sizing:border-box;min-height:100vh;background:#080a10;color:var(--zf-tv-text);font-family:system-ui,"Segoe UI",Arial,sans-serif;font-synthesis:none;padding:0 0 70px;overflow-x:clip}
 .zf-tenfoot *{box-sizing:border-box}
 .zf-tenfoot button,.zf-tenfoot a{touch-action:manipulation;-webkit-tap-highlight-color:transparent;text-decoration:none}
 .zf-tenfoot button{cursor:pointer}
