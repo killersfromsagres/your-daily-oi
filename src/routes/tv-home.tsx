@@ -1,8 +1,9 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, Heart, House, Info, ListVideo, Play, Search, Sparkles, Tv2, X } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, Heart, House, Info, ListVideo, Play, Search, Tv2, X } from "lucide-react";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
+import { TvAnimeFrameIcon } from "@/components/icons/TvAnimeFrameIcon";
 import { getProgress, getSavedList, toggleSaved } from "@/lib/storage";
 import { useTvFocus, tvReadFocus } from "@/lib/tv-focus";
 import { remoteKey } from "@/lib/tv-remote";
@@ -188,7 +189,7 @@ function TvHome(){
               aria-pressed={section===option.key} className={section===option.key?"is-selected":""}
               aria-label={option.title} onClick={()=>setSection(option.key)}>
               {option.key==="all"?<House size={22}/>:option.key==="f"?<Film size={22}/>:
-                option.key==="s"?<Clapperboard size={22}/>:option.key==="a"?<Sparkles size={22}/>:<ListVideo size={22}/>}
+                option.key==="s"?<Clapperboard size={22}/>:option.key==="a"?<TvAnimeFrameIcon size={22}/>:<ListVideo size={22}/>}
               <span>{option.title}</span>
             </button>
           </div>)}
