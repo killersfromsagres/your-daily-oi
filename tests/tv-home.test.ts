@@ -37,7 +37,7 @@ describe("TV-only cinematic experience",()=>{
   test("TV movie and live player return to dedicated UI",()=>{
     const live=read("../src/routes/tv-live.tsx");
     const detail=read("../src/routes/tv-title.tsx");
-    expect(live).toContain("LivePlayer key={active.id+\":\"+retryNonce}");
+    expect(live).toContain("TvStreamPlayer key={active.id}");
     expect(live).toContain('data-tv-focus="player-back"');
     expect(detail).toContain('navigate({to:"/assistir/filme/$id"');
     expect(detail).toContain('navigate({to:"/tv-home"})');

@@ -1,32 +1,38 @@
-import { describe,expect,test } from "bun:test";
+import {describe,expect,test} from "bun:test";
 import {readFileSync} from "node:fs";
+import {tvFailureMessage,tvPlaybackPlan,tvSkipSameSource} from "../src/lib/tv-playback-plan";
+import type {CanalTV} from "../src/lib/canais";
 const read=(p:string)=>readFileSync(new URL(p,import.meta.url),"utf8");
-describe("native TV live playback recovery",()=>{
-  test("player callbacks are stable across status renders",()=>{
-    const app=read("../src/routes/tv-live.tsx");
-    expect(app).toContain("const onPlaybackStatus=useCallback(");
-    expect(app).toContain("const onSourcesExhausted=useCallback(");
-    expect(app).toContain("onPlaybackStatus={onPlaybackStatus}");
-    expect(app).toContain("onSourcesExhausted={onSourcesExhausted}");
-    expect(app).not.toContain("onPlaybackStatus={(id,next)=>");
-    expect(app).not.toContain("onSourcesExhausted={()=>");
-    expect(app).toContain("reuseUnchangedLiveChannels(");
-  });
-  test("long startup has a visible retry and alternative channel, not endless loading",()=>{
-    const app=read("../src/routes/tv-live.tsx");
-    expect(app).toContain("setSlowConnection(true),12000");
-    expect(app).toContain('data-tv-focus="player-retry"');
-    expect(app).toContain('data-tv-focus="player-next-recovery"');
-    expect(app).toContain("onClick={retryChannel}");
-    const player=read("../src/components/player/LivePlayer.tsx");
-    expect(player).toContain("preferNativeDecoder ? 12000 : 18000");
-  });
-  test("TV video fallback does not change web HQ or touch desktop catalog",()=>{
-    const app=read("../src/routes/tv-live.tsx");
-    expect(app).toContain("preferNativeDecoder");
-    const player=read("../src/components/player/LivePlayer.tsx");
-    expect(player).toContain("if(preferNativeDecoder){setHqEnabled(false);return;}");
-    expect(player).toContain("setHqEnabled(automaticHqEnabled(saved))");
-    expect(read("../src/routes/__root.tsx")).toContain('["/tv-home", "/tv-live", "/tv-title"]');
-  });
+const channel:CanalTV={id:"teste",nome:"Canal Teste",categoria:"Documentários",fontes:[
+ {url:"https://cdn.example.org/live.m3u8"},
+ {url:"https://cdn2.example.org/live.m3u8"},
+]};
+describe("TCL live player — bounded recovery",()=>{
+ test("each known source has safe finite direct and first-party proxy attempts",()=>{
+  const attempts=tvPlaybackPlan(channel);
+  expect(attempts.length).toBeGreaterThan(1);
+  expect(attempts.length).toBeLessThanOrEqual(9);
+  expect(attempts.some(a=>a.mode==="catalog")).toBe(true);
+  expect(attempts.some(a=>a.mode==="direct")).toBe(true);
+  expect(attempts.every(a=>a.format==="hls")).toBe(true);
+ });
+ test("authorization refusals aren't bypassed and status is explained",()=>{
+  expect(tvSkipSameSource(403)).toBe(true);
+  expect(tvSkipSameSource(401)).toBe(true);
+  expect(tvSkipSameSource(409)).toBe(false);
+  expect(tvFailureMessage("network",403)).toContain("403");
+  expect(tvFailureMessage("timeout")).toContain("Tempo limite");
+ });
+ test("player is isolated, bounded and never loops on exhausted sources",()=>{
+  const app=read("../src/routes/tv-live.tsx");
+  const player=read("../src/components/player/TvStreamPlayer.tsx");
+  expect(app).toContain("TvStreamPlayer key={active.id}");
+  expect(app).not.toContain("<LivePlayer");
+  expect(app).toContain("onPlaybackStatus={onPlaybackStatus}");
+  expect(player).toContain("data-tv-native-stream");
+  expect(player).toContain("if(!plan.length)");
+  expect(player).toContain('report("unavailable")');
+  expect(player).toContain("window.setTimeout");
+  expect(player).toContain("void video.play()");
+ });
 });

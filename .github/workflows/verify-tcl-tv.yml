@@ -4,6 +4,8 @@ on:
     paths:
       - 'src/routes/tv-home.tsx'
       - 'src/lib/tv-featured.ts'
+      - 'src/lib/tv-playback-plan.ts'
+      - 'src/components/player/TvStreamPlayer.tsx'
       - 'tests/tv-featured.test.ts'
       - 'src/components/player/LivePlayer.tsx'
       - 'src/routes/tv-live.tsx'
@@ -24,6 +26,8 @@ on:
     paths:
       - 'src/routes/tv-home.tsx'
       - 'src/lib/tv-featured.ts'
+      - 'src/lib/tv-playback-plan.ts'
+      - 'src/components/player/TvStreamPlayer.tsx'
       - 'tests/tv-featured.test.ts'
       - 'src/components/player/LivePlayer.tsx'
       - 'src/routes/tv-live.tsx'

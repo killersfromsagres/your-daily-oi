@@ -42,7 +42,7 @@ public final class MainActivity extends Activity {
     web.getSettings().setLoadWithOverviewMode(true);
     web.getSettings().setUseWideViewPort(true);
     // Identify the actual installed Android APK, not a Chrome PWA shortcut.
-    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.2":""));
+    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.3":""));
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(false);
     web.getSettings().setAllowFileAccess(false);

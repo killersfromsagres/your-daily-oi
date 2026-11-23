@@ -3,12 +3,12 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { ArrowLeft, ChevronLeft, ChevronRight, Heart, Pause, Play, RefreshCw, Search, Tv2, Volume2, VolumeX, X } from "lucide-react";
 import type { CanalTV } from "@/lib/canais";
 import { fetchCanaisFallbackClient } from "@/lib/canais";
-import { detectTvProxyBackend, type TvProxyBackend } from "@/lib/tv-backend";
+
 import { reuseUnchangedLiveChannels, retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
 import { useTvFocus } from "@/lib/tv-focus";
-import { remoteKey } from "@/lib/tv-remote";
 
-const LivePlayer=lazy(()=>import("@/components/player/LivePlayer").then(module=>({default:module.LivePlayer})));
+
+const TvStreamPlayer=lazy(()=>import("@/components/player/TvStreamPlayer").then(module=>({default:module.TvStreamPlayer})));
 const FAVORITES_KEY="zangflix:tv-favorites";
 const LAST_KEY="zangflix:tv-last-channel";
 const RECENTS_KEY="zangflix:tv-recents-v1";
@@ -35,7 +35,6 @@ function TvLive(){
   const root=useRef<HTMLElement>(null);
   const playerRef=useRef<HTMLDivElement>(null);
   const lastFocusedId=useRef("");
-  const sourceRefreshAt=useRef(0);
   const activeIdRef=useRef("");
   const playingIdRef=useRef("");
   const [channels,setChannels]=useState<CanalTV[]>([]);
@@ -50,10 +49,7 @@ function TvLive(){
   const [limit,setLimit]=useState(48);
   const [activeId,setActiveId]=useState("");
   const [status,setStatus]=useState<"connecting"|"playing"|"unavailable">("connecting");
-  const [backend,setBackend]=useState<TvProxyBackend|"checking">("checking");
   const [muted,setMuted]=useState(false);
-  const [retryNonce,setRetryNonce]=useState(0);
-  const [slowConnection,setSlowConnection]=useState(false);
 
   const load=useCallback(async(force=false,signal?:AbortSignal)=>{
     if(force)setRefreshing(true);
@@ -114,7 +110,6 @@ function TvLive(){
     setRecents(readList(RECENTS_KEY));
     const c=new AbortController();
     void load(false,c.signal);
-    void detectTvProxyBackend().then(setBackend).catch(()=>setBackend("unavailable"));
     return()=>c.abort();
   },[load]);
   useEffect(()=>setLimit(48),[category,search]);
@@ -125,19 +120,8 @@ function TvLive(){
     if(activeIdRef.current!==id)return;
     if(next==="playing")playingIdRef.current=id;
     if(next==="unavailable")playingIdRef.current="";
-    if(next!=="connecting")setSlowConnection(false);
     setStatus(next);
   },[]);
-  const onSourcesExhausted=useCallback(()=>{
-    if(Date.now()-sourceRefreshAt.current<60_000)return;
-    sourceRefreshAt.current=Date.now();
-    void load(true);
-  },[load]);
-  useEffect(()=>{
-    if(!activeId||status!=="connecting"){setSlowConnection(false);return;}
-    const timer=window.setTimeout(()=>setSlowConnection(true),12000);
-    return()=>window.clearTimeout(timer);
-  },[activeId,status,retryNonce]);
 
   const filtered=useMemo(()=>{
     const term=normalize(search.trim());
@@ -170,7 +154,6 @@ function TvLive(){
     activeIdRef.current=ch.id;
     playingIdRef.current="";
     setStatus("connecting");
-    setSlowConnection(false);
     setActiveId(ch.id);
     try{localStorage.setItem(LAST_KEY,ch.id)}catch{}
     setRecents(previous=>{
@@ -193,14 +176,11 @@ function TvLive(){
       activeIdRef.current=next.id;
       playingIdRef.current="";
       lastFocusedId.current=next.id;
-      setStatus("connecting");setSlowConnection(false);
+      setStatus("connecting");
       setActiveId(next.id);
       setRecents(previous=>{const updated=[next.id,...previous.filter(x=>x!==next.id)].slice(0,18);saveList(RECENTS_KEY,updated);return updated;});
     }
   },[channels,activeId]);
-  const prevChannel=useCallback(()=>cycle(-1),[cycle]);
-  const nextChannel=useCallback(()=>cycle(1),[cycle]);
-  const retryChannel=useCallback(()=>{playingIdRef.current="";setStatus("connecting");setSlowConnection(false);setRetryNonce(n=>n+1);},[]);
   const video=()=>playerRef.current?.querySelector("video")??null;
   const togglePlay=()=>{
     const el=video();if(!el)return;
@@ -268,19 +248,10 @@ function TvLive(){
         </div>
         <div ref={playerRef} className="zf-tv-player-frame">
           <Suspense fallback={<p className="zf-tenfoot-notice" role="status">Preparando transmissão…</p>}>
-            <LivePlayer key={active.id+":"+retryNonce} canal={active} proxyBackend={backend} preferNativeDecoder
-              onNextCanal={nextChannel} onPrevCanal={prevChannel}
-              onPlaybackStatus={onPlaybackStatus}
-              onSourcesExhausted={onSourcesExhausted}/>
+            <TvStreamPlayer key={active.id} canal={active}
+              onPlaybackStatus={onPlaybackStatus}/>
           </Suspense>
         </div>
-        {(slowConnection || status==="unavailable")&&<div className="zf-tv-playback-help" role="status" data-tv-row="player-recovery">
-          <p>{status==="unavailable"
-            ?"Este canal não conseguiu reproduzir. A fonte pode estar offline, bloqueada ou incompatível."
-            :"O canal está demorando para iniciar. Estamos verificando outras fontes."}</p>
-          <button type="button" data-tv-focus="player-retry" onClick={retryChannel}><RefreshCw size={20}/> Tentar novamente</button>
-          <button type="button" data-tv-focus="player-next-recovery" onClick={nextChannel}><ChevronRight size={20}/> Próximo canal</button>
-        </div>}
         <footer className="zf-tv-player-bottom" data-tv-row="player-actions">
           <button type="button" data-tv-focus="player-play" onClick={togglePlay}><Play size={19}/><Pause size={18}/> Reproduzir / Pausar</button>
           <button type="button" data-tv-focus="player-mute" onClick={toggleMute}>{muted?<VolumeX size={20}/>:<Volume2 size={20}/>} Som</button>
