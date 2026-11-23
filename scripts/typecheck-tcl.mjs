@@ -6,7 +6,7 @@ if (result.error) throw result.error;
 const diagnosticLines = (result.stdout + "\n" + result.stderr).split(/\r?\n/)
   .filter(line => /error TS\d+:/.test(line));
 const tvErrors = diagnosticLines.filter(line =>
-  /^(src\/routes\/(tv-home|tv-live|tv-title|tv-app)\.tsx|src\/lib\/tv-(remote|focus|install)\.ts|src\/components\/search\/SearchSuggestionList\.tsx)\(/.test(line));
+  /^(src\/routes\/(tv-home|tv-live|tv-title|tv-app)\.tsx|src\/lib\/tv-(remote|focus|featured|install)\.ts|src\/components\/search\/SearchSuggestionList\.tsx)\(/.test(line));
 console.log(JSON.stringify({ event:"tv-typecheck",tvErrors:tvErrors.length,existingOtherDiagnostics:diagnosticLines.length-tvErrors.length }));
 tvErrors.forEach(line=>console.error(line));
 if (tvErrors.length) process.exit(1);

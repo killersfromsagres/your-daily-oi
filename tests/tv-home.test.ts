@@ -25,8 +25,11 @@ describe("TV-only cinematic experience",()=>{
   test("cinematic artwork is real catalog data and all CSS is scoped",()=>{
     const s=read("../src/routes/tv-home.tsx");
     const css=read("../src/styles/tv-cinema.css");
-    expect(s).toContain("spotlight.backdropUrl||spotlight.posterUrl");
+    expect(s).toContain("spotlight?.backdropUrl");
+    expect(s).toContain("heroes[heroIndex]");
+    expect(s).toContain("zf-tv-sidemenu");
     expect(css).toContain(".zf-immersive-hero");
+    expect(css).toContain(".zf-tv-sidemenu:focus-within");
     expect(css).toContain(".zf-poster-tile[data-tv-focus]:focus");
     expect(css).not.toContain("backdrop-filter:");
     expect(css).toContain("@media(prefers-reduced-motion:reduce)");
@@ -34,7 +37,7 @@ describe("TV-only cinematic experience",()=>{
   test("TV movie and live player return to dedicated UI",()=>{
     const live=read("../src/routes/tv-live.tsx");
     const detail=read("../src/routes/tv-title.tsx");
-    expect(live).toContain("LivePlayer key={active.id}");
+    expect(live).toContain("LivePlayer key={active.id+\":\"+retryNonce}");
     expect(live).toContain('data-tv-focus="player-back"');
     expect(detail).toContain('navigate({to:"/assistir/filme/$id"');
     expect(detail).toContain('navigate({to:"/tv-home"})');
