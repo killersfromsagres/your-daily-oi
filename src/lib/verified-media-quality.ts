@@ -68,17 +68,20 @@ export function qualityFromDimensions(width:number,height:number):Pick<VerifiedM
   return {...named,width,height};
 }
 export interface QualityBadgePalette{color:string;background:string;border:string}
+/** Fully opaque background for readable badges even on bright film artwork.
+ * The individual tier colors remain progressively distinct while text
+ * contrast stays high. Do not add backdrop-filter (expensive on mobile). */
 export function qualityBadgePalette(tier:QualityTier):QualityBadgePalette{
   switch(tier){
-    case "4k":return {color:"#ffe3a0",background:"rgba(191,132,24,.25)",border:"rgba(255,205,87,.67)"};
-    case "qhd":return {color:"#ebc7ff",background:"rgba(145,62,207,.24)",border:"rgba(209,133,249,.56)"};
-    case "fullhd":return {color:"#e1d4ff",background:"rgba(116,76,218,.24)",border:"rgba(181,149,255,.60)"};
-    case "hdplus":return {color:"#9df4f0",background:"rgba(18,133,147,.24)",border:"rgba(77,220,223,.57)"};
-    case "hd":return {color:"#b8ddff",background:"rgba(37,98,203,.24)",border:"rgba(120,184,255,.56)"};
-    case "sd":return {color:"#e1e3e8",background:"rgba(94,103,118,.25)",border:"rgba(180,188,201,.50)"};
-    case "low":return {color:"#efc5b4",background:"rgba(137,76,59,.24)",border:"rgba(199,140,120,.47)"};
-    case "cam":return {color:"#ffc2c0",background:"rgba(174,48,48,.22)",border:"rgba(255,115,115,.54)"};
-    default:return {color:"#c8ced8",background:"rgba(93,104,120,.16)",border:"rgba(163,173,190,.35)"};
+    case "4k":return {color:"#fff1bd",background:"#50330d",border:"#f5c45d"};
+    case "qhd":return {color:"#f2ddff",background:"#492467",border:"#cc9ef2"};
+    case "fullhd":return {color:"#ece2ff",background:"#35215b",border:"#b99df2"};
+    case "hdplus":return {color:"#b9fff8",background:"#124c54",border:"#66d9df"};
+    case "hd":return {color:"#d7efff",background:"#173f70",border:"#8bc5f9"};
+    case "sd":return {color:"#f0f1f5",background:"#363c49",border:"#9da6b7"};
+    case "low":return {color:"#ffe0d5",background:"#58372c",border:"#d4a28d"};
+    case "cam":return {color:"#ffdad8",background:"#67252a",border:"#f19b9c"};
+    default:return {color:"#f0f3f9",background:"#303743",border:"#aeb8ca"};
   }
 }
 export function tierFromQualityLabel(label:string):QualityTier{

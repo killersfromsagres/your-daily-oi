@@ -25,9 +25,9 @@ describe("TCL cinema fullscreen never changes the web layout",()=>{
   test("versioning is TV-only and mobile version remains unchanged",()=>{
     const gradle=read("../android/app/build.gradle.kts");
     expect(gradle).toContain('versionCode = 6');
-    expect(gradle).toContain('versionCode = 10');
-    expect(gradle).toContain('versionName = "2.5.0"');
-    expect(read("../src/lib/tv-build.ts")).toContain('"2.5.0"');
+    expect(gradle).toContain('versionCode = 11');
+    expect(gradle).toContain('versionName = "2.6.0"');
+    expect(read("../src/lib/tv-build.ts")).toContain('"2.6.0"');
   });
 });
 describe("CPU-safe adaptive TV playback and latency",()=>{

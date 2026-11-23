@@ -117,11 +117,15 @@ export function HeroSection({ items, savedIds = new Set(), onToggleSaved, editio
         // Portrait mobile heroes crop heavily: a 1280px landscape rendition
         // cannot supply enough native pixels for a tall high-density screen.
         const imageUrl = getSizedHeroImage(backdrop, poster, "original");
+        // Browser chooses the CDN rendition without JS resize listeners,
+        // saving bytes and decode work on phones/tablets.
+        const mobileImageUrl = getSizedHeroImage(backdrop, poster, "w1280");
         return (
           <div key={hero.id} className="ydo-hero-slide is-active" aria-hidden={false}>
             {imageUrl && (
               <picture>
-                {/* Original selected artwork, one decoded image at a time. */}
+                <source media="(max-width: 900px)" srcSet={mobileImageUrl}/>
+                {/* Only the active artwork is decoded; original kept for big screens. */}
                 <img src={imageUrl} alt="" className="ydo-hero-img"
                   fetchPriority="high" loading="eager" decoding="async"
                   onError={() => {
