@@ -96,6 +96,14 @@ export function useTvFocus({ route, root, onBack, playerOpen = false }: TvFocusO
         if (!rows.has(name)) rows.set(name, []);
         rows.get(name)!.push(element);
       }
+      // TV-only rail menu may request a precise hand-off to the banner.
+      const attribute = key==="ArrowRight"?"tvRightTarget":
+        key==="ArrowLeft"?"tvLeftTarget":key==="ArrowUp"?"tvUpTarget":"tvDownTarget";
+      const directed=active.dataset[attribute];
+      if(directed){
+        const target=controls.find(el=>el.dataset["tvFocus"]===directed);
+        if(target){event.preventDefault();event.stopImmediatePropagation();focusTarget(target);return;}
+      }
       const groups = [...rows.values()];
       const currentRow = groups.findIndex(group => group.includes(active));
       if (currentRow < 0) return;
