@@ -39,7 +39,7 @@ function TvHome(){
   const onBack=useCallback(()=>{
     if(searchOpen){setSearchOpen(false);setQuery("");requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-tv-focus="open-search"]')?.focus());}
     else if(section!=="all")setSection("all");
-    else window.history.length>1 ? window.history.back():void navigate({to:"/tv-app"});
+    else if(window.history.length>1)window.history.back();
   },[searchOpen,section,navigate]);
   useTvFocus({route:"home",root,onBack});
 

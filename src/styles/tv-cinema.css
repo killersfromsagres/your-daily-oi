@@ -130,3 +130,6 @@
 @media(max-width:1200px){.zf-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:880px){.zf-live-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.zf-detail-copy{max-width:83%}.zf-detail-episode-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.zf-tv-player-title small{display:none}}
 @media(max-width:600px){.zf-live-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.zf-detail-copy{max-width:100%}.zf-detail-episode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.zf-tv-player-toolbar{flex-wrap:wrap;padding:15px 0}.zf-tv-player-title{order:-1;flex-basis:100%;min-height:36px}.zf-tv-player-bottom{flex-wrap:wrap}.zf-tv-player-bottom span{flex-basis:100%;margin-left:0}}
+
+/* Native TV watch mode hides only web chrome, preserving the playback core. */
+html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] .zf-mobile-dock,html[data-zf-tv-app-watch="true"] .ambient-glow{display:none!important}

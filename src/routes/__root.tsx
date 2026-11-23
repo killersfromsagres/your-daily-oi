@@ -5,10 +5,11 @@ import {
   createRootRouteWithContext,
   useRouter,
   useRouterState,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import tvExperienceCss from "../styles/tv-experience.css?url";
 import tvAppPremiumCss from "../styles/tv-app-premium.css?url";
 import tvHomeCss from "../styles/tv-home.css?url";
@@ -146,12 +147,37 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const isDedicatedTvHome = useRouterState({ select: state => ["/tv-home", "/tv-live", "/tv-title"].includes(state.location.pathname) });
+  const pathname = useRouterState({ select: state => state.location.pathname });
+  const navigate = useNavigate();
+  const [tvWatch,setTvWatch] = useState(false);
+  const isDedicatedTvHome = ["/tv-home", "/tv-live", "/tv-title"].includes(pathname);
+  useEffect(()=>{
+    if(!pathname.startsWith("/assistir/")){setTvWatch(false);return;}
+    let hosted=false;
+    try{hosted=["webos","tizen"].includes(sessionStorage.getItem("zf-installed-tv-app")||"");}catch{}
+    const isTv=/ZangFlixTV\//i.test(navigator.userAgent)||hosted;
+    setTvWatch(isTv);
+    if(!isTv)return;
+    document.documentElement.dataset["zfTvAppWatch"]="true";
+    const onBack=(event:KeyboardEvent)=>{
+      if(event.key!=="BrowserBack" && ![10009,461,4].includes(event.keyCode))return;
+      event.preventDefault();event.stopImmediatePropagation();
+      if(document.fullscreenElement){void document.exitFullscreen().catch(()=>{});return;}
+      const parts=pathname.split("/");
+      const kind=parts[2],id=parts[3];
+      if(!id){void navigate({to:"/tv-home"});return;}
+      const type=kind==="filme"?"f":kind==="anime"?"a":"s";
+      try{void navigate({to:"/tv-title",search:{id:decodeURIComponent(id),type}})}
+      catch{void navigate({to:"/tv-home"})}
+    };
+    document.addEventListener("keydown",onBack,true);
+    return()=>{document.removeEventListener("keydown",onBack,true);delete document.documentElement.dataset["zfTvAppWatch"];};
+  },[pathname,navigate]);
   return (
     <QueryClientProvider client={queryClient}>
       <Friday13EditionProvider>
       {!isDedicatedTvHome && <div className="ambient-glow" aria-hidden />}
-      {!isDedicatedTvHome && <Header />}
+      {!isDedicatedTvHome && !tvWatch && <Header />}
       <Outlet />
       </Friday13EditionProvider>
     </QueryClientProvider>
