@@ -26,6 +26,7 @@ function TvHome(){
   const navigate=useNavigate();
   const root=useRef<HTMLElement>(null);
   const searchInput=useRef<HTMLInputElement>(null);
+  const requestedExtraArtwork=useRef(false);
   const [section,setSection]=useState<Section>("all");
   const [rows,setRows]=useState<TvRow[]>([]);
   const [hero,setHero]=useState<TvItem|null>(null);
@@ -63,6 +64,30 @@ function TvHome(){
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)});
     return()=>controller.abort();
   },[]);
+  useEffect(()=>{
+    if(loading||heroes.length>=6||requestedExtraArtwork.current)return;
+    requestedExtraArtwork.current=true;
+    const controller=new AbortController();
+    const timeout=window.setTimeout(()=>controller.abort(),8000);
+    void fetch("/api/tv/featured",{signal:controller.signal})
+      .then(async response=>{
+        if(!response.ok)throw new Error("HD indisponível");
+        return response.json() as Promise<{heroes:TvItem[]}>;
+      })
+      .then(data=>{
+        if(controller.signal.aborted||!Array.isArray(data.heroes))return;
+        setHeroes(current=>{
+          const unique=new Map(current.map(item=>[item.id,item] as const));
+          for(const item of data.heroes){
+            if(item.backdropUrl&&!unique.has(item.id))unique.set(item.id,item);
+          }
+          return [...unique.values()].slice(0,8);
+        });
+      }).catch(()=>{/* Keep the proven static-HD selection. */})
+      .finally(()=>window.clearTimeout(timeout));
+    return()=>{controller.abort();window.clearTimeout(timeout)};
+  },[loading,heroes.length]);
+
   useEffect(()=>{
     if(!searchOpen)return;
     const frame=requestAnimationFrame(()=>searchInput.current?.focus({preventScroll:true}));

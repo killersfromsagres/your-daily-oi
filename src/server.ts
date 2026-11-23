@@ -181,6 +181,23 @@ async function getHeroCollections(items: CatalogItem[], highlights: HighlightRow
   return {featuredHero,friday13Hero};
 }
 
+/** Expensive artwork hydration is a separate nonblocking TV request; the
+ * initial TV catalog stays small and quick, even on low-end TCL devices. */
+async function handleTvFeaturedApi():Promise<Response> {
+  try {
+    const {items,highlights}=await loadCatalog();
+    const pool=uniqueCatalogItems(items).filter(item=>item.type==="f"&&Boolean(item.posterUrl));
+    const selected=selectRotatingHero(pool,highlights,TOP_BLOCKBUSTERS,Date.now(),8);
+    const hydrated=await getFeaturedHero(pool,highlights,selected);
+    const heroes=selectTvFeatured(hydrated,highlights,
+      POPULAR_HD_BACKDROPS,TOP_BLOCKBUSTERS,Date.now(),8);
+    return jsonResponse({heroes},200,"private, max-age=240");
+  }catch(error){
+    console.error("[TvFeatured] Falha nos banners:",error);
+    return jsonResponse({heroes:[],error:"Banners indisponíveis"},503);
+  }
+}
+
 async function handleDestaquesApi(): Promise<Response> {
   try {
     const { items, highlights } = await loadCatalog();
@@ -2029,6 +2046,9 @@ export default {
 
       if (url.pathname === "/api/catalogo") {
         return await handleCatalogoApi(url);
+      }
+      if (url.pathname === "/api/tv/featured") {
+        return await handleTvFeaturedApi();
       }
       if (url.pathname === "/api/destaques") {
         return await handleDestaquesApi();
