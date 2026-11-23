@@ -308,3 +308,163 @@ html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] 
 .zf-tenfoot-live.is-tv-cinema .zf-tv-stream-quality-status{
   bottom:29px;left:27px;
 }
+
+
+/* TV 2.7 · Library and player overhaul. Scoped to the dedicated 10-foot
+   experience. Opaque surfaces, GPU-free transitions and readable focus rings. */
+.zf-tenfoot-home .zf-tv-library{
+  min-height:100svh;
+  margin-left:78px;padding:92px clamp(28px,4.6vw,100px) 65px clamp(28px,4vw,80px);
+  background:radial-gradient(ellipse 75% 420px at 75% 0,#1b2031 0,#0a0c15 75%);
+  isolation:isolate;
+}
+.zf-tenfoot-home .zf-tv-library-head{display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin:3px 0 30px}
+.zf-tenfoot-home .zf-tv-library-head h1{
+  display:flex;align-items:center;gap:18px;font-size:clamp(35px,3.5vw,65px);
+  line-height:1.08;letter-spacing:-.052em;font-weight:850;color:#fff;margin:12px 0 4px;
+}
+.zf-tenfoot-home .zf-tv-library-head h1 svg{color:#c5a8ef;flex:none}
+.zf-tenfoot-home .zf-tv-library-head p{font-size:clamp(15px,1.16vw,19px);color:#bac4d3;margin:0;line-height:1.55}
+.zf-tenfoot-home .zf-tv-library-count{font-size:13px;font-weight:750;color:#bba3dc;letter-spacing:.02em;margin-top:9px}
+.zf-tenfoot-home .zf-tv-library-genres{
+  display:flex;align-items:center;gap:10px;overflow-x:auto;overscroll-behavior-inline:contain;
+  scrollbar-width:none;padding:12px 8px 18px;margin:0 -8px 23px;
+}
+.zf-tenfoot-home .zf-tv-library-genres::-webkit-scrollbar{display:none}
+.zf-tenfoot-home .zf-tv-library-genres button{
+  flex:none;display:inline-flex;align-items:center;gap:12px;
+  min-height:43px;border-radius:9px;padding:10px 19px;
+  background:#1d2331;border:1px solid #3c4458;
+  color:#d6dae7;font-size:14px;font-weight:780;white-space:nowrap;
+  transition:background-color 110ms,border-color 110ms;
+}
+.zf-tenfoot-home .zf-tv-library-genres button small{font-size:11px;color:#afb9d0;font-weight:650}
+.zf-tenfoot-home .zf-tv-library-genres button.is-active{
+  background:#d8cbf1;border-color:#eadfff;color:#181525;
+}
+.zf-tenfoot-home .zf-tv-library-genres button.is-active small{color:#48425b}
+.zf-tenfoot-home .zf-tv-library-grid{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:clamp(18px,1.8vw,33px) clamp(12px,1.45vw,25px);
+  min-height:200px;
+}
+.zf-tenfoot-home .zf-tv-library-card{
+  display:flex;flex-direction:column;min-width:0;gap:7px;
+  background:#141925;border:2px solid transparent;border-radius:9px;
+  padding:6px;color:#f3f2f7;text-align:left;overflow:hidden;
+  transition:background-color 110ms,border-color 110ms;
+}
+.zf-tenfoot-home .zf-tv-library-card img,
+.zf-tenfoot-home .zf-tv-library-poster-fallback{
+  display:grid;place-items:center;width:100%;height:auto;aspect-ratio:2/3;
+  border-radius:6px;object-fit:cover;background:linear-gradient(140deg,#2c3347,#141722);
+}
+.zf-tenfoot-home .zf-tv-library-card strong{font-size:clamp(13px,1vw,18px);font-weight:740;line-height:1.34;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zf-tenfoot-home .zf-tv-library-card small{color:#9eabc1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zf-tenfoot-home .zf-tv-library-card:focus{border-color:#f2e6ff;background:#28223c}
+.zf-tenfoot-home .zf-tv-library-more{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:36px auto 0;padding:16px 25px;border-radius:10px;
+  border:1px solid #a893ce;background:#302541;color:#f7f2ff;font-size:16px;font-weight:760;
+}
+.zf-tenfoot-home .zf-tv-library-message{
+  display:flex;align-items:center;justify-content:center;gap:12px;margin:28px 0;
+  font-size:17px;color:#d5c9ea;min-height:45px;
+}
+.zf-tenfoot-home .zf-tv-library-message button{
+  padding:10px 16px;border-radius:8px;background:#5b428b;color:#fff;border:1px solid #b391e8;
+}
+.zf-tenfoot-home .zf-tv-library-message.is-error{color:#ffccbd}
+.zf-tenfoot-home .zf-tv-library-footer{margin:24px 0;text-align:center;color:#8290a9;font-size:13px}
+@media(max-width:1300px){
+  .zf-tenfoot-home .zf-tv-library-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(max-width:950px){
+  .zf-tenfoot-home .zf-tv-library-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .zf-tenfoot-home .zf-tv-library{margin-left:62px;padding:78px 20px 40px}
+  .zf-tenfoot-home .zf-tv-library-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:480px){
+  .zf-tenfoot-home .zf-tv-library-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Dedicated TV live controls: discrete opaque buttons and clear channel
+   identity; keep <video> mounted across theater mode transitions. */
+.zf-tenfoot-live{background:linear-gradient(155deg,#141827 0%,#080b14 58%,#070912);color:#f4f3fa}
+.zf-tenfoot-live .zf-tv-player-screen{max-width:1800px;margin:auto}
+.zf-tenfoot-live .zf-tv-player-toolbar{
+  flex-wrap:nowrap;gap:9px;padding:15px 0;min-height:88px;
+  border-bottom:1px solid #ffffff13;
+}
+.zf-tenfoot-live .zf-tv-player-toolbar button{
+  min-width:46px;min-height:47px;border:1px solid #616b7f;
+  border-radius:11px;background:#242c3c;color:#f0f2f8;
+  font-size:14px;padding:11px 15px;
+}
+.zf-tenfoot-live .zf-tv-player-toolbar button:focus{background:#443458;border-color:#c0b2e3}
+.zf-tenfoot-live .zf-tv-player-title{gap:14px;padding:0 13px}
+.zf-tenfoot-live .zf-tv-player-title strong{font-weight:790}
+.zf-tenfoot-live .zf-tv-player-title small{color:#b4a3da;font-weight:800;letter-spacing:.09em}
+.zf-tenfoot-live .zf-tv-player-bottom{
+  display:flex;justify-content:center;flex-wrap:wrap;gap:12px;padding:20px 0;
+  border-top:1px solid #ffffff12;
+}
+.zf-tenfoot-live .zf-tv-player-bottom button{
+  min-height:51px;padding:12px 22px;border:1px solid #5a657e;border-radius:12px;
+  background:#252c3c;color:#f4f3fb;font-size:15px;font-weight:760;
+}
+.zf-tenfoot-live .zf-tv-player-bottom button:focus{border-color:#d2b9ff;background:#443658}
+.zf-tenfoot-live .zf-tv-player-bottom span{font-size:12px;color:#a0adc1}
+.zf-tenfoot-live .zf-tv-player-frame{box-shadow:0 26px 90px #0009;border:1px solid #354056}
+.zf-tenfoot-live .zf-tv-stream-quality-status{display:none!important}
+
+/* Self-hiding TV cinema HUD: contains all controls. No permanent icon
+   overlays. Remote Back works even while controls are hidden. */
+.zf-tenfoot-live .zf-tv-cinema-overlay{
+  position:absolute;inset:0;z-index:55;display:flex;flex-direction:column;
+  justify-content:space-between;padding:clamp(15px,3vw,46px);
+  background:linear-gradient(180deg,#080a14ba,transparent 35%,transparent 60%,#080a14df);
+  opacity:1;visibility:visible;transition:opacity 180ms ease,visibility 180ms ease;
+  pointer-events:none;
+}
+.zf-tenfoot-live .zf-tv-cinema-overlay.is-hidden{
+  opacity:0;visibility:hidden;pointer-events:none;
+}
+.zf-tenfoot-live .zf-tv-cinema-top{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  font-size:clamp(16px,1.4vw,25px);font-weight:800;color:#fff;
+}
+.zf-tenfoot-live .zf-tv-cinema-top span{display:inline-flex;align-items:center;gap:11px}
+.zf-tenfoot-live .zf-tv-cinema-top .zf-tv-fullscreen-exit{
+  position:relative;top:auto;right:auto;
+  padding:11px 17px;min-height:46px;background:#171d2a;border:1px solid #8d85a9;
+  border-radius:10px;color:#f8f6fb;font-size:14px;font-weight:760;
+  pointer-events:auto;
+}
+.zf-tenfoot-live .zf-tv-cinema-actions{
+  display:flex;align-items:center;justify-content:center;gap:clamp(9px,1.4vw,24px);
+  margin:auto 0 16px;
+}
+.zf-tenfoot-live .zf-tv-cinema-actions button{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  min-width:117px;min-height:54px;padding:12px 20px;
+  border-radius:11px;background:#222b3c;border:1px solid #77849b;
+  color:#fafbff;font-size:15px;font-weight:780;pointer-events:auto;
+}
+.zf-tenfoot-live .zf-tv-cinema-actions button:focus{
+  background:#d8c2f3;border-color:#fff;color:#1c1528;
+}
+.zf-tenfoot-live .zf-tv-cinema-overlay>small{
+  color:#bdc3d3;font-size:12px;font-weight:620;text-align:center;
+}
+.zf-tenfoot-live.is-tv-cinema .zf-tv-stream-mute,
+.zf-tenfoot-live.is-tv-cinema .zf-tv-stream-quality-status{display:none!important}
+@media(max-width:870px){
+  .zf-tenfoot-live .zf-tv-cinema-actions{gap:6px;flex-wrap:wrap}
+  .zf-tenfoot-live .zf-tv-cinema-actions button{min-width:96px;min-height:42px;padding:8px 11px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .zf-tenfoot-live .zf-tv-cinema-overlay{transition:none}
+}

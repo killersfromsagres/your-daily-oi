@@ -8,6 +8,8 @@ import { fetchCanaisFallbackClient } from "@/lib/canais";
 
 import { reuseUnchangedLiveChannels, retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
 import { useTvFocus } from "@/lib/tv-focus";
+import { remoteKey } from "@/lib/tv-remote";
+import {useTvGridColumns} from "@/lib/tv-grid";
 
 
 const TvStreamPlayer=lazy(()=>import("@/components/player/TvStreamPlayer").then(module=>({default:module.TvStreamPlayer})));
@@ -39,6 +41,7 @@ function TvLive(){
   const lastFocusedId=useRef("");
   const activeIdRef=useRef("");
   const playingIdRef=useRef("");
+  const columns=useTvGridColumns("channels");
   const [channels,setChannels]=useState<CanalTV[]>([]);
   const [categories,setCategories]=useState<string[]>([]);
   const [loading,setLoading]=useState(true);
@@ -52,6 +55,9 @@ function TvLive(){
   const [activeId,setActiveId]=useState("");
   const [status,setStatus]=useState<"connecting"|"playing"|"unavailable">("connecting");
   const [muted,setMuted]=useState(false);
+  const [paused,setPaused]=useState(false);
+  const [cinemaControls,setCinemaControls]=useState(false);
+  const [hudActivity,setHudActivity]=useState(0);
   // TV-only theater viewport. Never changes desktop or mobile player layouts.
   const [cinema,setCinema]=useState(false);
 
@@ -142,7 +148,7 @@ function TvLive(){
   const visible=filtered.slice(0,limit);
   const onBack=useCallback(()=>{
     if(cinema){
-      setCinema(false);
+      setCinema(false);setCinemaControls(false);
       requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-fullscreen"]')?.focus({preventScroll:true}));
       return;
     }
@@ -156,14 +162,14 @@ function TvLive(){
     }else if(search){setSearch("");}
     else void navigate({to:"/tv-home"});
   },[activeId,search,navigate,cinema]);
-  useTvFocus({route:"live",root,onBack});
+  useTvFocus({route:"live",root,onBack,playerOpen:cinema&&!cinemaControls});
   const choose=(ch:CanalTV)=>{
     if(!ch.fontes.length){setError("Este canal está sem fonte de transmissão. Atualize para tentar novamente.");return;}
     lastFocusedId.current=ch.id;
     activeIdRef.current=ch.id;
     playingIdRef.current="";
     setStatus("connecting");
-    setCinema(false);
+    setCinema(false);setCinemaControls(false);setPaused(false);setMuted(false);
     setActiveId(ch.id);
     try{localStorage.setItem(LAST_KEY,ch.id)}catch{}
     setRecents(previous=>{
@@ -183,7 +189,8 @@ function TvLive(){
     const index=valid.findIndex(c=>c.id===activeId);
     const next=valid[(index+offset+valid.length)%valid.length];
     if(next){
-      setCinema(false);
+      if(cinema){setCinemaControls(true);setHudActivity(n=>n+1)}
+      setPaused(false);setMuted(false);
       activeIdRef.current=next.id;
       playingIdRef.current="";
       lastFocusedId.current=next.id;
@@ -191,7 +198,7 @@ function TvLive(){
       setActiveId(next.id);
       setRecents(previous=>{const updated=[next.id,...previous.filter(x=>x!==next.id)].slice(0,18);saveList(RECENTS_KEY,updated);return updated;});
     }
-  },[channels,activeId]);
+  },[channels,activeId,cinema]);
   const video=()=>playerRef.current?.querySelector("video")??null;
   const togglePlay=()=>{
     const el=video();if(!el)return;
@@ -201,13 +208,71 @@ function TvLive(){
     const el=video();if(!el)return;
     el.muted=!el.muted;setMuted(el.muted);
   };
+  // Read actual media state. Never rely on an independent, drifting mute flag.
   useEffect(()=>{
     if(!activeId)return;
-    const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>(
-      cinema?'[data-tv-focus="player-fullscreen-exit"]':'[data-tv-focus="player-back"]'
-    )?.focus({preventScroll:true}));
+    const el=video();
+    if(!el)return;
+    const sync=()=>{setMuted(el.muted);setPaused(el.paused)};
+    el.addEventListener("volumechange",sync);
+    el.addEventListener("pause",sync);
+    el.addEventListener("playing",sync);
+    sync();
+    return()=>{
+      el.removeEventListener("volumechange",sync);
+      el.removeEventListener("pause",sync);
+      el.removeEventListener("playing",sync);
+    };
+  },[activeId,status]);
+  // Fullscreen overlay disappears exactly 2s after it is exposed. It is
+  // restored with any remote arrow/OK key, without remounting the decoder.
+  useEffect(()=>{
+    if(!cinema||!cinemaControls)return;
+    const timer=window.setTimeout(()=>setCinemaControls(false),2000);
+    return()=>window.clearTimeout(timer);
+  },[cinema,cinemaControls,hudActivity]);
+  useEffect(()=>{
+    if(!cinema||cinemaControls)return;
+    const frame=requestAnimationFrame(()=>video()?.focus({preventScroll:true}));
     return()=>cancelAnimationFrame(frame);
+  },[cinema,cinemaControls]);
+  useEffect(()=>{
+    if(!cinema||cinemaControls)return;
+    const reveal=(event:KeyboardEvent)=>{
+      if(!["ArrowLeft","ArrowRight","ArrowDown","ArrowUp","Enter","Select","MediaPlayPause"].includes(event.key)&&
+         ![37,38,39,40,13,23].includes(event.keyCode))return;
+      event.preventDefault();event.stopPropagation();
+      setCinemaControls(true);setHudActivity(n=>n+1);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>
+        root.current?.querySelector<HTMLElement>('[data-tv-focus="cinema-play"]')?.focus({preventScroll:true})));
+    };
+    document.addEventListener("keydown",reveal,true);
+    return()=>document.removeEventListener("keydown",reveal,true);
+  },[cinema,cinemaControls]);
+  useEffect(()=>{
+    if(!activeId)return;
+    const frame=requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[data-tv-focus="player-back"]')?.focus({preventScroll:true}));
+    return()=>cancelAnimationFrame(frame);
+  },[activeId]);
+  const revealHud=()=>{setCinemaControls(true);setHudActivity(n=>n+1)};
+  const enterCinema=()=>{revealHud();setCinema(true)};
+  const exitCinema=()=>{setCinema(false);setCinemaControls(false)};
+  useEffect(()=>{
+    if(!activeId)return;
+    const handler=(event:KeyboardEvent)=>{
+      const key=remoteKey(event);
+      if(!["MediaPlayPause","MediaPlay","MediaPause"].includes(key))return;
+      const el=video();
+      if(!el)return;
+      event.preventDefault();event.stopImmediatePropagation();
+      if(key==="MediaPause"||key==="MediaPlayPause"&&!el.paused)el.pause();
+      else void el.play().catch(()=>{});
+      if(cinema){setCinemaControls(true);setHudActivity(n=>n+1)}
+    };
+    document.addEventListener("keydown",handler,true);
+    return()=>document.removeEventListener("keydown",handler,true);
   },[activeId,cinema]);
+
   return <main className={"zf-tenfoot zf-tenfoot-live"+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!active ? <>
       <header className="zf-live-top" data-tv-row="live-nav">
@@ -237,7 +302,7 @@ function TvLive(){
           <div className="zf-live-catalog-head"><h2>{category==="Todos"?"Explore os canais":category}</h2><span>{filtered.length} opções</span></div>
           <div className="zf-live-grid">
             {visible.map((ch,i)=><button type="button" className={"zf-live-card"+(ch.fontes.length?"":" is-offline")}
-              key={ch.id} data-tv-channel={ch.id} data-tv-focus={"channel-"+ch.id} data-tv-row={"channel-row-"+Math.floor(i/5)}
+              key={ch.id} data-tv-channel={ch.id} data-tv-focus={"channel-"+ch.id} data-tv-row={"channel-row-"+Math.floor(i/columns)}
               onClick={()=>choose(ch)} aria-label={"Selecionar "+ch.nome}>
               <span className="zf-live-card-image">{ch.logo&&/^https:\/\//i.test(ch.logo)
                 ?<img src={ch.logo} alt="" loading="lazy" decoding="async" onError={e=>e.currentTarget.style.display="none"}/>
@@ -253,7 +318,7 @@ function TvLive(){
     </>:<section className="zf-tv-player-screen" aria-label={"Assistindo "+active.nome}>
         <div className="zf-tv-player-toolbar" data-tv-row="player-toolbar">
           <button type="button" data-tv-focus="player-back" data-tv-start onClick={()=>onBack()}><ArrowLeft size={22}/> Voltar aos canais</button>
-          <div className="zf-tv-player-title"><span className="zf-live-dot"/> <strong>{active.nome}</strong><small>{status==="playing"?"AO VIVO":status==="connecting"?"Conectando…":"Transmissão indisponível"}</small></div>
+          <div className="zf-tv-player-title"><span className="zf-live-dot"/> <strong>{active.nome}</strong><small>{status==="playing"?(paused?"PAUSADO":"AO VIVO"):status==="connecting"?"Sintonizando…":"Transmissão indisponível"}</small></div>
           <button type="button" data-tv-focus="player-prev" onClick={()=>cycle(-1)} aria-label="Canal anterior"><ChevronLeft size={22}/></button>
           <button type="button" data-tv-focus="player-next" onClick={()=>cycle(1)} aria-label="Próximo canal"><ChevronRight size={22}/></button>
           <button type="button" data-tv-focus="player-favorite" aria-label="Favoritar canal" onClick={()=>toggleFavorite(active.id)}>
@@ -264,17 +329,33 @@ function TvLive(){
             <TvStreamPlayer key={active.id} canal={active}
               onPlaybackStatus={onPlaybackStatus}/>
           </Suspense>
-          {cinema&&<button type="button" className="zf-tv-fullscreen-exit"
-            data-tv-focus="player-fullscreen-exit" data-tv-start
-            onClick={()=>setCinema(false)} aria-label="Sair da tela cheia">
-            <Minimize2 size={19}/> Sair da tela cheia
-          </button>}
+          {cinema&&<div className={"zf-tv-cinema-overlay"+(cinemaControls?"":" is-hidden")}
+            aria-hidden={!cinemaControls}>
+            <div className="zf-tv-cinema-top">
+              <span><span className="zf-live-dot"/> {active.nome} · {status==="playing"?"AO VIVO":"SINTONIZANDO"}</span>
+              <button type="button" className="zf-tv-fullscreen-exit"
+                data-tv-focus="player-fullscreen-exit" data-tv-start
+                onClick={exitCinema} aria-label="Sair da tela cheia"><Minimize2 size={19}/> Sair da tela cheia</button>
+            </div>
+            <div className="zf-tv-cinema-actions" data-tv-row="cinema-actions">
+              <button type="button" data-tv-focus="cinema-prev" onClick={()=>{cycle(-1);revealHud()}} aria-label="Canal anterior"><ChevronLeft size={23}/> Anterior</button>
+              <button type="button" data-tv-focus="cinema-play" onClick={()=>{togglePlay();revealHud()}}
+                aria-label={paused?"Reproduzir":"Pausar"}>{paused?<Play size={22}/>:<Pause size={22}/>} {paused?"Reproduzir":"Pausar"}</button>
+              <button type="button" data-tv-focus="cinema-mute" onClick={()=>{toggleMute();revealHud()}}
+                aria-label={muted?"Ativar som":"Silenciar"}>{muted?<VolumeX size={22}/>:<Volume2 size={22}/>} {muted?"Ativar som":"Silenciar"}</button>
+              <button type="button" data-tv-focus="cinema-next" onClick={()=>{cycle(1);revealHud()}} aria-label="Próximo canal">Próximo <ChevronRight size={23}/></button>
+            </div>
+            <small>Os controles desaparecem automaticamente · Setas do controle para mostrar</small>
+          </div>}
         </div>
         <footer className="zf-tv-player-bottom" data-tv-row="player-actions">
-          <button type="button" data-tv-focus="player-play" onClick={togglePlay}><Play size={19}/><Pause size={18}/> Reproduzir / Pausar</button>
-          <button type="button" data-tv-focus="player-mute" onClick={toggleMute}>{muted?<VolumeX size={20}/>:<Volume2 size={20}/>} Som</button>
+          <button type="button" data-tv-focus="player-play" onClick={togglePlay}
+            aria-label={paused?"Reproduzir":"Pausar"}>
+            {paused?<Play size={20}/>:<Pause size={20}/>} {paused?"Reproduzir":"Pausar"}</button>
+          <button type="button" data-tv-focus="player-mute" onClick={toggleMute}
+            aria-label={muted?"Ativar som":"Silenciar"}>{muted?<VolumeX size={20}/>:<Volume2 size={20}/>} {muted?"Ativar som":"Silenciar"}</button>
           <button type="button" className="zf-tv-fullscreen-action" data-tv-focus="player-fullscreen"
-            onClick={()=>setCinema(true)} aria-label="Ampliar transmissão para tela cheia">
+            onClick={enterCinema} aria-label="Ampliar transmissão para tela cheia">
             <Maximize2 size={21}/> Tela cheia
           </button>
           <span>Use o botão Voltar do controle para escolher outro canal</span>

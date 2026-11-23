@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, Heart, House, Info, ListVideo, Play, Search, Tv2, X } from "lucide-react";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { TvAnimeFrameIcon } from "@/components/icons/TvAnimeFrameIcon";
+import { TvLibrary } from "@/components/tv/TvLibrary";
 import { getProgress, getSavedList, toggleSaved } from "@/lib/storage";
 import { useTvFocus, tvReadFocus } from "@/lib/tv-focus";
 import { remoteKey } from "@/lib/tv-remote";
@@ -185,7 +186,7 @@ function TvHome(){
           {navOptions.map((option,index)=><div data-tv-row={"menu-"+index} key={option.key}>
             <button type="button" data-tv-focus={"nav-"+option.key}
               data-tv-start={option.key==="all"?"":undefined}
-              data-tv-right-target="hero-play"
+              data-tv-right-target={option.key==="f"||option.key==="s"||option.key==="a"?"library-genre-0":"hero-play"}
               aria-pressed={section===option.key} className={section===option.key?"is-selected":""}
               aria-label={option.title} onClick={()=>setSection(option.key)}>
               {option.key==="all"?<House size={22}/>:option.key==="f"?<Film size={22}/>:
@@ -202,7 +203,8 @@ function TvHome(){
         </nav>
         <div className="zf-tv-sidemenu-hint" aria-hidden="true">Use ← para navegar</div>
       </aside>
-      <section className="zf-immersive-hero" aria-label="Destaques de filmes">
+      {section!=="all"&&section!=="saved"?<TvLibrary type={section} onOpen={openItem}/>:<>
+       <section className="zf-immersive-hero" aria-label="Destaques de filmes">
         {spotlight?.backdropUrl&&!failedBackdrops.includes(spotlight.id)
           ? <img key={spotlight.id} className="zf-hero-backdrop" src={spotlight.backdropUrl}
               alt="" decoding="async" fetchPriority={heroIndex===0?"high":"auto"}
@@ -264,6 +266,7 @@ function TvHome(){
           </section>)}
           {!shelves.length&&<p className="zf-tenfoot-notice">Nenhum título encontrado nesta categoria.</p>}
         </div>}
+       </>}
     </>:<section className="zf-tenfoot-search" aria-label="Busca para TV">
       <header className="zf-search-heading"><div><span>BUSCA RÁPIDA</span><h1>O que vamos assistir?</h1></div>
         <button type="button" data-tv-focus="search-close" data-tv-row="search-top"
