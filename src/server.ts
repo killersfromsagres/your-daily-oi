@@ -29,6 +29,7 @@ import { selectTvFeatured } from "./lib/tv-featured";
 import { selectTvHeroCandidates } from "./lib/tv-featured-candidates";
 import { getTvHeroArt } from "./lib/tv-hero-art";
 import { TV_APP_BUILD, TV_APP_PROTOCOL } from "./lib/tv-build";
+import {tvLibraryPage,type TvLibraryType} from "./lib/tv-library-catalog";
 import {mediaQualityApi} from "./server/vod-quality";
 import { rankSearchSuggestions } from "./lib/search-suggestions";
 import { playableVodSources, shortlistVodSources } from "./lib/vod-source-quality";
@@ -248,6 +249,18 @@ async function handleCatalogoApi(url: URL): Promise<Response> {
       const { items } = await loadCatalog();
       const suggestions = rankSearchSuggestions([...items.values()], q.slice(0, 80), 8);
       return jsonResponse({ items: suggestions }, 200, "private, max-age=15");
+    }
+    // Dedicated TV full library: page the actual catalog, not 26 suggestions.
+    // URLs and page bounds are validated; no full JSON or stream links sent.
+    if(url.searchParams.get("tv")==="library"){
+      const input=url.searchParams.get("type")||"";
+      if(!["f","s","a"].includes(input))
+        return jsonResponse({error:"Tipo inválido"},400);
+      const {items}=await loadCatalog();
+      const result=tvLibraryPage(items,input as TvLibraryType,
+        (url.searchParams.get("genre")||"Todos").slice(0,90),
+        Number(url.searchParams.get("page")||"1"),42);
+      return jsonResponse(result,200,"private, max-age=90");
     }
     // Fast TV-only feed: fixed-sized metadata payload without streams, full
     // episode trees, TMDB hydrations, or the complete desktop catalog JSON.
