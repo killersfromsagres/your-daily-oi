@@ -6,6 +6,12 @@ describe("TV native app must not change web and mobile",()=>{
    const root=read("../src/routes/__root.tsx");
    expect(root).not.toContain('import tvCinemaCss from "../styles/tv-cinema.css?url"');
    expect(root).not.toContain('href: tvCinemaCss');
+   // Defense in depth if a router temporarily retains a route stylesheet:
+   // TV cinema selectors may not match the web home or /tv layout.
+   const css=read("../src/styles/tv-cinema.css");
+   expect(css).toContain(":where(.zf-tenfoot) .zf-hero-copy{");
+   expect(css).toContain(":where(.zf-tenfoot) .zf-live-grid{");
+   expect(css).not.toContain("\\n.zf-hero-copy{");
    for(const route of ["tv-home","tv-live","tv-title"]){
      const s=read("../src/routes/"+route+".tsx");
      expect(s).toContain('import tvCinemaCss from "../styles/tv-cinema.css?url"');
