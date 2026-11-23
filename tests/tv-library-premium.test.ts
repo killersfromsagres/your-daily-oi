@@ -2,6 +2,7 @@ import {describe,expect,test} from "bun:test";
 import {readFileSync} from "node:fs";
 import type {CatalogItem} from "../src/lib/types";
 import {indexTvLibrary,tvLibraryPage} from "../src/lib/tv-library-catalog";
+import {tvGridColumns} from "../src/lib/tv-grid";
 const read=(path:string)=>readFileSync(new URL(path,import.meta.url),"utf8");
 const make=(id:string,type:"f"|"s"|"a",genres:string[],alias=false):CatalogItem=>
   ({id,title:"Título "+id,type,genres,alias,streams:[],posterUrl:"https://image.tmdb.org/t/p/w500/"+id+".jpg"});
@@ -58,6 +59,12 @@ describe("Full 10-foot catalog",()=>{
     expect(live).toContain("TvStreamPlayer key={active.id}");
     expect(css).toContain(".zf-tv-cinema-overlay.is-hidden");
     expect(css).not.toContain("backdrop-filter:");
+  });
+  test("D-pad rows match responsive CSS grid columns for 4K and smaller TVs",()=>{
+    expect([1920,1300,950,700,480].map(w=>tvGridColumns(w,"library"))).toEqual([6,5,4,3,2]);
+    expect([1920,1200,880,600].map(w=>tvGridColumns(w,"channels"))).toEqual([5,4,3,2]);
+    expect(read("../src/components/tv/TvLibrary.tsx")).toContain("Math.floor(index/columns)");
+    expect(read("../src/routes/tv-live.tsx")).toContain("Math.floor(i/columns)");
   });
   test("remote TV focus persists across genre and overlay state changes",()=>{
     const focus=read("../src/lib/tv-focus.ts");

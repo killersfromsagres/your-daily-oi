@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/routes/tv-home.tsx'
       - 'src/lib/tv-library-catalog.ts'
+      - 'src/lib/tv-grid.ts'
       - 'src/components/tv/TvLibrary.tsx'
       - 'tests/tv-library-premium.test.ts'
       - 'src/lib/tv-featured.ts'

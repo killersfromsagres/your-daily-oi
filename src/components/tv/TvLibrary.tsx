@@ -3,6 +3,7 @@ import {useEffect,useState} from "react";
 import {ChevronRight,Film,Clapperboard,Loader2} from "lucide-react";
 import {TvAnimeFrameIcon} from "@/components/icons/TvAnimeFrameIcon";
 import type {TvLibraryResult,TvLibraryTile,TvLibraryType} from "@/lib/tv-library-catalog";
+import {useTvGridColumns} from "@/lib/tv-grid";
 
 const TITLES:Record<TvLibraryType,string>={f:"Filmes",s:"Séries",a:"Animes"};
 const LEADS:Record<TvLibraryType,string>={
@@ -16,6 +17,7 @@ interface Props{
   onOpen:(item:Pick<TvLibraryTile,"id"|"type">)=>void;
 }
 export function TvLibrary({type,onOpen}:Props){
+  const columns=useTvGridColumns("library");
   const [genre,setGenre]=useState("Todos");
   const [page,setPage]=useState(1);
   const [items,setItems]=useState<TvLibraryTile[]>([]);
@@ -72,8 +74,8 @@ export function TvLibrary({type,onOpen}:Props){
     <div className="zf-tv-library-grid" aria-busy={busy&&page===1}>
       {items.map((item,index)=><button type="button" key={item.type+":"+item.id}
         className="zf-tv-library-card" data-tv-focus={"library-poster-"+item.type+"-"+item.id}
-        data-tv-row={"library-row-"+Math.floor(index/6)}
-        data-tv-left-target={index%6===0?"nav-"+type:undefined}
+        data-tv-row={"library-row-"+Math.floor(index/columns)}
+        data-tv-left-target={index%columns===0?"nav-"+type:undefined}
         onClick={()=>onOpen(item)} aria-label={"Ver "+item.title}>
         {item.posterUrl
           ?<img src={item.posterUrl} loading="lazy" decoding="async" width={210} height={315} alt=""/>

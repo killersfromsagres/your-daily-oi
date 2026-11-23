@@ -9,6 +9,7 @@ import { fetchCanaisFallbackClient } from "@/lib/canais";
 import { reuseUnchangedLiveChannels, retainLiveCatalogOnMetadataOutage } from "@/lib/tv-catalog-recovery";
 import { useTvFocus } from "@/lib/tv-focus";
 import { remoteKey } from "@/lib/tv-remote";
+import {useTvGridColumns} from "@/lib/tv-grid";
 
 
 const TvStreamPlayer=lazy(()=>import("@/components/player/TvStreamPlayer").then(module=>({default:module.TvStreamPlayer})));
@@ -40,6 +41,7 @@ function TvLive(){
   const lastFocusedId=useRef("");
   const activeIdRef=useRef("");
   const playingIdRef=useRef("");
+  const columns=useTvGridColumns("channels");
   const [channels,setChannels]=useState<CanalTV[]>([]);
   const [categories,setCategories]=useState<string[]>([]);
   const [loading,setLoading]=useState(true);
@@ -300,7 +302,7 @@ function TvLive(){
           <div className="zf-live-catalog-head"><h2>{category==="Todos"?"Explore os canais":category}</h2><span>{filtered.length} opções</span></div>
           <div className="zf-live-grid">
             {visible.map((ch,i)=><button type="button" className={"zf-live-card"+(ch.fontes.length?"":" is-offline")}
-              key={ch.id} data-tv-channel={ch.id} data-tv-focus={"channel-"+ch.id} data-tv-row={"channel-row-"+Math.floor(i/5)}
+              key={ch.id} data-tv-channel={ch.id} data-tv-focus={"channel-"+ch.id} data-tv-row={"channel-row-"+Math.floor(i/columns)}
               onClick={()=>choose(ch)} aria-label={"Selecionar "+ch.nome}>
               <span className="zf-live-card-image">{ch.logo&&/^https:\/\//i.test(ch.logo)
                 ?<img src={ch.logo} alt="" loading="lazy" decoding="async" onError={e=>e.currentTarget.style.display="none"}/>
