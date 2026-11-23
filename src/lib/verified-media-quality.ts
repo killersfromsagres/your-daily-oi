@@ -46,13 +46,15 @@ export function qualityKey(input:MediaQualityKey):string{
 /** Do not promote an ultrawide 1920×800 source to 1080p just by width. */
 export function qualityFromDimensions(width:number,height:number):Pick<VerifiedMediaQuality,"tier"|"label"|"width"|"height">|null{
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<128||height<100||width>10000||height>8000)return null;
-  // A true UHD raster is at least ~3840 px wide and 1600 px high (cinema crop).
-  if((width>=3800&&height>=1600)||height>=2160&&width>=3200)return {tier:"4k",label:"4K UHD",width,height};
-  if(height>=1440&&width>=2200)return {tier:"qhd",label:"QHD 1440p",width,height};
-  if(height>=1080&&width>=1440)return {tier:"fullhd",label:"FULL HD 1080p",width,height};
-  if(height>=720&&width>=960)return {tier:"hd",label:"HD 720p",width,height};
-  if(height>=480)return {tier:"sd",label:"SD "+height+"p",width,height};
-  return {tier:"low",label:"BAIXA "+height+"p",width,height};
+  const longSide=Math.max(width,height);
+  const shortSide=Math.min(width,height);
+  // Treat portrait video by its smaller axis, never by the tall dimension.
+  if(longSide>=3800&&shortSide>=1600)return {tier:"4k",label:"4K UHD",width,height};
+  if(shortSide>=1440&&longSide>=2200)return {tier:"qhd",label:shortSide===1440?"QHD 1440p":"QHD "+shortSide+"p",width,height};
+  if(shortSide>=1080&&longSide>=1440)return {tier:"fullhd",label:shortSide===1080?"FULL HD 1080p":"FULL HD "+shortSide+"p",width,height};
+  if(shortSide>=720&&longSide>=960)return {tier:"hd",label:shortSide===720?"HD 720p":"HD "+shortSide+"p",width,height};
+  if(shortSide>=480)return {tier:"sd",label:"SD "+shortSide+"p",width,height};
+  return {tier:"low",label:"BAIXA "+shortSide+"p",width,height};
 }
 
 export function sourceFingerprint(url:string):string{
