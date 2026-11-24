@@ -1,8 +1,9 @@
 import { getClientCatalog } from "@/lib/catalog-client";
 import { useFriday13Edition } from "@/components/catalog/Friday13Edition";
 import { selectFriday13Movies } from "@/lib/friday13-edition";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { HomeFootball } from "@/components/sports/HomeFootball";
 import { MobileCatalogFilters } from "@/components/catalog/MobileCatalogFilters";
 import { HeroSection } from "@/components/catalog/HeroSection";
 import { MediaRow } from "@/components/catalog/MediaRow";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  const navigate=useNavigate();
   const friday13 = useFriday13Edition();
   const [friday13Hero,setFriday13Hero] = useState<CatalogItem[]>([]);
   const [items, setItems] = useState<CatalogItem[]>([]);
@@ -229,6 +231,7 @@ function HomePage() {
       )}
 
       <div className="ydo-catalog">
+        <HomeFootball onWatch={id=>void navigate({to:"/tv/canal/$id",params:{id}})} onAgenda={()=>void navigate({to:"/futebol"})}/>
         <MobileCatalogFilters kind={null} home/>
         {friday13 && friday13Movies.length > 0 && !loading && (
           <section className="zf-friday13-collection" aria-label="Maratona Sexta-feira 13">

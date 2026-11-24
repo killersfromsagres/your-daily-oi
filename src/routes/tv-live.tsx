@@ -35,7 +35,7 @@ function normalize(value:string){
 const BASE_CATEGORIES=["Todos","Favoritos","Recentes"];
 export const Route=createFileRoute("/tv-live")({
   component:TvLive,
-  validateSearch:(search:Record<string,unknown>):{channel?:string;from?:"sports"}=>({...(typeof search["channel"]==="string"?{channel:search["channel"]}:{}),...(search["from"]==="sports"?{from:"sports" as const}:{})}),
+  validateSearch:(search:Record<string,unknown>):{channel?:string;from?:"sports"|"home"}=>({...(typeof search["channel"]==="string"?{channel:search["channel"]}:{}),...(search["from"]==="sports"?{from:"sports" as const}:search["from"]==="home"?{from:"home" as const}:{})}),
   head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss},{rel:"stylesheet",href:tvArenaCss}],meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
 });
 function TvLive(){
@@ -164,7 +164,7 @@ function TvLive(){
     if(activeId){
       activeIdRef.current="";playingIdRef.current="";
       setActiveId("");
-      if(from==="sports"){void navigate({to:"/tv-home",search:{section:"sports"}});return;}
+      if(from==="sports"||from==="home"){void navigate({to:"/tv-home",search:from==="sports"?{section:"sports"}:{}});return;}
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
         const target=[...document.querySelectorAll<HTMLElement>("[data-tv-channel]")].find(el=>el.dataset["tvChannel"]===lastFocusedId.current);
         target?.focus({preventScroll:true});

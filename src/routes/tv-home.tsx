@@ -1,6 +1,7 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
 import tvReferenceCss from "../styles/tv-reference.css?url";
 import tvArenaCss from "../styles/tv-arena.css?url";
+import { HomeFootball } from "@/components/sports/HomeFootball";
 import { TvSportsArena } from "@/components/tv/TvSportsArena";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
@@ -255,6 +256,7 @@ function TvHome(){
           {heroes.map((item,index)=><button key={item.id} type="button" data-tv-focus={"banner-"+index} aria-label={"Destaque "+(index+1)+": "+item.title} aria-pressed={heroIndex===index} className={heroIndex===index?"is-current":""} onClick={()=>setHeroIndex(index)}><span/></button>)}
         </div>}
       </section>
+      <HomeFootball television onWatch={id=>void navigate({to:"/tv-live",search:{channel:id,from:"home"}})} onAgenda={()=>setSection("sports")}/>
       </>}
       {serverOutdated&&<div className="zf-tv-update-warning" role="status">A versão publicada da TV está desatualizada. Os banners HD e os canais podem não funcionar até atualizar a hospedagem.</div>}
       {loading?<p className="zf-tenfoot-notice" role="status">Carregando sua experiência de TV…</p>:
