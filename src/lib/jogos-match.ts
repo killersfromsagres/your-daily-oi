@@ -41,6 +41,10 @@ export interface JogoBrasileirao {
   /** Every specifically matched station in the local catalog, not just the preferred one. */
   canaisDisponiveis?: Array<{ id:string; nome:string; logo?:string }>;
   transmissao: "confirmada" | "nao-confirmada";
+  /** Full broadcast resolution timestamp; a score-only update cannot revive an older link. */
+  transmissaoVerificadaEm?: string;
+  /** Sources supporting the announcement (not proof of playback availability). */
+  evidenciasTransmissao?: Array<{nome:string;origem:"epg"|"espn"|"sportsdb"|"guia"|"configuracao"|"verificada"}>;
   origemTransmissao?: "epg" | "grade-br" | "configuracao" | "verificada";
 }
 

@@ -19,7 +19,7 @@ async function lookup(game:JogoBrasileirao):Promise<string[]> {
   if(!response.ok)throw new Error("TheSportsDB TV "+response.status);
   const body=await response.json() as {tvevent?:TvEvent[]|null};
   const names=broadcastersForBrazil(Array.isArray(body.tvevent)?body.tvevent:[]);
-  cache.set(id,{expires:Date.now()+20*60_000,names});
+  cache.set(id,{expires:Date.now()+(names.length?5*60_000:2*60_000),names});
   if(cache.size>260)cache.delete(cache.keys().next().value!);
   return names;
 }
@@ -30,15 +30,12 @@ export async function getBrazilianSportsDbBroadcasts(
   // Inspect national-team headlines and Brazil fixtures first, even when
   // the full day contains dozens of other games. The lookup runs again when
   // upcoming events enter the agenda's rolling window.
-  const candidates=games.filter(g=>g.id.startsWith("sportsdb:"))
-    .sort((a,b)=>matchImportance(b)-matchImportance(a))
-    .slice(0,16);
-  const results=new Map<string,string[]>();
-  const entries=await Promise.allSettled(candidates.map(lookup));
-  entries.forEach((entry,k)=>{
-    const game=candidates[k];
-    if(entry.status==="fulfilled"&&entry.value.length&&game)
-      results.set(game.id,entry.value);
-  });
+  const all=games.filter(g=>g.id.startsWith("sportsdb:")&&g.status!=="adiado"&&g.status!=="encerrado");
+  const results=new Map<string,string[]>();const due=all.filter(g=>{const existing=cache.get(g.id.replace(/^sportsdb:/,""));if(existing&&existing.expires>Date.now()){if(existing.names.length)results.set(g.id,existing.names);return false;}return true;});
+  const candidates=due.sort((a,b)=>(cache.get(a.id.replace(/^sportsdb:/,""))?.expires||0)-(cache.get(b.id.replace(/^sportsdb:/,""))?.expires||0)||matchImportance(b)-matchImportance(a)).slice(0,16);
+  for(let i=0;i<candidates.length;i+=4){
+    const batch=candidates.slice(i,i+4);const entries=await Promise.allSettled(batch.map(lookup));
+    entries.forEach((entry,k)=>{const g=batch[k];if(!g)return;if(entry.status==="fulfilled"){if(entry.value.length)results.set(g.id,entry.value);}else cache.set(g.id.replace(/^sportsdb:/,""),{expires:Date.now()+2*60_000,names:[]});});
+  }
   return results;
 }

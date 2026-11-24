@@ -68,7 +68,7 @@ export function sameBroadcastFixture(
 ):boolean {
   const kickoffA=Date.parse(a.inicioIso),kickoffB=Date.parse(b.inicioIso);
   if(!Number.isFinite(kickoffA)||!Number.isFinite(kickoffB)||
-    Math.abs(kickoffA-kickoffB)>110*60_000)return false;
+    Math.abs(kickoffA-kickoffB)>20*60_000)return false;
   const ah=broadcastTeamKey(a.casa),aa=broadcastTeamKey(a.fora);
   const bh=broadcastTeamKey(b.casa),ba=broadcastTeamKey(b.fora);
   return (ah===bh&&aa===ba)||(ah===ba&&aa===bh);

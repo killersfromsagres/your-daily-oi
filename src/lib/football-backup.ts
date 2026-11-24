@@ -108,7 +108,7 @@ export function mergeProviderFixtures(primary: readonly JogoBrasileirao[],backup
   for(const candidate of backup){
     const duplicate=result.find(game=>{
       const at=Math.abs(Date.parse(game.inicioIso)-Date.parse(candidate.inicioIso));
-      return at<110*60_000 &&
+      return at<=20*60_000 && game.ligaId===candidate.ligaId &&
         broadcastTeamKey(normalizeSoccerName(game.casa))===broadcastTeamKey(normalizeSoccerName(candidate.casa)) &&
         broadcastTeamKey(normalizeSoccerName(game.fora))===broadcastTeamKey(normalizeSoccerName(candidate.fora));
     });

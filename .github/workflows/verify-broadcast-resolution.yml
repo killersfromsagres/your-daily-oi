@@ -1,0 +1,23 @@
+name: Verify broadcast identification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lib/broadcast-*.ts'
+      - 'src/lib/jogos*.ts'
+      - 'src/lib/football*.ts'
+      - 'src/lib/epg.ts'
+      - 'tests/broadcast-resolution.test.ts'
+      - '.github/workflows/verify-broadcast-resolution.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test tests/broadcast-resolution.test.ts tests/jogos-broadcast.test.ts tests/sports-broadcast-verified.test.ts tests/football-live.test.ts tests/football-ranking.test.ts tests/jogos-match.test.ts tests/football-providers-lineups.test.ts tests/verified-premiere-broadcast.test.ts
+      - run: bun run build

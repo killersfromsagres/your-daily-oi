@@ -2,7 +2,7 @@
 import { getGuideBroadcasts,guideNamesForFixture } from "./football-tv-guide";
 import { loadCanais } from "./canais";
 import { localizarJogosNaGradeEPG } from "./epg";
-import { matchBrazilianBroadcastChannel } from "./broadcast-match";
+import { resolveBroadcast,clearBroadcastLink,removeOverlappingBroadcastLinks,type BroadcastClaim,type ChannelRef } from "./broadcast-resolution";
 import { fetchSportsDbFixtures, mergeProviderFixtures } from "./football-backup";
 import { getBrazilianSportsDbBroadcasts } from "./football-broadcasts";
 import { sameBroadcastFixture, verifiedBroadcastEvidence } from "./broadcast-verified";
@@ -135,15 +135,18 @@ async function fetchAllLeagues(date: string, leagues: readonly LigaFutebol[] = L
  * Check each fixture's detail, using only explicit BR region/market metadata.
  * Never infer a carrier from the league itself.
  */
+const broadcastDetailCache=new Map<string,{expires:number;names:string[]}>();
 async function loadBrazilBroadcastDetails(
   fixtures: { item: JogoBrasileirao; raw: ESPNEvent }[],
 ): Promise<Map<string, string[]>> {
   const result = new Map<string, string[]>();
-  const missing = fixtures.filter(x => brBroadcastsFromESPN(x.raw).length === 0)
-    .sort((a, b) => fixturePriority(b.item) - fixturePriority(a.item))
-    .slice(0, 16);
-  for (let i = 0; i < missing.length; i += 8) {
-    const batch = missing.slice(i, i + 8);
+  const missing = fixtures.filter(x=>x.item.status!=="adiado"&&x.item.status!=="encerrado"&&brBroadcastsFromESPN(x.raw).length===0);
+  const now=Date.now();
+  const due=missing.filter(x=>{const cached=broadcastDetailCache.get(x.item.id+"|"+x.item.inicioIso);if(cached&&cached.expires>now){if(cached.names.length)result.set(x.item.id,cached.names);return false;}return true;});
+  // Prioritize unqueried fixtures, then the oldest attempted entry, so the same 16 never monopolize the budget.
+  const selected=due.sort((a,b)=>(broadcastDetailCache.get(a.item.id+"|"+a.item.inicioIso)?.expires||0)-(broadcastDetailCache.get(b.item.id+"|"+b.item.inicioIso)?.expires||0)||fixturePriority(b.item)-fixturePriority(a.item)).slice(0,16);
+  for (let i = 0; i < selected.length; i += 4) {
+    const batch = selected.slice(i, i + 4);
     const responses = await Promise.allSettled(batch.map(async ({ item }) => {
       const eventId = item.id.split(":").at(-1);
       if (!eventId || !/^[0-9]+$/.test(eventId)) return [] as string[];
@@ -160,9 +163,8 @@ async function loadBrazilBroadcastDetails(
     }));
     responses.forEach((response, index) => {
       const item = batch[index];
-      if (item && response.status === "fulfilled" && response.value.length) {
-        result.set(item.item.id, response.value);
-      }
+      if(item){const names=response.status==="fulfilled"?response.value:[];broadcastDetailCache.set(item.item.id+"|"+item.item.inicioIso,{names,expires:Date.now()+(names.length?5*60_000:2*60_000)});if(names.length)result.set(item.item.id,names);}
+      if(broadcastDetailCache.size>1500)broadcastDetailCache.delete(broadcastDetailCache.keys().next().value!);
     });
   }
   return result;
@@ -179,15 +181,15 @@ async function annotateBroadcasts(
   const config = getConfiguredBroadcasters();
   const guideTask=getGuideBroadcasts(date);
   let available: Awaited<ReturnType<typeof loadCanais>>["canais"] = [];
-  let epg = new Map<string, { id: string; nome: string; logo?: string }>();
+  let epg = new Map<string, ChannelRef[]>();
   // EPG and ESPN match summaries are independent and should not queue sequentially.
   const epgTask = (async () => {
     try {
       available = (await loadCanais()).canais;
       epg = await Promise.race([
         localizarJogosNaGradeEPG(matches, available).catch(() =>
-          new Map<string, { id: string; nome: string; logo?: string }>()),
-        new Promise<Map<string, { id: string; nome: string; logo?: string }>>(
+          new Map<string, ChannelRef[]>()),
+        new Promise<Map<string, ChannelRef[]>>(
           resolve => setTimeout(() => resolve(new Map()), 9500)
         ),
       ]);
@@ -209,62 +211,25 @@ async function annotateBroadcasts(
         "|" + normalizeSoccerName(game.fora).replace(/ /g, "-")];
     const manual = (Array.isArray(configured) ? configured : configured ? [configured] : []);
     const verified = verifiedBroadcastEvidence(game);
-    // When a broadcaster holds verified EXCLUSIVE rights, ignore generic
-    // competition/EPG suggestions rather than linking the wrong TV channel.
-    const sourceNames = verified?.exclusive ? [...verified.names] : [...new Set([
-      ...brBroadcastsFromESPN(fixture.raw),
-      ...(detailedBroadcasts.get(game.id) || []),
-      ...(backupBroadcasts.get(game.id) || []),
-      ...(verified?.names || []),
-      ...guideNamesForFixture(game,guide),
-    ])];
-    const announced = verified?.exclusive ? sourceNames : (manual.length ? manual : sourceNames);
-    const epgChannel = verified?.exclusive ? undefined : epg.get(game.id);
-    const names = [...new Set([...announced, ...(epgChannel ? [epgChannel.nome] : [])]
-      .map(name => name.trim()).filter(Boolean))];
-    if (names.length) game.canaisTransmissao = names;
-    if (verified?.watchUrl) game.transmissaoUrl = verified.watchUrl;
-    // Prime Video is an external subscription service, not a local IPTV
-    // channel. Its verified match page is the correct action on this card.
-    if (verified?.exclusive && verified.watchUrl) continue;
-
-    // Explicit match-level configuration > EPG > Brazil-only ESPN metadata.
-    let resolved: { id: string; nome: string; logo?: string } | null = null;
-    let origin: JogoBrasileirao["origemTransmissao"];
-    for (const name of manual) {
-      resolved = matchBrazilianBroadcastChannel(name, available);
-      if (resolved) { origin = "configuracao"; break; }
+    const epgChannels=epg.get(game.id)||[];
+    const claims:BroadcastClaim[]=[];
+    const add=(names:readonly string[],origem:BroadcastClaim["origem"])=>{for(const nome of names)claims.push({nome,origem});};
+    // Exclusive event-level evidence is authoritative; configuration may not contradict it.
+    if(verified?.exclusive){add(verified.names,"verificada");}
+    else if(manual.length){add(manual,"configuracao");}
+    else{
+      add(brBroadcastsFromESPN(fixture.raw),"espn");
+      add(detailedBroadcasts.get(game.id)||[],"espn");
+      add(backupBroadcasts.get(game.id)||[],"sportsdb");
+      add(verified?.names||[],"verificada");
+      add(guideNamesForFixture(game,guide),"guia");
+      add(epgChannels.map(ch=>ch.nome),"epg");
     }
-    if (!resolved && epgChannel && available.some(ch=>ch.id===epgChannel.id&&ch.fontes?.length>0)) {
-      resolved = epgChannel;
-      origin = "epg";
-    }
-    if (!resolved) for (const name of sourceNames) {
-      resolved = matchBrazilianBroadcastChannel(name, available);
-      if (resolved) { origin = verified?.names.includes(name) ? "verificada" : "grade-br"; break; }
-    }
-    // Preserve each verified in-catalog option so viewers can choose a
-    // specific broadcaster, not a generic TV entry or guessed URL.
-    const listed = [...new Set([...manual,...sourceNames])];
-    const alternatives = [ ...(epgChannel ? [epgChannel] : []),
-      ...listed.map(name=>matchBrazilianBroadcastChannel(name,available))
-        .filter((ch): ch is NonNullable<typeof ch> => ch!==null),
-    ];
-    const ids = new Set<string>();
-    const validAlternatives = alternatives.filter(ch=>{
-      if(ids.has(ch.id))return false;
-      ids.add(ch.id);
-      return available.some(c=>c.id===ch.id&&c.fontes?.length>0);
-    });
-    if(validAlternatives.length)game.canaisDisponiveis=validAlternatives;
-    if (resolved) {
-      game.canalId = resolved.id;
-      game.canalNome = resolved.nome;
-      game.canalLogo = resolved.logo || null;
-      game.transmissao = "confirmada";
-      if (origin) game.origemTransmissao = origin;
-    }
+    if(verified?.watchUrl)game.transmissaoUrl=verified.watchUrl;
+    else delete game.transmissaoUrl;
+    resolveBroadcast(game,claims,available,epgChannels,new Date().toISOString());
   }
+  removeOverlappingBroadcastLinks(matches);
   return matches;
 }
 /**
@@ -342,7 +307,7 @@ async function getFresh(date: string): Promise<JogosHojeResponse> {
   const backupBroadcasts=getBrazilianSportsDbBroadcasts(backup||[]).then(found=>{
     for (const game of combined) {
       if(found.has(game.id))continue;
-      const counterpart=(backup||[]).find(item=>sameBroadcastFixture(game,item));
+      const counterpart=(backup||[]).find(item=>game.ligaId===item.ligaId&&sameBroadcastFixture(game,item));
       if(counterpart) {
         const channels=found.get(counterpart.id);
         if(channels?.length)found.set(game.id,channels);
@@ -394,7 +359,7 @@ export async function getJogosHoje(requestedDate?: string): Promise<JogosHojeRes
     return value;
   }).catch(error => {
     if (cached && Date.now() - Date.parse(cached.value.atualizadoEm) < STALE_MS) {
-      return { ...cached.value, parcial: true, erro: "Dados em cache: fonte de jogos indisponível" };
+      return { ...cached.value, jogos:cached.value.jogos.map(g=>{const copy={...g};clearBroadcastLink(copy);delete copy.transmissaoUrl;copy.transmissaoVerificadaEm=new Date().toISOString();return copy;}), parcial: true, erro: "Dados em cache: fonte de jogos indisponível" };
     }
     console.error("[Sports] Agenda indisponível", error);
     return {
@@ -462,30 +427,26 @@ export async function getJogosPlacares(
       if(!parsed.gols?.length&&older?.gols?.length &&
          parsed.placarCasa===older.placarCasa &&
          parsed.placarFora===older.placarFora)parsed.gols=older.gols;
-      if (older?.transmissaoUrl) parsed.transmissaoUrl = older.transmissaoUrl;
-      if (older?.canalId) {
-        parsed.canalId = older.canalId;
-        parsed.canalNome = older.canalNome;
-        parsed.canalLogo = older.canalLogo;
-        parsed.transmissao = older.transmissao;
-        if (older.canaisDisponiveis?.length) parsed.canaisDisponiveis = older.canaisDisponiveis;
-        if (older.origemTransmissao) parsed.origemTransmissao = older.origemTransmissao;
-      }
+      const same=older&&older.ligaId===parsed.ligaId&&sameBroadcastFixture(older,parsed)&&Math.abs(Date.parse(older.inicioIso)-Date.parse(parsed.inicioIso))<=15*60_000;
+      const fresh=same&&older?.transmissaoVerificadaEm&&Date.now()-Date.parse(older.transmissaoVerificadaEm)<10*60_000;
       const announced = brBroadcastsFromESPN(event);
       const proof = verifiedBroadcastEvidence(parsed);
-      parsed.canaisTransmissao = proof?.exclusive ? [...proof.names]
-        : older?.canaisTransmissao?.length ? older.canaisTransmissao : announced;
-      if (proof?.watchUrl) parsed.transmissaoUrl = proof.watchUrl;
-      // Never propagate a cached Premiere webpage as a stream after catalog
-      // refreshes. A verified network name without a watch URL needs a real
-      // catalog source and a same-channel match.
-      else if (proof?.exclusive) delete parsed.transmissaoUrl;
-      if (proof?.exclusive && proof.watchUrl) {
-        parsed.canalId = null;
-        parsed.canalNome = null;
-        parsed.canalLogo = null;
-        parsed.transmissao = "nao-confirmada";
+      // Scoreboard cannot publish new direct targets or resurrect old channel IDs.
+      // Full agenda is the only authority for links, including conflict checks.
+      if(fresh&&older){
+        parsed.canalId=older.canalId;parsed.canalNome=older.canalNome;parsed.canalLogo=older.canalLogo;
+        parsed.transmissao=older.transmissao;
+        if(older.canaisDisponiveis)parsed.canaisDisponiveis=older.canaisDisponiveis;
+        if(older.origemTransmissao)parsed.origemTransmissao=older.origemTransmissao;
+        if(older.transmissaoVerificadaEm)parsed.transmissaoVerificadaEm=older.transmissaoVerificadaEm;
+        if(older.evidenciasTransmissao)parsed.evidenciasTransmissao=older.evidenciasTransmissao;
+        if(older.transmissaoUrl)parsed.transmissaoUrl=older.transmissaoUrl;
       }
+      parsed.canaisTransmissao=proof?.exclusive?[...proof.names]:[...new Set([...(fresh?older?.canaisTransmissao||[]:[]),...announced])];
+      if(proof?.watchUrl)parsed.transmissaoUrl=proof.watchUrl;
+      else if (proof?.exclusive) delete parsed.transmissaoUrl;
+      if(older&&!fresh){clearBroadcastLink(parsed);delete parsed.transmissaoUrl;parsed.transmissaoVerificadaEm=new Date().toISOString();}
+      if(proof?.exclusive&&proof.watchUrl||parsed.status==="adiado"){clearBroadcastLink(parsed);if(parsed.status==="adiado")delete parsed.transmissaoUrl;parsed.transmissaoVerificadaEm=new Date().toISOString();}
       byId.set(parsed.id, parsed);
     }
 
@@ -511,32 +472,6 @@ export async function getJogosPlacares(
       } catch(error) {
         console.warn("[Sports] Provedor auxiliar de placares indisponível",
           error instanceof Error ? error.name : "network");
-      }
-    }
-
-    // A fixture discovered on the fast feed can already carry BR-specific rights data.
-    // Resolve only that explicit metadata; never assign a channel by league alone.
-    const unresolved = [...byId.values()].filter(g =>
-      !g.canalId && !g.transmissaoUrl && g.canaisTransmissao && g.canaisTransmissao.length > 0
-    );
-    if (unresolved.length) {
-      try {
-        const channels = (await loadCanais()).canais;
-        for (const game of unresolved) {
-          for (const name of game.canaisTransmissao || []) {
-            const match = matchBrazilianBroadcastChannel(name, channels);
-            if (match) {
-              game.canalId = match.id;
-              game.canalNome = match.nome;
-              game.canalLogo = match.logo || null;
-              game.transmissao = "confirmada";
-              game.origemTransmissao = "grade-br";
-              break;
-            }
-          }
-        }
-      } catch (error) {
-        console.warn("[Sports] Catálogo de canais indisponível no placar", error);
       }
     }
 

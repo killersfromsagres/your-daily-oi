@@ -4,7 +4,8 @@
  */
 
 import { loadCanais } from "./canais";
-import { doesEpgDescribeFixture, type JogoBrasileirao } from "./jogos-match";
+import { type JogoBrasileirao } from "./jogos-match";
+import { isFixtureProgramme } from "./broadcast-resolution";
 import { canonicalTvChannelIdentity } from "./broadcast-match";
 
 export interface ProgramaEPG {
@@ -47,7 +48,7 @@ interface EpgState {
 
 const CLARO_XML_URL = "https://raw.githubusercontent.com/limaalef/BrazilTVEPG/main/claro.xml";
 const EPG_XML_URL = "https://raw.githubusercontent.com/limaalef/BrazilTVEPG/main/epg.xml";
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora: grade esportiva variável
+const CACHE_TTL_MS = 10 * 60 * 1000; // 1 hora: grade esportiva variável
 
 let cachedState: EpgState | null = null;
 let loadPromise: Promise<EpgState | null> | null = null;
@@ -438,38 +439,30 @@ export async function getGradeAgora(): Promise<GradeItemAgora[]> {
 export async function localizarJogosNaGradeEPG(
   jogos: JogoBrasileirao[],
   canais: { id: string; nome: string; logo?: string; fontes: { url: string }[] }[],
-): Promise<Map<string, { id: string; nome: string; logo?: string }>> {
-  const found = new Map<string, { id: string; nome: string; logo?: string }>();
+): Promise<Map<string, { id: string; nome: string; logo?: string }[]>> {
+  const found = new Map<string, { id: string; nome: string; logo?: string }[]>();
   if (!jogos.length || !canais.length) return found;
   const state = await getOrLoadEpgState();
-  if (!state) return found;
-
-  const normalizeGuideChannel = canonicalTvChannelIdentity;
-  const channelsByNorm = new Map(
-    canais.filter(channel => channel.fontes.length > 0)
-      .map(channel => [normalizeGuideChannel(channel.nome), channel] as const),
-  );
-  const programmesById = [...state.programmesByChannel.entries()];
-  for (const [epgId, programmes] of programmesById) {
+  if (!state || Date.now()-state.loadedAt>20*60_000) return found;
+  const channelsByNorm = new Map<string,typeof canais>();
+  for(const channel of canais){
+    if(!channel.fontes.length)continue;
+    const key=canonicalTvChannelIdentity(channel.nome);
+    channelsByNorm.set(key,[...(channelsByNorm.get(key)||[]),channel]);
+  }
+  for (const [epgId, programmes] of state.programmesByChannel) {
     const epgChannel = state.channels.get(epgId);
     if (!epgChannel) continue;
-    const catalogChannel = channelsByNorm.get(normalizeGuideChannel(epgChannel.name)) ||
-      channelsByNorm.get(normalizeGuideChannel(epgId));
-    if (!catalogChannel) continue;
+    const candidates = channelsByNorm.get(canonicalTvChannelIdentity(epgChannel.name)) ||
+      channelsByNorm.get(canonicalTvChannelIdentity(epgId)) || [];
+    if (!candidates.length) continue;
     for (const match of jogos) {
-      if (found.has(match.id)) continue;
       const start = Date.parse(match.inicioIso);
       if (!Number.isFinite(start)) continue;
-      const near = programmes.find(programme =>
-        programme.start <= start + 45 * 60_000 &&
-        programme.stop >= start - 45 * 60_000 &&
-        doesEpgDescribeFixture(programme.title + " " + (programme.desc || ""), match.casa, match.fora)
-      );
-      if (near) {
-        found.set(match.id, {
-          id: catalogChannel.id, nome: catalogChannel.nome, ...(catalogChannel.logo ? { logo: catalogChannel.logo } : {}),
-        });
-      }
+      if(!programmes.some(p=>isFixtureProgramme(p,match)))continue;
+      const rows=found.get(match.id)||[];
+      for(const channel of candidates)if(!rows.some(c=>c.id===channel.id))rows.push({id:channel.id,nome:channel.nome,...(channel.logo?{logo:channel.logo}:{})});
+      found.set(match.id,rows);
     }
   }
   return found;

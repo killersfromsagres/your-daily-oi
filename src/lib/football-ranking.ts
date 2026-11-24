@@ -84,9 +84,11 @@ export function mergeFootballScores(
     // card, nor erase a genuine live match's score with a scheduled snapshot.
     if (previous.status === "encerrado" && update.status !== "encerrado") continue;
     if (previous.status === "ao-vivo" && update.status === "agendado") continue;
-    const origin = previous.origemTransmissao ?? update.origemTransmissao;
-    const broadcasters = previous.canaisTransmissao?.length ?
-      previous.canaisTransmissao : update.canaisTransmissao;
+    const oldStamp=Date.parse(previous.transmissaoVerificadaEm||"");const newStamp=Date.parse(update.transmissaoVerificadaEm||"");
+    const useUpdate=Number.isFinite(newStamp)&&(!Number.isFinite(oldStamp)||newStamp>oldStamp);
+    const authority=useUpdate?update:previous;
+    const origin=authority.origemTransmissao;
+    const broadcasters = useUpdate?update.canaisTransmissao:(previous.canaisTransmissao?.length?previous.canaisTransmissao:update.canaisTransmissao);
     const combined: JogoBrasileirao = {
       ...previous,
       ...(update.cidadeEstadio ? {cidadeEstadio:update.cidadeEstadio} : {}),
@@ -104,17 +106,20 @@ export function mergeFootballScores(
         (update.placarCasa??previous.placarCasa)===previous.placarCasa &&
         (update.placarFora??previous.placarFora)===previous.placarFora
           ? {gols:previous.gols} : {gols:undefined})),
-      canalId: previous.canalId || update.canalId,
-      canalNome: previous.canalNome || update.canalNome,
-      canalLogo: previous.canalLogo || update.canalLogo,
+      canalId: authority.canalId,
+      canalNome: authority.canalNome,
+      canalLogo: authority.canalLogo,
       ...(previous.transmissaoUrl || update.transmissaoUrl ?
         {transmissaoUrl: previous.transmissaoUrl || update.transmissaoUrl} : {}),
       ...(previous.canaisDisponiveis?.length || update.canaisDisponiveis?.length ?
         { canaisDisponiveis: previous.canaisDisponiveis?.length ? previous.canaisDisponiveis : update.canaisDisponiveis } : {}),
       ...(broadcasters?.length ? {canaisTransmissao: broadcasters} : {}),
-      transmissao: previous.canalId || update.canalId ? "confirmada" : previous.transmissao,
+      transmissao: authority.transmissao,
       ...(origin ? {origemTransmissao: origin} : {}),
     };
+    // Explicitly remove stale optional fields when a new authoritative snapshot revokes them.
+    if(useUpdate){for(const k of ["transmissaoUrl","canaisDisponiveis","origemTransmissao","canaisTransmissao","evidenciasTransmissao"] as const)delete combined[k];Object.assign(combined,{transmissaoVerificadaEm:update.transmissaoVerificadaEm});for(const k of ["transmissaoUrl","canaisDisponiveis","origemTransmissao","canaisTransmissao","evidenciasTransmissao"] as const){if(update[k]!==undefined)Object.assign(combined,{[k]:update[k]});}}
+    if(combined.status==="adiado"||Math.abs(Date.parse(previous.inicioIso)-Date.parse(update.inicioIso))>20*60_000){combined.canalId=null;combined.canalNome=null;combined.canalLogo=null;combined.transmissao="nao-confirmada";combined.canaisDisponiveis=[];delete combined.transmissaoUrl;}
     byId.set(previousKey!, applyVerifiedResult(combined));
   }
   return [...byId.values()];

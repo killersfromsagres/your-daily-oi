@@ -22,7 +22,7 @@ export function parseFootballTvGuide(html:string,source:string):GuideBroadcast[]
 }
 export function guideNamesForFixture(game:Pick<JogoBrasileirao,"casa"|"fora"|"inicioIso"|"dataLocal">,rows:readonly GuideBroadcast[]):string[]{
  const a=guideTeamKey(game.casa),b=guideTeamKey(game.fora),kickoff=Date.parse(game.inicioIso);
- const matching=rows.filter(row=>row.dataLocal===game.dataLocal&&Math.abs(Date.parse(row.inicioIso)-kickoff)<=45*60_000&&
+ const matching=rows.filter(row=>row.dataLocal===game.dataLocal&&Math.abs(Date.parse(row.inicioIso)-kickoff)<=20*60_000&&
   ((guideTeamKey(row.casa)===a&&guideTeamKey(row.fora)===b)||(guideTeamKey(row.casa)===b&&guideTeamKey(row.fora)===a)));
  return [...new Set(matching.flatMap(row=>row.names))];
 }
@@ -37,9 +37,9 @@ export async function getGuideBroadcasts(date:string,now=new Date()):Promise<Gui
    const response=await fetch(url,{headers:{Accept:"text/html"},signal:AbortSignal.timeout(4500)});
    if(!response.ok)throw Error("Guide HTTP "+response.status);
    const rows=parseFootballTvGuide(await response.text(),url).filter(row=>row.dataLocal===date);
-   cache.set(date,{rows,expires:Date.now()+(rows.length?10*60_000:60_000)});
+   cache.set(date,{rows,expires:Date.now()+(rows.length?3*60_000:60_000)});
    for(const key of cache.keys())if(key!==today&&key!==tomorrow)cache.delete(key);
    return rows;
-  }catch(error){console.warn("[BroadcastGuide]",String(error).slice(0,150));return existing?.rows||[];}finally{pending.delete(date);}
+  }catch(error){console.warn("[BroadcastGuide]",String(error).slice(0,150));return existing&&Date.now()-existing.expires<3*60_000?existing.rows:[];}finally{pending.delete(date);}
  })();pending.set(date,task);return task;
 }
