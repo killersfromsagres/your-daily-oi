@@ -1,0 +1,75 @@
+/* Exclusive TCL dashboard: football arena + live channel guide. */
+.zf-tv-reference .zf-tv-arena{padding:0 2.45vw 5vh;min-width:0;color:#f5f5f5}
+.zf-tv-arena .zf-arena-hero{position:relative;isolation:isolate;display:flex;align-items:flex-end;justify-content:space-between;min-height:25vh;margin:0 -2.45vw;padding:4.5vh 2.45vw 3vh;overflow:hidden;background:#161616}
+.zf-arena-pitch{position:absolute;inset:0;z-index:-2;overflow:hidden;background:linear-gradient(90deg,#111 0%,#111e 26%,#1115 76%),repeating-linear-gradient(90deg,#1d2720 0%,#1d2720 9%,#202d24 9%,#202d24 18%)}
+.zf-arena-pitch::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#111,transparent 45%),linear-gradient(90deg,#111 8%,transparent 85%)}
+.zf-arena-pitch>div{position:absolute;top:12%;left:45%;width:55%;height:100%;border:1px solid #d0dbd14a;transform:perspective(500px) rotateX(35deg) rotateZ(-12deg)}
+.zf-arena-pitch>div::before{content:"";position:absolute;inset:0 50% 0 auto;border-left:1px solid #d0dbd14a}
+.zf-arena-pitch>div::after{content:"";position:absolute;width:30%;aspect-ratio:1;top:50%;left:50%;transform:translate(-50%,-50%);border:1px solid #d0dbd14a;border-radius:50%}
+.zf-arena-pitch>i,.zf-arena-pitch>b{position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 80% 0,#ffffff12,transparent 55%)}
+.zf-arena-hero-copy{position:relative;z-index:1;min-width:0}
+.zf-arena-kicker{display:flex;align-items:center;gap:8px;color:#ff666d;font-size:clamp(11px,.9vw,17px);letter-spacing:.14em;font-weight:600}
+.zf-tv-arena h1{font-size:clamp(34px,4vw,76px);font-weight:500;line-height:1;letter-spacing:-.055em;margin:1.5vh 0}
+.zf-arena-hero-copy p,.zf-arena-metrics{display:flex;align-items:center;gap:9px;color:#c9c9c9;font-size:clamp(12px,1.05vw,20px);margin:0}
+.zf-arena-hero-copy p>span{color:#a2a2a2}
+.zf-arena-metrics{margin-top:2vh;gap:20px}
+.zf-arena-metrics span{display:flex;align-items:center;gap:7px}.zf-arena-metrics span:first-child{color:#ff656c}
+.zf-tv-arena button{font-family:inherit}
+.zf-arena-refresh,.zf-arena-filter button,.zf-arena-leagues button{display:flex;align-items:center;justify-content:center;gap:8px;flex:none;border:1px solid #ffffff25;border-radius:999px;background:#191919;color:#ddd;padding:1vh 1.3vw;font-size:clamp(12px,1vw,19px);font-weight:500}
+.zf-arena-refresh{background:#ffffff10;position:relative;z-index:1}
+.zf-arena-filter,.zf-arena-leagues{display:flex;align-items:center;gap:.7vw;overflow:auto;scrollbar-width:none;padding:5px 4px;margin:1.4vh -4px 0}
+.zf-arena-leagues button{font-size:clamp(11px,.85vw,16px);background:transparent;padding:.7vh 1vw}
+.zf-arena-filter button[aria-pressed=true]{background:#e32930;border-color:#e32930;color:#fff}
+.zf-arena-leagues button[aria-pressed=true]{background:#ffffff12;color:#fff;border-color:#ffffff70}
+.zf-arena-list-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:2.8vh 0 1.4vh}
+.zf-arena-list-head h2{font-weight:500;font-size:clamp(19px,1.7vw,33px);letter-spacing:-.035em;margin:0}
+.zf-arena-list-head small,.zf-arena-notice{color:#bcbcbc;font-size:clamp(11px,.88vw,17px)}
+.zf-arena-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.4vw}
+.zf-arena-match{position:relative;display:block;text-align:left;color:#f5f5f5;min-width:0;border:1px solid #ffffff1b;border-radius:1.1vw;background:linear-gradient(145deg,#222,#171717 70%);padding:1.3vw;overflow:hidden}
+.zf-arena-match.is-live{border-color:#e329306e;background:linear-gradient(145deg,#321b1c,#191919 70%)}
+.zf-arena-match-top,.zf-arena-match-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.zf-arena-match-top>span:first-child,.zf-arena-match-bottom>span{display:flex;align-items:center;gap:7px;min-width:0;font-size:clamp(11px,.95vw,18px);color:#ddd}
+.zf-arena-match-top img,.zf-arena-match-top>span:first-child>span{width:clamp(19px,1.8vw,35px);height:clamp(19px,1.8vw,35px);object-fit:contain;flex:none;font-size:10px}
+.zf-arena-phase{display:flex;align-items:center;gap:6px;color:#bbb;font-size:clamp(10px,.8vw,15px);white-space:nowrap}
+.zf-arena-match.is-live .zf-arena-phase{color:#ff747b}.zf-arena-phase i{width:7px;height:7px;border-radius:50%;background:#ff414d}
+.zf-arena-teams{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.8fr) minmax(0,1fr);align-items:center;gap:.6vw;padding:2vh 0 2.2vh}
+.zf-arena-teams>div{display:flex;align-items:center;flex-direction:column;gap:.7vh;text-align:center;min-width:0}
+.zf-arena-teams>div>img,.zf-arena-teams>div:not(.zf-arena-score)>span{width:clamp(42px,4.3vw,82px);height:clamp(42px,4.3vw,82px);object-fit:contain}
+.zf-arena-teams>div:not(.zf-arena-score)>span{display:grid;place-items:center;background:#ffffff09;border-radius:50%;font-size:1.2vw}
+.zf-arena-teams>div>strong{font-size:clamp(12px,1.05vw,20px);font-weight:600;line-height:1.25;max-width:100%;overflow-wrap:anywhere}
+.zf-arena-teams .zf-arena-score strong{font-size:clamp(23px,2.7vw,52px);font-weight:650;letter-spacing:-.06em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.zf-arena-score small{font-size:clamp(9px,.65vw,12px);letter-spacing:.08em;color:#aaa}
+.zf-arena-match-bottom{padding-top:1.1vh;border-top:1px solid #ffffff15;min-height:3vh}
+.zf-arena-match-bottom>span{overflow:hidden;text-overflow:ellipsis}
+.zf-arena-match[aria-disabled=true] .zf-arena-match-bottom>span{color:#a6a6a6}
+.zf-arena-match:focus{outline:2px solid #fff!important;outline-offset:3px;border-color:#ff4b55}
+.zf-tenfoot.zf-tv-live-guide{padding:0 4vw 5vh;background:#111;color:#f5f5f5}
+.zf-tv-live-guide .zf-live-top{padding:2.2vh 0;min-height:0}
+.zf-tv-live-guide .zf-live-feature{position:relative;isolation:isolate;max-width:none;margin:0 0 2vh;padding:3.5vh 3vw;overflow:hidden;border-radius:1.25vw;background:linear-gradient(110deg,#191919,#191919 40%,#3d1519);border:1px solid #ffffff12}
+.zf-live-feature-art{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.zf-live-feature-art span{position:absolute;width:18%;aspect-ratio:16/9;border:1px solid #ffffff20;border-radius:12px;background:linear-gradient(140deg,#ffffff12,#ff29301c);transform:rotate(-14deg)}
+.zf-live-feature-art span:nth-child(1){right:8%;top:-10%}.zf-live-feature-art span:nth-child(2){right:29%;top:12%}.zf-live-feature-art span:nth-child(3){right:2%;top:55%}.zf-live-feature-art span:nth-child(4){right:23%;top:78%}
+.zf-tv-live-guide .zf-live-feature h1{font-size:clamp(32px,3.8vw,72px);margin:1.3vh 0;letter-spacing:-.045em;font-weight:500}
+.zf-tv-live-guide .zf-live-feature p{margin:0;color:#c9c9c9;font-size:clamp(13px,1.1vw,21px)}
+.zf-tv-live-guide .zf-live-feature .zf-tenfoot-rail-caption{display:flex;align-items:center;gap:8px;font-weight:600;color:#ff6e76}
+.zf-tv-live-guide .zf-live-search{margin-top:2vh;max-width:38vw;min-height:0;background:#ffffff0c;border-color:#ffffff40;padding:1.2vh 1.2vw}
+.zf-live-resume{display:flex;gap:1vw;margin:1.6vh 0 2vh}
+.zf-live-resume button{display:flex;align-items:center;gap:13px;border:1px solid #ffffff18;border-radius:11px;background:#1b1b1b;color:#f4f4f4;padding:1.4vh 1.3vw;font-size:clamp(13px,1.05vw,20px)}
+.zf-live-resume button span{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.zf-live-resume button small{font-size:clamp(9px,.66vw,13px);color:#bcbcbc;letter-spacing:.07em}
+.zf-live-resume button>svg:first-child{color:#ff555e}
+.zf-tv-live-guide .zf-live-filters{gap:.7vw;padding:5px 4px 10px;margin:0 -4px}
+.zf-tv-live-guide .zf-live-filters button{font-size:clamp(12px,.95vw,18px);min-height:0;padding:1vh 1.2vw}
+.zf-tv-live-guide .zf-live-catalog-head{margin:2vh 0 1.3vh}
+.zf-tv-live-guide .zf-live-grid{gap:1.2vw}
+.zf-tv-live-guide .zf-live-card{min-height:0;gap:.8vh;padding:.65vw;border:1px solid #ffffff13;background:#1a1a1a;border-radius:1vw;overflow:hidden}
+.zf-tv-live-guide .zf-live-card-image{height:auto;aspect-ratio:16/9;position:relative;background:radial-gradient(ellipse at 50% 20%,#343434,#1e1e1e);border-radius:.65vw}
+.zf-tv-live-guide .zf-live-card-image img{max-width:75%;max-height:70%}
+.zf-live-card-favorite{position:absolute;top:8px;right:8px;color:#ff5b63}
+.zf-tv-live-guide .zf-live-card-copy{padding:0 .3vw;gap:.5vh}
+.zf-tv-live-guide .zf-live-card-copy strong{font-weight:600;font-size:clamp(13px,1.05vw,20px)}
+.zf-tv-live-guide .zf-live-card-copy small{font-size:clamp(11px,.82vw,16px);color:#bdbdbd}
+.zf-tv-live-guide .zf-live-status{display:flex;align-items:center;gap:6px;color:#ff777e;background:transparent;font-size:clamp(10px,.8vw,15px);letter-spacing:0;font-weight:500;padding:.4vh .3vw}
+.zf-tv-live-guide .zf-live-card:focus,.zf-tv-live-guide button[data-tv-focus]:focus{outline:2px solid #fff!important;outline-offset:2px;border-color:#e32930;box-shadow:none!important;transform:none!important}
+.zf-tv-live-guide .zf-live-card.is-offline .zf-live-status{color:#aaa}
+@media(max-width:880px){.zf-arena-grid{gap:12px}.zf-arena-match{padding:10px}.zf-arena-teams{grid-template-columns:minmax(0,1fr) minmax(60px,.8fr) minmax(0,1fr)}.zf-arena-hero-copy p>span{display:none}}

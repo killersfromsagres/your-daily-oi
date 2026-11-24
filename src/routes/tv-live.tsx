@@ -1,5 +1,7 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
 import tvReferenceCss from "../styles/tv-reference.css?url";
+import tvArenaCss from "../styles/tv-arena.css?url";
+import type {GradeItemAgora} from "@/lib/epg";
 import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -33,10 +35,16 @@ function normalize(value:string){
 const BASE_CATEGORIES=["Todos","Favoritos","Recentes"];
 export const Route=createFileRoute("/tv-live")({
   component:TvLive,
-  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss}],meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
+  validateSearch:(search:Record<string,unknown>):{channel?:string;from?:"sports"}=>({...(typeof search["channel"]==="string"?{channel:search["channel"]}:{}),...(search["from"]==="sports"?{from:"sports" as const}:{})}),
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss},{rel:"stylesheet",href:tvArenaCss}],meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
 });
 function TvLive(){
   const navigate=useNavigate();
+  const {channel:requestedChannel,from}=Route.useSearch();
+  const openedRequest=useRef("");
+  const [guide,setGuide]=useState<Record<string,GradeItemAgora>>({});
+  useEffect(()=>{let disposed=false;let pending:AbortController|null=null;const refresh=async()=>{if(pending||document.visibilityState!=="visible")return;const c=new AbortController();pending=c;const timer=window.setTimeout(()=>c.abort(),12000);try{const r=await fetch("/api/epg/agora",{signal:c.signal,cache:"no-store"});if(!r.ok)throw Error("EPG");const list=await r.json() as GradeItemAgora[];if(!Array.isArray(list))return;const next:Record<string,GradeItemAgora>={};for(const e of list)if(e&&typeof e.canalNome==="string")next[normalize(e.canalNome)]=e;if(!disposed)setGuide(next);}catch{if(!disposed)setGuide({});}finally{window.clearTimeout(timer);if(pending===c)pending=null;}};void refresh();const timer=window.setInterval(refresh,60000);return()=>{disposed=true;pending?.abort();window.clearInterval(timer)}},[]);
+  const returnHome=()=>void navigate({to:"/tv-home",search:from==="sports"?{section:"sports"}:{}});
   const root=useRef<HTMLElement>(null);
   const playerRef=useRef<HTMLDivElement>(null);
   const lastFocusedId=useRef("");
@@ -140,11 +148,11 @@ function TvLive(){
       if(category==="Favoritos"&&!favorites.includes(ch.id))return false;
       if(category==="Recentes"&&!recents.includes(ch.id))return false;
       if(!BASE_CATEGORIES.includes(category)&&ch.categoria!==category)return false;
-      return !term||normalize(ch.nome+" "+ch.categoria).includes(term);
+      return !term||normalize(ch.nome+" "+ch.categoria+" "+(guide[normalize(ch.nome)]?.atual?.titulo||"")).includes(term);
     });
     if(category==="Recentes")return [...result].sort((a,b)=>recents.indexOf(a.id)-recents.indexOf(b.id));
     return [...result].sort((a,b)=>Number(b.fontes.length>0)-Number(a.fontes.length>0)||a.nome.localeCompare(b.nome,"pt-BR"));
-  },[channels,category,search,favorites,recents]);
+  },[channels,category,search,favorites,recents,guide]);
   const active=useMemo(()=>channels.find(ch=>ch.id===activeId)||null,[channels,activeId]);
   const visible=filtered.slice(0,limit);
   const onBack=useCallback(()=>{
@@ -156,13 +164,14 @@ function TvLive(){
     if(activeId){
       activeIdRef.current="";playingIdRef.current="";
       setActiveId("");
+      if(from==="sports"){void navigate({to:"/tv-home",search:{section:"sports"}});return;}
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
         const target=[...document.querySelectorAll<HTMLElement>("[data-tv-channel]")].find(el=>el.dataset["tvChannel"]===lastFocusedId.current);
         target?.focus({preventScroll:true});
       }));
     }else if(search){setSearch("");}
-    else void navigate({to:"/tv-home"});
-  },[activeId,search,navigate,cinema]);
+    else void navigate({to:"/tv-home",search:from==="sports"?{section:"sports"}:{}});
+  },[activeId,search,navigate,cinema,from]);
   useTvFocus({route:"live",root,onBack,playerOpen:cinema&&!cinemaControls});
   const choose=(ch:CanalTV)=>{
     if(!ch.fontes.length){setError("Este canal está sem fonte de transmissão. Atualize para tentar novamente.");return;}
@@ -178,6 +187,7 @@ function TvLive(){
       saveList(RECENTS_KEY,next);return next;
     });
   };
+  useEffect(()=>{if(!requestedChannel||loading||refreshing||openedRequest.current===requestedChannel)return;openedRequest.current=requestedChannel;const ch=channels.find(c=>c.id===requestedChannel);if(ch&&ch.fontes.length){choose(ch);setError("");}else setError("O canal identificado para esta partida está indisponível no catálogo. Atualize ou retorne aos jogos.");},[requestedChannel,loading,refreshing,channels]);
   const toggleFavorite=(id:string)=>{
     setFavorites(prev=>{
       const next=prev.includes(id)?prev.filter(x=>x!==id):[id,...prev];
@@ -274,23 +284,24 @@ function TvLive(){
     return()=>document.removeEventListener("keydown",handler,true);
   },[activeId,cinema]);
 
-  return <main className={"zf-tenfoot zf-tenfoot-live zf-tv-reference-inner"+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
+  return <main className={"zf-tenfoot zf-tenfoot-live zf-tv-reference-inner"+(!active?" zf-tv-live-guide":"")+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!active ? <>
       <header className="zf-live-top" data-tv-row="live-nav">
-        <button type="button" data-tv-focus="live-back" data-tv-start onClick={()=>void navigate({to:"/tv-home"})}><ArrowLeft size={20}/> Voltar</button>
+        <button type="button" data-tv-focus="live-back" data-tv-start onClick={returnHome}><ArrowLeft size={20}/> {from==="sports"?"Voltar aos jogos":"Voltar"}</button>
         <div className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/> <span>AO VIVO</span></div>
-        <button type="button" data-tv-focus="live-refresh" onClick={()=>void load(true)} disabled={refreshing}><RefreshCw size={19}/> Atualizar</button>
+        <button type="button" data-tv-focus="live-refresh" onClick={()=>{openedRequest.current="";void load(true)}} disabled={refreshing}><RefreshCw size={19}/> Atualizar</button>
       </header>
-      <section className="zf-live-intro">
-        <div className="zf-tenfoot-rail-caption">GUIA DE CANAIS</div>
+      <section className="zf-live-intro zf-live-feature">
+        <div className="zf-live-feature-art" aria-hidden="true"><span/><span/><span/><span/></div><div className="zf-tenfoot-rail-caption"><span className="zf-live-dot"/> ZANG FLIX LIVE</div>
         <h1>TV ao vivo<span>.</span></h1>
-        <p>Escolha uma categoria, encontre seu canal e pressione OK para assistir.</p>
+        <p>Seus canais, sua programação. Escolha o que assistir agora.</p>
         <label className="zf-live-search" data-tv-row="live-search">
           <Search size={22}/><input data-tv-focus="live-input" type="search" value={search}
-            onChange={e=>setSearch(e.target.value)} placeholder="Pesquisar canal" aria-label="Pesquisar canal" autoComplete="off"/>
+            onChange={e=>setSearch(e.target.value)} placeholder="Buscar canal ou programa" aria-label="Pesquisar canal ou programa" autoComplete="off"/>
           {search&&<button data-tv-focus="live-clear" type="button" aria-label="Limpar" onClick={()=>setSearch("")}><X size={18}/></button>}
         </label>
       </section>
+      {recents.length>0&&channels.some(c=>c.id===recents[0]&&c.fontes.length>0)&&<div className="zf-live-resume" data-tv-row="live-resume"><button type="button" data-tv-focus="live-resume" onClick={()=>{const ch=channels.find(c=>c.id===recents[0]);if(ch)choose(ch)}}><Play size={20} fill="currentColor"/> <span><small>CONTINUE ASSISTINDO</small><strong>{channels.find(c=>c.id===recents[0])?.nome}</strong></span><ChevronRight size={21}/></button><button type="button" data-tv-focus="live-sports" onClick={()=>void navigate({to:"/tv-home",search:{section:"sports"}})}><Tv2 size={20}/> Jogos de hoje <ChevronRight size={20}/></button></div>}
       <nav className="zf-live-filters" data-tv-row="live-filters" aria-label="Categorias dos canais">
         {[...BASE_CATEGORIES,...categories.filter(c=>!BASE_CATEGORIES.includes(c))].map(cat=>
           <button type="button" data-tv-focus={"live-cat-"+cat} key={cat}
@@ -305,11 +316,11 @@ function TvLive(){
             {visible.map((ch,i)=><button type="button" className={"zf-live-card"+(ch.fontes.length?"":" is-offline")}
               key={ch.id} data-tv-channel={ch.id} data-tv-focus={"channel-"+ch.id} data-tv-row={"channel-row-"+Math.floor(i/columns)}
               onClick={()=>choose(ch)} aria-label={"Selecionar "+ch.nome}>
-              <span className="zf-live-card-image">{ch.logo&&/^https:\/\//i.test(ch.logo)
+              <span className="zf-live-card-image"><span className="zf-live-card-favorite" aria-hidden="true">{favorites.includes(ch.id)&&<Heart size={16} fill="currentColor"/>}</span>{ch.logo&&/^https:\/\//i.test(ch.logo)
                 ?<img src={ch.logo} alt="" loading="lazy" decoding="async" onError={e=>e.currentTarget.style.display="none"}/>
                 :<strong>{ch.nome.slice(0,3)}</strong>}</span>
-              <span className="zf-live-card-copy"><strong>{ch.nome}</strong><small>{ch.categoria}</small></span>
-              <span className={ch.fontes.length?"zf-live-status":"zf-live-status is-unavailable"}>{ch.fontes.length?"SELECIONAR":"SEM FONTE"}</span>
+              <span className="zf-live-card-copy"><strong>{ch.nome}</strong><small>{guide[normalize(ch.nome)]?.atual?.titulo||ch.categoria}</small></span>
+              <span className={ch.fontes.length?"zf-live-status":"zf-live-status is-unavailable"}>{ch.fontes.length?<><Play size={12} fill="currentColor"/> Assistir</>:"Indisponível"}</span>
             </button>)}
           </div>
           {visible.length<filtered.length&&<button type="button" data-tv-row="live-more" data-tv-focus="load-more"

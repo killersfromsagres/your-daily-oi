@@ -120,9 +120,11 @@ function WatchSeriesPage() {
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
           Não encontramos fontes dubladas para a Temporada {temp}, Episódio {ep}.
         </p>
-        <Link to="/serie/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+        {tvSessionActive()?<button type="button" className="ydo-btn-secondary" style={{ marginTop: "8px" }} onClick={()=>{if(tvSessionActive())void navigate({to:"/tv-title",search:{id,type:"s"}});else void navigate({to:"/serie/$id",params:{id}});}}>
           <ArrowLeft size={16} /> Voltar para a Série
-        </Link>
+        </button>:<Link to="/serie/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+          <ArrowLeft size={16} /> Voltar para a Série
+        </Link>}
       </main>
     );
   }

@@ -1,8 +1,10 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
 import tvReferenceCss from "../styles/tv-reference.css?url";
+import tvArenaCss from "../styles/tv-arena.css?url";
+import { TvSportsArena } from "@/components/tv/TvSportsArena";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, House, Info, ListVideo, Play, Search, Tv2, X, Plus, CircleHelp, Settings, Bell } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, House, Info, ListVideo, Play, Search, Tv2, X, Plus, CircleHelp, Settings, Bell, Trophy } from "lucide-react";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { TvAnimeFrameIcon } from "@/components/icons/TvAnimeFrameIcon";
 import { TvLibrary } from "@/components/tv/TvLibrary";
@@ -19,7 +21,7 @@ type MediaType = "f" | "s" | "a";
 interface TvItem { id:string; type:MediaType; title:string; posterUrl:string; backdropUrl?:string; overview?:string; year?:number|null; rating?:number|null }
 interface TvRow { id:string; title:string; type:MediaType; items:TvItem[] }
 interface TvPayload { rows:TvRow[]; heroes?:TvItem[]; hero?:TvItem|null }
-type Section = "all" | MediaType | "saved" | "recent" | "settings" | "help";
+type Section = "all" | MediaType | "saved" | "recent" | "settings" | "help" | "sports";
 const navOptions:ReadonlyArray<{key:Section;title:string}> = [
   {key:"all",title:"Início"},{key:"f",title:"Filmes"},{key:"s",title:"Séries"},{key:"a",title:"Animes"},{key:"saved",title:"Minha lista"},{key:"recent",title:"Histórico"}
 ];
@@ -27,7 +29,8 @@ const mediaLabel:Record<MediaType,string> = {f:"FILME",s:"SÉRIE",a:"ANIME"};
 
 export const Route=createFileRoute("/tv-home")({
   component:TvHome,
-  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss}],meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
+  validateSearch:(search:Record<string,unknown>):{section?:"sports"}=>search["section"]==="sports"?{section:"sports"}:{},
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss},{rel:"stylesheet",href:tvArenaCss}],meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
 });
 
 function TvHome(){
@@ -35,7 +38,9 @@ function TvHome(){
   const root=useRef<HTMLElement>(null);
   const searchInput=useRef<HTMLInputElement>(null);
   const requestedExtraArtwork=useRef(false);
-  const [section,setSection]=useState<Section>("all");
+  const initialSection=Route.useSearch().section;
+  const [section,setSection]=useState<Section>(initialSection||"all");
+  useEffect(()=>{if(initialSection==="sports")setSection("sports");},[initialSection]);
   const [rows,setRows]=useState<TvRow[]>([]);
   const [hero,setHero]=useState<TvItem|null>(null);
   const [heroes,setHeroes]=useState<TvItem[]>([]);
@@ -195,13 +200,14 @@ function TvHome(){
           <span className="zf-tv-menu-label">Menu</span>
           {navOptions.slice(0,4).map((option,index)=><div data-tv-row={"menu-"+index} key={option.key}>
             <button type="button" data-tv-focus={"nav-"+option.key} data-tv-start={option.key==="all"?"":undefined}
-              data-tv-right-target={section==="all"?"hero-play":section==="saved"?(uniqueSaved[0]?"poster-saved-"+uniqueSaved[0].id:undefined):section==="recent"?(recent[0]?"history-"+recent[0].id:undefined):section==="settings"?"settings-rotation":section==="help"?"help-back":"library-genre-0"}
+              data-tv-right-target={section==="all"?"hero-play":section==="saved"?(uniqueSaved[0]?"poster-saved-"+uniqueSaved[0].id:undefined):section==="recent"?(recent[0]?"history-"+recent[0].id:undefined):section==="settings"?"settings-rotation":section==="help"?"help-back":section==="sports"?"sports-filter-all":"library-genre-0"}
               aria-pressed={section===option.key} className={section===option.key?"is-selected":""} onClick={()=>setSection(option.key)}>
               {option.key==="all"?<House size={22}/>:option.key==="f"?<Film size={22}/>:option.key==="s"?<Clapperboard size={22}/>:<TvAnimeFrameIcon size={22}/>}
               <span>{option.title}</span>
             </button>
           </div>)}
           <div data-tv-row="menu-live"><button type="button" data-tv-focus="nav-live" onClick={()=>void navigate({to:"/tv-live"})}><Tv2 size={22}/><span>TV ao vivo</span></button></div>
+          <div data-tv-row="menu-sports"><button type="button" data-tv-focus="nav-sports" data-tv-right-target="sports-filter-all" aria-pressed={section==="sports"} className={section==="sports"?"is-selected":""} onClick={()=>setSection("sports")}><Trophy size={22}/><span>Jogos de hoje</span></button></div>
           <div className="zf-ref-menu-divider" aria-hidden="true"/>
           <span className="zf-tv-menu-label">Biblioteca</span>
           {navOptions.slice(4).map(option=><div data-tv-row={"menu-"+option.key} key={option.key}><button type="button" data-tv-focus={"nav-"+option.key} aria-pressed={section===option.key} className={section===option.key?"is-selected":""} data-tv-right-target={section==="saved"&&uniqueSaved[0]?"poster-saved-"+uniqueSaved[0].id:section==="recent"&&recent[0]?"history-"+recent[0].id:section==="all"?"hero-play":undefined} onClick={()=>setSection(option.key)}>{option.key==="saved"?<ListVideo size={22}/>:<Clock size={22}/>}<span>{option.title}</span></button></div>)}
@@ -211,7 +217,7 @@ function TvHome(){
         </nav>
         <div className="zf-ref-menu-bottom" data-tv-row="menu-bottom"><button type="button" data-tv-focus="open-search" onClick={()=>setSearchOpen(true)}><Search size={20}/><span>Buscar</span></button></div>
       </aside>
-      {section==="settings"||section==="help"?<section className="zf-ref-utility" aria-label={section==="settings"?"Configurações":"Ajuda"}>
+      {section==="sports"?<TvSportsArena onWatch={id=>void navigate({to:"/tv-live",search:{channel:id,from:"sports"}})}/>:section==="settings"||section==="help"?<section className="zf-ref-utility" aria-label={section==="settings"?"Configurações":"Ajuda"}>
         <h1>{section==="settings"?"Configurações":"Ajuda"}</h1>
         {section==="settings"?<><p>Personalize a experiência na televisão.</p><button className="zf-ref-option" data-tv-row="settings" data-tv-focus="settings-rotation" data-tv-left-target="nav-settings" aria-pressed={rotate} onClick={toggleRotate}>Rotação automática do banner <strong>{rotate?"Ativada":"Desativada"}</strong></button><p>Versão: {TV_APP_BUILD}{serverOutdated?" · Hospedagem desatualizada":""}</p></>:<><p>Use as setas do controle remoto para navegar, OK para selecionar e Voltar para retornar.</p><p>O progresso é salvo neste dispositivo. Em Continue assistindo, retome um título de onde parou.</p><button className="zf-ref-option" data-tv-focus="help-back" data-tv-row="help" data-tv-left-target="nav-help" onClick={()=>setSection("all")}>Voltar ao início</button></>}
       </section>:section!=="all"&&section!=="saved"&&section!=="recent"?<TvLibrary key={section} type={section} onOpen={openItem}/>:<>

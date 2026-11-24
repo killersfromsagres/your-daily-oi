@@ -122,9 +122,11 @@ function WatchAnimePage() {
         <p style={{ color: "rgba(255,255,255,0.6)" }}>
           Não encontramos fontes dubladas para a Temporada {temp}, Episódio {ep}.
         </p>
-        <Link to="/anime/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+        {tvSessionActive()?<button type="button" className="ydo-btn-secondary" style={{ marginTop: "8px" }} onClick={()=>{if(tvSessionActive())void navigate({to:"/tv-title",search:{id,type:"a"}});else void navigate({to:"/anime/$id",params:{id}});}}>
           <ArrowLeft size={16} /> Voltar ao Anime
-        </Link>
+        </button>:<Link to="/anime/$id" params={{id}} className="ydo-btn-secondary" style={{ marginTop: "8px" }}>
+          <ArrowLeft size={16} /> Voltar ao Anime
+        </Link>}
       </main>
     );
   }

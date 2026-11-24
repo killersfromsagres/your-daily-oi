@@ -30,6 +30,8 @@ function TvTitle(){
   const [error,setError]=useState("");
   const [saved,setSaved]=useState(false);
   const [selectedSeason,setSelectedSeason]=useState(1);
+  const [retry,setRetry]=useState(0);
+  const [metaLoading,setMetaLoading]=useState(false);
   const [revision,setRevision]=useState(0);
   const [meta,setMeta]=useState<Array<{numero:number;nome?:string;still?:string|null;sinopse?:string}>>([]);
   const [failed,setFailed]=useState<string[]>([]);
@@ -39,37 +41,41 @@ function TvTitle(){
   useTvFocus({route:"title-"+id,root,onBack:back});
   useEffect(()=>{
     if(!id){setError("Título não informado");setLoading(false);return;}
-    const controller=new AbortController();setLoading(true);setError("");
+    const controller=new AbortController();setLoading(true);setError("");setItem(null);
     fetch("/api/item?id="+encodeURIComponent(id)+"&tipo="+(type==="f"?"filme":type==="a"?"anime":"series"),
       {signal:controller.signal,cache:"no-store"})
       .then(async r=>{if(!r.ok)throw Error("HTTP "+r.status);return r.json() as Promise<CatalogItem>})
       .then(data=>{
         if(controller.signal.aborted)return;
         setItem(data);setSaved(getSavedList().includes(data.id));
-        setSelectedSeason(tvNextEpisode(data,tvEpisodeRecords(data))?.seasonNumber??data.seasons?.[0]?.seasonNumber??1);
+        const history=tvEpisodeRecords(data);const last=[...history.values()].filter(r=>!r.completed&&r.currentTime>=4).sort((a,b)=>b.updatedAt-a.updatedAt)[0];setSelectedSeason(last?.season??tvNextEpisode(data,history)?.seasonNumber??data.seasons?.[0]?.seasonNumber??1);
       })
       .catch(()=>{if(!controller.signal.aborted)setError("Não foi possível carregar o título. Tente novamente.")})
       .finally(()=>{if(!controller.signal.aborted)setLoading(false)});
     return()=>controller.abort();
-  },[id,type]);
-  const season=useMemo(()=>item?.seasons?.find(s=>s.seasonNumber===selectedSeason),[item,selectedSeason]);
+  },[id,type,retry]);
+  const seasons=useMemo(()=>{if(!item||item.type==="f")return [];const source=item.seasons||[];if(source.length)return source;return Array.from({length:Math.min(100,Math.max(0,Math.floor(item.tmdb?.seasonsCount||0)))},(_,i)=>({seasonNumber:i+1,episodes:[] as EpisodeItem[]}));},[item]);
+  const catalogSeason=seasons.find(s=>s.seasonNumber===selectedSeason);
+  const episodes=useMemo(()=>{const map=new Map<number,EpisodeItem>();for(const ep of catalogSeason?.episodes||[])map.set(ep.episodeNumber,ep);for(const m of meta){const n=Number(m.numero);if(Number.isSafeInteger(n)&&n>0&&!map.has(n))map.set(n,{seasonNumber:selectedSeason,episodeNumber:n,title:m.nome||"Episódio "+n,streams:[]});}return [...map.values()].sort((a,b)=>a.episodeNumber-b.episodeNumber);},[catalogSeason,meta,selectedSeason]);
   const records=useMemo(()=>item?tvEpisodeRecords(item):new Map<string,EpisodeRecord>(),[item,revision]);
-  const next=useMemo(()=>item?tvNextEpisode(item,records):undefined,[item,records]);
+  const next=useMemo(()=>{if(!item)return undefined;const enriched={...item,seasons:seasons.map(s=>s.seasonNumber===selectedSeason?{...s,episodes}:s)};if(!enriched.seasons.some(s=>s.seasonNumber===selectedSeason)&&episodes.length)enriched.seasons.push({seasonNumber:selectedSeason,episodes});return tvNextEpisode(enriched,records);},[item,records,seasons,episodes,selectedSeason]);
+  const fallbackRecord=[...records.values()].filter(r=>!r.completed&&r.currentTime>=4).sort((a,b)=>b.updatedAt-a.updatedAt)[0];
   const nextRecord=next?records.get(next.seasonNumber+":"+next.episodeNumber)||null:null;
   const movieRecord=item?.type==="f"?getProgressById(item.id):undefined;
   useEffect(()=>{
-    setMeta([]);setFailed([]);if(!item||item.type==="f"||(!item.tmdbId&&item.type==="a"))return;
-    const controller=new AbortController();
+    setMeta([]);setFailed([]);setMetaLoading(false);if(!item||item.type==="f")return;
+    setMetaLoading(true);
+    const controller=new AbortController();let disposed=false;const timeout=window.setTimeout(()=>controller.abort(),10000);
     void fetch("/api/episodios?serie="+encodeURIComponent(String(item.tmdbId||item.id))+"&temporada="+selectedSeason,{signal:controller.signal})
-      .then(r=>r.ok?r.json():[]).then(data=>{if(!controller.signal.aborted&&Array.isArray(data))setMeta(data);}).catch(()=>{});
-    return()=>controller.abort();
+      .then(r=>r.ok?r.json():[]).then(data=>{if(!controller.signal.aborted&&Array.isArray(data))setMeta(data);}).catch(()=>{}).finally(()=>{window.clearTimeout(timeout);if(!disposed)setMetaLoading(false);});
+    return()=>{disposed=true;window.clearTimeout(timeout);controller.abort();};
   },[item?.id,item?.tmdbId,item?.type,selectedSeason]);
   const openEpisode=(ep:EpisodeItem)=>{if(!item)return;const params={id:item.id,temp:String(ep.seasonNumber),ep:String(ep.episodeNumber)};if(item.type==="a")void navigate({to:"/assistir/anime/$id/$temp/$ep",params});else void navigate({to:"/assistir/serie/$id/$temp/$ep",params});};
   const play=()=>{
     if(!item)return;
     if(item.type==="f")void navigate({to:"/assistir/filme/$id",params:{id:item.id}});
     else{
-      if(next)openEpisode(next);
+      if(fallbackRecord&&(!nextRecord||fallbackRecord.updatedAt>nextRecord.updatedAt))openEpisode({seasonNumber:fallbackRecord.season,episodeNumber:fallbackRecord.episode,streams:[]});else if(next)openEpisode(next);else openEpisode({seasonNumber:selectedSeason,episodeNumber:1,streams:[]});
     }
   };
   return <main className="zf-tenfoot zf-tenfoot-detail zf-tv-reference-inner" data-tv-exclusive="true" data-tv-build={TV_APP_BUILD} ref={root}>
@@ -79,7 +85,7 @@ function TvTitle(){
       <button type="button" data-tv-focus="detail-live" onClick={()=>void navigate({to:"/tv-live"})}><Tv2 size={20}/> TV ao vivo</button>
     </header>
     {loading?<p className="zf-tenfoot-notice" role="status">Carregando detalhes…</p>:
-      error||!item?<p className="zf-tenfoot-notice" role="alert">{error||"Título não encontrado"}</p>:
+      error||!item?<div className="zf-tenfoot-notice" role="alert">{error||"Título não encontrado"} <button type="button" data-tv-focus="detail-retry" data-tv-row="detail-retry" onClick={()=>setRetry(n=>n+1)}>Tentar novamente</button></div>:
       <>
         <section className="zf-detail-hero">
           {item.tmdb?.backdropUrl||item.posterUrl?
@@ -92,8 +98,8 @@ function TvTitle(){
             <div style={{margin:"15px 0 16px"}}><VerifiedQualityBadge
               media={{type:item.type,id:item.id}} streams={item.streams}/></div>
             <div className="zf-detail-actions" data-tv-row="detail-actions">
-              <button className="zf-hero-play" type="button" data-tv-focus="detail-play" disabled={item.type!=="f"&&!next} onClick={play}>
-                <Play size={20} fill="currentColor"/> {getEpisodeStatus(nextRecord)==="started"||(movieRecord&&movieRecord.currentTime>4&&(!movieRecord.duration||movieRecord.currentTime/movieRecord.duration<.92))?"Continuar assistindo":next?"Assistir T"+next.seasonNumber+" · E"+next.episodeNumber:"Assistir"}
+              <button className="zf-hero-play" type="button" data-tv-focus="detail-play" disabled={metaLoading&&!next&&!fallbackRecord&&item.type!=="f"} onClick={play}>
+                <Play size={20} fill="currentColor"/> {getEpisodeStatus(nextRecord)==="started"||(movieRecord&&movieRecord.currentTime>4&&(!movieRecord.duration||movieRecord.currentTime/movieRecord.duration<.92))?"Continuar assistindo":next?"Assistir T"+next.seasonNumber+" · E"+next.episodeNumber:metaLoading&&item.type!=="f"?"Buscando episódios…":item.type!=="f"?"Tentar assistir":"Assistir"}
               </button>
               <button className="zf-hero-save" type="button" data-tv-focus="detail-save"
                 onClick={()=>{toggleSaved(item.id);setSaved(getSavedList().includes(item.id))}}
@@ -103,16 +109,17 @@ function TvTitle(){
             </div>
           </div>
         </section>
-        {item.type!=="f"&&item.seasons?.length?<section className="zf-detail-episodes">
+        {item.type!=="f"?<section className="zf-detail-episodes">
           <h2>Episódios</h2>
-          <p className="zf-tv-episode-summary">{[...records.values()].filter(r=>r.completed).length} assistidos de {(item.seasons||[]).reduce((n,s)=>n+s.episodes.length,0)}{nextRecord&&!nextRecord.completed&&nextRecord.currentTime>=4?" · Você parou em T"+next?.seasonNumber+" E"+next?.episodeNumber+" — "+tvTime(nextRecord.currentTime):""}</p>
+          <p className="zf-tv-episode-summary">{[...records.values()].filter(r=>r.completed).length} assistidos{seasons.some(s=>s.episodes.length)?" · "+seasons.reduce((n,s)=>n+s.episodes.length,0)+" episódios no catálogo":""}{nextRecord&&!nextRecord.completed&&nextRecord.currentTime>=4?" · Você parou em T"+next?.seasonNumber+" E"+next?.episodeNumber+" — "+tvTime(nextRecord.currentTime):""}</p>
           <div className="zf-detail-seasons" data-tv-row="detail-seasons">
-            {item.seasons.map(s=><button type="button" data-tv-focus={"season-"+s.seasonNumber} key={s.seasonNumber}
+            {seasons.map(s=><button type="button" data-tv-focus={"season-"+s.seasonNumber} key={s.seasonNumber}
               className={selectedSeason===s.seasonNumber?"is-active":""}
-              aria-pressed={selectedSeason===s.seasonNumber} onClick={()=>setSelectedSeason(s.seasonNumber)}>
+              aria-pressed={selectedSeason===s.seasonNumber} onClick={()=>{setMeta([]);setSelectedSeason(s.seasonNumber);}}>
               Temporada {s.seasonNumber}</button>)}
           </div>
-          <div className="zf-detail-episode-grid">{season?.episodes.map((ep,index)=>{const key=ep.seasonNumber+":"+ep.episodeNumber;const rec=records.get(key)||null;const status=getEpisodeStatus(rec);const percent=getEpisodePercentage(rec);const info=meta.find(m=>Number(m.numero)===ep.episodeNumber);const candidates=[ep.thumbUrl,info?.still].filter((url):url is string=>typeof url==="string"&&url.length>0);const still=candidates.find(url=>!failed.includes(key+":"+url))||"";const fallback=item.tmdb?.backdropUrl||item.posterUrl||"";const art=still||(fallback&&!failed.includes(key+":"+fallback)?fallback:"");return (
+          {!episodes.length&&<p className="zf-tv-episode-summary" role="status">{metaLoading?"Buscando episódios…":"Lista de episódios indisponível. Use Tentar assistir para consultar a reprodução."}</p>}
+          <div className="zf-detail-episode-grid">{episodes.map((ep,index)=>{const key=ep.seasonNumber+":"+ep.episodeNumber;const rec=records.get(key)||null;const status=getEpisodeStatus(rec);const percent=getEpisodePercentage(rec);const info=meta.find(m=>Number(m.numero)===ep.episodeNumber);const candidates=[ep.thumbUrl,info?.still].filter((url):url is string=>typeof url==="string"&&url.length>0);const still=candidates.find(url=>!failed.includes(key+":"+url))||"";const fallback=item.tmdb?.backdropUrl||item.posterUrl||"";const art=still||(fallback&&!failed.includes(key+":"+fallback)?fallback:"");return (
             <button type="button" data-tv-focus={"ep-"+ep.seasonNumber+"-"+ep.episodeNumber} data-tv-row={"episodes-"+Math.floor(index/columns)}
               key={ep.episodeNumber} className="zf-detail-episode"
               onClick={()=>openEpisode(ep)}>

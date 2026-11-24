@@ -39,13 +39,13 @@ jobs:
         run: |
           mkdir -p dist
           cp android/app/build/outputs/apk/television/debug/app-television-debug.apk dist/ZANG-FLIX-TV.apk
-          "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-TV.apk | grep -F "package: name='com.zangflix.tv' versionCode='13' versionName='2.8.0'"
+          "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-TV.apk | grep -F "package: name='com.zangflix.tv' versionCode='14' versionName='2.9.0'"
           "${ANDROID_HOME}/build-tools/35.0.0/aapt" dump badging dist/ZANG-FLIX-TV.apk | grep -F 'leanback-launchable-activity'
           "${ANDROID_HOME}/build-tools/35.0.0/apksigner" verify --verbose dist/ZANG-FLIX-TV.apk
           (cd dist && sha256sum ZANG-FLIX-TV.apk > SHA256SUMS-TV.txt)
       - uses: actions/upload-artifact@v4
         with:
-          name: ZANG-FLIX-TV-2.8.0
+          name: ZANG-FLIX-TV-2.9.0
           path: dist/
           if-no-files-found: error
       - name: Publish separate TV release
@@ -54,8 +54,8 @@ jobs:
         run: |
           if gh release view tv-latest >/dev/null 2>&1; then
             gh release upload tv-latest dist/ZANG-FLIX-TV.apk dist/SHA256SUMS-TV.txt --clobber
-            gh release edit tv-latest --title "ZANG FLIX TV 2.8.0 — TCL Android TV / Google TV"
+            gh release edit tv-latest --title "ZANG FLIX TV 2.9.0 — TCL Android TV / Google TV"
           else
-            gh release create tv-latest dist/ZANG-FLIX-TV.apk dist/SHA256SUMS-TV.txt --title "ZANG FLIX TV 2.8.0 — TCL Android TV / Google TV" --notes "Aplicativo exclusivo para TV Android/Google TV. A interface é hospedada no Lovable e exige a publicação da versão web TV correspondente. APK de depuração; a atualização sobre um APK anterior depende de assinatura compatível."
+            gh release create tv-latest dist/ZANG-FLIX-TV.apk dist/SHA256SUMS-TV.txt --title "ZANG FLIX TV 2.9.0 — TCL Android TV / Google TV" --notes "Aplicativo exclusivo para TV Android/Google TV. A interface é hospedada no Lovable e exige a publicação da versão web TV correspondente. APK de depuração; a atualização sobre um APK anterior depende de assinatura compatível."
           fi
           gh release view tv-latest --json assets --jq '.assets[].name' | grep -Fx 'ZANG-FLIX-TV.apk'
