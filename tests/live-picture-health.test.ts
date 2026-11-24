@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import {describe,expect,test} from "bun:test";
 import {classifyPicture,createPictureWatchdog,nextPictureSource,rememberPictureSource,forgetPictureSource,prioritizePictureSource,type PictureObservation} from "../src/lib/live-picture-health";
 const pixels=(v:number)=>new Uint8ClampedArray(Array.from({length:64},()=>[v,v,v,255]).flat());
@@ -10,3 +11,13 @@ describe("live picture health",()=>{
  test("only untried sources in same catalog, including wraparound",()=>{const list=[{url:"one"},{url:"two"},{url:"three"}];expect(nextPictureSource(list,2,new Set(["three"]),new Set(["one"]))).toBe(1);expect(nextPictureSource(list,2,new Set(["three","two"]),new Set(["one"]))).toBeNull();});
  test("verified source preference is channel-scoped, bounded by expiry and removable",()=>{const list=["one","two"];rememberPictureSource("tnt","two",100);expect(prioritizePictureSource("tnt",list,x=>x,200)).toEqual(["two","one"]);expect(prioritizePictureSource("other",list,x=>x,200)).toEqual(list);forgetPictureSource("tnt","two");expect(prioritizePictureSource("tnt",list,x=>x,200)).toEqual(list);});
 });
+
+ test("picture monitor belongs to playback effect, never script loader",()=>{
+ const code=readFileSync(new URL("../src/components/player/LivePlayer.tsx",import.meta.url),"utf8");
+ const loader=code.slice(code.indexOf("async function loadScript"),code.indexOf("async function ensureHls"));
+ expect(loader).not.toContain("pictureTimer");expect(loader).not.toContain("pictureWatchdog");
+ const effect=code.slice(code.indexOf("// Inicializa a reprodução do stream atual"),code.indexOf("// Source changes and browser/native volume events"));
+ expect(effect.match(/const pictureTimer=/g)?.length).toBe(1);
+ expect(effect.indexOf("const pictureTimer=")).toBeGreaterThan(effect.indexOf("const onTimeUpdate ="));
+ expect(effect.indexOf("window.clearInterval(pictureTimer)")).toBeGreaterThan(effect.indexOf("const pictureTimer="));
+ });

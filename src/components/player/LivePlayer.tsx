@@ -66,28 +66,7 @@ async function loadScript(src: string): Promise<void> {
       const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
       const script = existing || document.createElement("script");
       const onLoad = () => { cleanup(); resolve(); };
-      const pictureTimer=window.setInterval(()=>{
-      if(cancelled||handlingFailureRef.current)return;
-      const active=playbackConfirmed&&!video.paused&&!video.ended&&!video.seeking&&video.readyState>=2&&document.visibilityState!=="hidden"&&navigator.onLine;
-      if(!active){pictureWatchdog.reset();healthySince=null;return;}
-      const dimensions=video.videoWidth>0&&video.videoHeight>0;
-      const frames=frameCounter();requestFrame();
-      latestPicture=samplePicture();
-      verifiedFrame=dimensions&&(frames===null||frames>0)&&latestPicture!=="black";
-      const now=Date.now();
-      const fault=pictureWatchdog.observe({now,mediaTime:video.currentTime,active,dimensions,frameCounter:frames,picture:latestPicture});
-      if(fault){
-        healthySince=null;stablePlaybackSinceRef.current=null;
-        // Remove optional GPU processing before changing the source.
-        if(hqActiveRef.current&&!hqPictureSuppressedRef.current){hqPictureSuppressedRef.current=true;setHqPictureSuppressed(true);pictureWatchdog.reset();setAutoSwitchMsg("Restaurando imagem original…");return;}
-        console.warn("[LivePlayer] Falha visual persistente:",fault);
-        handleFatalError(false,undefined,fault);return;
-      }
-      if(verifiedFrame){onTimeUpdate();healthySince??=now;if(playbackProgressVerified&&rawFonte&&now-healthySince>=15000){rememberPictureSource(canal.id,liveSourceFingerprint(rawFonte.url),now);healthySince=now;setAutoSwitchMsg(null);}}
-      else healthySince=null;
-    },2000);
-
-    const onError = () => { cleanup(); reject(new Error(`Falha ao carregar biblioteca: ${src}`)); };
+      const onError = () => { cleanup(); reject(new Error(`Falha ao carregar biblioteca: ${src}`)); };
       const cleanup = () => {
         script.removeEventListener("load", onLoad);
         script.removeEventListener("error", onError);
@@ -902,6 +881,27 @@ export function LivePlayer({
         }
       }
     };
+
+    const pictureTimer=window.setInterval(()=>{
+      if(cancelled||handlingFailureRef.current)return;
+      const active=playbackConfirmed&&!video.paused&&!video.ended&&!video.seeking&&video.readyState>=2&&document.visibilityState!=="hidden"&&navigator.onLine;
+      if(!active){pictureWatchdog.reset();healthySince=null;return;}
+      const dimensions=video.videoWidth>0&&video.videoHeight>0;
+      const frames=frameCounter();requestFrame();
+      latestPicture=samplePicture();
+      verifiedFrame=dimensions&&(frames===null||frames>0)&&latestPicture!=="black";
+      const now=Date.now();
+      const fault=pictureWatchdog.observe({now,mediaTime:video.currentTime,active,dimensions,frameCounter:frames,picture:latestPicture});
+      if(fault){
+        healthySince=null;stablePlaybackSinceRef.current=null;
+        // Remove optional GPU processing before changing the source.
+        if(hqActiveRef.current&&!hqPictureSuppressedRef.current){hqPictureSuppressedRef.current=true;setHqPictureSuppressed(true);pictureWatchdog.reset();setAutoSwitchMsg("Restaurando imagem original…");return;}
+        console.warn("[LivePlayer] Falha visual persistente:",fault);
+        handleFatalError(false,undefined,fault);return;
+      }
+      if(verifiedFrame){onTimeUpdate();healthySince??=now;if(playbackProgressVerified&&rawFonte&&now-healthySince>=15000){rememberPictureSource(canal.id,liveSourceFingerprint(rawFonte.url),now);healthySince=now;setAutoSwitchMsg(null);}}
+      else healthySince=null;
+    },2000);
 
     const onError = () => {
       if (cancelled || inspectingNativeError) return;

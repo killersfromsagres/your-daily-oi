@@ -20,4 +20,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun test tests/live-picture-health.test.ts tests/live-playback-watchdog.test.ts tests/live-latency.test.ts tests/player-recovery.test.ts tests/football-home-selection.test.ts
+      - name: Check unresolved references in live player
+        run: |
+          bun -e 'import ts from "typescript"; const file="src/components/player/LivePlayer.tsx"; const config=ts.readConfigFile("tsconfig.json",ts.sys.readFile); const parsed=ts.parseJsonConfigFileContent(config.config,ts.sys,"."); const program=ts.createProgram(parsed.fileNames,parsed.options); const source=program.getSourceFile(file)??program.getSourceFiles().find(f=>f.fileName.endsWith("/"+file)); if(!source)throw Error("LivePlayer missing from TS project"); const issues=program.getSemanticDiagnostics(source).filter(d=>[2304,2552,2448,2454].includes(d.code)); for(const d of issues)console.error(ts.flattenDiagnosticMessageText(d.messageText," ")); if(issues.length)process.exit(1);'
       - run: bun run build
