@@ -3,7 +3,7 @@ import {useEffect,useRef,useState, type KeyboardEvent} from "react";
 import {TvMinimal as Tv,Download,ArrowRight,Cast,ChevronLeft,Check,MonitorPlay,ShieldCheck,ExternalLink,Smartphone,Info,Globe,Gamepad2} from "lucide-react";
 import {detectDeviceProfile} from "@/lib/device-profile";
 import {detectTvInstallPlatform, type TvInstallPlatform} from "@/lib/tv-install";
-import {ANDROID_APK_URL} from "@/components/layout/InstallAppButton";
+
 
 export const Route=createFileRoute("/tv-app")({
   component:TvAppPage,
@@ -11,7 +11,7 @@ export const Route=createFileRoute("/tv-app")({
     {name:"description",content:"Instale o ZANG FLIX em TCL Google TV e Android TV, prepare a versão LG webOS ou use a versão TV em Samsung Tizen."}]}),
 });
 
-const TV_APK_URL=ANDROID_APK_URL.replace("ZANG-FLIX-Android.apk","ZANG-FLIX-TV.apk");
+const TV_APK_URL="https://github.com/killersfromsagres/your-daily-oi/releases/download/tv-latest/ZANG-FLIX-TV.apk";
 const LG_RELEASE="https://github.com/killersfromsagres/your-daily-oi/releases/download/webos-latest/ZANG-FLIX-webOS.ipk";
 const WEB_URL="https://zangflix.lovable.app/tv-home";
 type DeviceInfo = {

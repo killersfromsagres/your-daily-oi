@@ -20,14 +20,14 @@ import android.webkit.WebSettings;
 public final class MainActivity extends Activity {
   private WebView web;
   private boolean tvEdition;
-  private static final String TV_RUNTIME_VERSION = "2.7.0";
+  private static final String TV_RUNTIME_VERSION = "2.8.0";
   private View customView;
   private int previousOrientation;
   private int previousSystemUi;
   private int previousWindowFlags;
   private WebChromeClient.CustomViewCallback customCallback;
   private static final String HOME = "https://zangflix.lovable.app/";
-  private static final String TV_HOME = "https://zangflix.lovable.app/tv-home?zf-tv-app=androidtv&tvVersion=270";
+  private static final String TV_HOME = "https://zangflix.lovable.app/tv-home?zf-tv-app=androidtv&tvVersion=280";
   @Override public void onCreate(Bundle state) {
     super.onCreate(state);
     UiModeManager mode=(UiModeManager)getSystemService(UI_MODE_SERVICE);
@@ -49,7 +49,7 @@ public final class MainActivity extends Activity {
     }
     web = new WebView(this);
     web.setFocusable(true);web.setFocusableInTouchMode(true);web.requestFocus();
-    web.setBackgroundColor(0xff090a10);
+    web.setBackgroundColor(television ? 0xff111111 : 0xff090a10);
     web.getSettings().setJavaScriptEnabled(true);
     // Clear cached HTML only when the TV APK upgrades. Keep viewing progress.
     if(television && !TV_RUNTIME_VERSION.equals(getPreferences(0).getString("tvRuntimeCacheVersion",""))){
@@ -62,7 +62,7 @@ public final class MainActivity extends Activity {
     web.getSettings().setLoadWithOverviewMode(true);
     web.getSettings().setUseWideViewPort(true);
     // Identify the actual installed Android APK, not a Chrome PWA shortcut.
-    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.7":""));
+    web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " ZangFlixAndroid/2.0" + (television?" ZangFlixTV/2.8":""));
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(false);
     web.getSettings().setAllowFileAccess(false);
@@ -111,13 +111,13 @@ public final class MainActivity extends Activity {
   private void checkPublishedTvVersion(WebView view){
     if(web!=view || isFinishing())return;
     String js="(function(){"
-      +"var ok=document.querySelector('[data-tv-build=\\\"2.7.0\\\"]');"
+      +"var ok=document.querySelector('[data-tv-build=\\\"2.8.0\\\"]');"
       +"if(ok){var old=document.getElementById('zf-host-version-warning');if(old)old.remove();return 'ready';}"
       +"if(!document.body)return 'no-body';"
       +"if(document.getElementById('zf-host-version-warning'))return 'already';"
       +"var w=document.createElement('div');w.id='zf-host-version-warning';"
-      +"w.textContent='ATENÇÃO: esta TV está abrindo uma versão antiga do site. Publique a atualização 2.7.0 no Lovable para acessar o catálogo completo e o novo player de TV.';"
-      +"w.style.cssText='position:fixed;z-index:2147483647;left:8%;right:8%;bottom:3%;padding:16px 20px;border-radius:12px;background:#251a32;color:#fff;border:2px solid #cfb1ff;font:600 16px system-ui;line-height:1.4;box-shadow:0 10px 30px #0009';"
+      +"w.textContent='ATENÇÃO: esta TV está abrindo uma versão antiga do site. Publique a atualização 2.8.0 no Lovable para acessar o novo design e o histórico de episódios.';"
+      +"w.style.cssText='position:fixed;z-index:2147483647;left:8%;right:8%;bottom:3%;padding:16px 20px;border-radius:12px;background:#171717;color:#fff;border:2px solid #e32930;font:600 16px system-ui;line-height:1.4;box-shadow:0 10px 30px #0009';"
       +"document.body.appendChild(w);return 'old';"
       +"})()";
     try{view.evaluateJavascript(js,null);}catch(Exception ignored){}

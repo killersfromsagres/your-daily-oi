@@ -17,6 +17,8 @@ concurrency:
 
 jobs:
   apk:
+    # TV-only releases have their own workflow; preserve the existing mobile artifact.
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[tv-only]')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
