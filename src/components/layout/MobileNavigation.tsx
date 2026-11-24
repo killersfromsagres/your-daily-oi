@@ -164,7 +164,7 @@ export function MobileNavigation({ open, onOpenChange, savedCount }: MobileNavig
             role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <div className="zf-mobile-menu-top">
               <div className="zf-mobile-menu-brand">
-                <img className="zf-brand-word" src="/brand/zang-word.webp?v=2" alt="Zang Flix" id={titleId} width={256} height={50} />
+                <img className="zf-brand-word" src="/brand/zang-word.webp?v=3" alt="Zang Flix" id={titleId} width={256} height={82} />
               </div>
               <button ref={closeRef} type="button" className="zf-mobile-menu-close" onClick={close}
                 aria-label="Fechar menu de navegação"><X size={21} /></button>

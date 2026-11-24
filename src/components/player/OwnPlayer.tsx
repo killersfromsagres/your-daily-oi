@@ -1060,7 +1060,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     >
       <div className="zf-fullscreen-surface">
       <div className="zf-player-watermark" aria-hidden="true">
-        <img src="/brand/zang-word.webp?v=2" alt="" width={256} height={50} />
+        <img src="/brand/zang-word.webp?v=3" alt="" width={256} height={82} />
       </div>
             {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
         engine.currentTime >= Math.max(0, openingStartSeconds - 2) && engine.currentTime < openingEndSeconds - 3 && (
