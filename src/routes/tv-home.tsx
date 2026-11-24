@@ -216,7 +216,7 @@ function TvHome(){
               </div>
             : <div className="zf-hero-fallback" aria-hidden="true"/>}
         <div className="zf-hero-shade" aria-hidden="true"/>
-        <header className="zf-tv-headline"><span className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp" alt="Zang Flix" width={192} height={64}/></span><span>FILMES · SÉRIES · AO VIVO</span></header>
+        <header className="zf-tv-headline"><span className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp?v=2" alt="Zang Flix" width={256} height={50}/></span><span>FILMES · SÉRIES · AO VIVO</span></header>
         <div className="zf-hero-copy">
           <span className="zf-hero-kicker"><span className="zf-hero-dot"/> EM DESTAQUE NO ZANG FLIX</span>
           <h1>{spotlight?.title||"O melhor da sua TV começa aqui."}</h1>

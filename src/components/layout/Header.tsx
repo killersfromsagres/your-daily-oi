@@ -365,7 +365,7 @@ export function Header({ onSearch }: HeaderProps) {
     >
       {/* Logo Zang Flix */}
       <Link to="/" className="ydo-logo" aria-label="Zang Flix — início">
-        <img src="/brand/zang-word.webp" alt="Zang Flix" className="ydo-logo-img zf-brand-word" width={192} height={64} />
+        <img src="/brand/zang-word.webp?v=2" alt="Zang Flix" className="ydo-logo-img zf-brand-word" width={256} height={50} />
       </Link>
 
       {/* Navegação Compacta e Proporcional */}

@@ -6,14 +6,14 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#090a10",
-  "theme_color": "#0a0b14",
+  "background_color": "#090909",
+  "theme_color": "#090909",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/brand/zang-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/favicon.png",

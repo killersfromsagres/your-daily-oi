@@ -119,7 +119,7 @@ function GenrePage() {
               <Film size={26} style={{ color: "#ff525b" }} />
             )}
             <h1>{pageTitle}</h1>
-            <img className="zf-section-brand zf-section-brand-mark" src="/brand/zang-mark.webp" alt="" aria-hidden="true" width={128} height={128} />
+            <img className="zf-section-brand zf-section-brand-mark" src="/brand/zang-mark.webp?v=2" alt="" aria-hidden="true" width={128} height={89} />
           </div>
           <span style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.55)" }}>
             Catálogo completo e exclusivo Zang Flix

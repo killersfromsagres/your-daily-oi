@@ -1230,7 +1230,7 @@ export function LivePlayer({
       onFocusCapture={showControls}
     >
       <div className="zf-fullscreen-surface">
-      <div className="zf-live-brand" aria-hidden="true"><img src="/brand/zang-mark.webp" alt="" width={128} height={128} /></div>
+      <div className="zf-live-brand" aria-hidden="true"><img src="/brand/zang-mark.webp?v=2" alt="" width={128} height={89} /></div>
       <video
         ref={videoRef}
         className="ydo-live-video"

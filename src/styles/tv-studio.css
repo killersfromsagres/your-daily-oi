@@ -30,7 +30,7 @@
   height: 730px;
   background:
     radial-gradient(ellipse 850px 500px at 18% 3%, rgba(255, 82, 91, .10), transparent 72%),
-    radial-gradient(ellipse 650px 450px at 90% 5%, rgba(49, 98, 127, .12), transparent 70%),
+    radial-gradient(ellipse 650px 450px at 90% 5%, rgba(105, 18, 22, .12), transparent 70%),
     linear-gradient(180deg, #1a1a1a 0%, #0e0e0e 96%);
   pointer-events: none;
 }

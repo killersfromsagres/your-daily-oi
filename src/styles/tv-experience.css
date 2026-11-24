@@ -23,7 +23,7 @@
   letter-spacing: .026em;
   text-transform: uppercase;
   text-wrap: balance;
-  color: #eee4d9;
+  color: #e5e5e5;
   text-shadow: 0 1px 0 #2a1818, 0 3px 12px rgba(0, 0, 0, .48);
 }
 .zf-zangs-picks .zf-horror-title span {
@@ -34,7 +34,7 @@
   background-image:
     radial-gradient(ellipse .09em .025em at 20% 34%, rgba(18, 3, 5, .46) 0 60%, transparent 90%),
     radial-gradient(ellipse .045em .075em at 56% 69%, rgba(29, 5, 7, .39) 0 60%, transparent 90%),
-    radial-gradient(ellipse .06em .024em at 84% 25%, rgba(241, 198, 183, .22) 0 60%, transparent 90%),
+    radial-gradient(ellipse .06em .024em at 84% 25%, rgba(255, 125, 132, .22) 0 60%, transparent 90%),
     linear-gradient(180deg, #bd5755 0%, #a93739 36%, #8b222b 78%, #721b25 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -68,31 +68,31 @@
  html:not([data-zf-platform="tv"]) .ydo-header::before{display:none!important}
  html:not([data-zf-platform="tv"]) .ydo-header>:not(.ydo-header-tools){display:none!important}
  html:not([data-zf-platform="tv"]) .ydo-header .ydo-header-tools{margin:0!important;width:100%}
- html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn{width:46px;height:46px;background:#0e131c36;border:1px solid #ffffff38;border-radius:16px;backdrop-filter:blur(18px)}
+ html:not([data-zf-platform="tv"]) .ydo-search-trigger-btn{width:46px;height:46px;background:#13131336;border:1px solid #ffffff38;border-radius:16px;backdrop-filter:blur(18px)}
 }
-.zf-install-tv-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;color:#c4cbd2;border-radius:50%}
+.zf-install-tv-link{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;color:#cacaca;border-radius:50%}
 .zf-install-tv-link:hover{background:#ffffff12;color:#fff}
 .zf-install-header{display:flex;align-items:center;gap:5px}
 /* An explicit audio panel remains reachable by touch, keyboard and D-pad. */
 .zf-live-volume{position:relative;display:flex;align-items:center}
-.zf-volume-indicator{position:absolute;right:-1px;bottom:0;font-size:8px;line-height:1;color:#e4c58d}
-.zf-volume-panel{position:absolute;bottom:calc(100% + 10px);left:0;width:270px;max-width:calc(100vw - 24px);padding:14px;border:1px solid #ffffff26;background:#101720f5;border-radius:15px;box-shadow:0 15px 50px #0008;z-index:90;color:#f5f6f8;font-size:13px}
-.zf-volume-panel header{display:flex;align-items:center;gap:12px}.zf-volume-panel header output{margin-left:auto;color:#e8c88d;font-variant-numeric:tabular-nums}
+.zf-volume-indicator{position:absolute;right:-1px;bottom:0;font-size:8px;line-height:1;color:#e42327}
+.zf-volume-panel{position:absolute;bottom:calc(100% + 10px);left:0;width:270px;max-width:calc(100vw - 24px);padding:14px;border:1px solid #ffffff26;background:#161616f5;border-radius:15px;box-shadow:0 15px 50px #0008;z-index:90;color:#f6f6f6;font-size:13px}
+.zf-volume-panel header{display:flex;align-items:center;gap:12px}.zf-volume-panel header output{margin-left:auto;color:#e82327;font-variant-numeric:tabular-nums}
 .zf-volume-panel button{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;border-radius:8px;border:1px solid #ffffff12;background:#ffffff08;color:#eee;cursor:pointer}
 .zf-volume-slider{display:flex;gap:8px;align-items:center;margin:12px 0}
-.zf-volume-slider input{width:100%;min-width:0;height:36px;accent-color:#e6bd78;touch-action:pan-x}
+.zf-volume-slider input{width:100%;min-width:0;height:36px;accent-color:#e61e22;touch-action:pan-x}
 .zf-volume-panel .zf-volume-mute{gap:8px;width:100%;font-size:12px}
 .zf-player-menu-header{display:flex;justify-content:space-between;align-items:center}
 .zf-player-menu-header button{font-size:20px;color:#fff;border:0;background:none;min-height:32px;min-width:32px}
-.zf-volume-panel button:focus-visible,.zf-volume-slider input:focus-visible{outline:2px solid #f0c487;outline-offset:2px}
+.zf-volume-panel button:focus-visible,.zf-volume-slider input:focus-visible{outline:2px solid #f02226;outline-offset:2px}
 /* The TV sports shelf is a premium 10-foot football board, not the old
    condensed horizontal carousel. Full match styles live in
    football-reference-scene.css and football-tv-remote.css. */
-.zf-tv-app-page{max-width:1440px;padding:130px 5vw 110px;margin:auto;color:#f3f2ef;min-height:100dvh}
-.zf-tv-app-back{display:inline-flex;gap:6px;align-items:center;color:#b6becb;font-size:13px;margin-bottom:28px}
-.zf-tv-app-intro>span{font-size:11px;letter-spacing:.24em;color:#d7b77c}.zf-tv-app-intro h1{font-size:clamp(38px,5vw,72px);line-height:1.05;letter-spacing:-.05em;margin:16px 0}.zf-tv-app-intro p{color:#aab3c1}
+.zf-tv-app-page{max-width:1440px;padding:130px 5vw 110px;margin:auto;color:#f2f2f2;min-height:100dvh}
+.zf-tv-app-back{display:inline-flex;gap:6px;align-items:center;color:#bdbdbd;font-size:13px;margin-bottom:28px}
+.zf-tv-app-intro>span{font-size:11px;letter-spacing:.24em;color:#d71f23}.zf-tv-app-intro h1{font-size:clamp(38px,5vw,72px);line-height:1.05;letter-spacing:-.05em;margin:16px 0}.zf-tv-app-intro p{color:#b2b2b2}
 .zf-tv-install-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin-top:42px}
-.zf-tv-install-grid section{border-top:1px solid #ffffff20;padding-top:24px;min-width:0}.zf-tv-install-grid section>svg{color:#d9b779}.zf-tv-install-grid h2{font-size:22px;margin:14px 0 8px}.zf-tv-install-grid p,.zf-tv-install-grid li{font-size:14px;line-height:1.6;color:#b8c0cb}.zf-tv-install-grid small{display:block;font-size:11px;line-height:1.6;color:#87919f;margin-top:18px}.zf-tv-install-grid ol{padding-left:20px;margin-top:22px}.zf-tv-install-grid .ydo-btn-primary,.zf-tv-install-grid .ydo-btn-secondary{font-size:13px;margin-top:14px}
+.zf-tv-install-grid section{border-top:1px solid #ffffff20;padding-top:24px;min-width:0}.zf-tv-install-grid section>svg{color:#d91e22}.zf-tv-install-grid h2{font-size:22px;margin:14px 0 8px}.zf-tv-install-grid p,.zf-tv-install-grid li{font-size:14px;line-height:1.6;color:#bfbfbf}.zf-tv-install-grid small{display:block;font-size:11px;line-height:1.6;color:#909090;margin-top:18px}.zf-tv-install-grid ol{padding-left:20px;margin-top:22px}.zf-tv-install-grid .ydo-btn-primary,.zf-tv-install-grid .ydo-btn-secondary{font-size:13px;margin-top:14px}
 html[data-zf-platform="tv"] .zf-tv-app-page{padding-top:150px}
 html[data-zf-platform="tv"] :is(.ydo-live-player-container,.ydo-player-container){outline-offset:6px}
 html[data-zf-platform="tv"] .zf-player-toolbar{--zf-toolbar-icon:48px;padding:14px 22px}
@@ -100,10 +100,10 @@ html[data-zf-platform="tv"] .zf-volume-panel{width:340px;font-size:17px;padding:
 html[data-zf-platform="tv"] .zf-volume-panel button{min-width:46px;min-height:46px}
 html[data-zf-platform="tv"] .zf-volume-slider input{height:46px}
 html[data-zf-platform="tv"] .ydo-controls-row button{min-width:44px;min-height:44px}
-html[data-zf-platform="tv"] :is(.zf-player-menu,.zang-cast-menu){backdrop-filter:none;background:#121923}
+html[data-zf-platform="tv"] :is(.zf-player-menu,.zang-cast-menu){backdrop-filter:none;background:#181818}
 @media(max-width:740px){.zf-tv-app-page{padding-top:86px}.zf-tv-install-grid{grid-template-columns:1fr;gap:24px}}
-.zang-receiver-volume{border-top:1px solid #ffffff15;border-bottom:1px solid #ffffff15;padding:12px 2px;margin:8px 0}.zang-receiver-volume>strong{display:block;color:#efd1a0;font-size:13px;margin-bottom:12px}.zang-receiver-volume label{font-size:12px;display:block}.zang-receiver-volume output{float:right;color:#e4c58d}.zang-receiver-volume input{width:100%;height:36px;accent-color:#e4bd7b}.zang-receiver-volume button{display:flex;gap:8px;align-items:center;color:#dbe2e8;background:#ffffff0b;border:1px solid #ffffff18;border-radius:8px;padding:9px 12px;font-size:12px}.zang-cast-install{display:block;margin:14px 0 2px;font-size:12px;color:#e6c287;padding:8px 0}
-.zf-volume-hardware{font-size:11px;line-height:1.4;color:#d6b783;margin:8px 0}
+.zang-receiver-volume{border-top:1px solid #ffffff15;border-bottom:1px solid #ffffff15;padding:12px 2px;margin:8px 0}.zang-receiver-volume>strong{display:block;color:#ff7d84;font-size:13px;margin-bottom:12px}.zang-receiver-volume label{font-size:12px;display:block}.zang-receiver-volume output{float:right;color:#e42327}.zang-receiver-volume input{width:100%;height:36px;accent-color:#e41f22}.zang-receiver-volume button{display:flex;gap:8px;align-items:center;color:#e1e1e1;background:#ffffff0b;border:1px solid #ffffff18;border-radius:8px;padding:9px 12px;font-size:12px}.zang-cast-install{display:block;margin:14px 0 2px;font-size:12px;color:#e62226;padding:8px 0}
+.zf-volume-hardware{font-size:11px;line-height:1.4;color:#d62125;margin:8px 0}
 /* On smaller TV viewports, keep every destination reachable without text overlap. */
 html[data-zf-platform="tv"] .zf-install-header{display:none}
 html[data-zf-platform="tv"] .ydo-nav{justify-content:space-between;overflow:visible;gap:4px}
@@ -211,35 +211,35 @@ html[data-zf-platform="tv"] .zf-media-carousel__fade,
 
 
 /* TV installation hub: compact, calm, remote-focusable, and responsive. */
-.zf-tv-app-intro h1 em{font-style:normal;color:#e6c78f}
+.zf-tv-app-intro h1 em{font-style:normal;color:#e62428}
 .zf-tv-app-intro{max-width:750px}
 .zf-tv-app-page{max-width:1280px}
 .zf-tv-install-guide{margin-top:30px;border:1px solid rgba(255,255,255,.13);border-radius:24px;padding:clamp(18px,3vw,34px);background:linear-gradient(160deg,rgba(255,255,255,.065),rgba(255,255,255,.019));box-shadow:0 16px 60px #0004}
-.zf-tv-install-lead{display:flex;align-items:center;gap:12px;color:#dfe9f4}
-.zf-tv-install-lead svg{color:#e6c78f}
+.zf-tv-install-lead{display:flex;align-items:center;gap:12px;color:#e8e8e8}
+.zf-tv-install-lead svg{color:#e62428}
 .zf-tv-install-lead h2{font-size:20px;font-weight:650;margin:0}
-.zf-tv-install-lead p{color:#929eae;font-size:12px;margin:3px 0 0}
+.zf-tv-install-lead p{color:#9d9d9d;font-size:12px;margin:3px 0 0}
 .zf-tv-device-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0 24px}
-.zf-tv-device-option{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left;padding:15px;border-radius:13px;border:1px solid #ffffff19;background:#0c111a;color:#e1e5ec;cursor:pointer;transition:background .16s,border-color .16s}
+.zf-tv-device-option{display:flex;flex-direction:column;gap:4px;min-width:0;text-align:left;padding:15px;border-radius:13px;border:1px solid #ffffff19;background:#111111;color:#e5e5e5;cursor:pointer;transition:background .16s,border-color .16s}
 .zf-tv-device-option strong{font-size:13px;font-weight:650}
-.zf-tv-device-option small{font-size:11px;color:#83909f}
-.zf-tv-device-option.is-selected{border-color:rgba(230,199,143,.66);background:rgba(230,199,143,.12)}
-.zf-tv-device-option:focus-visible,.zf-tv-install-cta:focus-visible,.zf-tv-install-resource:focus-visible{outline:3px solid #e6c78f;outline-offset:3px}
+.zf-tv-device-option small{font-size:11px;color:#8e8e8e}
+.zf-tv-device-option.is-selected{border-color:rgba(230, 36, 40,.66);background:rgba(230, 36, 40,.12)}
+.zf-tv-device-option:focus-visible,.zf-tv-install-cta:focus-visible,.zf-tv-install-resource:focus-visible{outline:3px solid #e62428;outline-offset:3px}
 .zf-tv-install-detail{border-top:1px solid #ffffff17;padding-top:24px;min-height:300px}
 .zf-tv-install-detail h3{font-size:clamp(21px,3vw,29px);margin:7px 0 11px;font-weight:700;letter-spacing:-.03em}
-.zf-tv-install-detail p{color:#b1bac8;font-size:14px;line-height:1.7;max-width:780px}
-.zf-tv-install-type{display:inline-flex;align-items:center;gap:7px;color:#ddc28d;font-size:11px;letter-spacing:.07em;font-weight:650}
-.zf-tv-install-cta{margin:12px 0 6px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:45px;padding:0 18px;border-radius:10px;background:#e4bf86;color:#101319!important;font-size:13px;text-decoration:none;font-weight:750}
-.zf-tv-install-cta:hover{background:#f0d4a8}
+.zf-tv-install-detail p{color:#b9b9b9;font-size:14px;line-height:1.7;max-width:780px}
+.zf-tv-install-type{display:inline-flex;align-items:center;gap:7px;color:#dd2327;font-size:11px;letter-spacing:.07em;font-weight:650}
+.zf-tv-install-cta{margin:12px 0 6px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:45px;padding:0 18px;border-radius:10px;background:#e42226;color:#131313!important;font-size:13px;text-decoration:none;font-weight:750}
+.zf-tv-install-cta:hover{background:#ff7d84}
 .zf-tv-install-cta svg:last-child{margin-left:4px}
 .zf-tv-install-detail ol{display:grid;gap:8px;padding:0 0 0 22px;margin:18px 0;max-width:840px}
-.zf-tv-install-detail li{line-height:1.65;font-size:13px;color:#b4bfcc}
-.zf-tv-install-detail li::marker{color:#dfc188}
-.zf-tv-install-note{display:flex!important;align-items:flex-start;gap:7px;max-width:850px;font-size:12px!important;line-height:1.6;color:#a3adbb!important;margin:18px 0 0}
-.zf-tv-install-note svg{flex:0 0 15px;margin-top:2px;color:#e1c38c}
-.zf-tv-install-resource{display:inline-flex;align-items:center;gap:6px;text-decoration:underline;text-underline-offset:3px;color:#e9cb96;font-size:12px;margin-top:6px}
+.zf-tv-install-detail li{line-height:1.65;font-size:13px;color:#bebebe}
+.zf-tv-install-detail li::marker{color:#df2226}
+.zf-tv-install-note{display:flex!important;align-items:flex-start;gap:7px;max-width:850px;font-size:12px!important;line-height:1.6;color:#acacac!important;margin:18px 0 0}
+.zf-tv-install-note svg{flex:0 0 15px;margin-top:2px;color:#e12327}
+.zf-tv-install-resource{display:inline-flex;align-items:center;gap:6px;text-decoration:underline;text-underline-offset:3px;color:#ff7d84;font-size:12px;margin-top:6px}
 .zf-tv-install-extra{margin-top:28px!important;gap:20px!important}
 .zf-tv-install-extra section{padding-top:20px}
-.zf-tv-install-legal{margin-top:30px;color:#86919e;font-size:11px;line-height:1.6}
+.zf-tv-install-legal{margin-top:30px;color:#909090;font-size:11px;line-height:1.6}
 @media(max-width:850px){.zf-tv-device-options{grid-template-columns:repeat(2,minmax(0,1fr))}.zf-tv-device-option{padding:13px}.zf-tv-install-guide{border-radius:18px}.zf-tv-install-detail{min-height:unset}}
 @media(max-width:420px){.zf-tv-install-detail p{font-size:13px}.zf-tv-device-option strong{font-size:12px}.zf-tv-install-extra section{padding-top:16px}}

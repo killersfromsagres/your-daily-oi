@@ -849,8 +849,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       artist: subtitle || "Reproduzindo no ZANG FLIX",
       album: "ZANG FLIX",
       artwork: [
-        { src: new URL("/favicon.svg", window.location.origin).href, sizes: "any", type: "image/svg+xml" },
-        { src: new URL("/logo.png", window.location.origin).href, sizes: "512x512", type: "image/png" },
+        { src: new URL("/brand/zang-icon.svg", window.location.origin).href, sizes: "any", type: "image/svg+xml" },
+        
       ],
     });
     return () => {
@@ -1060,7 +1060,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     >
       <div className="zf-fullscreen-surface">
       <div className="zf-player-watermark" aria-hidden="true">
-        <img src="/brand/zang-word.webp" alt="" width={192} height={64} />
+        <img src="/brand/zang-word.webp?v=2" alt="" width={256} height={50} />
       </div>
             {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
         engine.currentTime >= Math.max(0, openingStartSeconds - 2) && engine.currentTime < openingEndSeconds - 3 && (
@@ -1145,14 +1145,14 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             width: "80px",
             height: "80px",
             borderRadius: "50%",
-            backgroundColor: "rgba(232, 180, 74, 0.9)",
-            color: "#0a0b14",
+            backgroundColor: "rgba(229, 9, 20, 0.9)",
+            color: "#ffffff",
             border: "none",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
-            boxShadow: "0 0 35px rgba(232, 180, 74, 0.6)",
+            boxShadow: "0 0 35px rgba(229, 9, 20, 0.6)",
             transition: "transform 0.2s, background-color 0.2s",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = "translate(-50%, -50%) scale(1.1)")}
@@ -1171,8 +1171,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 30,
-            backgroundColor: "rgba(10, 11, 20, 0.9)",
-            border: "1px solid rgba(232, 180, 74, 0.5)",
+            backgroundColor: "rgba(12, 12, 12, 0.9)",
+            border: "1px solid rgba(229, 9, 20, 0.5)",
             color: "#ffffff",
             padding: "8px 18px",
             borderRadius: "999px",
@@ -1198,8 +1198,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 30,
-            backgroundColor: "rgba(10, 11, 20, 0.92)",
-            border: "1px solid rgba(232, 180, 74, 0.5)",
+            backgroundColor: "rgba(12, 12, 12, 0.92)",
+            border: "1px solid rgba(229, 9, 20, 0.5)",
             color: "#ffffff",
             padding: "8px 18px",
             borderRadius: "999px",
@@ -1225,8 +1225,8 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             bottom: "90px",
             left: "24px",
             zIndex: 25,
-            backgroundColor: "rgba(232, 180, 74, 0.95)",
-            color: "#0a0b14",
+            backgroundColor: "rgba(229, 9, 20, 0.95)",
+            color: "#ffffff",
             border: "none",
             padding: "8px 16px",
             borderRadius: "999px",

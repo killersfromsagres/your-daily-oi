@@ -124,7 +124,7 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
     width: 100%;
     min-width: 0;
     overflow: hidden;
-    background: #05070b;
+    background: #070707;
   }
   html:not([data-zf-platform="tv"]) .ztv-player-frame > .ydo-live-player-container {
     width: 100%;
@@ -140,7 +140,7 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
   html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-topbar {
     padding: 7px 10px;
     max-width: calc(100% - 50px);
-    background: linear-gradient(to bottom, rgba(5,7,12,.78), transparent);
+    background: linear-gradient(to bottom, rgba(7, 7, 7,.78), transparent);
   }
   html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-badge-row {
     gap: 5px;
@@ -181,7 +181,7 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
     border: 1px solid rgba(255,255,255,.22);
     border-radius: 9px;
     color: #fff;
-    background: rgba(9,15,25,.8);
+    background: rgba(14, 14, 14,.8);
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -219,7 +219,7 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
     padding: 5px 7px 6px !important;
     min-height: 42px;
     max-width: 100%;
-    background: linear-gradient(to top, rgba(4,7,15,.95), rgba(4,7,15,.3));
+    background: linear-gradient(to top, rgba(7, 7, 7,.95), rgba(7, 7, 7,.3));
   }
   html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-left,
   html:not([data-zf-platform="tv"]) .ztv-player-frame .ydo-live-controls-right {
@@ -320,7 +320,7 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
     z-index: 35;
     border-radius: 11px;
     padding: 5px;
-    background: rgba(12,19,31,.97);
+    background: rgba(18, 18, 18,.97);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: 0 6px 25px rgba(0,0,0,.45);
@@ -483,7 +483,7 @@ html:has(.ydo-live-player-container:fullscreen) .zf-mobile-dock {
   align-items: flex-end;
   justify-content: center;
   padding: 12px 12px calc(88px + env(safe-area-inset-bottom,0px));
-  background: rgba(2,7,14,.72);
+  background: rgba(6, 6, 6,.72);
   overscroll-behavior: contain;
 }
 .zang-cast-mobile-scrim {

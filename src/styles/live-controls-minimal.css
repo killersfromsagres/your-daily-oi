@@ -18,8 +18,8 @@
   justify-content: space-between;
   gap: 6px;
   z-index: 45;
-  background: linear-gradient(0deg, rgba(5, 9, 16, .94), rgba(5, 9, 16, .5) 66%, transparent);
-  color: #f3f4f8;
+  background: linear-gradient(0deg, rgba(9, 9, 9, .94), rgba(9, 9, 9, .5) 66%, transparent);
+  color: #f4f4f4;
   opacity: 1;
   transition: opacity .18s ease;
   pointer-events: auto;
@@ -59,7 +59,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: rgba(246, 247, 250, .9);
+  color: rgba(247, 247, 247, .9);
   font-size: 0;
   line-height: 1;
   box-shadow: none;
@@ -95,12 +95,12 @@
   transform: none;
 }
 .ydo-live-player-container .zf-player-toolbar .zang-cast-trigger.is-casting {
-  color: #f6ca82;
+  color: #f62124;
 }
 .ydo-live-player-container .zf-player-action:focus-visible,
 .ydo-live-player-container .zf-player-live:focus-visible,
 .ydo-live-player-container .zf-player-toolbar .zang-cast-trigger:focus-visible {
-  outline: 2px solid #f4c882;
+  outline: 2px solid #f42124;
   outline-offset: 1px;
 }
 .ydo-live-player-container .zf-player-live {
@@ -116,7 +116,7 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: #f6c57f;
+  color: #f62024;
   font-size: 9px;
   font-weight: 760;
   letter-spacing: .035em;
@@ -125,7 +125,7 @@
   cursor: pointer;
 }
 .ydo-live-player-container .zf-player-live:not(.is-live) {
-  color: #c1c9d3;
+  color: #c8c8c8;
 }
 .ydo-live-player-container .zf-player-live:hover {
   background: rgba(255,255,255,.08);
@@ -164,17 +164,17 @@
   overscroll-behavior: contain;
   padding: 9px;
   border-radius: 13px;
-  border: 1px solid rgba(229, 239, 255, .15);
-  background: rgba(15, 21, 32, .985);
+  border: 1px solid rgba(238, 238, 238, .15);
+  background: rgba(21, 21, 21, .985);
   box-shadow: 0 18px 40px rgba(0,0,0,.55);
-  color: #eaeefa;
+  color: #eeeeee;
   scrollbar-width: thin;
 }
 .ydo-live-player-container .zf-player-menu-header,
 .ydo-live-player-container .zf-player-menu-subtitle {
   font-size: 10px;
   line-height: 1.3;
-  color: #aebbc9;
+  color: #b9b9b9;
   letter-spacing: .07em;
   font-weight: 780;
   padding: 5px 6px;
@@ -197,7 +197,7 @@
 .ydo-live-player-container .zf-player-volume-control input {
   width: min(136px, 55%);
   height: 18px;
-  accent-color: #ecc584;
+  accent-color: #ec2125;
   cursor: pointer;
 }
 .ydo-live-player-container .zf-player-menu-option {
@@ -214,7 +214,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #d7e0ef;
+  color: #dfdfdf;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.3;
@@ -223,8 +223,8 @@
 }
 .ydo-live-player-container .zf-player-menu-option:hover,
 .ydo-live-player-container .zf-player-menu-option.is-selected {
-  background: rgba(242,195,121,.1);
-  color: #f6d4a1;
+  background: rgba(242, 30, 34,.1);
+  color: #ff7d84;
 }
 .ydo-live-player-container .zf-player-menu-option svg {
   flex: 0 0 15px;
@@ -242,7 +242,7 @@
 .ydo-live-player-container .zf-player-menu-hint {
   flex: 0 0 auto;
   margin-left: auto;
-  color: #9aa9bd;
+  color: #a7a7a7;
   font-size: 10px;
   white-space: nowrap;
 }
