@@ -1,4 +1,5 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
+import tvReferenceCss from "../styles/tv-reference.css?url";
 import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -18,7 +19,7 @@ export const Route=createFileRoute("/tv-title")({
     type:search["type"]==="s"||search["type"]==="a"?"s"===search["type"]?"s" as const:"a" as const:"f" as const,
   }),
   component:TvTitle,
-  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss}],meta:[{title:"ZANG FLIX TV — Detalhes"}]})
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss}],meta:[{title:"ZANG FLIX TV — Detalhes"}]})
 });
 function TvTitle(){
   const {id,type}=Route.useSearch();
@@ -71,7 +72,7 @@ function TvTitle(){
       if(next)openEpisode(next);
     }
   };
-  return <main className="zf-tenfoot zf-tenfoot-detail" data-tv-exclusive="true" data-tv-build={TV_APP_BUILD} ref={root}>
+  return <main className="zf-tenfoot zf-tenfoot-detail zf-tv-reference-inner" data-tv-exclusive="true" data-tv-build={TV_APP_BUILD} ref={root}>
     <header className="zf-detail-head" data-tv-row="detail-nav">
       <button type="button" data-tv-focus="detail-back" data-tv-start onClick={back}><ArrowLeft size={23}/> Voltar</button>
       <div className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/></div>

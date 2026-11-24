@@ -1,4 +1,5 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
+import tvReferenceCss from "../styles/tv-reference.css?url";
 import {TV_APP_BUILD} from "@/lib/tv-build";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,7 +33,7 @@ function normalize(value:string){
 const BASE_CATEGORIES=["Todos","Favoritos","Recentes"];
 export const Route=createFileRoute("/tv-live")({
   component:TvLive,
-  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss}],meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss}],meta:[{title:"ZANG FLIX TV — Canais ao vivo"}]})
 });
 function TvLive(){
   const navigate=useNavigate();
@@ -273,11 +274,11 @@ function TvLive(){
     return()=>document.removeEventListener("keydown",handler,true);
   },[activeId,cinema]);
 
-  return <main className={"zf-tenfoot zf-tenfoot-live"+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
+  return <main className={"zf-tenfoot zf-tenfoot-live zf-tv-reference-inner"+(cinema?" is-tv-cinema":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!active ? <>
       <header className="zf-live-top" data-tv-row="live-nav">
         <button type="button" data-tv-focus="live-back" data-tv-start onClick={()=>void navigate({to:"/tv-home"})}><ArrowLeft size={20}/> Voltar</button>
-        <div className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/> <span>LIVE</span></div>
+        <div className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/> <span>AO VIVO</span></div>
         <button type="button" data-tv-focus="live-refresh" onClick={()=>void load(true)} disabled={refreshing}><RefreshCw size={19}/> Atualizar</button>
       </header>
       <section className="zf-live-intro">

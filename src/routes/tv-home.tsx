@@ -1,7 +1,8 @@
 import tvCinemaCss from "../styles/tv-cinema.css?url";
+import tvReferenceCss from "../styles/tv-reference.css?url";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, Heart, House, Info, ListVideo, Play, Search, Tv2, X } from "lucide-react";
+import { Check, ChevronRight, ChevronLeft, Clapperboard, Film, House, Info, ListVideo, Play, Search, Tv2, X, Plus, CircleHelp, Settings, Bell } from "lucide-react";
 import { useLiveSuggestions } from "@/components/search/useLiveSuggestions";
 import { TvAnimeFrameIcon } from "@/components/icons/TvAnimeFrameIcon";
 import { TvLibrary } from "@/components/tv/TvLibrary";
@@ -18,7 +19,7 @@ type MediaType = "f" | "s" | "a";
 interface TvItem { id:string; type:MediaType; title:string; posterUrl:string; backdropUrl?:string; overview?:string; year?:number|null; rating?:number|null }
 interface TvRow { id:string; title:string; type:MediaType; items:TvItem[] }
 interface TvPayload { rows:TvRow[]; heroes?:TvItem[]; hero?:TvItem|null }
-type Section = "all" | MediaType | "saved" | "recent";
+type Section = "all" | MediaType | "saved" | "recent" | "settings" | "help";
 const navOptions:ReadonlyArray<{key:Section;title:string}> = [
   {key:"all",title:"Início"},{key:"f",title:"Filmes"},{key:"s",title:"Séries"},{key:"a",title:"Animes"},{key:"saved",title:"Minha lista"},{key:"recent",title:"Histórico"}
 ];
@@ -26,7 +27,7 @@ const mediaLabel:Record<MediaType,string> = {f:"FILME",s:"SÉRIE",a:"ANIME"};
 
 export const Route=createFileRoute("/tv-home")({
   component:TvHome,
-  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss}],meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
+  head:()=>({links:[{rel:"stylesheet",href:tvCinemaCss},{rel:"stylesheet",href:tvReferenceCss}],meta:[{title:"ZANG FLIX TV — Descubra seu próximo filme"}]})
 });
 
 function TvHome(){
@@ -47,6 +48,9 @@ function TvHome(){
   const [query,setQuery]=useState("");
   const [saved,setSaved]=useState<string[]>([]);
   const [progress,setProgress]=useState<WatchProgress[]>([]);
+  const [rotate,setRotate]=useState(true);
+  useEffect(()=>{try{setRotate(localStorage.getItem("zf-tv-rotate")!=="off")}catch{}},[]);
+  const toggleRotate=()=>{const next=!rotate;setRotate(next);try{localStorage.setItem("zf-tv-rotate",next?"on":"off")}catch{}};
   const {suggestions,status}=useLiveSuggestions(query,searchOpen);
   const onBack=useCallback(()=>{
     if(searchOpen){setSearchOpen(false);setQuery("");requestAnimationFrame(()=>document.querySelector<HTMLElement>('[data-tv-focus="open-search"]')?.focus());}
@@ -54,6 +58,7 @@ function TvHome(){
     else if(window.history.length>1)window.history.back();
   },[searchOpen,section,navigate]);
   useTvFocus({route:"home",root,onBack});
+  useEffect(()=>{if(searchOpen)return;const frame=requestAnimationFrame(()=>{const active=document.activeElement;if(!active||!root.current?.contains(active)){root.current?.querySelector<HTMLElement>('[data-tv-focus="nav-'+section+'"]')?.focus({preventScroll:true});}});return()=>cancelAnimationFrame(frame);},[section,searchOpen]);
 
   useEffect(()=>{
     tvRememberSession();
@@ -157,13 +162,13 @@ function TvHome(){
     else openItem(spotlight);
   };
   useEffect(()=>{
-    if(searchOpen||section!=="all"||heroes.length<2)return;
+    if(!rotate||searchOpen||section!=="all"||heroes.length<2)return;
     const timer=window.setInterval(()=>{
       if(document.visibilityState!=="visible" || document.activeElement?.closest(".zf-immersive-hero"))return;
       setHeroIndex(n=>(n+1)%heroes.length);
     },15000);
     return()=>window.clearInterval(timer);
-  },[heroes,searchOpen,section]);
+  },[heroes,searchOpen,section,rotate]);
   useEffect(()=>{
     if(heroes.length<2 || typeof Image==="undefined")return;
     const next=heroes[(heroIndex+1)%heroes.length];
@@ -182,33 +187,34 @@ function TvHome(){
   };
   const spotlight=heroes[heroIndex]??hero??shelves[0]?.items[0]??null;
 
-  return <main className="zf-tenfoot zf-tenfoot-home" ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
+  return <main className={"zf-tenfoot zf-tenfoot-home zf-tv-reference"+(searchOpen?" zf-ref-search-open":"")} ref={root} data-tv-exclusive="true" data-tv-build={TV_APP_BUILD}>
     {!searchOpen ? <>
-      <aside className="zf-tv-sidemenu" aria-label="Navegação do ZANG FLIX TV">
-        <span className="zf-tv-sidemenu-mark"><img src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/></span>
-        <nav>
-          <span className="zf-tv-menu-label">MENU</span>
-          {navOptions.map((option,index)=><div data-tv-row={"menu-"+index} key={option.key}>
-            <button type="button" data-tv-focus={"nav-"+option.key}
-              data-tv-start={option.key==="all"?"":undefined}
-              data-tv-right-target={section==="all"?"hero-play":section==="saved"?(uniqueSaved[0]?"poster-saved-"+uniqueSaved[0].id:undefined):section==="recent"?(recent[0]?"history-"+recent[0].id:undefined):"library-genre-0"}
-              aria-pressed={section===option.key} className={section===option.key?"is-selected":""}
-              aria-label={option.title} onClick={()=>setSection(option.key)}>
-              {option.key==="all"?<House size={22}/>:option.key==="f"?<Film size={22}/>:
-                option.key==="s"?<Clapperboard size={22}/>:option.key==="a"?<TvAnimeFrameIcon size={22}/>:option.key==="recent"?<Clock size={22}/>:<ListVideo size={22}/>}
+      <aside className="zf-tv-sidemenu" aria-label="Navegação do Zang Flix TV">
+        <button className="zf-tv-sidemenu-mark" type="button" data-tv-focus="brand-home" data-tv-down-target="nav-all" onClick={()=>setSection("all")} aria-label="Zang Flix — início"><img src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/></button>
+        <nav aria-label="Menu principal">
+          <span className="zf-tv-menu-label">Menu</span>
+          {navOptions.slice(0,4).map((option,index)=><div data-tv-row={"menu-"+index} key={option.key}>
+            <button type="button" data-tv-focus={"nav-"+option.key} data-tv-start={option.key==="all"?"":undefined}
+              data-tv-right-target={section==="all"?"hero-play":section==="saved"?(uniqueSaved[0]?"poster-saved-"+uniqueSaved[0].id:undefined):section==="recent"?(recent[0]?"history-"+recent[0].id:undefined):section==="settings"?"settings-rotation":section==="help"?"help-back":"library-genre-0"}
+              aria-pressed={section===option.key} className={section===option.key?"is-selected":""} onClick={()=>setSection(option.key)}>
+              {option.key==="all"?<House size={22}/>:option.key==="f"?<Film size={22}/>:option.key==="s"?<Clapperboard size={22}/>:<TvAnimeFrameIcon size={22}/>}
               <span>{option.title}</span>
             </button>
           </div>)}
-          <div data-tv-row="menu-live"><button type="button" data-tv-focus="nav-live"
-              aria-label="TV ao vivo" data-tv-right-target="hero-play"
-              onClick={()=>void navigate({to:"/tv-live"})}><Tv2 size={22}/><span>TV ao vivo</span></button></div>
-          <div data-tv-row="menu-search"><button type="button" data-tv-focus="open-search"
-              aria-label="Pesquisar" data-tv-right-target="hero-play" onClick={()=>setSearchOpen(true)}>
-              <Search size={22}/><span>Buscar</span></button></div>
+          <div data-tv-row="menu-live"><button type="button" data-tv-focus="nav-live" onClick={()=>void navigate({to:"/tv-live"})}><Tv2 size={22}/><span>TV ao vivo</span></button></div>
+          <div className="zf-ref-menu-divider" aria-hidden="true"/>
+          <span className="zf-tv-menu-label">Biblioteca</span>
+          {navOptions.slice(4).map(option=><div data-tv-row={"menu-"+option.key} key={option.key}><button type="button" data-tv-focus={"nav-"+option.key} aria-pressed={section===option.key} className={section===option.key?"is-selected":""} data-tv-right-target={section==="saved"&&uniqueSaved[0]?"poster-saved-"+uniqueSaved[0].id:section==="recent"&&recent[0]?"history-"+recent[0].id:section==="all"?"hero-play":undefined} onClick={()=>setSection(option.key)}>{option.key==="saved"?<ListVideo size={22}/>:<Clock size={22}/>}<span>{option.title}</span></button></div>)}
+          <div className="zf-ref-menu-divider" aria-hidden="true"/>
+          <div data-tv-row="menu-settings"><button type="button" data-tv-focus="nav-settings" aria-pressed={section==="settings"} className={section==="settings"?"is-selected":""} data-tv-right-target="settings-rotation" onClick={()=>setSection("settings")}><Settings size={22}/><span>Configurações</span></button></div>
+          <div data-tv-row="menu-help"><button type="button" data-tv-focus="nav-help" aria-pressed={section==="help"} className={section==="help"?"is-selected":""} data-tv-right-target="help-back" onClick={()=>setSection("help")}><CircleHelp size={22}/><span>Ajuda</span></button></div>
         </nav>
-        <div className="zf-tv-sidemenu-hint" aria-hidden="true">ZANG FLIX TV<br/>Use as setas e OK</div>
+        <div className="zf-ref-menu-bottom" data-tv-row="menu-bottom"><button type="button" data-tv-focus="open-search" onClick={()=>setSearchOpen(true)}><Search size={20}/><span>Buscar</span></button></div>
       </aside>
-      {section!=="all"&&section!=="saved"&&section!=="recent"?<TvLibrary key={section} type={section} onOpen={openItem}/>:<>
+      {section==="settings"||section==="help"?<section className="zf-ref-utility" aria-label={section==="settings"?"Configurações":"Ajuda"}>
+        <h1>{section==="settings"?"Configurações":"Ajuda"}</h1>
+        {section==="settings"?<><p>Personalize a experiência na televisão.</p><button className="zf-ref-option" data-tv-row="settings" data-tv-focus="settings-rotation" data-tv-left-target="nav-settings" aria-pressed={rotate} onClick={toggleRotate}>Rotação automática do banner <strong>{rotate?"Ativada":"Desativada"}</strong></button><p>Versão: {TV_APP_BUILD}{serverOutdated?" · Hospedagem desatualizada":""}</p></>:<><p>Use as setas do controle remoto para navegar, OK para selecionar e Voltar para retornar.</p><p>O progresso é salvo neste dispositivo. Em Continue assistindo, retome um título de onde parou.</p><button className="zf-ref-option" data-tv-focus="help-back" data-tv-row="help" data-tv-left-target="nav-help" onClick={()=>setSection("all")}>Voltar ao início</button></>}
+      </section>:section!=="all"&&section!=="saved"&&section!=="recent"?<TvLibrary key={section} type={section} onOpen={openItem}/>:<>
       {section==="all"&&<>
        <section className="zf-immersive-hero" aria-label="Destaques de filmes">
         {spotlight?.backdropUrl&&!failedBackdrops.includes(spotlight.id)
@@ -222,43 +228,33 @@ function TvHome(){
               </div>
             : <div className="zf-hero-fallback" aria-hidden="true"/>}
         <div className="zf-hero-shade" aria-hidden="true"/>
-        <header className="zf-tv-headline" data-tv-row="home-top"><button type="button" className="zf-tv-top-search" data-tv-focus="top-search" data-tv-left-target="open-search" data-tv-down-target="hero-play" onClick={()=>setSearchOpen(true)}><Search size={20}/> Buscar filmes e séries</button><span>SEU CINEMA EM CASA</span></header>
+        <header className="zf-tv-headline" data-tv-row="home-top">
+          <button type="button" className="zf-ref-top-icon" data-tv-focus="top-back" data-tv-left-target="nav-all" aria-label="Voltar" onClick={onBack}><ChevronLeft size={26}/></button>
+          <button type="button" className="zf-tv-top-search" data-tv-focus="top-search" data-tv-down-target="hero-play" onClick={()=>setSearchOpen(true)}><Search size={20}/> <span>Buscar</span></button>
+          <nav className="zf-ref-top-nav" aria-label="Acesso rápido"><button type="button" data-tv-focus="top-films" onClick={()=>setSection("f")}>Filmes</button><button type="button" data-tv-focus="top-live" onClick={()=>void navigate({to:"/tv-live"})}>TV ao vivo</button><button type="button" data-tv-focus="top-series" onClick={()=>setSection("s")}>Séries</button></nav>
+          <button type="button" className="zf-ref-top-icon zf-ref-status" data-tv-focus="top-status" onClick={()=>setSection("settings")} aria-label="Status e configurações"><Bell size={20}/>{serverOutdated&&<i/>}</button>
+          <button type="button" className="zf-ref-profile" data-tv-focus="top-list" onClick={()=>setSection("saved")} aria-label="Minha lista"><img src="/brand/zang-mark.webp?v=2" alt="" width={32} height={32}/></button>
+        </header>
         <div className="zf-hero-copy">
-          <span className="zf-hero-kicker"><span className="zf-hero-dot"/> EM DESTAQUE NO ZANG FLIX</span>
-          <h1>{spotlight?.title||"O melhor da sua TV começa aqui."}</h1>
-          {spotlight&&<div className="zf-hero-details">
-            <span>{mediaLabel[spotlight.type]}</span>
-            {spotlight.year&&<span>{spotlight.year}</span>}
-            {spotlight.rating&&spotlight.rating>0&&<span>★ {spotlight.rating.toFixed(1)}</span>}
-            {spotlight.backdropUrl&&<span>IMAGEM HD</span>}
-          </div>}
+          <h1>{spotlight?.title||"Seu próximo filme começa aqui"}</h1>
           <p>{spotlight?.overview||"Descubra filmes, séries e animes selecionados para você. Navegue com o controle remoto."}</p>
           <div className="zf-hero-actions" data-tv-row="hero">
             <button type="button" data-tv-focus="hero-play" data-tv-left-target="nav-all" data-tv-up-target="top-search" className="zf-hero-play"
-              onClick={playHero} disabled={!spotlight}><Play size={20} fill="currentColor"/> Assistir agora</button>
-            <button type="button" data-tv-focus="hero-details" className="zf-hero-details-button"
-              onClick={()=>spotlight&&openItem(spotlight)} disabled={!spotlight}><Info size={21}/> Detalhes</button>
-            <button type="button" data-tv-focus="hero-save" className="zf-hero-save"
-              onClick={addSaved} disabled={!spotlight}
-              aria-label={spotlight&&saved.includes(spotlight.id)?"Remover da minha lista":"Adicionar à minha lista"}>
-              {spotlight&&saved.includes(spotlight.id)?<Check size={23}/>:<Heart size={23}/>}
-            </button>
+              onClick={playHero} disabled={!spotlight}><Play size={19} fill="currentColor"/> Assistir agora</button>
+            <button type="button" data-tv-focus="hero-save" className="zf-hero-save" onClick={addSaved} disabled={!spotlight} aria-label={spotlight&&saved.includes(spotlight.id)?"Remover da minha lista":"Adicionar à minha lista"}>{spotlight&&saved.includes(spotlight.id)?<Check size={22}/>:<Plus size={22}/>}</button>
+            <button type="button" data-tv-focus="hero-details" className="zf-hero-details-button" onClick={()=>spotlight&&openItem(spotlight)} disabled={!spotlight} aria-label="Detalhes"><Info size={24}/></button>
           </div>
-          {heroes.length>1&&<div className="zf-tv-banner-switch" data-tv-row="banner-controls" aria-label="Alternar banners em destaque">
-            <button type="button" data-tv-focus="banner-prev" aria-label="Banner anterior"
-              onClick={()=>setHeroIndex(i=>(i-1+heroes.length)%heroes.length)}><ChevronLeft size={22}/></button>
-            <span className="zf-tv-banner-progress">{String(heroIndex+1).padStart(2,"0")} <i/> {String(heroes.length).padStart(2,"0")}</span>
-            <button type="button" data-tv-focus="banner-next" aria-label="Próximo banner"
-              onClick={()=>setHeroIndex(i=>(i+1)%heroes.length)}><ChevronRight size={22}/></button>
-          </div>}
         </div>
+        {heroes.length>1&&<div className="zf-tv-banner-switch" data-tv-row="banner-controls" aria-label="Escolher destaque">
+          {heroes.map((item,index)=><button key={item.id} type="button" data-tv-focus={"banner-"+index} aria-label={"Destaque "+(index+1)+": "+item.title} aria-pressed={heroIndex===index} className={heroIndex===index?"is-current":""} onClick={()=>setHeroIndex(index)}><span/></button>)}
+        </div>}
       </section>
       </>}
       {serverOutdated&&<div className="zf-tv-update-warning" role="status">A versão publicada da TV está desatualizada. Os banners HD e os canais podem não funcionar até atualizar a hospedagem.</div>}
       {loading?<p className="zf-tenfoot-notice" role="status">Carregando sua experiência de TV…</p>:
         error?<p className="zf-tenfoot-notice" role="alert">Não foi possível carregar o catálogo. <button type="button" data-tv-focus="retry" data-tv-row="notice" onClick={()=>location.reload()}>Tentar novamente</button></p>:
         <div className={"zf-immersive-shelves"+(section!=="all"?" zf-tv-standalone-shelves":"")}>
-          {(section==="all"||section==="recent")&&<section className="zf-tenfoot-shelf" aria-label={section==="recent"?"Histórico":"Continue assistindo"}><div className="zf-shelf-heading"><h2>{section==="recent"?"Histórico":"Continue assistindo"}</h2></div><div className="zf-shelf-track" data-tv-row="history">{(section==="recent"?recent:watching).map((p,index)=>{const item=allItems.find(i=>i.id===(p.contentId||p.id)&&i.type===p.type);const artwork=item?.backdropUrl||p.posterUrl||item?.posterUrl;return <button type="button" className="zf-poster-tile zf-history-tile" key={p.id} data-tv-focus={"history-"+p.id} data-tv-left-target={index===0?"nav-"+(section==="recent"?"recent":"all"):undefined} onClick={()=>openProgress(p)}><span className="zf-tv-history-art">{artwork?<img src={artwork} alt="" loading="lazy" decoding="async"/>:<span className="zf-poster-blank">{p.title.slice(0,2)}</span>}<span className="zf-tv-progress"><i style={{width:tvPercent(p)+"%"}}/></span></span><span className="zf-poster-title">{item?.title||p.title}</span><small>{p.type!=="f"?"T"+p.season+" · E"+p.episode+" · ":""}{tvPercent(p)>=92?"Concluído":tvTime(p.currentTime)}</small></button>;})}</div>{!(section==="recent"?recent:watching).length&&<p className="zf-tv-history-empty">Seus títulos aparecem aqui quando você começa a assistir.</p>}</section>}
+          {((section==="all"&&watching.length>0)||section==="recent")&&<section className="zf-tenfoot-shelf" aria-label={section==="recent"?"Histórico":"Continue assistindo"}><div className="zf-shelf-heading"><h2>{section==="recent"?"Histórico":"Continue assistindo"}</h2></div><div className="zf-shelf-track" data-tv-row="history">{(section==="recent"?recent:watching).map((p,index)=>{const item=allItems.find(i=>i.id===(p.contentId||p.id)&&i.type===p.type);const artwork=item?.backdropUrl||p.posterUrl||item?.posterUrl;return <button type="button" className="zf-poster-tile zf-history-tile" key={p.id} data-tv-focus={"history-"+p.id} data-tv-left-target={index===0?"nav-"+(section==="recent"?"recent":"all"):undefined} aria-label={(item?.title||p.title)+" — "+(p.type!=="f"?"temporada "+p.season+", episódio "+p.episode+", ":"")+tvTime(p.currentTime)} onClick={()=>openProgress(p)}><span className="zf-tv-history-art">{artwork?<TvReferenceArtwork primary={artwork} fallback={p.posterUrl||item?.posterUrl||""} title={item?.title||p.title}/>:<span className="zf-poster-blank">{p.title.slice(0,2)}</span>}<span className="zf-ref-art-title">{item?.title||p.title}</span></span><span className="zf-tv-progress"><i style={{width:tvPercent(p)+"%"}}/></span><small className="zf-ref-history-detail">{p.type!=="f"?"T"+p.season+" · E"+p.episode+" · ":""}{tvPercent(p)>=92?"Concluído":tvTime(p.currentTime)}</small></button>;})}</div>{!(section==="recent"?recent:watching).length&&<p className="zf-tv-history-empty">Seus títulos aparecem aqui quando você começa a assistir.</p>}</section>}
           {shelves.map((shelf,index)=><section className="zf-tenfoot-shelf" key={shelf.id} aria-label={shelf.title}>
             <div className="zf-shelf-heading"><h2>{shelf.title}</h2><span>{index===0?"SUA SELEÇÃO":""}</span></div>
             <div className="zf-shelf-track" data-tv-row={"shelf-"+shelf.id}>
@@ -266,9 +262,7 @@ function TvHome(){
                  key={item.type+":"+item.id} data-tv-focus={"poster-"+shelf.id+"-"+item.id}
                  data-tv-left-target={position===0?"nav-"+section:undefined}
                  aria-label={"Abrir "+item.title} onClick={()=>openItem(item)}>
-                 {item.backdropUrl||item.posterUrl?<img src={item.backdropUrl||item.posterUrl} alt="" loading="lazy" decoding="async" width={320} height={180}/>
-                   :<span className="zf-poster-blank">{item.title.slice(0,2)}</span>}
-                 <span className="zf-poster-title">{item.title}</span>
+                 <span className="zf-ref-card-art">{item.backdropUrl||item.posterUrl?<TvReferenceArtwork primary={item.backdropUrl||item.posterUrl} fallback={item.posterUrl} title={item.title}/>:<span className="zf-poster-blank">{item.title.slice(0,2)}</span>}<span className="zf-ref-art-title">{item.title}</span></span>
               </button>)}
             </div>
           </section>)}
@@ -303,4 +297,10 @@ function TvHome(){
       </>}
     </section>}
   </main>;
+}
+
+function TvReferenceArtwork({primary,fallback,title}:{primary:string;fallback:string;title:string}){
+  const [failed,setFailed]=useState<string[]>([]);
+  const image=[primary,fallback].find(url=>url&&!failed.includes(url));
+  return image?<img src={image} alt="" width={320} height={180} loading="lazy" decoding="async" onError={()=>setFailed(old=>old.includes(image)?old:[...old,image])}/>:<span className="zf-poster-blank" aria-hidden="true">{title.slice(0,2)}</span>;
 }
