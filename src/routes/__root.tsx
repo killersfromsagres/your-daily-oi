@@ -19,6 +19,7 @@ import mobileCatalogCss from "../styles/mobile-catalog-filters.css?url";
 import playerFullscreenCss from "../styles/player-fullscreen.css?url";
 import iconographyCss from "../styles/iconography.css?url";
 import appCss from "../styles.css?url";
+import brandCss from "../styles/zang-brand.css?url";
 import headerCss from "../styles/header.css?url";
 import cardsCss from "../styles/cards.css?url";
 import heroCss from "../styles/hero.css?url";
@@ -42,9 +43,9 @@ import { Header } from "@/components/layout";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0a0b14] px-4 text-white">
+    <div className="flex min-h-screen items-center justify-center bg-[#090909] px-4 text-white">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-black text-[#e8b44a]">404</h1>
+        <h1 className="text-7xl font-black text-[#ff525b]">404</h1>
         <h2 className="mt-4 text-2xl font-bold">Página não encontrada</h2>
         <p className="mt-2 text-sm text-white/60">Este endereço não existe ou foi movido.</p>
         <Link to="/" className="ydo-btn-primary mt-6 inline-flex">Voltar ao Zang Flix</Link>
@@ -57,7 +58,7 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   const router = useRouter();
   useEffect(() => { reportLovableError(error, { boundary: "tanstack_root_error_component" }); }, [error]);
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0a0b14] px-4 text-white">
+    <div className="flex min-h-screen items-center justify-center bg-[#090909] px-4 text-white">
       <div className="max-w-md text-center">
         <h1 className="text-2xl font-bold text-white">Erro ao carregar o Zang Flix</h1>
         <p className="mt-2 text-sm text-white/60">Tente novamente ou volte para o catálogo.</p>
@@ -75,7 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#0a0b14" },
+      { name: "theme-color", content: "#090909" },
       { name: "application-name", content: "ZANG FLIX" },
       { name: "apple-mobile-web-app-title", content: "ZANG FLIX" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
@@ -116,6 +117,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: tvExperienceCss },
       { rel: "stylesheet", href: tvAppPremiumCss },
       { rel: "stylesheet", href: tvHomeCss },
+       { rel: "stylesheet", href: brandCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },

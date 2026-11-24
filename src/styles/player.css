@@ -42,7 +42,7 @@
   align-items: center;
   justify-content: center;
   gap: 1.25rem;
-  background: radial-gradient(circle at center, rgba(14, 16, 28, 0.85) 0%, rgba(10, 11, 20, 0.96) 100%);
+  background: radial-gradient(circle at center, rgba(19, 19, 19, 0.85) 0%, rgba(14, 14, 14, 0.96) 100%);
   color: var(--text-primary, #f1f1f1);
   font-size: 0.95rem;
   backdrop-filter: blur(8px);
@@ -53,7 +53,7 @@
   width: 50px;
   height: 50px;
   border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--accent, #e8b44a);
+  border-top-color: var(--accent, #ff525b);
   border-radius: 50%;
   animation: ydo-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -65,7 +65,7 @@
 }
 
 .ydo-player-error-overlay {
-  background: rgba(10, 11, 20, 0.95);
+  background: rgba(14, 14, 14, 0.95);
   padding: 2rem;
   text-align: center;
 }
@@ -92,8 +92,8 @@
   padding: 0.65rem 1.4rem;
   border-radius: var(--r-pill, 999px);
   border: none;
-  background: var(--accent, #e8b44a);
-  color: var(--bg-deep, #0a0b14);
+  background: var(--accent, #ff525b);
+  color: var(--bg-deep, #0e0e0e);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -125,8 +125,8 @@
   padding: 4rem 1.75rem 1.25rem;
   background: linear-gradient(
     to top,
-    rgba(10, 11, 20, 0.98) 0%,
-    rgba(10, 11, 20, 0.75) 50%,
+    rgba(14, 14, 14, 0.98) 0%,
+    rgba(14, 14, 14, 0.75) 50%,
     transparent 100%
   );
   opacity: 0;
@@ -188,7 +188,7 @@
   top: 0;
   left: 0;
   bottom: 0;
-  background: var(--accent, #e8b44a);
+  background: var(--accent, #ff525b);
   border-radius: 4px;
   pointer-events: none;
   transition: width 0.08s linear;
@@ -244,7 +244,7 @@
 
 .ydo-ctrl-btn:hover {
   background: rgba(255, 255, 255, 0.12);
-  color: var(--accent, #e8b44a);
+  color: var(--accent, #ff525b);
   transform: scale(1.08);
 }
 
@@ -271,7 +271,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--accent, #e8b44a);
+  background: var(--accent, #ff525b);
   cursor: pointer;
   transition: transform 0.15s;
 }
@@ -305,12 +305,12 @@
 }
 
 .ydo-source-select:hover {
-  border-color: var(--accent, #e8b44a);
+  border-color: var(--accent, #ff525b);
   background: rgba(255, 255, 255, 0.18);
 }
 
 .ydo-source-select option {
-  background: #111320;
+  background: #171717;
   color: #fff;
 }
 
@@ -323,7 +323,7 @@
   position: absolute;
   bottom: calc(100% + 12px);
   right: 0;
-  background: rgba(18, 20, 34, 0.96);
+  background: rgba(24, 24, 24, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   padding: 1.15rem;
@@ -367,9 +367,9 @@
 
 .ydo-rate-btn:hover,
 .ydo-rate-btn.active {
-  background: var(--accent, #e8b44a);
-  color: var(--bg-deep, #0a0b14);
-  border-color: var(--accent, #e8b44a);
+  background: var(--accent, #ff525b);
+  color: var(--bg-deep, #0e0e0e);
+  border-color: var(--accent, #ff525b);
 }
 
 /* ── Barra Superior do Player (Design Netflix / Saimo) ────────── */
@@ -381,8 +381,8 @@
   padding: 1.5rem 1.75rem 2.5rem;
   background: linear-gradient(
     to bottom,
-    rgba(10, 11, 20, 0.95) 0%,
-    rgba(10, 11, 20, 0.6) 60%,
+    rgba(14, 14, 14, 0.95) 0%,
+    rgba(14, 14, 14, 0.6) 60%,
     transparent 100%
   );
   display: flex;
@@ -418,7 +418,7 @@
 }
 
 .ydo-player-back-btn:hover {
-  background: var(--accent, #e8b44a);
+  background: var(--accent, #ff525b);
   color: #000;
   transform: scale(1.08);
 }
@@ -533,17 +533,17 @@
     width: 42px !important;
     height: 42px !important;
     border-radius: 50% !important;
-    background: rgba(232, 180, 74, 0.22) !important;
-    border: 1.5px solid rgba(232, 180, 74, 0.6) !important;
-    color: #e8b44a !important;
-    box-shadow: 0 0 16px rgba(232, 180, 74, 0.3) !important;
+    background: rgba(255, 82, 91, 0.22) !important;
+    border: 1.5px solid rgba(255, 82, 91, 0.6) !important;
+    color: #ff525b !important;
+    box-shadow: 0 0 16px rgba(255, 82, 91, 0.3) !important;
     cursor: pointer !important;
     transition: transform 0.18s, background 0.18s !important;
   }
 
   .ydo-ctrl-btn-fullscreen:active {
     transform: scale(0.92) !important;
-    background: #e8b44a !important;
+    background: #ff525b !important;
     color: #000 !important;
   }
 }
@@ -615,29 +615,29 @@
 .ydo-ctrl-btn.ydo-hq-btn {
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   flex:0 0 auto;min-width:52px;width:auto;height:34px;padding:5px 8px;
-  border:1px solid #ffffff24;border-radius:8px;color:#e6e9ee;background:#ffffff08;
+  border:1px solid #ffffff24;border-radius:8px;color:#eaeaea;background:#ffffff08;
   cursor:pointer;transition:color .16s,border-color .16s,background .16s;
 }
 .zf-hq-symbol {display:inline-flex;align-items:center;justify-content:center;font:850 12px/1 system-ui,sans-serif;letter-spacing:-.03em;}
 .zf-hq-indicator {width:4px;height:4px;border-radius:50%;background:#ffffff42;}
-.ydo-hq-btn.active {color:#f1ca87;border-color:#d9b87866;background:#d3a34814;}
-.ydo-hq-btn.active .zf-hq-indicator {background:#e5bd72;box-shadow:0 0 5px #e5bd7240;}
+.ydo-hq-btn.active {color:#ff525b;border-color:#ff525b66;background:#e5091414;}
+.ydo-hq-btn.active .zf-hq-indicator {background:#ff525b;box-shadow:0 0 5px #ff525b40;}
 .ydo-hq-btn[aria-busy="true"] .zf-hq-indicator {animation:zf-hq-ready 1.2s ease-in-out infinite;}
-.ydo-hq-btn:hover {border-color:#d9b87888;}
+.ydo-hq-btn:hover {border-color:#ff525b88;}
 @keyframes zf-hq-ready {50%{opacity:.35;}}
 @media(prefers-reduced-motion:reduce){.ydo-hq-btn[aria-busy="true"] .zf-hq-indicator{animation:none;}}
 
 /* Low-latency live mode switch: visible in the live player, compact on TV. */
 .ydo-live-latency-btn {
   display:inline-flex; gap:7px; align-items:center; justify-content:center;
-  min-height:32px; padding:0 11px; border:1px solid rgba(209,222,238,.24);
-  border-radius:9px; background:rgba(15,24,38,.72); color:#cbd8e6;
+  min-height:32px; padding:0 11px; border:1px solid rgba(223, 223, 223,.24);
+  border-radius:9px; background:rgba(26, 26, 26,.72); color:#d8d8d8;
   font-size:11px; font-weight:850; white-space:nowrap;
   transition:background .17s,border-color .17s,color .17s;
 }
-.ydo-live-latency-btn:hover { background:rgba(255,255,255,.10); border-color:rgba(232,202,146,.44); }
-.ydo-live-latency-btn.is-fast { color:#f8d99f; border-color:rgba(246,208,143,.41); background:rgba(237,188,106,.11); }
-.ydo-live-latency-btn:focus-visible { outline:2px solid #f5d6a1; outline-offset:2px; }
+.ydo-live-latency-btn:hover { background:rgba(255,255,255,.10); border-color:rgba(255, 82, 91,.44); }
+.ydo-live-latency-btn.is-fast { color:#ffb5b9; border-color:rgba(255, 181, 185,.41); background:rgba(255, 82, 91,.11); }
+.ydo-live-latency-btn:focus-visible { outline:2px solid #ffb5b9; outline-offset:2px; }
 @media(max-width:610px){.ydo-live-latency-btn{padding:0 8px;gap:4px;font-size:10px}.ydo-live-latency-btn span{display:none}}
 @media(prefers-reduced-motion:reduce){.ydo-live-latency-btn{transition:none}}
 

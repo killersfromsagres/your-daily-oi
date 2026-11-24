@@ -5,23 +5,23 @@
 .zf-install-help {
   position:absolute; right:0; top:calc(100% + 12px); z-index:1500;
   width:min(328px,calc(100vw - 26px)); padding:15px;
-  border:1px solid rgba(236,198,138,.24); border-radius:18px;
-  color:#f4f5f8; background:rgba(20,25,35,.97);
+  border:1px solid rgba(255, 82, 91,.24); border-radius:18px;
+  color:#f6f6f6; background:rgba(27, 27, 27,.97);
   backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
   box-shadow:0 18px 55px rgba(0,0,0,.6);
 }
-.zf-install-help-head { display:flex; align-items:center; gap:9px; color:#edc58f; font-size:13px; }
+.zf-install-help-head { display:flex; align-items:center; gap:9px; color:#ff525b; font-size:13px; }
 .zf-install-help-head strong { flex:1; }
 .zf-install-help-head button {
   display:grid;place-items:center; width:30px;height:30px;border-radius:9px;
   background:rgba(255,255,255,.065);color:#fff;border:1px solid rgba(255,255,255,.09);cursor:pointer;
 }
-.zf-install-help p { margin:11px 0 9px; line-height:1.55; font-size:13px;color:#f0f0f4; }
-.zf-install-help small { display:block;line-height:1.45;color:#aeb5c0;font-size:11px; }
+.zf-install-help p { margin:11px 0 9px; line-height:1.55; font-size:13px;color:#f1f1f1; }
+.zf-install-help small { display:block;line-height:1.45;color:#b6b6b6;font-size:11px; }
 .zf-genre-fallback {
   margin:5px 0 20px;padding:14px 16px;border-radius:13px;
-  border:1px solid rgba(225,189,137,.22);background:rgba(225,189,137,.055);
-  color:#d6d8dd;font-size:13px;line-height:1.5;
+  border:1px solid rgba(255, 82, 91,.22);background:rgba(255, 82, 91,.055);
+  color:#d9d9d9;font-size:13px;line-height:1.5;
 }
 
 /* The previous intrinsic-width desktop nav exceeded its floating container. */
@@ -71,7 +71,7 @@
     bottom:calc(11px + env(safe-area-inset-bottom,0px));
     min-height:70px;padding:6px 5px;align-items:center;
     border-radius:24px;border:1px solid rgba(255,255,255,.19);
-    background:rgba(25,29,39,.64);
+    background:rgba(31, 31, 31,.64);
     -webkit-backdrop-filter:blur(27px) saturate(155%);
     backdrop-filter:blur(27px) saturate(155%);
     box-shadow:0 12px 36px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.09);
@@ -79,13 +79,13 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-tab {
     display:flex;align-items:center;justify-content:center;flex-direction:column;
     gap:5px;min-height:56px;min-width:0;padding:5px 2px;border:0;
-    border-radius:18px;background:transparent;color:rgba(238,240,247,.76);
+    border-radius:18px;background:transparent;color:rgba(242, 242, 242,.76);
     font-size:10px;font-weight:650;letter-spacing:-.015em;
     text-decoration:none;transition:color .2s ease,background .2s ease;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab svg { flex:0 0 auto; }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab.is-active {
-    background:rgba(255,255,255,.13);color:#ffcf8a;border:0;
+    background:rgba(255,255,255,.13);color:#ffb5b9;border:0;
     box-shadow:inset 0 1px rgba(255,255,255,.13);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab span:last-child {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
@@ -93,19 +93,19 @@
     display:grid;place-items:center;
     position:fixed;z-index:1101;right:12px;bottom:calc(11px + env(safe-area-inset-bottom,0px));
     height:70px;width:65px;padding:0;
-    color:#f4f7fc;border-radius:24px;border:1px solid rgba(255,255,255,.19);
-    background:rgba(25,29,39,.76);
+    color:#f8f8f8;border-radius:24px;border:1px solid rgba(255,255,255,.19);
+    background:rgba(31, 31, 31,.76);
     -webkit-backdrop-filter:blur(27px) saturate(155%);backdrop-filter:blur(27px) saturate(155%);
     box-shadow:0 12px 36px rgba(0,0,0,.46),inset 0 1px rgba(255,255,255,.10);
     cursor:pointer;
   }
-  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {color:#ffd49a;background:rgba(70,57,44,.94);}
+  html:not([data-zf-platform="tv"]) .zf-mobile-search-fab.is-active {color:#ffb5b9;background:rgba(70,57,44,.94);}
   html:not([data-zf-platform="tv"]) .zf-mobile-search-fab:focus-visible,
   html:not([data-zf-platform="tv"]) .zf-mobile-tab:focus-visible {
-    outline:2px solid #eac187;outline-offset:3px;
+    outline:2px solid #ff525b;outline-offset:3px;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim {
-    background:rgba(2,5,12,.60);
+    background:rgba(6, 6, 6,.60);
     backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
@@ -113,7 +113,7 @@
     bottom:calc(12px + env(safe-area-inset-bottom,0px));
     width:min(430px,calc(100vw - 20px));height:auto;
     border:1px solid rgba(255,255,255,.17);border-radius:27px;
-    overflow:hidden;background:rgba(19,24,36,.85);
+    overflow:hidden;background:rgba(26, 26, 26,.85);
     backdrop-filter:blur(32px) saturate(160%);
     -webkit-backdrop-filter:blur(32px) saturate(160%);
     box-shadow:0 28px 85px rgba(0,0,0,.65);
@@ -128,14 +128,14 @@
     border-radius:16px;min-height:63px;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg {
-    color:#f0c58f;stroke-width:var(--zf-icon-stroke,1.8);
+    color:#ff525b;stroke-width:var(--zf-icon-stroke,1.8);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-search {
-    border-color:rgba(255,255,255,.15);background:rgba(8,12,20,.42);
+    border-color:rgba(255,255,255,.15);background:rgba(13, 13, 13,.42);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-feature {
-    border:1px solid rgba(248,204,144,.2);
-    background:linear-gradient(115deg,rgba(111,81,43,.36),rgba(36,46,65,.45));
+    border:1px solid rgba(255, 82, 91,.2);
+    background:linear-gradient(115deg,rgba(111,81,43,.36),rgba(49, 49, 49,.45));
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections {
     background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.12);
@@ -151,7 +151,7 @@
     left:12px;right:12px;width:auto;height:56px;min-height:56px;
     padding:0 10px;gap:6px;border-radius:20px;
     border:1px solid rgba(255,255,255,.14);
-    background:rgba(20,24,35,.75);
+    background:rgba(26, 26, 26,.75);
     -webkit-backdrop-filter:blur(22px) saturate(145%);
     backdrop-filter:blur(22px) saturate(145%);
     box-shadow:0 9px 28px rgba(0,0,0,.4);
@@ -181,7 +181,7 @@
   html:not([data-zf-platform="tv"]) .ydo-hero-title {font-size:clamp(30px,8.5vw,48px);letter-spacing:-.045em;line-height:1.03;}
   html:not([data-zf-platform="tv"]) .ydo-hero-img {object-position:center 28%;}
   html:not([data-zf-platform="tv"]) .ydo-hero-veil-bottom {
-    background:linear-gradient(to top,#080a10 0%,rgba(8,10,16,.98) 10%,rgba(8,10,16,.77) 36%,transparent 77%);
+    background:linear-gradient(to top,#0b0b0b 0%,rgba(11, 11, 11,.98) 10%,rgba(11, 11, 11,.77) 36%,transparent 77%);
   }
   html:not([data-zf-platform="tv"]) .ydo-hero-dots {bottom:calc(86px + env(safe-area-inset-bottom,0px));}
   html:not([data-zf-platform="tv"]) .ydo-hero-actions {gap:10px;flex-wrap:wrap;}

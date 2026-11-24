@@ -2,11 +2,11 @@
 .zf-install-wrap { display:none; }
 @media (max-width: 767px) {
   html:not([data-zf-platform="tv"]) { color-scheme:dark; overflow-x:clip; }
-  html:not([data-zf-platform="tv"]) body { overflow-x:clip; background:#090b12; -webkit-tap-highlight-color:transparent; }
+  html:not([data-zf-platform="tv"]) body { overflow-x:clip; background:#0d0d0d; -webkit-tap-highlight-color:transparent; }
   html:not([data-zf-platform="tv"]) .ydo-header {
     top:calc(7px + env(safe-area-inset-top,0px)); left:12px; right:12px;
     height:54px; min-height:54px; border-radius:17px;
-    background:rgba(13,16,26,.94); border:1px solid rgba(255,255,255,.11);
+    background:rgba(18, 18, 18,.94); border:1px solid rgba(255,255,255,.11);
     box-shadow:0 10px 35px rgba(0,0,0,.38);
   }
   html:not([data-zf-platform="tv"]) .ydo-logo-img { max-width:42px; height:30px; object-fit:contain; }
@@ -21,7 +21,7 @@
   html:not([data-zf-platform="tv"]) .ydo-card { scroll-snap-align:start; }
   html:not([data-zf-platform="tv"]) .zf-mobile-dock {
     left:12px; right:12px; bottom:calc(8px + env(safe-area-inset-bottom,0px));
-    min-height:64px; border-radius:20px; background:rgba(14,19,30,.96);
+    min-height:64px; border-radius:20px; background:rgba(21, 21, 21,.96);
     box-shadow:0 12px 40px rgba(0,0,0,.55); backdrop-filter:blur(12px);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab { min-height:53px; }
@@ -33,17 +33,17 @@
   .zf-install-action {
     display:flex; align-items:center; justify-content:center; gap:8px;
     min-height:42px; padding:9px 15px; border-radius:999px;
-    border:1px solid rgba(250,212,151,.4); background:linear-gradient(120deg,#e9ba75,#f5d8a5);
-    color:#17191f; font:700 12px/1.2 inherit; font-family:inherit;
+    border:1px solid rgba(255, 181, 185,.4); background:linear-gradient(120deg,#ff525b,#ffb5b9);
+    color:#1a1a1a; font:700 12px/1.2 inherit; font-family:inherit;
     box-shadow:0 8px 26px rgba(0,0,0,.5); cursor:pointer;
   }
   .zf-install-help {
     display:flex; align-items:flex-start; gap:8px; margin-top:8px; padding:12px;
-    border:1px solid rgba(239,196,126,.3); border-radius:14px;
-    background:#161c29; color:#f4e8d4; font-size:12px; line-height:1.45;
+    border:1px solid rgba(255, 82, 91,.3); border-radius:14px;
+    background:#1e1e1e; color:#f4e8d4; font-size:12px; line-height:1.45;
     box-shadow:0 8px 24px rgba(0,0,0,.4);
   }
-  .zf-install-help svg { flex-shrink:0; color:#f0c584; }
+  .zf-install-help svg { flex-shrink:0; color:#ff525b; }
 }
 @media (display-mode:standalone) {
   html { overscroll-behavior-y:contain; }
@@ -60,21 +60,21 @@
     top:calc(6px + env(safe-area-inset-top,0px));
     left:10px;right:10px;height:56px;min-height:56px;padding-inline:12px;
     border:1px solid rgba(255,255,255,.09);border-radius:16px;
-    background:rgba(9,12,20,.96);box-shadow:0 14px 40px rgba(0,0,0,.3);
+    background:rgba(14, 14, 14,.96);box-shadow:0 14px 40px rgba(0,0,0,.3);
     backdrop-filter:none;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-dock {
     left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
     min-height:65px;padding:5px;border-radius:19px;
-    background:#101722;border:1px solid rgba(255,255,255,.11);
+    background:#181818;border:1px solid rgba(255,255,255,.11);
     box-shadow:0 12px 30px rgba(0,0,0,.42);backdrop-filter:none;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab {
     gap:5px;min-height:53px;border-radius:14px;font-size:10px;
-    font-weight:650;color:#94a2b4;
+    font-weight:650;color:#a3a3a3;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-tab.is-active {
-    background:#2b2a2a;border-color:rgba(241,196,127,.14);color:#f7cc8e;
+    background:#2b2a2a;border-color:rgba(255, 82, 91,.14);color:#ff525b;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-live-icon {
     width:26px;height:26px;margin-top:-3px;background:transparent;border:0;box-shadow:none;
@@ -82,26 +82,26 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-scrim { background:rgba(0,0,0,.75);backdrop-filter:none; }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
     top:0;bottom:0;width:min(390px,100%);border:0;
-    background:#0d121d;box-shadow:-15px 0 55px rgba(0,0,0,.55);
+    background:#141414;box-shadow:-15px 0 55px rgba(0,0,0,.55);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-top {
     padding:15px 18px;border-bottom:1px solid rgba(255,255,255,.07);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-scroll { padding:16px 18px calc(36px + env(safe-area-inset-bottom,0px)); }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-search {
-    min-height:52px;border-radius:16px;background:#181f2d;border-color:#343c4c;
+    min-height:52px;border-radius:16px;background:#212121;border-color:#3f3f3f;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-feature {
     min-height:87px;margin:18px 0 24px;border-radius:18px;
-    background:linear-gradient(110deg,#31271e,#171e2a);border-color:rgba(244,194,122,.23);
+    background:linear-gradient(110deg,#31271e,#202020);border-color:rgba(255, 82, 91,.23);
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid { gap:10px;margin-bottom:26px; }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a {
     min-height:65px;border-radius:16px;padding:0 14px;
-    background:#171e2b;border-color:rgba(255,255,255,.07);font-size:13px;
+    background:#202020;border-color:rgba(255,255,255,.07);font-size:13px;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections {
-    background:#151c29;border-color:rgba(255,255,255,.07);border-radius:17px;
+    background:#1e1e1e;border-color:rgba(255,255,255,.07);border-radius:17px;
   }
   html:not([data-zf-platform="tv"]) .ydo-hero { height:clamp(520px,80svh,700px); }
   html:not([data-zf-platform="tv"]) .ydo-hero-content { padding:0 19px 78px; }
@@ -115,11 +115,11 @@
   position:absolute;z-index:30;right:clamp(12px,4vw,35px);
   bottom:clamp(95px,16vh,145px);display:flex;align-items:center;gap:9px;
   min-height:44px;padding:10px 16px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.28);background:rgba(13,17,25,.92);
+  border:1px solid rgba(255,255,255,.28);background:rgba(18, 18, 18,.92);
   color:#fff;font:700 13px/1.2 inherit;font-family:inherit;cursor:pointer;
   box-shadow:0 7px 25px rgba(0,0,0,.4);
 }
-.zf-player-episode-action:focus-visible { outline:2px solid #f3c78b;outline-offset:3px; }
+.zf-player-episode-action:focus-visible { outline:2px solid #ff525b;outline-offset:3px; }
 .zf-player-episode-action.zf-skip-opening { bottom:clamp(155px,25vh,205px); }
 @media (max-width:767px) {
   .zf-player-episode-action { right:12px;bottom:90px;min-height:40px;padding:8px 12px;font-size:12px; }
@@ -129,12 +129,12 @@
 /* Quiet download entry for the website. The installed runtime renders none. */
 .zf-header-apk { display:inline-flex;align-items:center;justify-content:center;gap:7px;
   flex-shrink:0;min-height:34px;padding:0 11px;border-radius:999px;
-  border:1px solid rgba(226,236,247,.19);
+  border:1px solid rgba(236, 236, 236,.19);
   background:rgba(255,255,255,.055);
-  color:rgba(236,242,248,.86);text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap;
+  color:rgba(242, 242, 242,.86);text-decoration:none;font-size:11px;font-weight:600;white-space:nowrap;
   transition:background .18s ease,border-color .18s ease,color .18s ease; }
 .zf-header-apk:hover,.zf-header-apk:focus-visible { background:rgba(255,255,255,.14);
-  border-color:rgba(226,236,247,.40);color:#fff; }
+  border-color:rgba(236, 236, 236,.40);color:#fff; }
 @media (max-width:767px) {
   html:not([data-zf-platform="tv"]) .ydo-mobile-menu-trigger { display:none; }
   html:not([data-zf-platform="tv"]) .zf-header-apk { padding:0 9px;min-height:36px;font-size:11px;gap:5px; }
@@ -154,7 +154,7 @@
   font-weight:900;letter-spacing:.12em;line-height:1;
   text-shadow:0 1px 3px rgba(0,0,0,.4);
 }
-.ydo-player-container .zf-player-watermark span { color:rgba(239,187,103,.36); }
+.ydo-player-container .zf-player-watermark span { color:rgba(255, 82, 91,.36); }
 .ydo-player-container .zf-next-episode {
   z-index:999!important;pointer-events:auto!important;
   bottom:clamp(105px,17vh,165px);

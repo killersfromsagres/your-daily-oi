@@ -4,7 +4,7 @@
 
 .ydo-tv-page {
   min-height: 100vh;
-  background-color: #0a0b14;
+  background-color: #0e0e0e;
   color: #ffffff;
   padding-top: 84px;
   padding-bottom: 60px;
@@ -46,9 +46,9 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #e8b44a;
-  background: rgba(232, 180, 74, 0.12);
-  border: 1px solid rgba(232, 180, 74, 0.28);
+  color: #ff525b;
+  background: rgba(255, 82, 91, 0.12);
+  border: 1px solid rgba(255, 82, 91, 0.28);
   padding: 3px 10px;
   border-radius: 999px;
 }
@@ -77,8 +77,8 @@
 .ydo-tv-sublink:hover,
 .ydo-tv-sublink.active {
   color: #fff;
-  background: rgba(232, 180, 74, 0.15);
-  border-color: rgba(232, 180, 74, 0.35);
+  background: rgba(255, 82, 91, 0.15);
+  border-color: rgba(255, 82, 91, 0.35);
 }
 
 /* Grid de duas colunas (Desktop) */
@@ -136,8 +136,8 @@
   bottom: 84px;
   left: 20px;
   z-index: 15;
-  background: rgba(232, 180, 74, 0.95);
-  color: #0a0b14;
+  background: rgba(255, 82, 91, 0.95);
+  color: #0e0e0e;
   border: none;
   padding: 8px 18px;
   border-radius: 999px;
@@ -164,9 +164,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(10, 11, 20, 0.88);
-  border: 1px solid rgba(232, 180, 74, 0.4);
-  color: #e8b44a;
+  background: rgba(14, 14, 14, 0.88);
+  border: 1px solid rgba(255, 82, 91, 0.4);
+  color: #ff525b;
   padding: 6px 14px;
   border-radius: 999px;
   font-size: 0.78rem;
@@ -182,7 +182,7 @@
   right: 0;
   z-index: 10;
   padding: 24px;
-  background: linear-gradient(180deg, rgba(10, 11, 20, 0.92) 0%, rgba(10, 11, 20, 0) 100%);
+  background: linear-gradient(180deg, rgba(14, 14, 14, 0.92) 0%, rgba(14, 14, 14, 0) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
@@ -207,8 +207,8 @@
 }
 
 .ydo-live-pulse-dot.is-live {
-  background-color: #e8b44a;
-  box-shadow: 0 0 10px #e8b44a;
+  background-color: #ff525b;
+  box-shadow: 0 0 10px #ff525b;
   animation: ydoLivePulse 1.8s infinite;
 }
 
@@ -218,7 +218,7 @@
 
 @keyframes ydoLivePulse {
   0% { transform: scale(0.95); opacity: 0.7; }
-  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 14px #e8b44a; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 14px #ff525b; }
   100% { transform: scale(0.95); opacity: 0.7; }
 }
 
@@ -226,7 +226,7 @@
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.1em;
-  color: #e8b44a;
+  color: #ff525b;
 }
 
 .ydo-live-cat-tag {
@@ -258,7 +258,7 @@
 .ydo-live-skeleton-overlay {
   position: absolute;
   inset: 0;
-  background: #0a0b14;
+  background: #0e0e0e;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -272,7 +272,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(232, 180, 74, 0.05) 50%,
+    rgba(255, 82, 91, 0.05) 50%,
     transparent 100%
   );
   animation: ydoShimmer 2s infinite;
@@ -291,7 +291,7 @@
 }
 
 .ydo-live-loading-icon {
-  color: #e8b44a;
+  color: #ff525b;
   animation: pulse 2s infinite ease-in-out;
 }
 
@@ -316,7 +316,7 @@
   position: absolute;
   inset: 0;
   z-index: 12;
-  background: rgba(10, 11, 20, 0.94);
+  background: rgba(14, 14, 14, 0.94);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -348,7 +348,7 @@
   right: 0;
   z-index: 10;
   padding: 16px 20px;
-  background: linear-gradient(0deg, rgba(10, 11, 20, 0.95) 0%, rgba(10, 11, 20, 0) 100%);
+  background: linear-gradient(0deg, rgba(14, 14, 14, 0.95) 0%, rgba(14, 14, 14, 0) 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -400,7 +400,7 @@
   border-radius: 2px;
   outline: none;
   cursor: pointer;
-  accent-color: #e8b44a;
+  accent-color: #ff525b;
 }
 
 /* Botão AO VIVO na barra de controle */
@@ -419,9 +419,9 @@
 }
 
 .ydo-live-edge-btn.is-live {
-  color: #e8b44a;
-  border-color: rgba(232, 180, 74, 0.4);
-  background: rgba(232, 180, 74, 0.1);
+  color: #ff525b;
+  border-color: rgba(255, 82, 91, 0.4);
+  background: rgba(255, 82, 91, 0.1);
 }
 
 .ydo-live-edge-btn.is-delayed {
@@ -457,8 +457,8 @@
 }
 
 .ydo-live-source-pill:hover {
-  background: rgba(232, 180, 74, 0.15);
-  border-color: rgba(232, 180, 74, 0.4);
+  background: rgba(255, 82, 91, 0.15);
+  border-color: rgba(255, 82, 91, 0.4);
   color: #fff;
 }
 
@@ -466,7 +466,7 @@
   position: absolute;
   bottom: calc(100% + 8px);
   right: 0;
-  background: rgba(14, 16, 28, 0.96);
+  background: rgba(19, 19, 19, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 6px;
@@ -509,8 +509,8 @@
 }
 
 .ydo-live-source-item.active {
-  background: rgba(232, 180, 74, 0.15);
-  color: #e8b44a;
+  background: rgba(255, 82, 91, 0.15);
+  color: #ff525b;
 }
 
 .ydo-live-source-badge {
@@ -564,7 +564,7 @@
 
 .ydo-tv-search-input:focus {
   background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(232, 180, 74, 0.4);
+  border-color: rgba(255, 82, 91, 0.4);
 }
 
 .ydo-tv-search-icon {
@@ -605,8 +605,8 @@
 
 .ydo-tv-cat-pill:hover,
 .ydo-tv-cat-pill.active {
-  background: rgba(232, 180, 74, 0.15);
-  border-color: rgba(232, 180, 74, 0.35);
+  background: rgba(255, 82, 91, 0.15);
+  border-color: rgba(255, 82, 91, 0.35);
   color: #fff;
 }
 
@@ -648,15 +648,15 @@
 
 .ydo-tv-channel-item:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(232, 180, 74, 0.3);
+  border-color: rgba(255, 82, 91, 0.3);
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .ydo-tv-channel-item.active {
-  background: rgba(232, 180, 74, 0.12);
-  border-color: #e8b44a;
-  box-shadow: 0 0 16px rgba(232, 180, 74, 0.2);
+  background: rgba(255, 82, 91, 0.12);
+  border-color: #ff525b;
+  box-shadow: 0 0 16px rgba(255, 82, 91, 0.2);
 }
 
 /* Container do Logo 16:9 */
@@ -707,7 +707,7 @@
 }
 
 .ydo-tv-channel-item.active .ydo-tv-channel-name {
-  color: #e8b44a;
+  color: #ff525b;
 }
 
 .ydo-tv-channel-epg-text {
@@ -735,7 +735,7 @@
 
 .ydo-tv-fav-btn:hover,
 .ydo-tv-fav-btn.is-fav {
-  color: #e8b44a;
+  color: #ff525b;
   transform: scale(1.15);
 }
 
@@ -808,9 +808,9 @@
 
 .ydo-tv-shelf-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(232, 180, 74, 0.4);
+  border-color: rgba(255, 82, 91, 0.4);
   transform: translateY(-4px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 16px rgba(232, 180, 74, 0.15);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 16px rgba(255, 82, 91, 0.15);
 }
 
 .ydo-tv-shelf-logo-box {
@@ -897,13 +897,13 @@
 
 .ydo-radio-card:hover {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(232, 180, 74, 0.4);
+  border-color: rgba(255, 82, 91, 0.4);
   transform: translateY(-2px);
 }
 
 .ydo-radio-card.active {
-  background: rgba(232, 180, 74, 0.12);
-  border-color: #e8b44a;
+  background: rgba(255, 82, 91, 0.12);
+  border-color: #ff525b;
 }
 
 .ydo-radio-logo-wrap {
@@ -939,9 +939,9 @@
 }
 
 .ydo-radio-play-btn {
-  background: rgba(232, 180, 74, 0.15);
-  border: 1px solid rgba(232, 180, 74, 0.3);
-  color: #e8b44a;
+  background: rgba(255, 82, 91, 0.15);
+  border: 1px solid rgba(255, 82, 91, 0.3);
+  color: #ff525b;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -954,8 +954,8 @@
 }
 
 .ydo-radio-play-btn:hover {
-  background: #e8b44a;
-  color: #0a0b14;
+  background: #ff525b;
+  color: #0e0e0e;
   transform: scale(1.08);
 }
 
@@ -967,8 +967,8 @@
   transform: translateX(-50%);
   width: calc(100% - 32px);
   max-width: 800px;
-  background: rgba(14, 16, 28, 0.94);
-  border: 1px solid rgba(232, 180, 74, 0.35);
+  background: rgba(19, 19, 19, 0.94);
+  border: 1px solid rgba(255, 82, 91, 0.35);
   border-radius: 14px;
   padding: 12px 20px;
   display: flex;
@@ -1008,8 +1008,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e8b44a;
-  box-shadow: 0 0 8px #e8b44a;
+  background: #ff525b;
+  box-shadow: 0 0 8px #ff525b;
   display: inline-block;
   animation: ydoLivePulse 1.8s infinite;
 }
@@ -1050,9 +1050,9 @@
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #e8b44a;
-  background: rgba(232, 180, 74, 0.12);
-  border: 1px solid rgba(232, 180, 74, 0.32);
+  color: #ff525b;
+  background: rgba(255, 82, 91, 0.12);
+  border: 1px solid rgba(255, 82, 91, 0.32);
   padding: 2px 8px;
   border-radius: 999px;
   text-transform: uppercase;
@@ -1065,9 +1065,9 @@
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: #e8b44a;
-  background: rgba(232, 180, 74, 0.2);
-  border: 1px solid rgba(232, 180, 74, 0.45);
+  color: #ff525b;
+  background: rgba(255, 82, 91, 0.2);
+  border: 1px solid rgba(255, 82, 91, 0.45);
   padding: 2px 8px;
   border-radius: 999px;
 }
@@ -1110,24 +1110,24 @@
 .ydo-jogos-card:focus-visible {
   transform: translateY(-4px);
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(232, 180, 74, 0.45);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(232, 180, 74, 0.18);
+  border-color: rgba(255, 82, 91, 0.45);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 82, 91, 0.18);
 }
 
 .ydo-jogos-card.is-live {
-  border-color: rgba(232, 180, 74, 0.55);
-  box-shadow: 0 0 18px rgba(232, 180, 74, 0.22);
+  border-color: rgba(255, 82, 91, 0.55);
+  box-shadow: 0 0 18px rgba(255, 82, 91, 0.22);
   animation: ydoJogosPulse 2.5s infinite alternate ease-in-out;
 }
 
 @keyframes ydoJogosPulse {
   from {
-    border-color: rgba(232, 180, 74, 0.35);
-    box-shadow: 0 0 12px rgba(232, 180, 74, 0.15);
+    border-color: rgba(255, 82, 91, 0.35);
+    box-shadow: 0 0 12px rgba(255, 82, 91, 0.15);
   }
   to {
-    border-color: rgba(232, 180, 74, 0.75);
-    box-shadow: 0 0 22px rgba(232, 180, 74, 0.32);
+    border-color: rgba(255, 82, 91, 0.75);
+    box-shadow: 0 0 22px rgba(255, 82, 91, 0.32);
   }
 }
 
@@ -1161,9 +1161,9 @@
   gap: 4px;
   font-size: 0.7rem;
   font-weight: 800;
-  color: #e8b44a;
-  background: rgba(232, 180, 74, 0.2);
-  border: 1px solid rgba(232, 180, 74, 0.45);
+  color: #ff525b;
+  background: rgba(255, 82, 91, 0.2);
+  border: 1px solid rgba(255, 82, 91, 0.45);
   padding: 2px 8px;
   border-radius: 6px;
 }
@@ -1202,7 +1202,7 @@
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 800;
-  color: #e8b44a;
+  color: #ff525b;
 }
 
 .ydo-jogos-nome-time {
@@ -1224,7 +1224,7 @@
 .ydo-jogos-x {
   font-size: 0.88rem;
   font-weight: 900;
-  color: #e8b44a;
+  color: #ff525b;
   text-transform: lowercase;
   opacity: 0.85;
 }
@@ -1256,8 +1256,8 @@
   width: 18px;
   height: 18px;
   border-radius: 3px;
-  background: rgba(232, 180, 74, 0.15);
-  color: #e8b44a;
+  background: rgba(255, 82, 91, 0.15);
+  color: #ff525b;
   font-size: 0.6rem;
   font-weight: 800;
   display: inline-flex;
@@ -1302,9 +1302,9 @@
 
 .ydo-tv-sublink-btn:hover,
 .ydo-tv-sublink-btn.active {
-  color: #0a0b14;
-  background: #e8b44a;
-  border-color: #e8b44a;
+  color: #0e0e0e;
+  background: #ff525b;
+  border-color: #ff525b;
   font-weight: 700;
 }
 
@@ -1323,8 +1323,8 @@
   width: 100%;
   max-width: 580px;
   height: 100%;
-  background: rgba(10, 11, 20, 0.96);
-  border-left: 1px solid rgba(232, 180, 74, 0.2);
+  background: rgba(14, 14, 14, 0.96);
+  border-left: 1px solid rgba(255, 82, 91, 0.2);
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
   display: flex;
@@ -1395,9 +1395,9 @@
 }
 
 .ydo-guia-close-btn:hover {
-  background: rgba(232, 180, 74, 0.15);
-  color: #e8b44a;
-  border-color: rgba(232, 180, 74, 0.3);
+  background: rgba(255, 82, 91, 0.15);
+  color: #ff525b;
+  border-color: rgba(255, 82, 91, 0.3);
 }
 
 .ydo-guia-search-wrap {
@@ -1452,14 +1452,14 @@
 }
 
 .ydo-guia-item:hover {
-  background: rgba(232, 180, 74, 0.06);
-  border-color: rgba(232, 180, 74, 0.25);
+  background: rgba(255, 82, 91, 0.06);
+  border-color: rgba(255, 82, 91, 0.25);
   transform: translateX(-2px);
 }
 
 .ydo-guia-item.active {
-  background: rgba(232, 180, 74, 0.1);
-  border-color: rgba(232, 180, 74, 0.4);
+  background: rgba(255, 82, 91, 0.1);
+  border-color: rgba(255, 82, 91, 0.4);
 }
 
 .ydo-guia-logo-container {
@@ -1513,7 +1513,7 @@
 }
 
 .ydo-guia-item.active .ydo-guia-canal-nome {
-  color: #e8b44a;
+  color: #ff525b;
 }
 
 .ydo-guia-categoria {
@@ -1532,7 +1532,7 @@
   gap: 6px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #f1f2f6;
+  color: #f3f3f3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1541,9 +1541,9 @@
 .ydo-guia-linha-agora .ydo-live-dot {
   width: 6px;
   height: 6px;
-  background-color: #e8b44a;
+  background-color: #ff525b;
   border-radius: 50%;
-  box-shadow: 0 0 6px #e8b44a;
+  box-shadow: 0 0 6px #ff525b;
   flex-shrink: 0;
 }
 

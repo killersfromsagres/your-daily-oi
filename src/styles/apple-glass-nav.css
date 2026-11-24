@@ -5,8 +5,8 @@
  * This stylesheet is loaded after the older mobile navigation layers.
  */
 :root {
-  --zf-glass-bg: rgba(9, 11, 15, .49);
-  --zf-glass-bg-strong: rgba(9, 11, 15, .56);
+  --zf-glass-bg: rgba(12, 12, 12, .49);
+  --zf-glass-bg-strong: rgba(12, 12, 12, .56);
   --zf-glass-rim: rgba(255, 255, 255, .19);
   --zf-glass-rim-inner: rgba(255, 255, 255, .11);
   --zf-glass-shadow: 0 13px 35px rgba(0, 0, 0, .24);
@@ -206,7 +206,7 @@
     color: #fff;
     background:
       linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.015) 48%),
-      rgba(8,10,14,.60);
+      rgba(11, 11, 11,.60);
     border: 1px solid rgba(255,255,255,.26);
     border-radius: 27px;
     -webkit-backdrop-filter: blur(34px) saturate(145%) brightness(.82);
@@ -245,7 +245,7 @@
     border: 1px solid rgba(255,255,255,.25);
     background:
       linear-gradient(175deg, rgba(255,255,255,.085), rgba(255,255,255,.018) 40%, transparent 86%),
-      rgba(9,11,15,.50);
+      rgba(12, 12, 12,.50);
     -webkit-backdrop-filter: blur(31px) saturate(145%) brightness(.82);
     backdrop-filter: blur(31px) saturate(145%) brightness(.82);
     box-shadow: inset 0 1px rgba(255,255,255,.25), 0 12px 30px rgba(0,0,0,.23);
@@ -289,14 +289,14 @@
 }
 /* Hardware/OS with no backdrop support still has readable controls. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .ydo-header { background: rgba(35,36,41,.87); }
+  .ydo-header { background: rgba(37, 37, 37,.87); }
   @media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
     html:not([data-zf-platform="tv"]) .zf-mobile-dock,
     html:not([data-zf-platform="tv"]) .zf-mobile-search-fab {
-      background: rgba(39,40,45,.89);
+      background: rgba(41, 41, 41,.89);
     }
     html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
-      background: rgba(30,31,37,.93);
+      background: rgba(33, 33, 33,.93);
     }
   }
 }

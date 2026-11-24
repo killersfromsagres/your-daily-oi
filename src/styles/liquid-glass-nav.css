@@ -14,7 +14,7 @@
   border-radius: 25px;
   background:
     linear-gradient(180deg,var(--zf-glass-top),var(--zf-glass-low) 38%,rgba(255,255,255,.018)),
-    rgba(28,29,32,.46);
+    rgba(30, 30, 30,.46);
   -webkit-backdrop-filter: blur(25px) saturate(145%);
   backdrop-filter: blur(25px) saturate(145%);
   box-shadow:
@@ -58,7 +58,7 @@
   border: 1px solid rgba(255,255,255,.21);
   border-radius: 15px;
   background: linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.055)),rgba(65,65,65,.16);
-  color: #f8f9fb;
+  color: #f9f9f9;
   box-shadow: inset 0 1px rgba(255,255,255,.16);
 }
 .ydo-header .zf-header-apk:hover,
@@ -71,7 +71,7 @@
   border:1px solid rgba(255,255,255,.18);
   border-radius: 15px;
   background: rgba(255,255,255,.08);
-  color:#f7f7f8;
+  color:#f7f7f7;
 }
 .ydo-header .ydo-search-trigger-btn:hover,
 .ydo-header .ydo-search-trigger-btn:focus-visible {
@@ -99,7 +99,7 @@
     border:1px solid rgba(255,255,255,.23);
     background:
       linear-gradient(175deg,rgba(255,255,255,.14),rgba(255,255,255,.035) 48%),
-      rgba(50,50,53,.43);
+      rgba(51, 51, 51,.43);
     -webkit-backdrop-filter:blur(27px) saturate(140%);
     backdrop-filter:blur(27px) saturate(140%);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.22),
@@ -129,7 +129,7 @@
     border:1px solid transparent;
     border-radius:20px;
     background:transparent;
-    color:rgba(250,250,251,.82);
+    color:rgba(250, 250, 250,.82);
     text-decoration:none;
     font:600 10.5px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
     transition:background .18s ease,border-color .18s ease,color .18s ease;
@@ -174,7 +174,7 @@
     color:#fff;
     background:
       linear-gradient(160deg,rgba(255,255,255,.15),rgba(255,255,255,.025)),
-      rgba(50,50,53,.49);
+      rgba(51, 51, 51,.49);
     -webkit-backdrop-filter:blur(27px) saturate(140%);
     backdrop-filter:blur(27px) saturate(140%);
     box-shadow:inset 0 1px rgba(255,255,255,.22),0 12px 36px rgba(0,0,0,.38);
@@ -202,7 +202,7 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
     background:
       linear-gradient(160deg,rgba(255,255,255,.13),rgba(255,255,255,.02)),
-      rgba(32,34,39,.78);
+      rgba(35, 35, 35,.78);
     -webkit-backdrop-filter:blur(32px) saturate(135%);
     backdrop-filter:blur(32px) saturate(135%);
     border:1px solid rgba(255,255,255,.21);
@@ -214,11 +214,11 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-sections {
     background:rgba(255,255,255,.08);
     border-color:rgba(255,255,255,.14);
-    color:#f6f6f7;
+    color:#f6f6f6;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-menu-grid a svg {
     stroke-width:var(--zf-icon-stroke,1.8);
-    color:#f3f3f4;
+    color:#f3f3f3;
   }
   html:not([data-zf-platform="tv"]) .zf-mobile-feature {
     background:rgba(255,255,255,.08);
@@ -239,7 +239,7 @@
     border:1px solid rgba(255,255,255,.19);
     background:
       linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.025)),
-      rgba(38,39,43,.49);
+      rgba(40, 40, 40,.49);
     -webkit-backdrop-filter:blur(25px) saturate(145%);
     backdrop-filter:blur(25px) saturate(145%);
   }
@@ -281,12 +281,12 @@
   html:not([data-zf-platform="tv"]) .zf-mobile-tab {font-size:9.5px;}
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
-  .ydo-header {background:rgba(33,34,38,.93);}
+  .ydo-header {background:rgba(35, 35, 35,.93);}
   @media (max-width:1120px), (pointer:coarse) and (max-width:1440px) {
     html:not([data-zf-platform="tv"]) .zf-mobile-dock,
     html:not([data-zf-platform="tv"]) .zf-mobile-search-fab,
     html:not([data-zf-platform="tv"]) .zf-mobile-menu-panel {
-      background:rgba(38,39,44,.93);
+      background:rgba(40, 40, 40,.93);
     }
   }
 }

@@ -112,13 +112,14 @@ function GenrePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {selectedType === "s" || isSeries ? (
-              <Clapperboard size={26} style={{ color: "#e8b44a" }} />
+              <Clapperboard size={26} style={{ color: "#ff525b" }} />
             ) : selectedType === "a" ? (
-              <AnimeIcon size={26} style={{ color: "#e8b44a" }} />
+              <AnimeIcon size={26} style={{ color: "#ff525b" }} />
             ) : (
-              <Film size={26} style={{ color: "#e8b44a" }} />
+              <Film size={26} style={{ color: "#ff525b" }} />
             )}
             <h1>{pageTitle}</h1>
+            <img className="zf-section-brand zf-section-brand-mark" src="/brand/zang-mark.webp" alt="" aria-hidden="true" width={128} height={128} />
           </div>
           <span style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.55)" }}>
             Catálogo completo e exclusivo Zang Flix
@@ -140,8 +141,8 @@ function GenrePage() {
               fontSize: "0.8rem",
               fontWeight: "700",
               cursor: "pointer",
-              border: selectedType === "todos" ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.1)",
-              backgroundColor: selectedType === "todos" ? "#e8b44a" : "rgba(255, 255, 255, 0.04)",
+              border: selectedType === "todos" ? "1px solid #ff525b" : "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: selectedType === "todos" ? "#ff525b" : "rgba(255, 255, 255, 0.04)",
               color: selectedType === "todos" ? "#0a0b14" : "#ffffff",
               transition: "all 0.18s ease",
             }}
@@ -159,8 +160,8 @@ function GenrePage() {
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              border: selectedType === "f" ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.1)",
-              backgroundColor: selectedType === "f" ? "#e8b44a" : "rgba(255, 255, 255, 0.04)",
+              border: selectedType === "f" ? "1px solid #ff525b" : "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: selectedType === "f" ? "#ff525b" : "rgba(255, 255, 255, 0.04)",
               color: selectedType === "f" ? "#0a0b14" : "#ffffff",
               transition: "all 0.18s ease",
             }}
@@ -179,8 +180,8 @@ function GenrePage() {
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              border: selectedType === "s" ? "1px solid #e8b44a" : "1px solid rgba(255, 255, 255, 0.1)",
-              backgroundColor: selectedType === "s" ? "#e8b44a" : "rgba(255, 255, 255, 0.04)",
+              border: selectedType === "s" ? "1px solid #ff525b" : "1px solid rgba(255, 255, 255, 0.1)",
+              backgroundColor: selectedType === "s" ? "#ff525b" : "rgba(255, 255, 255, 0.04)",
               color: selectedType === "s" ? "#0a0b14" : "#ffffff",
               transition: "all 0.18s ease",
             }}

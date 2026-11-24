@@ -1,0 +1,15 @@
+/* ZANG FLIX — brand assets, responsive layout, no interactive overlay. */
+:root { --bg-deep:#090909; --bg-surface:#141414; --bg-raised:#202020; --accent:#ff525b; --accent-dim:rgba(229,9,20,.18); --accent-glow:rgba(229,9,20,.08); --glass-bg:rgba(14,14,14,.78); color-scheme:dark; }
+.ydo-header .ydo-logo { flex:0 0 auto; }
+html .ydo-header .ydo-logo .zf-brand-word { display:block; height:clamp(29px,3vw,40px); width:auto; max-width:132px; object-fit:contain; filter:none; border-radius:0; }
+html:not([data-zf-platform="tv"]) .zf-mobile-menu-brand .zf-brand-word { width:135px; height:auto; max-width:100%; object-fit:contain; }
+.zf-tenfoot .zf-tenfoot-logo .zf-brand-word { display:block; width:clamp(110px,11vw,175px); height:auto; object-fit:contain; }
+.zf-section-brand { display:block; object-fit:contain; pointer-events:none; flex:none; }
+.zf-section-brand-full { width:clamp(140px,20vw,192px); height:auto; margin:0 0 12px; }
+.zf-section-brand-mark { width:35px; height:35px; margin-inline-start:4px; }
+.ydo-player-container .zf-player-watermark img { display:block; width:clamp(70px,8vw,112px); height:auto; opacity:.58; object-fit:contain; }
+.zf-live-brand { position:absolute; right:clamp(14px,2.5vw,35px); top:clamp(48px,8vh,78px); z-index:25; opacity:0; visibility:hidden; pointer-events:none; user-select:none; transition:opacity .2s ease,visibility .2s ease; }
+.zf-live-brand img { width:clamp(28px,4vw,49px); height:auto; display:block; opacity:.62; }
+[data-controls-visible="true"] .zf-live-brand { opacity:1; visibility:visible; }
+@media(max-width:767px){ html:not([data-zf-platform="tv"]) .ydo-header .ydo-logo .zf-brand-word {height:32px;max-width:108px;} .zf-section-brand-full{width:145px;} .zf-section-brand-mark{width:28px;height:28px;} .zf-live-brand{top:48px;right:12px;} }
+@media(prefers-reduced-motion:reduce){.zf-live-brand{transition:none;}}

@@ -1230,6 +1230,7 @@ export function LivePlayer({
       onFocusCapture={showControls}
     >
       <div className="zf-fullscreen-surface">
+      <div className="zf-live-brand" aria-hidden="true"><img src="/brand/zang-mark.webp" alt="" width={128} height={128} /></div>
       <video
         ref={videoRef}
         className="ydo-live-video"
@@ -1341,7 +1342,7 @@ export function LivePlayer({
       {/* Estado de erro após esgotar todas as fontes */}
       {error && (
         <div className="ydo-live-error-overlay">
-          <AlertCircle size={44} style={{ color: "#e8b44a" }} />
+          <AlertCircle size={44} style={{ color: "#ff525b" }} />
           <h3>{autoRetryPending ? "Reconectando automaticamente…" : validStreams.length > 0 ? "Nenhum servidor disponível para este canal" : "Canal sem fonte ativa no catálogo"}</h3>
           <p>
             {autoRetryPending ? "A transmissão foi interrompida. Renovando a conexão e limpando o histórico temporário de falhas sem precisar clicar." : errorDetail ||

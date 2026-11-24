@@ -1,7 +1,7 @@
 /* ============================================================
    ZANG FLIX — Design System Global
-   Acento: Âmbar Profundo #E8B44A
-   Fundo: Preto-Azulado #0A0B14
+   Acento: Vermelho Zang Flix
+   Fundo: Preto Cinematográfico
    ============================================================ */
 
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Inter:wght@300;400;500;600&display=swap");
@@ -11,18 +11,18 @@
 
 /* ── Tokens ─────────────────────────────────────────────── */
 :root {
-  --bg-deep:        #0A0B14;
-  --bg-surface:     #111320;
-  --bg-raised:      #181a2e;
+  --bg-deep:        #0e0e0e;
+  --bg-surface:     #171717;
+  --bg-raised:      #202020;
   --text-primary:   #F1F1F1;
   --text-secondary: rgba(241, 241, 241, 0.65);
   --text-muted:     rgba(241, 241, 241, 0.38);
-  --accent:         #E8B44A;
-  --accent-dim:     rgba(232, 180, 74, 0.18);
-  --accent-glow:    rgba(232, 180, 74, 0.08);
+  --accent:         #ff525b;
+  --accent-dim:     rgba(255, 82, 91, 0.18);
+  --accent-glow:    rgba(255, 82, 91, 0.08);
 
   /* Vidro */
-  --glass-bg:       rgba(14, 16, 28, 0.72);
+  --glass-bg:       rgba(19, 19, 19, 0.72);
   --glass-border:   rgba(255, 255, 255, 0.08);
   --glass-highlight:rgba(255, 255, 255, 0.04);
 
@@ -51,7 +51,7 @@ a, a:visited, a:hover, a:active {
   justify-content: center;
   gap: 0.6rem;
   background-color: #ffffff;
-  color: #0a0b14 !important;
+  color: #090909 !important;
   font-weight: 800;
   font-size: 0.95rem;
   padding: 0.8rem 1.85rem;
@@ -67,10 +67,10 @@ a, a:visited, a:hover, a:active {
 }
 
 .ydo-btn-primary:hover {
-  background-color: var(--accent, #e8b44a);
-  color: #0a0b14 !important;
+  background-color: var(--accent, #ff525b);
+  color: #090909 !important;
   transform: scale(1.04);
-  box-shadow: 0 8px 28px rgba(232, 180, 74, 0.4);
+  box-shadow: 0 8px 28px rgba(255, 82, 91, 0.4);
 }
 
 .ydo-btn-secondary {

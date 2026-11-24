@@ -449,6 +449,7 @@ export function TvView({ initialCanalId }: TvViewProps) {
       <div className="ztv-content">
         <header className="ztv-header">
           <div className="ztv-intro">
+            <img className="zf-section-brand zf-section-brand-full" src="/brand/zang-full.webp" alt="Zang Flix" width={192} height={62} />
             <span className="ztv-eyebrow"><span className="ztv-pulse" /> ZANG LIVE <span className="ztv-mobile-eyebrow-extra"><span className="ztv-eyebrow-divider">/</span> SUA TV, DO SEU JEITO</span></span>
             <h1><span className="ztv-title-desktop">O melhor da <span className="ztv-title-emphasis">TV ao vivo</span><span className="ztv-heading-dot">.</span></span><span className="ztv-title-mobile">TV <span className="ztv-title-emphasis">ao vivo</span><span className="ztv-heading-dot">.</span></span></h1>
             <p>Escolha um canal, descubra o que está passando e assista em poucos cliques.</p>

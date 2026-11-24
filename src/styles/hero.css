@@ -6,7 +6,7 @@
   display: flex;
   align-items: flex-end;
   overflow: hidden;
-  background: var(--bg-deep, #0a0b14);
+  background: var(--bg-deep, #0e0e0e);
 }
 
 .ydo-hero-slide {
@@ -39,9 +39,9 @@
   inset: 0;
   background: linear-gradient(
     to right,
-    rgba(10, 11, 20, 0.98) 0%,
-    rgba(10, 11, 20, 0.75) 35%,
-    rgba(10, 11, 20, 0.35) 60%,
+    rgba(14, 14, 14, 0.98) 0%,
+    rgba(14, 14, 14, 0.75) 35%,
+    rgba(14, 14, 14, 0.35) 60%,
     transparent 100%
   );
   pointer-events: none;
@@ -53,8 +53,8 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    var(--bg-deep, #0a0b14) 0%,
-    rgba(10, 11, 20, 0.8) 25%,
+    var(--bg-deep, #0e0e0e) 0%,
+    rgba(14, 14, 14, 0.8) 25%,
     transparent 55%
   );
   pointer-events: none;
@@ -67,7 +67,7 @@
   left: 0;
   right: 0;
   height: 140px;
-  background: linear-gradient(to bottom, rgba(10, 11, 20, 0.7) 0%, transparent 100%);
+  background: linear-gradient(to bottom, rgba(14, 14, 14, 0.7) 0%, transparent 100%);
   pointer-events: none;
   z-index: 2;
 }
@@ -81,7 +81,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(10, 11, 20, 0.5);
+  background: rgba(14, 14, 14, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
   display: flex;
@@ -99,8 +99,8 @@
 
 .ydo-hero-nav-arrow:hover {
   opacity: 1 !important;
-  background: rgba(232, 180, 74, 0.3);
-  border-color: var(--accent, #e8b44a);
+  background: rgba(255, 82, 91, 0.3);
+  border-color: var(--accent, #ff525b);
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -134,8 +134,8 @@
   letter-spacing: 0.12em;
   padding: 3px 8px;
   border-radius: 4px;
-  background: var(--accent, #e8b44a);
-  color: var(--bg-deep, #0a0b14);
+  background: var(--accent, #ff525b);
+  color: var(--bg-deep, #0e0e0e);
 }
 
 .ydo-hero-badge {
@@ -180,7 +180,7 @@
 }
 
 .ydo-hero-score {
-  color: var(--accent, #e8b44a);
+  color: var(--accent, #ff525b);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -237,7 +237,7 @@
 }
 
 .ydo-hero-dot.active {
-  background: var(--accent, #e8b44a);
+  background: var(--accent, #ff525b);
   width: 26px;
   border-radius: 4px;
 }

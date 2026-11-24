@@ -1060,7 +1060,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
     >
       <div className="zf-fullscreen-surface">
       <div className="zf-player-watermark" aria-hidden="true">
-        ZANG <span>FLIX</span>
+        <img src="/brand/zang-word.webp" alt="" width={192} height={64} />
       </div>
             {contentType === "anime" && openingEndSeconds && Number.isFinite(openingEndSeconds) &&
         engine.currentTime >= Math.max(0, openingStartSeconds - 2) && engine.currentTime < openingEndSeconds - 3 && (
@@ -1184,7 +1184,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
           }}
         >
-          <RefreshCw size={14} className="animate-spin" style={{ color: "#e8b44a" }} />
+          <RefreshCw size={14} className="animate-spin" style={{ color: "#ff525b" }} />
           <span>{autoSwitchMsg}</span>
         </div>
       )}
@@ -1211,7 +1211,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
             boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
           }}
         >
-          <ScanLine size={14} style={{ color: "#e8b44a" }} />
+          <ScanLine size={14} style={{ color: "#ff525b" }} />
           <span>{hqNotice}</span>
         </div>
       )}
@@ -1264,7 +1264,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       {/* Never play a source positively identified as cinema capture or betting-ad media. */}
       {orderedStreams.length === 0 && (
         <div className="ydo-player-overlay ydo-player-error-overlay">
-          <AlertCircle size={38} aria-hidden style={{color:"#e8b44a"}} />
+          <AlertCircle size={38} aria-hidden style={{color:"#ff525b"}} />
           <h3>Dublagem indisponível no momento</h3>
           <p>Não encontramos uma fonte dublada adequada para este título. Tente novamente mais tarde.</p>
           {onBack && <button className="ydo-btn-secondary" onClick={handleBack}>Voltar</button>}
@@ -1289,7 +1289,7 @@ setTimeout(() => setAutoSwitchMsg(null), 1200);
       {/* Erro somente quando não restam servidores utilizáveis. */}
       {exhaustedSources && (
         <div className="ydo-player-overlay ydo-player-error-overlay">
-          <AlertCircle size={44} aria-hidden style={{ color: "#e8b44a" }} />
+          <AlertCircle size={44} aria-hidden style={{ color: "#ff525b" }} />
           <h3 style={{ fontSize: "1.2rem", fontWeight: "800", margin: "12px 0 6px", color: "#fff" }}>
             Nenhum servidor conseguiu reproduzir este título agora
           </h3>

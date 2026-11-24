@@ -22,7 +22,7 @@
   aspect-ratio: 2 / 3;
   border-radius: 12px;
   overflow: hidden;
-  background: var(--bg-surface, #111320);
+  background: var(--bg-surface, #171717);
   border: 2px solid transparent;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
@@ -43,7 +43,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  background-color: #111320;
+  background-color: #171717;
 }
 
 .ydo-card-fallback {
@@ -52,7 +52,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #181a2e 0%, #111320 100%);
+  background: linear-gradient(135deg, #202020 0%, #171717 100%);
   font-family: "Bricolage Grotesque", sans-serif;
   font-size: 1.6rem;
   font-weight: 800;
@@ -64,7 +64,7 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(10, 11, 20, 0.6) 0%,
+    rgba(14, 14, 14, 0.6) 0%,
     transparent 50%
   );
   pointer-events: none;
@@ -85,21 +85,21 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--accent, #e8b44a);
+  background: var(--accent, #ff525b);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--bg-deep, #0a0b14);
+  color: var(--bg-deep, #0e0e0e);
   text-decoration: none;
-  box-shadow: 0 4px 16px rgba(232, 180, 74, 0.4);
+  box-shadow: 0 4px 16px rgba(255, 82, 91, 0.4);
   transition: transform 0.2s cubic-bezier(0.3, 1.2, 0.4, 1), background 0.2s;
 }
 
 .ydo-card-play-btn:hover {
   transform: scale(1.12);
-  background: #f5c563;
+  background: #ff525b;
 }
 
 .ydo-card-action-btn {
@@ -141,13 +141,13 @@
   letter-spacing: 0.08em;
   padding: 2px 6px;
   border-radius: 4px;
-  background: var(--accent, #e8b44a);
-  color: var(--bg-deep, #0a0b14);
+  background: var(--accent, #ff525b);
+  color: var(--bg-deep, #0e0e0e);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .ydo-badge-leg {
-  background: rgba(20, 22, 38, 0.85);
+  background: rgba(27, 27, 27, 0.85);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -162,7 +162,7 @@
   font-weight: 900;
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 2px rgba(232, 180, 74, 0.5);
+  -webkit-text-stroke: 2px rgba(255, 82, 91, 0.5);
   z-index: 2;
   pointer-events: none;
   user-select: none;
@@ -188,7 +188,7 @@
 }
 
 .ydo-card-title:hover {
-  color: var(--accent, #e8b44a);
+  color: var(--accent, #ff525b);
 }
 
 .ydo-card-meta {
@@ -204,7 +204,7 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  color: var(--accent, #e8b44a);
+  color: var(--accent, #ff525b);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -227,7 +227,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--accent, #e8b44a);
+  color: var(--accent, #ff525b);
   display: block;
   margin-bottom: 2px;
 }
@@ -314,11 +314,11 @@
 .zf-media-carousel__fade[data-visible="true"] { opacity: 1; }
 .zf-media-carousel__fade--left {
   left: 0;
-  background: linear-gradient(90deg, rgba(8, 9, 18, .92), transparent);
+  background: linear-gradient(90deg, rgba(12, 12, 12, .92), transparent);
 }
 .zf-media-carousel__fade--right {
   right: 0;
-  background: linear-gradient(270deg, rgba(8, 9, 18, .92), transparent);
+  background: linear-gradient(270deg, rgba(12, 12, 12, .92), transparent);
 }
 .zf-media-carousel__arrow {
   position: absolute;
@@ -330,11 +330,11 @@
   width: 54px;
   height: 54px;
   padding: 0;
-  border: 1px solid rgba(211, 241, 255, .3);
+  border: 1px solid rgba(236, 236, 236, .3);
   border-radius: 18px;
   color: var(--zf-rail-blue);
-  background: linear-gradient(150deg, rgba(226, 245, 255, .14), rgba(118, 160, 187, .035) 75%),
-    rgba(10, 19, 30, .64);
+  background: linear-gradient(150deg, rgba(242, 242, 242, .14), rgba(118, 160, 187, .035) 75%),
+    rgba(20, 20, 20, .64);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   backdrop-filter: blur(20px) saturate(140%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16),
@@ -357,7 +357,7 @@
   visibility: hidden;
 }
 .zf-media-carousel__arrow:not(:disabled):hover {
-  color: #d4f2ff;
+  color: #ececec;
   border-color: rgba(159, 222, 255, .65);
   background-color: rgba(36, 63, 88, .73);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25),
@@ -368,7 +368,7 @@
   transform: translateY(-50%) scale(.96);
 }
 .zf-media-carousel__arrow:focus-visible {
-  outline: 2px solid #c0ebff;
+  outline: 2px solid #e3e3e3;
   outline-offset: 3px;
 }
 .zf-media-carousel__track:focus-visible {
