@@ -277,7 +277,7 @@ function TvLive(){
     {!active ? <>
       <header className="zf-live-top" data-tv-row="live-nav">
         <button type="button" data-tv-focus="live-back" data-tv-start onClick={()=>void navigate({to:"/tv-home"})}><ArrowLeft size={20}/> Voltar</button>
-        <div className="zf-tenfoot-logo">ZANG <b>FLIX</b> <span>LIVE</span></div>
+        <div className="zf-tenfoot-logo"><img className="zf-brand-word" src="/brand/zang-word.webp?v=3" alt="Zang Flix" width={256} height={82}/> <span>LIVE</span></div>
         <button type="button" data-tv-focus="live-refresh" onClick={()=>void load(true)} disabled={refreshing}><RefreshCw size={19}/> Atualizar</button>
       </header>
       <section className="zf-live-intro">

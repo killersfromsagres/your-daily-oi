@@ -1,7 +1,8 @@
 /** Match D-pad focus rows to the actual CSS grid breakpoints in TV UI. */
 import {useEffect,useState} from "react";
-export type TvGridKind="library"|"channels";
+export type TvGridKind="library"|"channels"|"episodes";
 export function tvGridColumns(width:number,kind:TvGridKind):number{
+  if(kind==="episodes")return width<=600?2:width<=880?3:4;
   if(kind==="channels")
     return width<=600?2:width<=880?3:width<=1200?4:5;
   return width<=480?2:width<=700?3:width<=950?4:width<=1300?5:6;

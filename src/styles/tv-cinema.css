@@ -468,3 +468,73 @@ html[data-zf-tv-app-watch="true"] .ydo-header,html[data-zf-tv-app-watch="true"] 
 @media(prefers-reduced-motion:reduce){
   .zf-tenfoot-live .zf-tv-cinema-overlay{transition:none}
 }
+
+
+/* TCL TV — reference-led dashboard. Only dedicated television routes. */
+.zf-tenfoot-home{--zf-tv-rail:clamp(148px,15vw,258px);--zf-tv-gutter:clamp(18px,2.5vw,46px);--zf-tv-red:#e50914;background:#090909;min-height:100vh;padding-left:var(--zf-tv-rail)}
+.zf-tenfoot-home .zf-tv-sidemenu,.zf-tenfoot-home .zf-tv-sidemenu:focus-within{position:fixed;inset:0 auto 0 0;width:var(--zf-tv-rail);max-width:none;padding:clamp(20px,3vh,42px) clamp(10px,1.15vw,22px);background:#101010;border-right:1px solid #ffffff0b;box-shadow:none;gap:20px;transition:none;overflow-y:auto;scrollbar-width:none}
+.zf-tenfoot-home .zf-tv-sidemenu-mark{width:100%;height:auto;justify-content:flex-start;padding:4px 8px}
+.zf-tenfoot-home .zf-tv-sidemenu-mark img{width:100%;max-width:155px;height:auto;object-fit:contain}
+.zf-tenfoot-home .zf-tv-sidemenu nav{gap:5px;margin-top:5px}
+.zf-tenfoot-home .zf-tv-menu-label{padding:10px 12px;color:#a5a5a5;font-size:clamp(10px,.82vw,15px);letter-spacing:.11em}
+.zf-tenfoot-home .zf-tv-sidemenu nav>div{height:auto}
+.zf-tenfoot-home .zf-tv-sidemenu nav button{height:clamp(36px,5.2vh,58px);gap:clamp(9px,1vw,17px);font-size:clamp(13px,1.12vw,21px);font-weight:600;border:0;border-radius:8px;padding:0 11px;position:relative}
+.zf-tenfoot-home .zf-tv-sidemenu nav button span{opacity:1;transition:none}
+.zf-tenfoot-home .zf-tv-sidemenu nav button>svg{width:clamp(17px,1.5vw,24px);min-width:0;height:auto}
+.zf-tenfoot-home .zf-tv-sidemenu nav button.is-selected{background:#e5091415;color:#fff}
+.zf-tenfoot-home .zf-tv-sidemenu nav button.is-selected svg{color:#ff434c}
+.zf-tenfoot-home .zf-tv-sidemenu nav button.is-selected::after{content:"";position:absolute;right:0;top:24%;bottom:24%;width:3px;border-radius:3px;background:#e50914}
+.zf-tenfoot-home .zf-tv-sidemenu nav button:focus{background:#ffffff14!important;outline:2px solid #f5f5f5!important;outline-offset:1px;box-shadow:none!important}
+.zf-tenfoot-home .zf-tv-sidemenu-hint{opacity:1;font-size:clamp(10px,.8vw,14px);line-height:1.6;color:#a1a1a1;white-space:normal}
+.zf-tenfoot-home .zf-immersive-hero{min-height:clamp(350px,53vh,650px);background:#111;isolation:isolate}
+.zf-tenfoot-home .zf-immersive-hero .zf-hero-shade{background:linear-gradient(90deg,#090909f0 0%,#090909a3 27%,#09090919 73%),linear-gradient(0deg,#090909 0%,#09090900 40%,#09090938 100%)}
+.zf-tenfoot-home .zf-immersive-hero .zf-hero-backdrop{object-position:70% 35%}
+.zf-tenfoot-home .zf-tv-headline{left:var(--zf-tv-gutter);right:var(--zf-tv-gutter);height:clamp(58px,9vh,105px);gap:12px}
+.zf-tenfoot-home .zf-tv-headline>span:last-child{display:block;font-size:clamp(10px,.85vw,15px);letter-spacing:.09em}
+.zf-tenfoot-home .zf-tv-top-search{display:flex;align-items:center;gap:12px;border:1px solid #ffffff55;border-radius:999px;color:#eee;background:#101010aa;padding:10px 17px;font-size:clamp(12px,1.05vw,18px);white-space:nowrap}
+.zf-tenfoot-home .zf-hero-copy{padding:clamp(86px,15vh,180px) var(--zf-tv-gutter) 65px;width:auto;max-width:63%;position:relative}
+.zf-tenfoot-home .zf-hero-copy h1{font-size:clamp(29px,3.15vw,63px);line-height:1.12;letter-spacing:-.035em;font-weight:750;margin:8px 0 12px}
+.zf-tenfoot-home .zf-hero-copy p{font-size:clamp(13px,1.15vw,21px);line-height:1.5;color:#dedede;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-width:570px}
+.zf-tenfoot-home .zf-hero-kicker{font-size:clamp(10px,.8vw,14px);color:#ff7076}
+.zf-tenfoot-home .zf-hero-details{gap:9px;font-size:clamp(11px,.9vw,15px)}
+.zf-tenfoot-home .zf-hero-actions{gap:10px;margin-top:19px;flex-wrap:nowrap}
+.zf-tenfoot .zf-hero-play,.zf-tenfoot-home .zf-hero-play{background:#e50914;color:#fff;border:1px solid #ff454d;border-radius:999px;min-width:0;padding:12px 22px;font-size:clamp(13px,1.1vw,20px);font-weight:750;box-shadow:none}
+.zf-tenfoot-home .zf-hero-details-button,.zf-tenfoot-home .zf-hero-save{border-radius:999px;background:#181818aa;border:1px solid #ffffff44;color:#fff;font-size:clamp(12px,1vw,18px)}
+.zf-tenfoot-home .zf-tv-banner-switch{margin-top:14px}
+.zf-tenfoot-home .zf-immersive-shelves{position:relative;margin:0;padding:0 var(--zf-tv-gutter) 36px}
+.zf-tenfoot-home .zf-tv-standalone-shelves{padding-top:clamp(24px,5vh,60px)}
+.zf-tenfoot-home .zf-shelf-heading{padding:0;margin:0 0 4px;display:flex;align-items:center}
+.zf-tenfoot-home .zf-shelf-heading h2{font-size:clamp(17px,1.65vw,30px);font-weight:650;letter-spacing:-.025em}
+.zf-tenfoot-home .zf-shelf-heading>span{display:none}
+.zf-tenfoot-home .zf-shelf-track{gap:clamp(10px,1.2vw,22px);padding:7px 4px 18px;scrollbar-width:none}
+.zf-tenfoot-home .zf-poster-tile{flex:0 0 calc((100% - 3 * clamp(10px,1.2vw,22px))/4);min-width:0;border:2px solid transparent;border-radius:12px;background:#151515;overflow:hidden;text-align:left;transform:none}
+.zf-tenfoot-home .zf-poster-tile img,.zf-tenfoot-home .zf-poster-blank{aspect-ratio:16/9;width:100%;height:auto;object-fit:cover;border-radius:9px 9px 0 0}
+.zf-tenfoot-home .zf-poster-tile:focus,.zf-tenfoot-home .zf-poster-tile[data-tv-focus]:focus{transform:none!important;border-color:#ff424b;outline:2px solid #fff!important;outline-offset:2px;box-shadow:none!important;background:#222}
+.zf-tenfoot-home .zf-poster-title{display:block;padding:8px 10px 5px;font-size:clamp(12px,1.03vw,19px);font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zf-tenfoot-home .zf-history-tile small{display:block;padding:0 10px 9px;font-size:clamp(10px,.9vw,15px);color:#c5c5c5}
+.zf-tv-history-art,.zf-tv-episode-art{position:relative;display:block;width:100%;overflow:hidden}
+.zf-tv-progress{display:block;position:absolute;bottom:0;left:0;right:0;height:4px;background:#ffffff38}
+.zf-tv-progress i{display:block;height:100%;background:#e50914;border-radius:3px}
+.zf-tv-history-empty{color:#aaa;font-size:clamp(12px,1vw,17px);padding:0 4px 20px}
+.zf-tenfoot-home .zf-tv-library{margin:0;padding:clamp(20px,4vh,48px) var(--zf-tv-gutter) 40px;min-width:0}
+.zf-tenfoot-home .zf-tv-library-genres button.is-active,.zf-tenfoot-detail .zf-detail-seasons button.is-active{background:#e50914;color:#fff;border-color:#ff454d}
+.zf-tenfoot-home .zf-tv-library-genres button.is-active small{color:#fff}
+.zf-tenfoot-home .zf-tv-library-card{border-radius:10px;background:#171717}
+.zf-tenfoot-home .zf-tv-library-card:focus{border-color:#ff434c}
+.zf-tenfoot-home .zf-tv-update-warning{margin:10px var(--zf-tv-gutter);font-size:12px}
+.zf-tenfoot-home .zf-tenfoot-notice{margin:20px var(--zf-tv-gutter)}
+.zf-tenfoot-home:has(.zf-tenfoot-search){padding-left:0}
+.zf-tenfoot-detail{background:#090909}
+.zf-tenfoot-detail .zf-detail-episode{padding:0 0 12px;overflow:hidden;gap:7px;background:#161616;border:2px solid #ffffff16;border-radius:11px}
+.zf-tenfoot-detail .zf-detail-episode:focus{border-color:#ff3e48}
+.zf-tenfoot-detail .zf-tv-episode-art img,.zf-tenfoot-detail .zf-detail-episode-placeholder{border-radius:8px 8px 0 0}
+.zf-tenfoot-detail .zf-detail-episode>strong,.zf-tenfoot-detail .zf-detail-episode>small{padding:0 11px}
+.zf-tenfoot-detail .zf-detail-episode>strong{font-size:clamp(13px,1.1vw,20px)}
+.zf-tv-episode-state,.zf-tv-episode-summary{color:#c9c9c9;font-size:clamp(11px,1vw,17px);line-height:1.5}
+.zf-tv-episode-summary{margin:5px 0 16px}
+.zf-tv-episode-tag{position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:5px;background:#101010e8;color:#fff;padding:5px 8px;border:1px solid #ffffff2b;border-radius:5px;font-size:clamp(10px,.85vw,14px)}
+.zf-tenfoot-detail .zf-tenfoot-logo img{width:clamp(120px,12vw,180px);height:auto}
+.zf-tenfoot-live{background:#090909}
+.zf-tenfoot-live button.is-active,.zf-tenfoot-live button.is-selected{border-color:#e50914}
+@media(max-width:880px){.zf-tenfoot-home{--zf-tv-rail:142px;--zf-tv-gutter:15px}.zf-tenfoot-home .zf-hero-copy{max-width:78%;padding-top:90px}.zf-tenfoot-home .zf-poster-tile{flex-basis:calc((100% - 2 * 10px)/3)}.zf-tenfoot-home .zf-tv-headline>span:last-child{display:none}}
+@media(max-height:650px){.zf-tenfoot-home .zf-tv-sidemenu{padding-top:12px;gap:10px}.zf-tenfoot-home .zf-tv-sidemenu nav{gap:2px}.zf-tenfoot-home .zf-tv-sidemenu nav button{height:36px}.zf-tenfoot-home .zf-tv-sidemenu-hint{display:none}}

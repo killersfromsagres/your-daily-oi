@@ -1,3 +1,4 @@
+import { tvSessionActive } from "@/lib/tv-watch-history";
 import { AnimeIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -196,7 +197,7 @@ function WatchAnimePage() {
     }}>
       <PlayerErrorBoundary
         title={effectiveAnime.title || "Anime"}
-        onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
+        onBack={() => {if(tvSessionActive())void navigate({to:"/tv-title",search:{id:effectiveAnime.id,type:"a"}});else void navigate({ to: `/anime/${effectiveAnime.id}` });}}
       >
         <OwnPlayer
           contentType="anime"
@@ -207,7 +208,7 @@ function WatchAnimePage() {
           {...(effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl ? {poster: effectiveAnime.tmdb?.backdropUrl || effectiveAnime.posterUrl} : {})}
           title={effectiveAnime.title || "Anime"}
           subtitle={`Temporada ${temp} - Episódio ${ep}`}
-          onBack={() => void navigate({ to: `/anime/${effectiveAnime.id}` })}
+          onBack={() => {if(tvSessionActive())void navigate({to:"/tv-title",search:{id:effectiveAnime.id,type:"a"}});else void navigate({ to: `/anime/${effectiveAnime.id}` });}}
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}

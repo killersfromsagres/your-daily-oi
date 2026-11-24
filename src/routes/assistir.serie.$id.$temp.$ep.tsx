@@ -1,3 +1,4 @@
+import { tvSessionActive } from "@/lib/tv-watch-history";
 import { SeriesIcon } from "@/components/icons/ContentIcons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -195,7 +196,7 @@ function WatchSeriesPage() {
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
       <PlayerErrorBoundary
         title={effectiveSerie.title}
-        onBack={() => void navigate({ to: `/serie/${effectiveSerie.id}` })}
+        onBack={() => {if(tvSessionActive())void navigate({to:"/tv-title",search:{id:effectiveSerie.id,type:"s"}});else void navigate({ to: `/serie/${effectiveSerie.id}` });}}
       >
         <OwnPlayer
           contentType="series"
@@ -206,7 +207,7 @@ function WatchSeriesPage() {
           {...(effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl ? {poster: effectiveSerie.tmdb?.backdropUrl || effectiveSerie.posterUrl} : {})}
           title={effectiveSerie.title}
           subtitle={`Série • Temporada ${temp} - Episódio ${ep}`}
-          onBack={() => void navigate({ to: `/serie/${effectiveSerie.id}` })}
+          onBack={() => {if(tvSessionActive())void navigate({to:"/tv-title",search:{id:effectiveSerie.id,type:"s"}});else void navigate({ to: `/serie/${effectiveSerie.id}` });}}
           initialTime={episodeSaved?.completed ? 0 : episodeSaved?.currentTime || savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           onEnded={() => { setEpisodeWatched(episodeKey, true); }}

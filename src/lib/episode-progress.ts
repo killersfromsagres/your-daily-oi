@@ -111,3 +111,16 @@ export function setEpisodeWatched(key: EpisodeKey, watched: boolean): EpisodeRec
 export function countWatchedEpisodes(type: EpisodeKind, contentId: string): number {
   return readPersisted().filter(rec => rec.type === type && rec.contentId === contentId && rec.completed).length;
 }
+
+/** Read once for TV catalog screens; preserve the existing legacy migration. */
+export function episodeProgressSnapshot(type: EpisodeKind, contentId: string): Map<string, EpisodeRecord> {
+  const records=new Map<string, EpisodeRecord>();
+  for(const rec of readPersisted())if(rec.type===type&&rec.contentId===contentId)records.set(rec.season+":"+rec.episode,rec);
+  for(const p of getProgress()){
+    if(p.type!==type||!(p.contentId===contentId||p.id.startsWith(contentId+"-"))||p.season==null||p.episode==null)continue;
+    const key=p.season+":"+p.episode;if(records.has(key))continue;
+    const duration=safeTime(p.duration||0),currentTime=safeTime(p.currentTime||0);
+    records.set(key,{type,contentId,season:p.season,episode:p.episode,currentTime,duration,completed:duration>0&&duration-currentTime<60&&currentTime/duration>=COMPLETE_AT,updatedAt:p.updatedAt});
+  }
+  return records;
+}

@@ -1,3 +1,4 @@
+import { tvSessionActive } from "@/lib/tv-watch-history";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Film, ArrowLeft } from "lucide-react";
@@ -148,7 +149,7 @@ function WatchMoviePage() {
       {/* Player em Tela Completa Imersiva (Zero Zoom, Sem Bordas Brancas, Estilo Cinema) */}
       <PlayerErrorBoundary
         title={catalogDisplayTitle(effectiveMovie)}
-        onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
+        onBack={() => {if(tvSessionActive())void navigate({to:"/tv-title",search:{id:effectiveMovie.id,type:"f"}});else void navigate({ to: `/filme/${effectiveMovie.id}` });}}
       >
         <OwnPlayer
           contentType="movie"
@@ -157,7 +158,7 @@ function WatchMoviePage() {
           poster={effectiveMovie.tmdb?.backdropUrl || effectiveMovie.posterUrl}
           title={catalogDisplayTitle(effectiveMovie)}
           subtitle="Filmes"
-          onBack={() => void navigate({ to: `/filme/${effectiveMovie.id}` })}
+          onBack={() => {if(tvSessionActive())void navigate({to:"/tv-title",search:{id:effectiveMovie.id,type:"f"}});else void navigate({ to: `/filme/${effectiveMovie.id}` });}}
           initialTime={savedProgress?.currentTime || 0}
           onTimeUpdate={handleTimeUpdate}
           {...(effectiveMovie.tmdb?.runtime && effectiveMovie.tmdb.runtime > 0

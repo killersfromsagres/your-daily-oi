@@ -152,7 +152,7 @@ function RootComponent() {
     if(!pathname.startsWith("/assistir/")){setTvWatch(false);return;}
     let hosted=false;
     try{hosted=["webos","tizen"].includes(sessionStorage.getItem("zf-installed-tv-app")||"");}catch{}
-    const isTv=/ZangFlixTV\//i.test(navigator.userAgent)||hosted;
+    const isTv=/ZangFlixTV\//i.test(navigator.userAgent)||hosted||(()=>{try{return sessionStorage.getItem("zf-dedicated-tv")==="1"}catch{return false}})();
     setTvWatch(isTv);
     if(!isTv)return;
     document.documentElement.dataset["zfTvAppWatch"]="true";
