@@ -109,16 +109,16 @@ export function mergeFootballScores(
       canalId: authority.canalId,
       canalNome: authority.canalNome,
       canalLogo: authority.canalLogo,
-      ...(previous.transmissaoUrl || update.transmissaoUrl ?
-        {transmissaoUrl: previous.transmissaoUrl || update.transmissaoUrl} : {}),
-      ...(previous.canaisDisponiveis?.length || update.canaisDisponiveis?.length ?
-        { canaisDisponiveis: previous.canaisDisponiveis?.length ? previous.canaisDisponiveis : update.canaisDisponiveis } : {}),
+      ...(authority.transmissaoUrl ? {transmissaoUrl:authority.transmissaoUrl}:{}),
+      ...(authority.canaisDisponiveis ? {canaisDisponiveis:authority.canaisDisponiveis}:{}),
       ...(broadcasters?.length ? {canaisTransmissao: broadcasters} : {}),
       transmissao: authority.transmissao,
       ...(origin ? {origemTransmissao: origin} : {}),
     };
     // Explicitly remove stale optional fields when a new authoritative snapshot revokes them.
     if(useUpdate){for(const k of ["transmissaoUrl","canaisDisponiveis","origemTransmissao","canaisTransmissao","evidenciasTransmissao"] as const)delete combined[k];Object.assign(combined,{transmissaoVerificadaEm:update.transmissaoVerificadaEm});for(const k of ["transmissaoUrl","canaisDisponiveis","origemTransmissao","canaisTransmissao","evidenciasTransmissao"] as const){if(update[k]!==undefined)Object.assign(combined,{[k]:update[k]});}}
+    if(!authority.transmissaoUrl)delete combined.transmissaoUrl;
+    if(!authority.canaisDisponiveis)delete combined.canaisDisponiveis;
     if(combined.status==="adiado"||Math.abs(Date.parse(previous.inicioIso)-Date.parse(update.inicioIso))>20*60_000){combined.canalId=null;combined.canalNome=null;combined.canalLogo=null;combined.transmissao="nao-confirmada";combined.canaisDisponiveis=[];delete combined.transmissaoUrl;}
     byId.set(previousKey!, applyVerifiedResult(combined));
   }

@@ -18,6 +18,7 @@ import {
 import { addDaysUTC, dataBrasilia, type JogoBrasileirao } from "@/lib/jogos-match";
 import { getMatchCardVisual } from "@/lib/match-card-visual";
 import { officialBroadcastTarget } from "@/lib/official-broadcast";
+import { webBroadcastState } from "@/lib/web-broadcast-state";
 import { useMatchCardClock } from "@/lib/use-match-card-clock";
 import "@/styles/jogos-center.css";
 import "@/styles/sports-match-tickets.css";
@@ -69,12 +70,13 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   const now = useMatchCardClock();
   const visual = getMatchCardVisual(game, now);
   const active = game.status === "ao-vivo";
-  const watchable = Boolean(game.canalId);
-  const officialTarget = officialBroadcastTarget(game.transmissaoUrl);
+  const verification = webBroadcastState(game, now);
+  const watchable = verification.internal;
+  const officialTarget = verification.official ? officialBroadcastTarget(game.transmissaoUrl) : null;
   const officialUrl = officialTarget?.href;
   const channelStatus = game.canalId ? channelPlayback?.[game.canalId] : undefined;
   const exploreChannel = game.canaisTransmissao?.[0];
-  const canExplore = Boolean(exploreChannel && onExplore);
+  const canExplore = Boolean(verification.playable && exploreChannel && onExplore);
   const dateParts = game.dataLocal.split("-");
   const numberDay = dateParts[2] || "--";
   const monthAbbrev = new Intl.DateTimeFormat("pt-BR", { month:"short", timeZone:"UTC" })
@@ -84,7 +86,7 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
   const venue = game.estadio?.trim();
   // Keep alternate channels immediately visible and compact, not nested in
   // a collapsed menu that hides valid broadcasters from the visitor.
-  const otherChannels=(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId);
+  const otherChannels=watchable?(game.canaisDisponiveis||[]).filter(ch=>ch.id!==game.canalId):[];
   const homeGoals=game.gols?.filter(goal=>goal.team==="home")||[];
   const awayGoals=game.gols?.filter(goal=>goal.team==="away")||[];
 
@@ -98,7 +100,7 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
       <button type="button" className="zf-ticket-main"
         disabled={!watchable && !officialUrl && !canExplore}
         onClick={() => {
-          if (game.canalId) onWatch(game.canalId);
+          if (watchable && game.canalId) onWatch(game.canalId);
           else if (officialUrl) window.open(officialUrl, "_blank", "noopener,noreferrer");
           else if (canExplore) onExplore?.(exploreChannel);
         }}
@@ -250,6 +252,8 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
               <strong>{game.canaisTransmissao?.[0] || officialTarget?.provider || "Serviço oficial"}</strong></span>
             <ArrowRight size={18}/>
           </a>
+        ) : !verification.playable ? (
+          <div className="zf-ticket-unlinked-note"><Tv size={17} aria-hidden="true"/><span>{game.canaisTransmissao?.join(" · ")||"Transmissão não informada"}</span></div>
         ) : game.canaisTransmissao?.length ? (
           <div className="zf-ticket-channel-panel zf-ticket-channel-unlinked">
             {onExplore ? (
@@ -268,7 +272,7 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
               </div>
             )}
             <small className="zf-ticket-unlinked-hint">
-              Aguardando identificação de um canal correspondente no catálogo.
+              {!verification.fresh && game.transmissaoVerificadaEm ? "Revalidando a programação. O acesso direto será liberado após confirmação." : "Aguardando identificação de um canal correspondente no catálogo."}
             </small>
           </div>
         ) : (
@@ -323,13 +327,14 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels, channelPlayback
     }).then(async response => {
       const json = await response.json() as SportsApiResponse;
       if (!response.ok) throw new Error(json.erro || "Falha ao consultar a programação");
+      if(json.dataLocal!==day||!Array.isArray(json.jogos))throw new Error("Agenda inválida");
       return json;
     }).then(value => {
       if (!controller.signal.aborted) setData(value);
     }).catch(error => {
       if (controller.signal.aborted) return;
       setFailure(error instanceof Error ? error.message : "Falha ao obter jogos");
-      setData(null);
+      setData(old=>old?.dataLocal===day?old:null);
     }).finally(() => {
       if (!controller.signal.aborted) setPending(false);
     });
@@ -337,7 +342,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels, channelPlayback
       if (document.visibilityState === "visible") setRefreshKey(k => k + 1);
     };
     document.addEventListener("visibilitychange", onVisibility);
-    const timer = window.setInterval(() => setRefreshKey(k => k + 1), 2 * 60_000);
+    const timer = window.setInterval(() => {if(document.visibilityState==="visible")setRefreshKey(k => k + 1);}, 90_000);
     return () => {
       controller.abort();
       window.clearInterval(timer);
@@ -411,7 +416,7 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels, channelPlayback
           <div className="zgame-grid" aria-busy="true">
             {[1,2,3,4].map(i=><div key={i} className="zgame-skeleton" aria-hidden="true"><span/><div/><span/></div>)}
           </div>
-        ) : failure || data?.erro ? (
+        ) : (failure || data?.erro) && !filtered.length ? (
           <div className="zgame-empty" role="alert">
             <WifiOff size={26}/>
             <h4>Agenda temporariamente indisponível</h4>
@@ -437,10 +442,10 @@ export function JogosShelf({ onSelectCanalId, onExploreChannels, channelPlayback
             ) : null}
           </div>
         )}
-        {data?.parcial && !pending && (
+        {(data?.parcial || failure || data?.erro) && !pending && (
           <p className="zgame-partial" role="status">
             <AlertTriangle size={18} aria-hidden="true"/>
-            Algumas competições não responderam. Exibindo a programação confirmada.
+            {failure||data?.erro?"A atualização da agenda falhou. Os jogos anteriores continuam visíveis; links vencidos são bloqueados.":"Algumas competições não responderam. Exibindo a programação disponível."}
           </p>
         )}
         <div className="zf-reference-scene-footer">

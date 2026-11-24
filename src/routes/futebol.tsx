@@ -105,9 +105,9 @@ function FootballPage() {
       return payload;
     }).then(payload=>{if(!controller.signal.aborted){lastSuccessfulDay.current=day;setData(payload);}})
       .catch(reason=>{
-        if(!controller.signal.aborted && lastSuccessfulDay.current!==day){
+        if(!controller.signal.aborted){
           setError(reason instanceof Error ? reason.message:"Agenda indisponível");
-          setData(null);
+          if(lastSuccessfulDay.current!==day)setData(null);
         }
       }).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return ()=>controller.abort();
