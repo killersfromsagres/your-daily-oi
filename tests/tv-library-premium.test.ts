@@ -38,7 +38,7 @@ describe("Full 10-foot catalog",()=>{
     expect(api).toContain("tvLibraryPage(items");
     const home=read("../src/routes/tv-home.tsx");
     const library=read("../src/components/tv/TvLibrary.tsx");
-    expect(home).toContain("<TvLibrary type={section} onOpen={openItem}/>");
+    expect(home).toContain("<TvLibrary key={section} type={section} onOpen={openItem}/>");
     expect(library).toContain('tv:"library"');
     expect(library).toContain('data-tv-row="library-genres"');
     expect(library).toContain('className="zf-tv-library-grid"');

@@ -5,10 +5,19 @@ describe("TV-only cinematic experience",()=>{
   test("TV home uses compact metadata and reference-style hero + shelves",()=>{
     const s=read("../src/routes/tv-home.tsx");
     expect(s).toContain('"/api/catalogo?tv=1"');
-    expect(s).toContain("<TvLibrary type={section} onOpen={openItem}/>");
+    expect(s).toContain("<TvLibrary key={section} type={section} onOpen={openItem}/>");
     expect(s).toContain('className="zf-immersive-hero"');
-    expect(s).toContain('className="zf-immersive-shelves"');
+    expect(s).toContain('"zf-immersive-shelves"+');
     expect(s).toContain("useTvFocus(");
+    expect(s).toContain('data-tv-focus="nav-sports"');
+    expect(s).toContain('search:{channel:id,from:"sports"}');
+    const sports=read("../src/components/tv/TvSportsArena.tsx");
+    expect(sports).toContain("/api/jogos-agenda?data=");
+    expect(sports).toContain("/api/jogos-placares?");
+    expect(sports).toContain('g.transmissao==="confirmada"');
+    const detail=read("../src/routes/tv-title.tsx");
+    expect(detail).toContain("Tentar assistir");
+    expect(detail).not.toContain('disabled={item.type!=="f"&&!next}');
     expect(s).not.toContain("installTvRemoteNavigation()");
     expect(s).not.toContain("getClientCatalog(");
   });

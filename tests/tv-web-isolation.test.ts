@@ -6,6 +6,8 @@ describe("TV native app must not change web and mobile",()=>{
    const root=read("../src/routes/__root.tsx");
    expect(root).not.toContain('import tvCinemaCss from "../styles/tv-cinema.css?url"');
    expect(root).not.toContain('href: tvCinemaCss');
+   expect(root).not.toContain("tvArenaCss");
+   expect(root).not.toContain("tvReferenceCss");
    // Defense in depth if a router temporarily retains a route stylesheet:
    // TV cinema selectors may not match the web home or /tv layout.
    const css=read("../src/styles/tv-cinema.css");
@@ -15,7 +17,7 @@ describe("TV native app must not change web and mobile",()=>{
    for(const route of ["tv-home","tv-live","tv-title"]){
      const s=read("../src/routes/"+route+".tsx");
      expect(s).toContain('import tvCinemaCss from "../styles/tv-cinema.css?url"');
-     expect(s).toContain('links:[{rel:"stylesheet",href:tvCinemaCss}]');
+     expect(s).toContain('links:[{rel:"stylesheet",href:tvCinemaCss}');
    }
  });
  test("web player is not wired to native-TV performance flags",()=>{
