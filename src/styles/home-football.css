@@ -1,47 +1,72 @@
-/* Scoped editorial sports shelf — shared markup, TV-specific dimensions. */
-.zf-home-football{--zf-hf-red:#e32930;--zf-hf-muted:#a9a9af;position:relative;isolation:isolate;min-width:0;max-width:100%;margin:20px 0 30px;padding:20px 0 6px;color:#f6f6f7}
-.zf-home-football::before{content:"";position:absolute;z-index:-1;inset:0 -12px 0;border-radius:16px;background:radial-gradient(ellipse at 0 0,#9a1b2024,transparent 62%),linear-gradient(125deg,#181416aa,#11111100 70%);pointer-events:none}
-.zf-home-football-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 15px;min-width:0}
-.zf-home-football-kicker{display:flex;align-items:center;gap:7px;color:#fb7076;font-size:10px;font-weight:650;letter-spacing:.15em;line-height:1.3}
-.zf-home-football-kicker>span{width:16px;height:2px;background:var(--zf-hf-red);border-radius:2px}
-.zf-home-football-head h2{font:600 clamp(20px,2vw,30px)/1.16 inherit;font-family:inherit;font-weight:600;font-size:clamp(20px,2vw,30px);line-height:1.16;letter-spacing:-.045em;margin:6px 0 0;color:#fafafa}
+/* ZANG FLIX SPORTS — a continuous cinematic surface, not a coloured strip.
+   One existing hero image, neutral fade, glass only on individual cards. */
+.zf-home-feature-stack{position:relative;isolation:isolate;overflow:hidden;background:var(--bg-deep,#0e0e0e);--zf-feature-extension:0px;--zf-feature-gutter:clamp(1.5rem,5vw,4.5rem)}
+.zf-home-feature-stack.is-tv{background:var(--surface,#111);--zf-feature-gutter:var(--gutter,2.45vw)}
+/* Only extend artwork when the shelf exists, and never during the special event. */
+@supports selector(:has(*)){
+ .zf-home-feature-stack:not(.is-tv):has(>.zf-home-football):has(>.ydo-hero:not(.zf-friday13-hero)){--zf-feature-extension:clamp(100px,15vh,168px)}
+ .zf-home-feature-stack.is-tv:has(>.zf-home-football){--zf-feature-extension:clamp(70px,11vh,130px)}
+ .zf-home-feature-stack>.ydo-hero:not(.zf-friday13-hero){overflow:visible}
+ .zf-home-feature-stack>.ydo-hero:not(.zf-friday13-hero) .ydo-hero-slide,
+ .zf-home-feature-stack>.ydo-hero:not(.zf-friday13-hero) .ydo-hero-veil-left,
+ .zf-home-feature-stack>.ydo-hero:not(.zf-friday13-hero) .ydo-hero-veil-bottom{inset:0 0 auto;height:calc(100% + var(--zf-feature-extension))}
+ .zf-home-feature-stack>.ydo-hero:not(.zf-friday13-hero) .ydo-hero-veil-bottom{background:linear-gradient(to bottom,transparent 25%,rgba(14,14,14,.12) 43%,rgba(14,14,14,.60) 69%,var(--bg-deep,#0e0e0e) 100%)}
+ .zf-tv-reference .zf-home-feature-stack.is-tv>.zf-immersive-hero{overflow:visible}
+ .zf-tv-reference .zf-home-feature-stack.is-tv .zf-immersive-hero .zf-hero-backdrop,
+ .zf-tv-reference .zf-home-feature-stack.is-tv .zf-immersive-hero .zf-hero-shade{inset:0 0 auto;height:calc(100% + var(--zf-feature-extension))}
+ .zf-tv-reference .zf-home-feature-stack.is-tv .zf-immersive-hero .zf-hero-shade{background:linear-gradient(90deg,#111111e8 0%,#1111118a 28%,#11111118 65%,#11111145 100%),linear-gradient(to bottom,#1111110a 25%,#11111177 70%,var(--surface,#111) 100%)}
+}
+.zf-home-football{--zf-hf-muted:#c1c1c5;position:relative;z-index:11;min-width:0;max-width:100%;margin:0;padding:0 var(--zf-feature-gutter,clamp(1.5rem,5vw,4.5rem)) 24px;color:#f8f8f9;background:transparent;border:0;box-shadow:none;box-sizing:border-box}
+/* No pseudo-element backdrop, no section border, no red wash. */
+.zf-home-football::before{content:none}
+.zf-home-feature-stack:not(.is-tv)>.ydo-hero+.zf-home-football{margin-top:-8px}
+.zf-home-football-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 16px;min-width:0}
+.zf-home-football-head>div{min-width:0}
+.zf-home-football-kicker{display:flex;align-items:center;gap:8px;color:#c5c5ca;font-size:10px;font-weight:600;letter-spacing:.16em;line-height:1.3}
+.zf-home-football-kicker>span{width:15px;height:2px;background:#e32930;border-radius:2px}
+.zf-home-football-head h2{font-family:inherit;font-size:clamp(22px,1.9vw,32px);line-height:1.16;font-weight:620;letter-spacing:-.04em;margin:6px 0 0;color:#fafafa}
 .zf-home-football-head p{font-size:13px;line-height:1.45;color:var(--zf-hf-muted);margin:7px 0 0}
-.zf-home-football-all{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #ffffff26;background:#ffffff07;color:#e8e8ea;border-radius:999px;padding:9px 13px;font:500 12px/1.2 inherit;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
-.zf-home-football-all:hover{background:#ffffff12;border-color:#ffffff55}
-.zf-home-football-track{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#ffffff26 transparent;scroll-snap-type:x proximity;padding:4px 3px 12px;margin:0 -3px}
-.zf-home-football-card{display:flex;flex:0 0 calc((100% - 36px)/4);min-width:246px;flex-direction:column;justify-content:space-between;gap:0;text-align:left;appearance:none;color:#f5f5f5;background:linear-gradient(150deg,#252125e0,#141416 68%);border:1px solid #ffffff1c;border-radius:13px;padding:14px 13px 11px;cursor:pointer;scroll-snap-align:start;transition:border-color .15s,background-color .15s;box-sizing:border-box}
-.zf-home-football-card.is-live{border-color:#e329305e;background:linear-gradient(145deg,#3a1c20,#171416 62%)}
-.zf-home-football-card:hover{border-color:#f05b64}
+.zf-home-football-all{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #ffffff24;background:#ffffff08;color:#eee;border-radius:999px;padding:9px 14px;font:inherit;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px #ffffff0b;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+.zf-home-football-all:hover{background:#ffffff16;border-color:#ffffff45}
+.zf-home-football-track{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#ffffff24 transparent;scroll-snap-type:x proximity;padding:4px 4px 12px;margin:0 -4px}
+.zf-home-football-card{position:relative;display:flex;flex:0 0 min(350px,calc((100% - 42px)/4));min-width:250px;flex-direction:column;justify-content:space-between;gap:0;text-align:left;appearance:none;color:#f8f8f9;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025) 72%),rgba(12,12,14,.23);border:1px solid #ffffff24;border-radius:16px;padding:15px 14px 12px;cursor:pointer;scroll-snap-align:start;box-shadow:inset 0 1px #ffffff10,0 8px 20px #0002;backdrop-filter:blur(14px) saturate(115%);-webkit-backdrop-filter:blur(14px) saturate(115%);transition:border-color .16s,background-color .16s;box-sizing:border-box}
+.zf-home-football-card.is-live{border-color:#ffffff30;background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025) 72%),rgba(12,12,14,.24)}
+.zf-home-football-card:hover{border-color:#ffffff66;background-color:#ffffff09}
 .zf-home-football-card-top,.zf-home-football-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
-.zf-home-football-league,.zf-home-football-channel{display:flex;align-items:center;gap:6px;min-width:0;color:#c7c7ca;font-size:11px;font-weight:500}
+.zf-home-football-league,.zf-home-football-channel{display:flex;align-items:center;gap:7px;min-width:0;color:#e0e0e4;font-size:12px;font-weight:500}
 .zf-home-football-league>span,.zf-home-football-channel>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .zf-home-football-league>img,.zf-home-football-league>svg,.zf-home-football-channel>img,.zf-home-football-channel>svg{object-fit:contain;flex:none}
-.zf-home-football-status{display:flex;align-items:center;gap:5px;flex:none;color:#c4c4c9;font-size:10px;font-weight:600}
-.zf-home-football-card.is-live .zf-home-football-status{color:#ff858c}
-.zf-home-football-status i{width:6px;height:6px;background:#ff4a55;border-radius:50%;box-shadow:0 0 0 3px #ff4a551c;animation:zf-home-live 2s ease-in-out infinite}
+.zf-home-football-league.is-champions img{filter:brightness(0) invert(1);opacity:1}
+.zf-home-football-league.is-champions svg{color:#fff}
+.zf-home-football-status{display:flex;align-items:center;gap:5px;flex:none;color:#d9d9dd;font-size:10px;font-weight:600;padding:3px 7px;border-radius:999px;background:#ffffff08;border:1px solid #ffffff12}
+.zf-home-football-card.is-live .zf-home-football-status{color:#ff9ca1;background:#e3293012;border-color:#e3293034}
+.zf-home-football-status i{width:6px;height:6px;background:#ff4a55;border-radius:50%;animation:zf-home-live 2s ease-in-out infinite}
 @keyframes zf-home-live{50%{opacity:.45}}
-.zf-home-football-teams{display:grid;grid-template-columns:minmax(0,1fr) minmax(68px,.8fr) minmax(0,1fr);align-items:start;gap:4px;padding:17px 0 15px}
-.zf-home-football-team,.zf-home-football-score{display:flex;align-items:center;flex-direction:column;gap:7px;text-align:center;min-width:0}
-.zf-home-football-team img,.zf-home-football-crest-fallback{width:45px;height:45px;object-fit:contain}
-.zf-home-football-crest-fallback{display:grid;place-items:center;background:#ffffff0e;border:1px solid #ffffff18;border-radius:50%;font-size:13px;font-weight:600;color:#dedee2}
-.zf-home-football-team strong{font-size:11px;line-height:1.25;font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.5em}
-.zf-home-football-score{align-self:center;gap:3px;padding-bottom:12px}
-.zf-home-football-score strong{font-size:26px;line-height:1.12;letter-spacing:-.07em;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
-.zf-home-football-score small{color:#b5b5bc;font-size:10px;line-height:1.2;font-weight:500}
-.zf-home-football-bottom{border-top:1px solid #ffffff17;padding-top:10px;min-height:30px}
-.zf-home-football-channel{color:#e5e5e7;flex:1}
-.zf-home-football-action{display:flex;align-items:center;gap:5px;flex:none;color:#ff777e;font-size:10px;font-weight:600}
+.zf-home-football-teams{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(68px,.8fr) minmax(0,1fr);align-items:start;gap:5px;padding:19px 0 16px}
+/* Minimal pitch marking, deliberately almost invisible; no photograph or colour wash. */
+.zf-home-football-teams::before{content:"";position:absolute;inset:10px 12% 9px;border:1px solid #ffffff06;border-radius:4px;pointer-events:none;background:radial-gradient(circle at center,transparent 21%,#ffffff06 21.5%,transparent 22%),linear-gradient(90deg,transparent 49.8%,#ffffff06 50%,transparent 50.2%)}
+.zf-home-football-team,.zf-home-football-score{position:relative;display:flex;align-items:center;flex-direction:column;gap:7px;text-align:center;min-width:0}
+.zf-home-football-team img,.zf-home-football-crest-fallback{width:48px;height:48px;object-fit:contain}
+.zf-home-football-crest-fallback{display:grid;place-items:center;background:#ffffff0b;border:1px solid #ffffff18;border-radius:50%;font-size:13px;font-weight:600;color:#dedee2}
+.zf-home-football-team strong{font-size:12px;line-height:1.25;font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.5em;color:#fafafa}
+.zf-home-football-score{align-self:center;gap:4px;padding-bottom:12px}
+.zf-home-football-score strong{font-size:28px;line-height:1.12;letter-spacing:-.055em;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap;color:#fff}
+.zf-home-football-score small{color:#c5c5ca;font-size:11px;line-height:1.2;font-weight:500}
+.zf-home-football-bottom{border-top:1px solid #ffffff18;padding-top:10px;min-height:32px}
+.zf-home-football-channel{color:#e9e9eb;flex:1}
+.zf-home-football-action{display:flex;align-items:center;gap:5px;flex:none;color:#eee;font-size:11px;font-weight:600;padding:4px 7px;border:1px solid #ffffff14;border-radius:7px;background:#ffffff07}
 .zf-home-football button:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.zf-home-football.is-empty{padding-bottom:16px}
-.zf-tv-reference .zf-home-football.is-tv{margin:-1vh 2.45vw 3vh;padding:1.8vh 0 0;z-index:5}
-.zf-tv-reference .zf-home-football.is-tv::before{inset:0;border-radius:0;background:linear-gradient(90deg,#7c24251a,transparent 75%)}
-.zf-tv-reference .zf-home-football.is-tv~.zf-immersive-shelves{margin-top:0}
+.zf-home-football.is-empty{padding-bottom:20px}
+.zf-tv-reference .zf-home-football.is-tv{margin:0;padding:0 var(--zf-feature-gutter,var(--gutter)) 2.6vh;z-index:5}
+.zf-tv-reference .zf-home-football.is-tv::before{content:none}
+.zf-tv-reference .zf-home-feature-stack.is-tv~.zf-immersive-shelves{margin-top:0}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-head{margin-bottom:1.3vh}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-head h2{font-size:clamp(18px,1.55vw,30px);font-weight:500}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-kicker{font-size:clamp(9px,.7vw,14px)}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-all{font-size:clamp(12px,.95vw,18px);padding:.8vh 1.1vw}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-track{gap:1.2vw;padding:4px 4px 1.5vh;scrollbar-width:none;scroll-snap-type:none}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-card{flex:0 0 calc((100% - 3.6vw)/4);min-width:0;padding:1vw;border-radius:1vw;transition:none}
+.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card,.zf-tv-reference .zf-home-football.is-tv .zf-home-football-all{backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:inset 0 1px #ffffff10}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-league,.zf-tv-reference .zf-home-football.is-tv .zf-home-football-channel{font-size:clamp(11px,.9vw,17px)}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-status,.zf-tv-reference .zf-home-football.is-tv .zf-home-football-action{font-size:clamp(10px,.78vw,15px)}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-teams{padding:1.7vh 0 1.3vh;grid-template-columns:minmax(0,1fr) minmax(46px,.8fr) minmax(0,1fr)}
@@ -50,35 +75,18 @@
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-score strong{font-size:clamp(21px,2vw,38px)}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-score small{font-size:clamp(10px,.78vw,15px)}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-bottom{padding-top:1vh}
-.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card:focus{outline:2px solid #fff!important;outline-offset:2px;border-color:#fa5861;transform:none!important}
+.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card:focus{outline:2px solid #fff!important;outline-offset:2px;border-color:#ffffff80;transform:none!important;background-color:#ffffff0b}
 .zf-tv-reference .zf-home-football.is-tv .zf-home-football-status i{animation:none}
-@media(max-width:700px){.zf-home-football:not(.is-tv){padding:16px 0 0;margin:12px 0 20px}.zf-home-football-head h2{font-size:20px}.zf-home-football-all{font-size:11px;padding:7px 9px}.zf-home-football:not(.is-tv) .zf-home-football-card{flex-basis:82%;min-width:230px;max-width:320px}.zf-home-football:not(.is-tv)::before{inset:0 -5px}}
+@media(max-width:700px){
+ .zf-home-feature-stack:not(.is-tv){--zf-feature-gutter:18px}
+ .zf-home-feature-stack:not(.is-tv):has(>.zf-home-football):has(>.ydo-hero:not(.zf-friday13-hero)){--zf-feature-extension:94px}
+ .zf-home-feature-stack:not(.is-tv)>.ydo-hero+.zf-home-football{margin-top:0}
+ .zf-home-football:not(.is-tv){padding-bottom:14px}
+ .zf-home-football-head{align-items:center;gap:10px;margin-bottom:12px}
+ .zf-home-football-head h2{font-size:clamp(18px,5vw,22px)}
+ .zf-home-football-all{font-size:11px;padding:7px 9px}
+ .zf-home-football:not(.is-tv) .zf-home-football-card{flex-basis:82%;min-width:230px;max-width:320px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+}
 @media(max-width:1100px){.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card{flex-basis:calc((100% - 2.4vw)/3)}}
 @media(prefers-reduced-motion:reduce){.zf-home-football-status i{animation:none}.zf-home-football-card{transition:none}}
-
-/* Glass surfaces with restrained pitch geometry, no opaque blocks. */
-.zf-home-football{--zf-hf-muted:#b9b9bf}
-.zf-home-football::before{inset:0 -12px;border-radius:18px;background:radial-gradient(ellipse at 15% 0%,#b72b3430,transparent 60%),linear-gradient(125deg,#ffffff09,#ffffff02);border:1px solid #ffffff08}
-.zf-home-football-head h2{color:#fff;font-weight:600;letter-spacing:-.035em}
-.zf-home-football-kicker{color:#ff858b}
-.zf-home-football-kicker>span{background:linear-gradient(90deg,#f44952,#f0e0e0)}
-.zf-home-football-all{background:#ffffff0b;border-color:#ffffff26;color:#f2f2f3;box-shadow:inset 0 1px #ffffff0c;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.zf-home-football-card{background:linear-gradient(145deg,rgba(255,255,255,.095),rgba(255,255,255,.023) 64%),rgba(10,10,12,.23);border:1px solid rgba(255,255,255,.15);border-radius:15px;box-shadow:inset 0 1px rgba(255,255,255,.07),0 7px 18px #0002;backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%)}
-.zf-home-football-card.is-live{background:radial-gradient(ellipse at 85% 0%,rgba(227,41,48,.16),transparent 66%),linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.02)),rgba(10,10,12,.20);border-color:#e3293059}
-.zf-home-football-card:hover{border-color:#ffffff65}
-.zf-home-football-league,.zf-home-football-channel{color:#ededee;font-weight:550}
-.zf-home-football-league.is-champions img{filter:brightness(0) invert(1);opacity:1}
-.zf-home-football-league.is-champions svg{color:#fff}
-.zf-home-football-status{padding:3px 7px;border-radius:999px;background:#ffffff08;border:1px solid #ffffff10;color:#e0e0e2}
-.zf-home-football-card.is-live .zf-home-football-status{background:#e3293018;border-color:#e329303b;color:#ff969b}
-.zf-home-football-teams{padding:19px 0 16px}
-.zf-home-football-team strong{color:#f9f9fa}
-.zf-home-football-score strong{color:#fff;font-weight:700;letter-spacing:-.055em}
-.zf-home-football-score small{color:#c6c6ca}
-.zf-home-football-bottom{border-color:#ffffff19}
-.zf-home-football-action{padding:4px 7px;border:1px solid #ffffff10;border-radius:7px;background:#ffffff06;color:#ff969b}
-.zf-tv-reference .zf-home-football.is-tv::before{inset:0;background:radial-gradient(ellipse at 10% 10%,#9b20252c,transparent 68%),linear-gradient(120deg,#ffffff05,transparent);border:0}
-.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card,.zf-tv-reference .zf-home-football.is-tv .zf-home-football-all{backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:inset 0 1px #ffffff12}
-.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card:focus{border-color:#ff7077;background-color:#ffffff0b}
-@media(max-width:700px){.zf-home-football:not(.is-tv) .zf-home-football-card{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}.zf-home-football:not(.is-tv)::before{inset:0 -5px}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.zf-home-football-card{background-color:#22222655}}

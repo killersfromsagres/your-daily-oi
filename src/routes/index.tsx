@@ -215,6 +215,7 @@ function HomePage() {
           {" "}<a href="/api/integrations/status" target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>Ver status das integrações</a>
         </div>
       )}
+      <div className="zf-home-feature-stack">
       {loading ? (
         <div className="ydo-hero-skeleton skeleton" aria-label="Carregando catálogo..." />
       ) : error ? (
@@ -230,8 +231,10 @@ function HomePage() {
           edition={friday13 && friday13Movies.length ? "friday13" : undefined} />
       )}
 
+      <HomeFootball onWatch={id=>void navigate({to:"/tv/canal/$id",params:{id}})} onAgenda={()=>void navigate({to:"/futebol"})}/>
+      </div>
+
       <div className="ydo-catalog">
-        <HomeFootball onWatch={id=>void navigate({to:"/tv/canal/$id",params:{id}})} onAgenda={()=>void navigate({to:"/futebol"})}/>
         <MobileCatalogFilters kind={null} home/>
         {friday13 && friday13Movies.length > 0 && !loading && (
           <section className="zf-friday13-collection" aria-label="Maratona Sexta-feira 13">

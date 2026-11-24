@@ -222,7 +222,7 @@ function TvHome(){
         <h1>{section==="settings"?"Configurações":"Ajuda"}</h1>
         {section==="settings"?<><p>Personalize a experiência na televisão.</p><button className="zf-ref-option" data-tv-row="settings" data-tv-focus="settings-rotation" data-tv-left-target="nav-settings" aria-pressed={rotate} onClick={toggleRotate}>Rotação automática do banner <strong>{rotate?"Ativada":"Desativada"}</strong></button><p>Versão: {TV_APP_BUILD}{serverOutdated?" · Hospedagem desatualizada":""}</p></>:<><p>Use as setas do controle remoto para navegar, OK para selecionar e Voltar para retornar.</p><p>O progresso é salvo neste dispositivo. Em Continue assistindo, retome um título de onde parou.</p><button className="zf-ref-option" data-tv-focus="help-back" data-tv-row="help" data-tv-left-target="nav-help" onClick={()=>setSection("all")}>Voltar ao início</button></>}
       </section>:section!=="all"&&section!=="saved"&&section!=="recent"?<TvLibrary key={section} type={section} onOpen={openItem}/>:<>
-      {section==="all"&&<>
+      {section==="all"&&<div className="zf-home-feature-stack is-tv">
        <section className="zf-immersive-hero" aria-label="Destaques de filmes">
         {spotlight?.backdropUrl&&!failedBackdrops.includes(spotlight.id)
           ? <img key={spotlight.id} className="zf-hero-backdrop" src={spotlight.backdropUrl}
@@ -257,7 +257,7 @@ function TvHome(){
         </div>}
       </section>
       <HomeFootball television onWatch={id=>void navigate({to:"/tv-live",search:{channel:id,from:"home"}})} onAgenda={()=>setSection("sports")}/>
-      </>}
+      </div>}
       {serverOutdated&&<div className="zf-tv-update-warning" role="status">A versão publicada da TV está desatualizada. Os banners HD e os canais podem não funcionar até atualizar a hospedagem.</div>}
       {loading?<p className="zf-tenfoot-notice" role="status">Carregando sua experiência de TV…</p>:
         error?<p className="zf-tenfoot-notice" role="alert">Não foi possível carregar o catálogo. <button type="button" data-tv-focus="retry" data-tv-row="notice" onClick={()=>location.reload()}>Tentar novamente</button></p>:

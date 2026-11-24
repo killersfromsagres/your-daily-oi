@@ -10,6 +10,7 @@ on:
       - 'tests/broadcast-resolution.test.ts'
       - 'tests/web-broadcast-state.test.ts'
       - 'tests/football-home-selection.test.ts'
+      - 'tests/home-football-cinema.test.ts'
       - 'src/lib/use-home-football.ts'
       - 'src/components/sports/HomeFootball.tsx'
       - 'src/styles/home-football.css'
@@ -30,5 +31,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun test tests/football-home-selection.test.ts tests/web-broadcast-state.test.ts tests/broadcast-resolution.test.ts tests/jogos-broadcast.test.ts tests/sports-broadcast-verified.test.ts tests/football-live.test.ts tests/football-ranking.test.ts tests/jogos-match.test.ts tests/football-providers-lineups.test.ts tests/verified-premiere-broadcast.test.ts
+      - run: bun test tests/home-football-cinema.test.ts tests/football-home-selection.test.ts tests/web-broadcast-state.test.ts tests/broadcast-resolution.test.ts tests/jogos-broadcast.test.ts tests/sports-broadcast-verified.test.ts tests/football-live.test.ts tests/football-ranking.test.ts tests/jogos-match.test.ts tests/football-providers-lineups.test.ts tests/verified-premiere-broadcast.test.ts
       - run: bun run build
