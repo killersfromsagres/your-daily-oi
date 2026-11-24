@@ -116,7 +116,7 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
             <strong>{numberDay}</strong><small>{monthAbbrev}</small>
           </span>
           <span className="zf-ticket-league">
-            <span className="zf-ticket-league-crest">
+            <span className={"zf-ticket-league-crest"+(game.ligaId==="uefa.champions"?" zf-champions-white":"")}>
               {game.ligaLogo ? <img src={game.ligaLogo} alt="" loading="lazy"/> : <CompetitionIcon size={22}/>}
             </span>
             <strong title={game.liga}>{game.liga}</strong>

@@ -1,0 +1,23 @@
+name: Verify live picture recovery and home glass
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/components/player/LivePlayer.tsx'
+      - 'src/lib/live-picture-health.ts'
+      - 'src/styles/home-football.css'
+      - 'src/components/sports/HomeFootball.tsx'
+      - 'tests/live-picture-health.test.ts'
+      - '.github/workflows/verify-live-picture-health.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test tests/live-picture-health.test.ts tests/live-playback-watchdog.test.ts tests/live-latency.test.ts tests/player-recovery.test.ts tests/football-home-selection.test.ts
+      - run: bun run build

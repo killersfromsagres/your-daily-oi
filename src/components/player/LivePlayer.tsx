@@ -4,6 +4,7 @@ import "@/lib/browser-media";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
+import { classifyPicture,createPictureWatchdog,nextPictureSource,rememberPictureSource,forgetPictureSource,prioritizePictureSource,type PictureSample,type PictureFault } from "@/lib/live-picture-health";
 import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
 import { browserLiveTransport, isBraveBrowser, needsPlaybackGesture, type LiveProxyBackend } from "@/lib/live-browser-compat";
 import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
@@ -65,7 +66,28 @@ async function loadScript(src: string): Promise<void> {
       const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
       const script = existing || document.createElement("script");
       const onLoad = () => { cleanup(); resolve(); };
-      const onError = () => { cleanup(); reject(new Error(`Falha ao carregar biblioteca: ${src}`)); };
+      const pictureTimer=window.setInterval(()=>{
+      if(cancelled||handlingFailureRef.current)return;
+      const active=playbackConfirmed&&!video.paused&&!video.ended&&!video.seeking&&video.readyState>=2&&document.visibilityState!=="hidden"&&navigator.onLine;
+      if(!active){pictureWatchdog.reset();healthySince=null;return;}
+      const dimensions=video.videoWidth>0&&video.videoHeight>0;
+      const frames=frameCounter();requestFrame();
+      latestPicture=samplePicture();
+      verifiedFrame=dimensions&&(frames===null||frames>0)&&latestPicture!=="black";
+      const now=Date.now();
+      const fault=pictureWatchdog.observe({now,mediaTime:video.currentTime,active,dimensions,frameCounter:frames,picture:latestPicture});
+      if(fault){
+        healthySince=null;stablePlaybackSinceRef.current=null;
+        // Remove optional GPU processing before changing the source.
+        if(hqActiveRef.current&&!hqPictureSuppressedRef.current){hqPictureSuppressedRef.current=true;setHqPictureSuppressed(true);pictureWatchdog.reset();setAutoSwitchMsg("Restaurando imagem original…");return;}
+        console.warn("[LivePlayer] Falha visual persistente:",fault);
+        handleFatalError(false,undefined,fault);return;
+      }
+      if(verifiedFrame){onTimeUpdate();healthySince??=now;if(playbackProgressVerified&&rawFonte&&now-healthySince>=15000){rememberPictureSource(canal.id,liveSourceFingerprint(rawFonte.url),now);healthySince=now;setAutoSwitchMsg(null);}}
+      else healthySince=null;
+    },2000);
+
+    const onError = () => { cleanup(); reject(new Error(`Falha ao carregar biblioteca: ${src}`)); };
       const cleanup = () => {
         script.removeEventListener("load", onLoad);
         script.removeEventListener("error", onError);
@@ -202,6 +224,10 @@ export function LivePlayer({
   const edgeBackupTriedRef = useRef(new Set<string>());
   const accessDeniedSourcesRef = useRef(new Set<string>());
   const handlingFailureRef = useRef(false);
+  const pictureTriedRef=useRef(new Set<string>());
+  const [pictureReady,setPictureReady]=useState(false);
+  const [hqPictureSuppressed,setHqPictureSuppressed]=useState(false);
+  const hqPictureSuppressedRef=useRef(false);
   const autoRetryCountRef = useRef(0);
   const stablePlaybackSinceRef = useRef<number | null>(null);
   const everPlayedRef = useRef(false);
@@ -215,8 +241,8 @@ export function LivePlayer({
     // Tenta primeiro os espelhos que responderam com mídia no diagnóstico.
     // Os CDNs problemáticos permanecem disponíveis como último recurso.
     const pool = canal.fontes.filter((f) => !looksOffline(f));
-    return sortStreamsByHealth(orderLiveSources(pool));
-  }, [canal.fontes]);
+    return prioritizePictureSource(canal.id,sortStreamsByHealth(orderLiveSources(pool)),f=>liveSourceFingerprint(f.url));
+  }, [canal.id,canal.fontes]);
 
   const [sourceIndex, setSourceIndex] = useState(0);
   const [braveCompatibility, setBraveCompatibility] = useState(false);
@@ -267,8 +293,9 @@ export function LivePlayer({
   // Stadium, grass and fast football pans may expose interlaced combing.
   // Motion-gated field reconstruction precedes every GPU HQ path when safe.
   const sportsChannel=isSportsLiveChannel(canal.nome,canal.categoria);
+  const pictureHqEnabled=hqEnabled&&pictureReady&&!hqPictureSuppressed;
   const deinterlacer=useSportsDeinterlacer(
-    videoRef,deinterlaceCanvasRef,hqEnabled&&sportsChannel);
+    videoRef,deinterlaceCanvasRef,pictureHqEnabled&&sportsChannel);
   const processedInput={
     canvasRef:deinterlaceCanvasRef,active:deinterlacer.active,
   };
@@ -278,14 +305,14 @@ export function LivePlayer({
   // small sources and fast desktop GPUs, with immediate 2× fallback.
   const neural4x=useNeuralVideoUpscaler(
     videoRef,neural4xCanvasRef,
-    hqEnabled&&hqBackend==="neural-4x","movie","live",4,processedInput);
-  const neuralWanted=hqEnabled&&
+    pictureHqEnabled&&hqBackend==="neural-4x","movie","live",4,processedInput);
+  const neuralWanted=pictureHqEnabled&&
     (hqBackend==="neural"||
       (hqBackend==="neural-4x"&&neural4x.status==="unavailable"));
   const neural=useNeuralVideoUpscaler(
     videoRef,neuralCanvasRef,neuralWanted,"movie","live",2,processedInput);
   const handleHqDowngrade=useCallback(()=>setWebglFailed(true),[]);
-  const spatialWanted=hqEnabled&&!webglFailed&&(
+  const spatialWanted=pictureHqEnabled&&!webglFailed&&(
     hqBackend==="spatial"||
     (hqBackend==="neural"&&neural.status==="unavailable")||
     (hqBackend==="neural-4x"&&neural4x.status==="unavailable"&&
@@ -293,12 +320,13 @@ export function LivePlayer({
   const enhancer=useVideoEnhancer(videoRef,hqCanvasRef,
     spatialWanted,handleHqDowngrade,true,processedInput);
   const hqStatus=visibleLiveHqStatus({
-    enabled:hqEnabled,neural4xActive:neural4x.active,
+    enabled:pictureHqEnabled,neural4xActive:neural4x.active,
     neuralActive:neural.active,
     spatialActive:enhancer.active&&!webglFailed,
     deinterlaceActive:deinterlacer.active,
   });
-  const hqActive=hqStatus!=="native"&&hqStatus!=="off";
+  const hqActive=pictureHqEnabled&&hqStatus!=="native"&&hqStatus!=="off";
+  const hqActiveRef=useRef(false);hqActiveRef.current=hqActive;
   const measureLiveQuality=useCallback(()=>{
     const video=videoRef.current;
     if(!video)return;
@@ -309,7 +337,7 @@ export function LivePlayer({
   const toggleHq=useCallback(()=>{
     const next=!hqEnabled;
     setHqEnabled(next);
-    if(next)setWebglFailed(false);
+    if(next){setWebglFailed(false);hqPictureSuppressedRef.current=false;setHqPictureSuppressed(false);}
     try{localStorage.setItem("zangflix:tv-hq",String(next));}catch{}
     measureLiveQuality();
   },[hqEnabled,measureLiveQuality]);
@@ -383,6 +411,8 @@ export function LivePlayer({
   useEffect(() => {
     autoCleanPlayerCache();
     attemptedModesRef.current.clear();
+    pictureTriedRef.current.clear();
+    hqPictureSuppressedRef.current=false;setHqPictureSuppressed(false);setPictureReady(false);
     edgeBackupTriedRef.current.clear();
     accessDeniedSourcesRef.current.clear();
     handlingFailureRef.current = false;
@@ -536,12 +566,25 @@ export function LivePlayer({
 
   // Avança para a próxima fonte caso haja falha fatal (escada direto -> proxy -> próxima fonte)
   // Timeout e erro do motor de vídeo podem ocorrer juntos; alternar uma única vez.
-  const handleFatalError = useCallback((isNetworkError = false, upstreamStatus?: number) => {
+  const handleFatalError = useCallback((isNetworkError = false, upstreamStatus?: number, pictureFault?:PictureFault) => {
     if (!rawFonte || handlingFailureRef.current) return;
     handlingFailureRef.current = true;
     stablePlaybackSinceRef.current = null;
     setGestureRequired(false);
     const key = `${canal.id}:${rawFonte.url}`;
+    forgetPictureSource(canal.id,liveSourceFingerprint(rawFonte.url));
+    setPictureReady(false);
+    // A healthy transport is not proof of visible picture. Try another
+    // declared source of the SAME channel first, never a different channel.
+    if(pictureFault){
+      pictureTriedRef.current.add(rawFonte.url);
+      const next=nextPictureSource(validStreams,sourceIndex,pictureTriedRef.current,accessDeniedSourcesRef.current);
+      if(next!==null){
+        recordFailedSource(rawFonte.url);setUseEdgeBackup(false);setUseLegacyOnMismatch(false);
+        setSourceIndex(next);setAttemptMode(initialModeFor(validStreams[next],braveFirstPartyRef.current,proxyBackend));
+        setLoading(true);setError(false);setErrorDetail(null);setAutoSwitchMsg("Ajustando imagem · outro servidor…");setPlayNonce(n=>n+1);return;
+      }
+    }
     const index = canal.fontes.findIndex(item => item.url === rawFonte.url);
     // Do not derive the backup URL from the failing Vercel route selection:
     // the primary may use /api/live-proxy while the healthy secondary uses
@@ -582,8 +625,8 @@ export function LivePlayer({
       return;
     }
     recordFailedSource(rawFonte.url);
-    if (sourceIndex + 1 < validStreams.length) {
-      const next = sourceIndex + 1;
+    const next = validStreams.findIndex((source,i)=>i>sourceIndex&&!pictureTriedRef.current.has(source.url)&&!accessDeniedSourcesRef.current.has(source.url));
+    if (next >= 0) {
       setSourceIndex(next);
       setAttemptMode(initialModeFor(validStreams[next], braveFirstPartyRef.current, proxyBackend));
       setLoading(true);
@@ -623,6 +666,7 @@ export function LivePlayer({
       if (disposed || document.visibilityState === "hidden") return;
       autoRetryCountRef.current += 1;
       clearAllPlayerCaches();
+      pictureTriedRef.current.clear();
       attemptedModesRef.current.clear();
       edgeBackupTriedRef.current.clear();
       setUseEdgeBackup(false);
@@ -758,6 +802,7 @@ export function LivePlayer({
     decoderBaselineRef.current=null;
     smoothPlaybackUntilRef.current=0;
     let cancelled = false;
+    setPictureReady(false);
     setLoading(true);
     onPlaybackStatus?.(canal.id, "connecting");
     setError(false);
@@ -769,6 +814,32 @@ export function LivePlayer({
     let progressReference: number | null = null;
     let playbackProgressVerified = false;
     let inspectingNativeError = false;
+    const pictureWatchdog=createPictureWatchdog();
+    let pixelReadUnavailable=Boolean(rawFonte?.chave);
+    let canvas:HTMLCanvasElement|null=null;
+    let ctx:CanvasRenderingContext2D|null=null;
+    let frameSerial=0,frameRequest:number|null=null;
+    const requestFrame=()=>{
+      if(cancelled||frameRequest!==null||typeof video.requestVideoFrameCallback!=="function")return;
+      frameRequest=video.requestVideoFrameCallback(()=>{frameRequest=null;frameSerial++;});
+    };
+    let baselineFrames=video.getVideoPlaybackQuality?.().totalVideoFrames??0;
+    const frameCounter=()=>{const count=video.getVideoPlaybackQuality?.().totalVideoFrames;
+      if(typeof count==="number"&&count<baselineFrames)baselineFrames=0;
+      if(typeof count==="number"&&count>baselineFrames)return Math.max(frameSerial,count-baselineFrames);
+      if(typeof video.requestVideoFrameCallback==="function")return frameSerial;
+      return typeof count==="number"?0:null;};
+    let latestPicture:PictureSample="unknown";
+    let healthySince:number|null=null;
+    let verifiedFrame=false;
+    const samplePicture=():PictureSample=>{
+      // Respect protected media and CORS; never retry a tainted canvas.
+      if(pixelReadUnavailable||video.mediaKeys||video.readyState<2||!video.videoWidth||!video.videoHeight)return "unknown";
+      try{if(!canvas){canvas=document.createElement("canvas");canvas.width=32;canvas.height=18;ctx=canvas.getContext("2d",{willReadFrequently:true});}
+        if(!ctx)return "unknown";ctx.drawImage(video,0,0,32,18);return classifyPicture(ctx.getImageData(0,0,32,18).data);
+      }catch{pixelReadUnavailable=true;return "unknown";}
+    };
+    requestFrame();
     const timeout = setTimeout(() => {
       if (!cancelled && !playbackProgressVerified &&
           document.visibilityState !== "hidden") {
@@ -791,6 +862,7 @@ export function LivePlayer({
 
     const onPlaying = () => {
       if (cancelled) return;
+      requestFrame();
       setGestureRequired(false);
       playbackConfirmed = true;
       if (progressReference === null) progressReference = video.currentTime;
@@ -806,10 +878,11 @@ export function LivePlayer({
     };
 
     const onTimeUpdate = () => {
-      if (playbackConfirmed && !playbackProgressVerified &&
+      if (playbackConfirmed && !playbackProgressVerified && verifiedFrame && latestPicture!=="black" &&
           progressReference !== null && Number.isFinite(video.currentTime) &&
           Math.abs(video.currentTime - progressReference) >= 1) {
         playbackProgressVerified = true;
+        setPictureReady(true);
         everPlayedRef.current = true;
         if (rawFonte) accessDeniedSourcesRef.current.delete(rawFonte.url);
         clearTimeout(timeout);
@@ -1102,6 +1175,9 @@ export function LivePlayer({
     return () => {
       cancelled = true;
       clearTimeout(timeout);
+      window.clearInterval(pictureTimer);
+      if(frameRequest!==null&&typeof video.cancelVideoFrameCallback==="function")video.cancelVideoFrameCallback(frameRequest);
+      pictureWatchdog.reset();canvas=null;ctx=null;
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("error", onError);
@@ -1242,7 +1318,7 @@ export function LivePlayer({
         onResize={measureLiveQuality}
         style={{
           opacity:hqActive?0:1,
-          filter:liveHqFilter(hqEnabled,hqActive),
+          filter:liveHqFilter(hqEnabled&&!hqPictureSuppressed,hqActive),
           transition:"opacity .12s ease",
         }}
       />
@@ -1354,6 +1430,7 @@ export function LivePlayer({
             className="ydo-btn-primary"
             onClick={() => {
               attemptedModesRef.current.clear();
+              pictureTriedRef.current.clear();hqPictureSuppressedRef.current=false;setHqPictureSuppressed(false);
               edgeBackupTriedRef.current.clear();
               setUseEdgeBackup(false);
               accessDeniedSourcesRef.current.clear();
@@ -1456,6 +1533,7 @@ export function LivePlayer({
                     className={"zf-player-menu-option" + (i === sourceIndex ? " is-selected" : "")}
                     onClick={() => {
                       attemptedModesRef.current.delete(`${canal.id}:${f.url}`);
+                      pictureTriedRef.current.clear();setUseEdgeBackup(false);setUseLegacyOnMismatch(false);
                       handlingFailureRef.current = false;
                       setSourceIndex(i);
                       setAttemptMode(initialModeFor(f, braveFirstPartyRef.current, proxyBackend));

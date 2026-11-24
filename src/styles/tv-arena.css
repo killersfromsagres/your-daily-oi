@@ -73,3 +73,5 @@
 .zf-tv-live-guide .zf-live-card:focus,.zf-tv-live-guide button[data-tv-focus]:focus{outline:2px solid #fff!important;outline-offset:2px;border-color:#e32930;box-shadow:none!important;transform:none!important}
 .zf-tv-live-guide .zf-live-card.is-offline .zf-live-status{color:#aaa}
 @media(max-width:880px){.zf-arena-grid{gap:12px}.zf-arena-match{padding:10px}.zf-arena-teams{grid-template-columns:minmax(0,1fr) minmax(60px,.8fr) minmax(0,1fr)}.zf-arena-hero-copy p>span{display:none}}
+
+.zf-champions-white img{filter:brightness(0) invert(1);opacity:1}

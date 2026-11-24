@@ -55,3 +55,30 @@
 @media(max-width:700px){.zf-home-football:not(.is-tv){padding:16px 0 0;margin:12px 0 20px}.zf-home-football-head h2{font-size:20px}.zf-home-football-all{font-size:11px;padding:7px 9px}.zf-home-football:not(.is-tv) .zf-home-football-card{flex-basis:82%;min-width:230px;max-width:320px}.zf-home-football:not(.is-tv)::before{inset:0 -5px}}
 @media(max-width:1100px){.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card{flex-basis:calc((100% - 2.4vw)/3)}}
 @media(prefers-reduced-motion:reduce){.zf-home-football-status i{animation:none}.zf-home-football-card{transition:none}}
+
+/* Glass surfaces with restrained pitch geometry, no opaque blocks. */
+.zf-home-football{--zf-hf-muted:#b9b9bf}
+.zf-home-football::before{inset:0 -12px;border-radius:18px;background:radial-gradient(ellipse at 15% 0%,#b72b3430,transparent 60%),linear-gradient(125deg,#ffffff09,#ffffff02);border:1px solid #ffffff08}
+.zf-home-football-head h2{color:#fff;font-weight:600;letter-spacing:-.035em}
+.zf-home-football-kicker{color:#ff858b}
+.zf-home-football-kicker>span{background:linear-gradient(90deg,#f44952,#f0e0e0)}
+.zf-home-football-all{background:#ffffff0b;border-color:#ffffff26;color:#f2f2f3;box-shadow:inset 0 1px #ffffff0c;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.zf-home-football-card{background:linear-gradient(145deg,rgba(255,255,255,.095),rgba(255,255,255,.023) 64%),rgba(10,10,12,.23);border:1px solid rgba(255,255,255,.15);border-radius:15px;box-shadow:inset 0 1px rgba(255,255,255,.07),0 7px 18px #0002;backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%)}
+.zf-home-football-card.is-live{background:radial-gradient(ellipse at 85% 0%,rgba(227,41,48,.16),transparent 66%),linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.02)),rgba(10,10,12,.20);border-color:#e3293059}
+.zf-home-football-card:hover{border-color:#ffffff65}
+.zf-home-football-league,.zf-home-football-channel{color:#ededee;font-weight:550}
+.zf-home-football-league.is-champions img{filter:brightness(0) invert(1);opacity:1}
+.zf-home-football-league.is-champions svg{color:#fff}
+.zf-home-football-status{padding:3px 7px;border-radius:999px;background:#ffffff08;border:1px solid #ffffff10;color:#e0e0e2}
+.zf-home-football-card.is-live .zf-home-football-status{background:#e3293018;border-color:#e329303b;color:#ff969b}
+.zf-home-football-teams{padding:19px 0 16px}
+.zf-home-football-team strong{color:#f9f9fa}
+.zf-home-football-score strong{color:#fff;font-weight:700;letter-spacing:-.055em}
+.zf-home-football-score small{color:#c6c6ca}
+.zf-home-football-bottom{border-color:#ffffff19}
+.zf-home-football-action{padding:4px 7px;border:1px solid #ffffff10;border-radius:7px;background:#ffffff06;color:#ff969b}
+.zf-tv-reference .zf-home-football.is-tv::before{inset:0;background:radial-gradient(ellipse at 10% 10%,#9b20252c,transparent 68%),linear-gradient(120deg,#ffffff05,transparent);border:0}
+.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card,.zf-tv-reference .zf-home-football.is-tv .zf-home-football-all{backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:inset 0 1px #ffffff12}
+.zf-tv-reference .zf-home-football.is-tv .zf-home-football-card:focus{border-color:#ff7077;background-color:#ffffff0b}
+@media(max-width:700px){.zf-home-football:not(.is-tv) .zf-home-football-card{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}.zf-home-football:not(.is-tv)::before{inset:0 -5px}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.zf-home-football-card{background-color:#22222655}}
