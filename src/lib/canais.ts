@@ -84,6 +84,11 @@ const DESATIVADOS_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 let canaisCache: CanalTV[] | null = null;
 let canaisCacheTime = 0;
+let canaisCacheTtl = CACHE_TTL_MS;
+/** Metadata is not proof of a current playable catalog. Retry degraded snapshots sooner. */
+export function tvCatalogCacheTtl(totalProviders:number,successfulProviders:number,hasSources:boolean):number {
+  return totalProviders>0 && successfulProviders===totalProviders && hasSources ? CACHE_TTL_MS : 60_000;
+}
 let forcedCatalogRefreshAt = 0;
 const FORCE_CATALOG_COOLDOWN_MS = 60_000;
 let canaisCategoriasCache: string[] = [];
@@ -447,7 +452,7 @@ export async function loadCanais(forceRefresh = false): Promise<{
   // A user retry must be able to retrieve rotated source URLs immediately.
   // Cap forced refresh to one request/minute per server instance.
   if (canaisCache && (
-    (!forceRefresh && now - canaisCacheTime < CACHE_TTL_MS) ||
+    (!forceRefresh && now - canaisCacheTime < canaisCacheTtl) ||
     (forceRefresh && now - forcedCatalogRefreshAt < FORCE_CATALOG_COOLDOWN_MS)
   )) {
     return {
@@ -498,6 +503,8 @@ export async function loadCanais(forceRefresh = false): Promise<{
     canaisCache = canais;
     canaisCategoriasCache = categorias;
     canaisCacheTime = now;
+    canaisCacheTtl = tvCatalogCacheTtl(urls.length,catalogs.length,canais.some(c=>c.fontes.length>0));
+    if(canaisCacheTtl<CACHE_TTL_MS)console.warn("[CanaisTV] Catálogo degradado", {providers:urls.length,successfulProviders:catalogs.length,channels:canais.length,withoutSources:canais.filter(c=>!c.fontes.length).length,retryMs:canaisCacheTtl});
 
     return {
       atualizadoEm: new Date(now).toISOString(),

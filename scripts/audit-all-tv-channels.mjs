@@ -2,6 +2,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { loadCanais } from "../src/lib/canais.ts";
 import { classifyLiveSource } from "../src/lib/live-source.ts";
+import { classifyHTTP } from "./lib/tv-audit-classify.mjs";
 
 const START = Date.now(), CONCURRENCY = 7, TIMEOUT_MS = 5000, MAX_SNIFF_BYTES = 1536;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -16,19 +17,6 @@ function mimeClass(value) {
   if (mime.includes("text/html")) return "HTML";
   if (mime.includes("application/json")) return "JSON";
   return mime || "unknown";
-}
-function classifyHTTP(status,mime,prefix) {
-  if(status===401 || status===403) return "access-denied";
-  if(status===404 || status===410) return "not-found";
-  if(status===429) return "rate-limited";
-  if(status>=500) return "origin-error";
-  if(status>=400) return "other-http-error";
-  if(mime==="HTML" || /<!doctype html|<html/i.test(prefix)) return "html-not-video";
-  if(mime==="JSON" && !prefix.includes("#EXTM3U")) return "json-not-video";
-  if(prefix.startsWith("#EXTM3U") || mime==="HLS" || mime==="DASH") return "manifest-candidate";
-  if(mime==="TS" || mime==="MP4") return "media-candidate";
-  if((prefix.startsWith("<?xml") || prefix.startsWith("<MPD")) && prefix.includes("MPD")) return "manifest-candidate";
-  return "unconfirmed-2xx";
 }
 async function checkOne(item) {
   const {channel,source,catalogIndex} = item;
@@ -51,7 +39,16 @@ async function checkOne(item) {
     if(response.ok && ["HLS","DASH","JSON","HTML","unknown"].includes(mime)){
       const reader=response.body?.getReader();
       if(reader){
-        try{const first=await reader.read();prefix=new TextDecoder().decode((first.value||new Uint8Array()).slice(0,MAX_SNIFF_BYTES));}
+        try{
+          const decoder=new TextDecoder();let remaining=MAX_SNIFF_BYTES;
+          while(remaining>0){const chunk=await reader.read();if(chunk.done)break;
+            const bytes=chunk.value.slice(0,remaining);remaining-=bytes.length;
+            prefix+=decoder.decode(bytes,{stream:true});
+            if(/^\s*#EXTM3U(?:\s|$)/.test(prefix)&&/#EXT-X-|#EXTINF:/.test(prefix))break;
+            if(/<MPD(?:\s|>)/i.test(prefix)||/<!doctype html|<html/i.test(prefix))break;
+          }
+          prefix+=decoder.decode();
+        }
         finally{await reader.cancel().catch(()=>{});}
       }
     }else await response.body?.cancel().catch(()=>{});
