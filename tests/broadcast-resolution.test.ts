@@ -26,6 +26,21 @@ describe("Event-specific Brazilian broadcast resolution",()=>{
   const g=game();resolveBroadcast(g,[{nome:"Premiere 2",origem:"guia"},{nome:"SporTV 2",origem:"epg"},{nome:"Premiere 02 HD",origem:"espn"}],channels,[{id:"2",nome:"SporTV 2"}],stamp);
   expect(g.canalId).toBe("2");expect(g.canaisDisponiveis?.map(c=>c.id)).toEqual(["2","0"]);expect(g.canaisTransmissao).toHaveLength(2);expect(g.evidenciasTransmissao).toHaveLength(3);
  });
+ test("Premiere official fallback coexists only with an exact fixture EPG channel",()=>{
+  const g={...game(),transmissaoUrl:"https://globoplay.globo.com/canais/premiere/"};
+  resolveBroadcast(g,[{nome:"Premiere",origem:"verificada"},{nome:"Premiere 3",origem:"guia"},{nome:"SporTV 2",origem:"epg"}],channels,[{id:"2",nome:"SporTV 2"}],stamp);
+  expect(g.canalId).toBeNull();
+  resolveBroadcast(g,[{nome:"Premiere",origem:"verificada"},{nome:"Premiere 2",origem:"epg"},{nome:"Premiere 3",origem:"guia"}],channels,[{id:"0",nome:"Premiere 2 HD"}],stamp);
+  expect(g.canalId).toBe("0");expect(g.canaisDisponiveis?.map(c=>c.id)).toEqual(["0"]);
+  expect(g.transmissaoUrl).toBe("https://globoplay.globo.com/canais/premiere/");
+  resolveBroadcast(g,[{nome:"Premiere 2",origem:"epg"}],channels,[],stamp);
+  expect(g.canalId).toBeNull();
+ });
+ test("exclusive non-Premiere streaming destinations remain external only",()=>{
+  const g={...game(),transmissaoUrl:"https://www.primevideo.com/detail/ABC123"};
+  resolveBroadcast(g,[{nome:"Premiere 2",origem:"epg"}],channels,[{id:"0",nome:"Premiere 2 HD"}],stamp);
+  expect(g.canalId).toBeNull();
+ });
  test("overlapping fixtures never silently share one channel",()=>{
   const a=game(),b={...game("two"),casa:"Santos",fora:"Corinthians"};
   resolveBroadcast(a,[{nome:"Premiere 2",origem:"guia"},{nome:"ESPN",origem:"espn"}],channels,[],stamp);

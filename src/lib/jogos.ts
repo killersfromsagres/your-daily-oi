@@ -2,7 +2,7 @@
 import { getGuideBroadcasts,guideNamesForFixture } from "./football-tv-guide";
 import { loadCanais } from "./canais";
 import { localizarJogosNaGradeEPG } from "./epg";
-import { resolveBroadcast,clearBroadcastLink,removeOverlappingBroadcastLinks,type BroadcastClaim,type ChannelRef } from "./broadcast-resolution";
+import { resolveBroadcast,clearBroadcastLink,removeOverlappingBroadcastLinks,isPremiereChannel,type BroadcastClaim,type ChannelRef } from "./broadcast-resolution";
 import { fetchSportsDbFixtures, mergeProviderFixtures } from "./football-backup";
 import { getBrazilianSportsDbBroadcasts } from "./football-broadcasts";
 import { sameBroadcastFixture, verifiedBroadcastEvidence } from "./broadcast-verified";
@@ -215,7 +215,11 @@ async function annotateBroadcasts(
     const claims:BroadcastClaim[]=[];
     const add=(names:readonly string[],origem:BroadcastClaim["origem"])=>{for(const nome of names)claims.push({nome,origem});};
     // Exclusive event-level evidence is authoritative; configuration may not contradict it.
-    if(verified?.exclusive){add(verified.names,"verificada");}
+    if(verified?.exclusive){
+      add(verified.names,"verificada");
+      // Premiere is a multiplex: a matching programme can identify the exact service.
+      if(verified.names.some(isPremiereChannel))add(epgChannels.filter(ch=>isPremiereChannel(ch.nome)).map(ch=>ch.nome),"epg");
+    }
     else if(manual.length){add(manual,"configuracao");}
     else{
       add(brBroadcastsFromESPN(fixture.raw),"espn");
@@ -442,11 +446,15 @@ export async function getJogosPlacares(
         if(older.evidenciasTransmissao)parsed.evidenciasTransmissao=older.evidenciasTransmissao;
         if(older.transmissaoUrl)parsed.transmissaoUrl=older.transmissaoUrl;
       }
-      parsed.canaisTransmissao=proof?.exclusive?[...proof.names]:[...new Set([...(fresh?older?.canaisTransmissao||[]:[]),...announced])];
+      const premiereProof=Boolean(proof?.exclusive&&proof.names.some(isPremiereChannel));
+      parsed.canaisTransmissao=proof?.exclusive?[...new Set([...proof.names,...(premiereProof&&fresh?(older?.canaisTransmissao||[]).filter(isPremiereChannel):[])])]:[...new Set([...(fresh?older?.canaisTransmissao||[]:[]),...announced])];
       if(proof?.watchUrl)parsed.transmissaoUrl=proof.watchUrl;
       else if (proof?.exclusive) delete parsed.transmissaoUrl;
-      if(older&&!fresh){clearBroadcastLink(parsed);delete parsed.transmissaoUrl;parsed.transmissaoVerificadaEm=new Date().toISOString();}
-      if(proof?.exclusive&&proof.watchUrl||parsed.status==="adiado"){clearBroadcastLink(parsed);if(parsed.status==="adiado")delete parsed.transmissaoUrl;parsed.transmissaoVerificadaEm=new Date().toISOString();}
+      if(older&&!fresh){clearBroadcastLink(parsed);if(!proof?.watchUrl)delete parsed.transmissaoUrl;parsed.transmissaoVerificadaEm=new Date().toISOString();}
+      if((proof?.exclusive&&proof.watchUrl&&!premiereProof)||parsed.status==="adiado"){clearBroadcastLink(parsed);if(parsed.status==="adiado")delete parsed.transmissaoUrl;parsed.transmissaoVerificadaEm=new Date().toISOString();}
+      // Never extend the validity of a numbered channel from a score-only poll.
+      // Without a fresh internal link, the verified official destination remains usable.
+      if(premiereProof&&proof?.watchUrl&&parsed.status!=="adiado"&&!parsed.canalId)parsed.transmissaoVerificadaEm=new Date().toISOString();
       byId.set(parsed.id, parsed);
     }
 

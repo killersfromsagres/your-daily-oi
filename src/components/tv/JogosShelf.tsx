@@ -217,6 +217,11 @@ export function MatchCard({ game, onWatch, onExplore, channelPlayback }: {
                 "ASSISTIR NO CANAL"}</small><strong>{game.canalNome}</strong></span>
               <ArrowRight size={18} aria-hidden="true"/>
             </button>
+            {channelStatus === "unavailable" && officialUrl && (
+              <a className="zf-ticket-watch zf-ticket-watch-external" href={officialUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={18}/><span><small>FONTE INTERNA INDISPONÍVEL · REQUER ASSINATURA</small><strong>{officialTarget?.provider} oficial</strong></span><ArrowRight size={18}/>
+              </a>
+            )}
             {visual.highlightWatch && (
               <div className="zf-ticket-watch-ready"><span aria-hidden="true"/> ACENDE 5 MIN ANTES</div>
             )}

@@ -1,5 +1,8 @@
 import {canonicalTvChannelIdentity,matchBrazilianBroadcastChannel,type TvChannelIdentity} from "./broadcast-match";
 import {doesEpgDescribeFixture,type JogoBrasileirao} from "./jogos-match";
+import {officialBroadcastTarget} from "./official-broadcast";
+/** Network identity is not evidence of the numbered service carrying a match. */
+export const isPremiereChannel=(name:string)=>/^premiere(?: (?:[1-9]|10|clubes))?$/.test(canonicalTvChannelIdentity(name));
 export type BroadcastOrigin="epg"|"espn"|"sportsdb"|"guia"|"configuracao"|"verificada";
 export type BroadcastClaim={nome:string;origem:BroadcastOrigin};
 export type ChannelRef={id:string;nome:string;logo?:string};
@@ -28,12 +31,16 @@ export function resolveBroadcast(g:JogoBrasileirao,claims:readonly BroadcastClai
  const evidence=normalizeClaims(claims);g.evidenciasTransmissao=evidence;g.transmissaoVerificadaEm=checkedAt;
  const names=new Map<string,string>();for(const c of evidence)if(!names.has(canonicalTvChannelIdentity(c.nome)))names.set(canonicalTvChannelIdentity(c.nome),c.nome);
  g.canaisTransmissao=[...names.values()];
- if(g.status==="adiado"||g.transmissaoUrl)return;
+ const premiereFallback=officialBroadcastTarget(g.transmissaoUrl)?.provider==="Premiere";
+ if(g.status==="adiado"||(g.transmissaoUrl&&!premiereFallback))return;
  const candidates=new Map<string,{channel:ChannelRef;claim:BroadcastClaim;score:number}>();
  const add=(ch:ChannelRef,claim:BroadcastClaim)=>{
  if(!channels.some(c=>c.id===ch.id&&c.fontes.length))return;
  const previous=candidates.get(ch.id);const score=weight[claim.origem];if(!previous||score>previous.score)candidates.set(ch.id,{channel:ch,claim,score});};
  for(const claim of evidence){
+   // A Premiere network announcement alone cannot allocate a numbered feed.
+   // Keep the official destination and use only exact fixture-specific EPG matches.
+   if(premiereFallback&&(claim.origem!=="epg"||!isPremiereChannel(claim.nome)))continue;
    if(claim.origem==="epg"){if(!matchBrazilianBroadcastChannel(claim.nome,channels))continue;for(const ch of epg)if(canonicalTvChannelIdentity(ch.nome)===canonicalTvChannelIdentity(claim.nome))add(ch,claim);}
    else {const ch=matchBrazilianBroadcastChannel(claim.nome,channels);if(ch)add(ch,claim);}
  }
