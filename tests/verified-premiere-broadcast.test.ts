@@ -40,8 +40,20 @@ describe("Corinthians x Botafogo dynamically resolved broadcaster", () => {
 });
 
 describe("official live sports destination", () => {
-  test("never converts a Premiere website into an in-player stream or off-site action", () => {
-    expect(officialBroadcastTarget("https://globoplay.globo.com/canais/premiere/")).toBeNull();
+  test("allows only the official Premiere subscription page as an external destination", () => {
+    const url = "https://globoplay.globo.com/canais/premiere/";
+    expect(officialBroadcastTarget(url)).toEqual({href:url,provider:"Premiere",subscriptionRequired:true});
+    expect(officialBroadcastTarget("https://globoplay.globo.com:8443/canais/premiere/")).toBeNull();
+  });
+
+  test("uses date-scoped verified broadcaster for Atletico-MG x Corinthians", () => {
+    const fixture = {casa:"Atletico Mineiro MG",fora:"SC Corinthians SP",dataLocal:"2026-11-25"};
+    const evidence = verifiedBroadcastEvidence(fixture);
+    expect(evidence?.names).toEqual(["Premiere"]);
+    expect(evidence?.exclusive).toBe(true);
+    expect(officialBroadcastTarget(evidence?.watchUrl)?.provider).toBe("Premiere");
+    expect(verifiedBroadcastEvidence({...fixture,dataLocal:"2026-11-26"})).toBeNull();
+    expect(verifiedBroadcastEvidence({...fixture,fora:"Santos"})).toBeNull();
   });
 
   test("keeps the already verified Prime Video fixture working", () => {

@@ -15,6 +15,7 @@ export interface BroadcastEvidence {
 }
 const REGION_ALIASES:Record<string,string> = {
   "atletico mineiro":"atletico mg","clube atletico mineiro":"atletico mg",
+  "atletico mineiro mg":"atletico mg","sc corinthians paulista":"corinthians",
   "sc corinthians sp":"corinthians","corinthians sp":"corinthians",
   "botafogo rj":"botafogo","botafogo fr":"botafogo",
   "mirassol fc":"mirassol","mirassol futebol clube":"mirassol",
@@ -49,6 +50,16 @@ const verified:readonly {
       source:"https://ge.globo.com/sp/tem-esporte/futebol/brasileirao-serie-a/noticia/2026/11/14/mirassol-x-atletico-mg-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
       checkedAt:"2026-11-14",
       watchUrl:"https://www.primevideo.com/detail/0SAJWPZH2WON1C43SOHFWQBD4D",
+      exclusive:true,
+    },
+  },
+  {
+    date:"2026-11-25",teams:["atletico mg","corinthians"],
+    data:{
+      names:["Premiere"],
+      source:"https://ge.globo.com/mg/futebol/brasileirao-serie-a/noticia/2026/11/25/atletico-mg-x-corinthians-onde-assistir-ao-vivo-horario-e-escalacoes.ghtml",
+      checkedAt:"2026-11-25",
+      watchUrl:"https://globoplay.globo.com/canais/premiere/",
       exclusive:true,
     },
   },
