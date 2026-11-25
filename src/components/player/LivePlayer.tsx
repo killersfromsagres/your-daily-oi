@@ -691,7 +691,7 @@ export function LivePlayer({
     const resume = () => {
       const video = videoRef.current;
       if (document.visibilityState === "hidden" || !video ||
-          !everPlayedRef.current || loading || error || !video.paused || !rawFonte ||
+          !everPlayedRef.current || loading || error || video.ended || !video.paused || !rawFonte ||
           !navigator.onLine) return;
       const now = Date.now();
       if (now - lastResumeAttemptRef.current < 4000) return;
@@ -735,9 +735,20 @@ export function LivePlayer({
       const video = videoRef.current;
       // Background tabs and offline devices suspend media timers. Do not
       // blacklist a working channel because Android paused the webview.
-      if (!video || video.paused || video.ended || video.seeking ||
-          document.visibilityState === "hidden" || !navigator.onLine) {
+      if (!video || document.visibilityState === "hidden" || !navigator.onLine) {
         last = video?.currentTime ?? last;
+        advancedAt = Date.now();
+        return;
+      }
+      // An established live broadcast should not finish like a VOD. Some
+      // origins end a playlist without emitting a media error; ended also
+      // implies paused, so handle it before the normal pause guard.
+      if (video.ended && everPlayedRef.current) {
+        handleFatalError(false);
+        return;
+      }
+      if (video.paused || video.ended || video.seeking) {
+        last = video.currentTime;
         advancedAt = Date.now();
         return;
       }
