@@ -478,7 +478,8 @@
     {
       "id": "disney-02",
       "nome": "Disney+ 02",
-      "categoria": "Esportes"
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/disneyplus.png"
     },
     {
       "id": "disney-03",
@@ -944,9 +945,9 @@
     },
     {
       "id": "n-sports",
-      "nome": "N SPORTS",
+      "nome": "N Sports",
       "categoria": "Esportes",
-      "logo": "https://mondrian.claro.com.br/channels/inverse/nsports.png"
+      "logo": "https://1.embedcanaisdetv.com/images/nsports.png"
     },
     {
       "id": "n-sports-ot",
@@ -997,6 +998,12 @@
       "logo": "https://i.imgur.com/eHw2M6p.png"
     },
     {
+      "id": "paramount-02",
+      "nome": "Paramount + 02",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/paramountplus.png"
+    },
+    {
       "id": "paramount-4",
       "nome": "Paramount + 4",
       "categoria": "Variedades",
@@ -1025,6 +1032,12 @@
       "nome": "Paramount+ (Jogo 3)",
       "categoria": "Esportes",
       "logo": "https://www.fontedecanais.gs/logos/canais/paramountplus.png"
+    },
+    {
+      "id": "paramount-03",
+      "nome": "Paramount+ 03",
+      "categoria": "Esportes",
+      "logo": "https://vipcanais.net/images/paramountplus.png"
     },
     {
       "id": "playtv",
@@ -1626,5 +1639,5 @@
       "logo": "https://img.faz-o-eli.online/xsports.png"
     }
   ],
-  "updatedAt": "2026-11-22T13:25:19.123Z"
+  "updatedAt": "2026-11-25T15:42:22.634Z"
 }
