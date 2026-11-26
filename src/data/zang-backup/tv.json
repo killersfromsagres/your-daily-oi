@@ -113,13 +113,25 @@
       "id": "amazon-prime-video-01",
       "nome": "Amazon Prime Video 01",
       "categoria": "Esportes",
-      "logo": "https://img.faz-o-eli.online/primevideo.png"
+      "logo": "https://pub.itheone.org/epg-logos/2026-10-20-v2/amazon-prime-video.png"
     },
     {
       "id": "amazon-prime-video-02",
       "nome": "Amazon Prime Video 02",
       "categoria": "Esportes",
-      "logo": "https://img.faz-o-eli.online/primevideo.png"
+      "logo": "https://pub.itheone.org/epg-logos/2026-10-20-v2/amazon-prime-video-2.png"
+    },
+    {
+      "id": "amazon-prime-video-03",
+      "nome": "Amazon Prime Video 03",
+      "categoria": "Esportes",
+      "logo": "https://pub.itheone.org/epg-logos/2026-10-20-v2/amazon-prime-video-3.png"
+    },
+    {
+      "id": "amazon-prime-video-04",
+      "nome": "Amazon Prime Video 04",
+      "categoria": "Esportes",
+      "logo": "https://pub.itheone.org/epg-logos/2026-10-20-v2/amazon-prime-video-4.png"
     },
     {
       "id": "amc",
@@ -267,7 +279,8 @@
     {
       "id": "canal-goat-jogo-1",
       "nome": "Canal GOAT (Jogo 1)",
-      "categoria": "Esportes"
+      "categoria": "Esportes",
+      "logo": "https://pub.itheone.org/epg-logos/2026-10-20-v2/canal-goat.png"
     },
     {
       "id": "canal-gov",
@@ -410,6 +423,12 @@
       "nome": "Curta",
       "categoria": "Documentários",
       "logo": "https://img.faz-o-eli.online/curta.png"
+    },
+    {
+      "id": "dazn",
+      "nome": "DAZN",
+      "categoria": "Esportes",
+      "logo": "https://1.embedcanaisdetv.com/images/dazn.png"
     },
     {
       "id": "dazn-jogo-1",
@@ -1639,5 +1658,5 @@
       "logo": "https://img.faz-o-eli.online/xsports.png"
     }
   ],
-  "updatedAt": "2026-11-25T15:42:22.634Z"
+  "updatedAt": "2026-11-26T15:23:48.411Z"
 }
