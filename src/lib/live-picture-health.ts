@@ -12,6 +12,22 @@ export function classifyPicture(pixels:ArrayLike<number>):PictureSample {
  if(opaque<pixels.length/4*.95)return "unknown";
  return max<=28&&bright/opaque<.005&&sum/opaque<=8?"black":"visible";
 }
+/** Monotonic evidence from independent decoder, presentation and pixel signals. */
+export function createFrameEvidence(){
+ let lastDecoded:number|null=null,lastPresented:number|null=null,lastPixels:number|null=null,count=0;
+ return {observe(decoded:number|null,presented:number|null,pixels:number|null):number|null{
+  const valid=(n:number|null):n is number=>n!==null&&Number.isFinite(n)&&n>=0;
+  const d=valid(decoded)?decoded:null,p=valid(presented)?presented:null,x=valid(pixels)?pixels:null;
+  if((d!==null&&lastDecoded!==null&&d>lastDecoded)||(p!==null&&lastPresented!==null&&p>lastPresented)||(x!==null&&lastPixels!==null&&x!==lastPixels))count++;
+  lastDecoded=d;lastPresented=p;lastPixels=x;
+  return d===null&&p===null&&x===null?null:count;
+ }};
+}
+export function pictureFingerprint(pixels:ArrayLike<number>):number {
+ let hash=2166136261;
+ for(let i=0;i<pixels.length;i+=4)for(let c=0;c<3;c++)hash=Math.imul(hash^(pixels[i+c]??0),16777619);
+ return hash>>>0;
+}
 export interface PictureObservation {now:number;mediaTime:number;active:boolean;dimensions:boolean;frameCounter:number|null;picture:PictureSample}
 export function createPictureWatchdog(){
  let previous:PictureObservation|null=null,blackSince:number|null=null,missingSince:number|null=null;

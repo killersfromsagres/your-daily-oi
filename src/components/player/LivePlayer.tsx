@@ -4,7 +4,7 @@ import "@/lib/browser-media";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { CanalTV, FonteTV } from "@/lib/canais";
 import { buildLiveProxyPath, classifyLiveSource, liveSourceFingerprint, looksOffline, nextLiveMode, orderLiveSources, type LiveAccessMode, type LiveStreamFormat } from "@/lib/live-source";
-import { classifyPicture,createPictureWatchdog,nextPictureSource,rememberPictureSource,forgetPictureSource,prioritizePictureSource,type PictureSample,type PictureFault } from "@/lib/live-picture-health";
+import { classifyPicture,createPictureWatchdog,createFrameEvidence,pictureFingerprint,nextPictureSource,rememberPictureSource,forgetPictureSource,prioritizePictureSource,type PictureSample,type PictureFault } from "@/lib/live-picture-health";
 import { terminalHlsLoadFailure, accessDeniedLiveSource, probeFailedLiveProxy } from "@/lib/live-http-errors";
 import { browserLiveTransport, isBraveBrowser, needsPlaybackGesture, type LiveProxyBackend } from "@/lib/live-browser-compat";
 import { shouldTryTvEdgeBackup, tvEdgeBackupUrl } from "@/lib/tv-edge-backup";
@@ -204,6 +204,7 @@ export function LivePlayer({
   const accessDeniedSourcesRef = useRef(new Set<string>());
   const handlingFailureRef = useRef(false);
   const pictureTriedRef=useRef(new Set<string>());
+  const exhaustedSourcesRef=useRef(new Set<string>());
   const [pictureReady,setPictureReady]=useState(false);
   const [hqPictureSuppressed,setHqPictureSuppressed]=useState(false);
   const hqPictureSuppressedRef=useRef(false);
@@ -390,7 +391,7 @@ export function LivePlayer({
   useEffect(() => {
     autoCleanPlayerCache();
     attemptedModesRef.current.clear();
-    pictureTriedRef.current.clear();
+    pictureTriedRef.current.clear();exhaustedSourcesRef.current.clear();
     hqPictureSuppressedRef.current=false;setHqPictureSuppressed(false);setPictureReady(false);
     edgeBackupTriedRef.current.clear();
     accessDeniedSourcesRef.current.clear();
@@ -557,7 +558,7 @@ export function LivePlayer({
     // declared source of the SAME channel first, never a different channel.
     if(pictureFault){
       pictureTriedRef.current.add(rawFonte.url);
-      const next=nextPictureSource(validStreams,sourceIndex,pictureTriedRef.current,accessDeniedSourcesRef.current);
+      const next=nextPictureSource(validStreams,sourceIndex,new Set([...pictureTriedRef.current,...exhaustedSourcesRef.current]),accessDeniedSourcesRef.current);
       if(next!==null){
         recordFailedSource(rawFonte.url);setUseEdgeBackup(false);setUseLegacyOnMismatch(false);
         setSourceIndex(next);setAttemptMode(initialModeFor(validStreams[next],braveFirstPartyRef.current,proxyBackend));
@@ -569,7 +570,7 @@ export function LivePlayer({
     // the primary may use /api/live-proxy while the healthy secondary uses
     // /api/tv/stream with a catalog fingerprint.
     const signedBackupPath = buildLiveProxyPath(canal.id, index, rawFonte, index >= 0);
-    if (shouldTryTvEdgeBackup({
+    if (!accessDeniedSourcesRef.current.has(rawFonte.url) && shouldTryTvEdgeBackup({
       hostname: window.location.hostname,
       mode: attemptMode,
       backend: proxyBackend,
@@ -594,7 +595,7 @@ export function LivePlayer({
     attempted.add(attemptMode);
     attemptedModesRef.current.set(key, attempted);
     if (isNetworkError && attemptMode === "direct") marcarSemCors(rawFonte.url);
-    const alternative = nextLiveMode(rawFonte, attemptMode, attempted);
+    const alternative = accessDeniedSourcesRef.current.has(rawFonte.url) ? null : nextLiveMode(rawFonte, attemptMode, attempted);
     if (alternative) {
       setAttemptMode(alternative);
       setLoading(true);
@@ -604,8 +605,10 @@ export function LivePlayer({
       return;
     }
     recordFailedSource(rawFonte.url);
-    const next = validStreams.findIndex((source,i)=>i>sourceIndex&&!pictureTriedRef.current.has(source.url)&&!accessDeniedSourcesRef.current.has(source.url));
-    if (next >= 0) {
+    exhaustedSourcesRef.current.add(rawFonte.url);
+    const next = nextPictureSource(validStreams,sourceIndex,new Set([...pictureTriedRef.current,...exhaustedSourcesRef.current]),accessDeniedSourcesRef.current);
+    if (next !== null) {
+      setUseLegacyOnMismatch(false);
       setSourceIndex(next);
       setAttemptMode(initialModeFor(validStreams[next], braveFirstPartyRef.current, proxyBackend));
       setLoading(true);
@@ -645,14 +648,17 @@ export function LivePlayer({
       if (disposed || document.visibilityState === "hidden") return;
       autoRetryCountRef.current += 1;
       clearAllPlayerCaches();
-      pictureTriedRef.current.clear();
+      pictureTriedRef.current.clear();exhaustedSourcesRef.current.clear();
       attemptedModesRef.current.clear();
       edgeBackupTriedRef.current.clear();
       setUseEdgeBackup(false);
       handlingFailureRef.current = false;
       stablePlaybackSinceRef.current = null;
-      setSourceIndex(0);
-      setAttemptMode(initialModeFor(validStreams[0]));
+      const retryIndex=validStreams.findIndex(source=>!accessDeniedSourcesRef.current.has(source.url));
+      if(retryIndex<0)return;
+      setUseLegacyOnMismatch(false);
+      setSourceIndex(retryIndex);
+      setAttemptMode(initialModeFor(validStreams[retryIndex],braveFirstPartyRef.current,proxyBackend));
       setErrorDetail(null);
       setAutoSwitchMsg("Restabelecendo transmissão…");
       setLoading(true);
@@ -680,7 +686,7 @@ export function LivePlayer({
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", schedule);
     };
-  }, [error, allSourcesDenied, validStreams, canal.id]);
+  }, [error, allSourcesDenied, validStreams, canal.id, proxyBackend]);
 
   // Android WebView explicitly pauses <video> when its Activity goes into
   // background. The native shell resumes the WebView but not media playback.
@@ -813,20 +819,20 @@ export function LivePlayer({
       if(cancelled||frameRequest!==null||typeof video.requestVideoFrameCallback!=="function")return;
       frameRequest=video.requestVideoFrameCallback(()=>{frameRequest=null;frameSerial++;});
     };
-    let baselineFrames=video.getVideoPlaybackQuality?.().totalVideoFrames??0;
-    const frameCounter=()=>{const count=video.getVideoPlaybackQuality?.().totalVideoFrames;
-      if(typeof count==="number"&&count<baselineFrames)baselineFrames=0;
-      if(typeof count==="number"&&count>baselineFrames)return Math.max(frameSerial,count-baselineFrames);
-      if(typeof video.requestVideoFrameCallback==="function")return frameSerial;
-      return typeof count==="number"?0:null;};
+    const frameEvidence=createFrameEvidence();
+    let sampledPixels:number|null=null;
+    const frameCounter=()=>frameEvidence.observe(video.getVideoPlaybackQuality?.().totalVideoFrames??null,
+      typeof video.requestVideoFrameCallback==="function"?frameSerial:null,sampledPixels);
+    frameCounter();
     let latestPicture:PictureSample="unknown";
     let healthySince:number|null=null;
     let verifiedFrame=false;
     const samplePicture=():PictureSample=>{
       // Respect protected media and CORS; never retry a tainted canvas.
+      sampledPixels=null;
       if(pixelReadUnavailable||video.mediaKeys||video.readyState<2||!video.videoWidth||!video.videoHeight)return "unknown";
       try{if(!canvas){canvas=document.createElement("canvas");canvas.width=32;canvas.height=18;ctx=canvas.getContext("2d",{willReadFrequently:true});}
-        if(!ctx)return "unknown";ctx.drawImage(video,0,0,32,18);return classifyPicture(ctx.getImageData(0,0,32,18).data);
+        if(!ctx)return "unknown";ctx.drawImage(video,0,0,32,18);const pixels=ctx.getImageData(0,0,32,18).data;const sample=classifyPicture(pixels);if(sample!=="unknown")sampledPixels=pictureFingerprint(pixels);return sample;
       }catch{pixelReadUnavailable=true;return "unknown";}
     };
     requestFrame();
@@ -898,8 +904,8 @@ export function LivePlayer({
       const active=playbackConfirmed&&!video.paused&&!video.ended&&!video.seeking&&video.readyState>=2&&document.visibilityState!=="hidden"&&navigator.onLine;
       if(!active){pictureWatchdog.reset();healthySince=null;return;}
       const dimensions=video.videoWidth>0&&video.videoHeight>0;
-      const frames=frameCounter();requestFrame();
       latestPicture=samplePicture();
+      const frames=frameCounter();requestFrame();
       verifiedFrame=dimensions&&(frames===null||frames>0)&&latestPicture!=="black";
       const now=Date.now();
       const fault=pictureWatchdog.observe({now,mediaTime:video.currentTime,active,dimensions,frameCounter:frames,picture:latestPicture});
@@ -1441,7 +1447,7 @@ export function LivePlayer({
             className="ydo-btn-primary"
             onClick={() => {
               attemptedModesRef.current.clear();
-              pictureTriedRef.current.clear();hqPictureSuppressedRef.current=false;setHqPictureSuppressed(false);
+              pictureTriedRef.current.clear();exhaustedSourcesRef.current.clear();hqPictureSuppressedRef.current=false;setHqPictureSuppressed(false);
               edgeBackupTriedRef.current.clear();
               setUseEdgeBackup(false);
               accessDeniedSourcesRef.current.clear();
@@ -1544,7 +1550,7 @@ export function LivePlayer({
                     className={"zf-player-menu-option" + (i === sourceIndex ? " is-selected" : "")}
                     onClick={() => {
                       attemptedModesRef.current.delete(`${canal.id}:${f.url}`);
-                      pictureTriedRef.current.clear();setUseEdgeBackup(false);setUseLegacyOnMismatch(false);
+                      pictureTriedRef.current.clear();exhaustedSourcesRef.current.clear();setUseEdgeBackup(false);setUseLegacyOnMismatch(false);
                       handlingFailureRef.current = false;
                       setSourceIndex(i);
                       setAttemptMode(initialModeFor(f, braveFirstPartyRef.current, proxyBackend));
