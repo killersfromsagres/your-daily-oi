@@ -110,6 +110,11 @@
       "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/agro-mais-br.png"
     },
     {
+      "id": "agro",
+      "nome": "Agro+",
+      "categoria": "TV Aberta"
+    },
+    {
       "id": "amazon-prime-video-01",
       "nome": "Amazon Prime Video 01",
       "categoria": "Esportes",
@@ -200,6 +205,12 @@
       "logo": "https://mondrian.claro.com.br/channels/inverse/arte1.png"
     },
     {
+      "id": "awtv",
+      "nome": "AWTV",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/91110179e89709245e975c7adb92646a.webp"
+    },
+    {
       "id": "axn",
       "nome": "AXN",
       "categoria": "Filmes e Séries",
@@ -234,6 +245,12 @@
       "nome": "Band SP",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/band.png"
+    },
+    {
+      "id": "band-sports",
+      "nome": "Band Sports",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/bandsports.png"
     },
     {
       "id": "band-sports-hd",
@@ -275,6 +292,12 @@
       "nome": "Canal Futura",
       "categoria": "TV Aberta",
       "logo": "https://i.imgur.com/LgynEBC.png"
+    },
+    {
+      "id": "canal-goat",
+      "nome": "Canal GOAT",
+      "categoria": "Esportes",
+      "logo": "https://pub.itheone.org/epg-logos/2026-10-20-v2/canal-goat.png"
     },
     {
       "id": "canal-goat-jogo-1",
@@ -330,6 +353,12 @@
       "categoria": "Esportes"
     },
     {
+      "id": "cazetv",
+      "nome": "CazeTV",
+      "categoria": "Esportes",
+      "logo": "https://img.faz-o-eli.online/cazetv.png"
+    },
+    {
       "id": "cazetv-1",
       "nome": "CazeTV 1",
       "categoria": "Esportes",
@@ -352,6 +381,12 @@
       "nome": "CazeTV 4",
       "categoria": "Esportes",
       "logo": "https://vipcanais.net/images/cazetv.png"
+    },
+    {
+      "id": "cbtv-play",
+      "nome": "CBTV Play",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/f788c5e79fc25b9c4f39620035fb839a.webp"
     },
     {
       "id": "chef-tv",
@@ -641,7 +676,7 @@
       "id": "globo",
       "nome": "Globo",
       "categoria": "TV Aberta",
-      "logo": "https://mondrian.claro.com.br/channels/inverse/globo.png"
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
     },
     {
       "id": "globo-am",
@@ -650,10 +685,22 @@
       "logo": "https://img.faz-o-eli.online/globosp.png"
     },
     {
+      "id": "globo-araxa-mg",
+      "nome": "Globo Araxá MG",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
       "id": "globo-bahia",
       "nome": "Globo Bahia",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/globo.png"
+    },
+    {
+      "id": "globo-bahia-salvador",
+      "nome": "Globo Bahia Salvador",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
     },
     {
       "id": "globo-ce",
@@ -668,6 +715,30 @@
       "logo": "https://img.faz-o-eli.online/globosp.png"
     },
     {
+      "id": "globo-eptv-campinas",
+      "nome": "Globo EPTV Campinas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-eptv-central-sao-carlos",
+      "nome": "Globo EPTV Central Sao Carlos",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-eptv-ribeirao-preto",
+      "nome": "Globo EPTV Ribeirao Preto",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-eptv-sul-de-minas",
+      "nome": "Globo EPTV Sul de Minas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
       "id": "globo-es",
       "nome": "Globo ES",
       "categoria": "TV Aberta",
@@ -680,10 +751,82 @@
       "logo": "https://img.faz-o-eli.online/globosp.png"
     },
     {
+      "id": "globo-integracao-divinopolis",
+      "nome": "Globo Integração Divinópolis",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-inter-tv-alto-litoral",
+      "nome": "Globo Inter TV Alto Litoral",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-inter-tv-cabugi-natal",
+      "nome": "Globo Inter TV Cabugi Natal",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-inter-tv-dos-vales",
+      "nome": "Globo Inter TV dos Vales",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-inter-tv-serra-mar",
+      "nome": "Globo Inter TV Serra Mar",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
       "id": "globo-mg",
       "nome": "Globo MG",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-mg-inter-tv-grande-minas",
+      "nome": "Globo MG Inter TV Grande Minas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-nsc-tv-blumenau",
+      "nome": "Globo NSC TV Blumenau",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-nsc-tv-centro-oeste",
+      "nome": "Globo NSC TV Centro Oeste",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-nsc-tv-chapeco",
+      "nome": "Globo NSC TV Chapeco",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-nsc-tv-criciuma",
+      "nome": "Globo NSC TV Criciúma",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-nsc-tv-florianopolis",
+      "nome": "Globo NSC TV Florianópolis",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-nsc-tv-joinville",
+      "nome": "Globo NSC TV Joinville",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
     },
     {
       "id": "globo-pb",
@@ -698,10 +841,112 @@
       "logo": "https://img.faz-o-eli.online/globosp.png"
     },
     {
+      "id": "globo-pe-asa-branca",
+      "nome": "Globo PE Asa Branca",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rbs-tv-caxias-do-sul",
+      "nome": "Globo RBS TV Caxias do Sul",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rbs-tv-cruz-alta",
+      "nome": "Globo RBS TV Cruz Alta",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rbs-tv-passo-fundo",
+      "nome": "Globo RBS TV Passo Fundo",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rbs-tv-pelotas",
+      "nome": "Globo RBS TV Pelotas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rbs-tv-santa-maria",
+      "nome": "Globo RBS TV Santa Maria",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rede-amazonica-rio-branco",
+      "nome": "Globo Rede Amazônica Rio Branco",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rede-amazonica-rondonia",
+      "nome": "Globo Rede Amazônica Rondônia",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rede-boa-vista",
+      "nome": "Globo Rede Boa Vista",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rede-macapa",
+      "nome": "Globo Rede Macapá",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
       "id": "globo-rj",
       "nome": "Globo RJ",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/globorj.png"
+    },
+    {
+      "id": "globo-rpc-cascavel",
+      "nome": "Globo RPC Cascavel",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rpc-curitiba",
+      "nome": "Globo RPC Curitiba",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rpc-foz-do-iguacu",
+      "nome": "Globo RPC Foz do Iguaçu",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rpc-londrina",
+      "nome": "Globo RPC Londrina",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rpc-maringa",
+      "nome": "Globo RPC Maringa",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rpc-ponta-grossa",
+      "nome": "Globo RPC Ponta Grossa",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-rpc-tv-paranavai",
+      "nome": "Globo RPC TV Paranavai",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
     },
     {
       "id": "globo-rs",
@@ -714,6 +959,168 @@
       "nome": "Globo SP",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/globosp.png"
+    },
+    {
+      "id": "globo-tv-anhanguera-palmas",
+      "nome": "Globo TV Anhanguera Palmas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-cabo-branco",
+      "nome": "Globo TV Cabo Branco",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-centro-america-cuiaba",
+      "nome": "Globo TV Centro America Cuiabá",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-clube-teresina",
+      "nome": "Globo TV Clube Teresina",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-diario-mogi-das-cruzes",
+      "nome": "Globo TV Diario Mogi das Cruzes",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-fronteira-presidente-prudente",
+      "nome": "Globo TV Fronteira Presidente Prudente",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-gazeta-alagoas",
+      "nome": "Globo TV Gazeta Alagoas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-gazeta-es-sul",
+      "nome": "Globo TV Gazeta ES Sul",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-integracao-juiz-de-fora",
+      "nome": "Globo TV Integracao Juiz de Fora",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-integracao-uberaba",
+      "nome": "Globo TV Integracao Uberaba",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-integracao-uberlandia",
+      "nome": "Globo TV Integracao Uberlandia",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-liberal-belem",
+      "nome": "Globo TV Liberal Belém",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-mirante-cocais",
+      "nome": "Globo TV Mirante Cocais",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-mirante-sao-luis",
+      "nome": "Globo TV Mirante São Luís",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-morena-ms",
+      "nome": "Globo TV Morena MS",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-rio-sul",
+      "nome": "Globo TV Rio Sul",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-santa-cruz",
+      "nome": "Globo TV Santa Cruz",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-sergipe-aracaju",
+      "nome": "Globo TV Sergipe Aracaju",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-subae",
+      "nome": "Globo TV Subae",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-tem-bauru",
+      "nome": "Globo TV Tem Bauru",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-tem-itapetininga",
+      "nome": "Globo TV Tem Itapetininga",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-tem-sao-jose-do-rio-preto",
+      "nome": "Globo TV Tem São José do Rio Preto",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-tem-sorocaba",
+      "nome": "Globo TV Tem Sorocaba",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-tribuna-santos",
+      "nome": "Globo TV Tribuna Santos",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-vanguarda-s-j-dos-campos",
+      "nome": "Globo TV Vanguarda S.J. dos Campos",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-tv-vanguarda-taubate",
+      "nome": "Globo TV Vanguarda Taubate",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
+    },
+    {
+      "id": "globo-verdes-mares-cariri",
+      "nome": "Globo Verdes Mares Cariri",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/a8451d7838534dd7bd912cdb8c921f6c.webp"
     },
     {
       "id": "globonews",
@@ -846,6 +1253,21 @@
       "logo": "https://img.faz-o-eli.online/history2.png"
     },
     {
+      "id": "hto-filmes",
+      "nome": "HTO Filmes",
+      "categoria": "Filmes e Séries"
+    },
+    {
+      "id": "hto-kids",
+      "nome": "HTO Kids",
+      "categoria": "Infantil"
+    },
+    {
+      "id": "hto-nitro",
+      "nome": "HTO Nitro",
+      "categoria": "Variedades"
+    },
+    {
       "id": "impd",
       "nome": "IMPD",
       "categoria": "Variedades",
@@ -864,10 +1286,21 @@
       "logo": "https://www.tvlogo.org/brazil/jovem-pan-news-br.png"
     },
     {
+      "id": "kuriakos-cine",
+      "nome": "Kuriakos Cine",
+      "categoria": "Filmes e Séries",
+      "logo": "https://televisao.tv/images/kuriakos-cine.jpg"
+    },
+    {
       "id": "kuriakos-kids",
       "nome": "Kuriakos Kids",
       "categoria": "Infantil",
       "logo": "https://i.imgur.com/SRX6EPY.png"
+    },
+    {
+      "id": "kuriakos-tv",
+      "nome": "Kuriakos TV",
+      "categoria": "TV Aberta"
     },
     {
       "id": "leo-e-lully-tv",
@@ -1197,6 +1630,48 @@
       "logo": "https://mondrian.claro.com.br/channels/inverse/record-tv.png"
     },
     {
+      "id": "record-ba-itapoan",
+      "nome": "Record BA Itapoan",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-bauru",
+      "nome": "Record Bauru",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-belem",
+      "nome": "Record Belém",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-cabralia",
+      "nome": "Record Cabralia",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-campinas",
+      "nome": "Record Campinas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-campos-dos-goytacazes",
+      "nome": "Record Campos Dos Goytacazes",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-curitiba",
+      "nome": "Record Curitiba",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
       "id": "record-df",
       "nome": "Record DF",
       "categoria": "TV Aberta",
@@ -1209,10 +1684,34 @@
       "logo": "https://1.embedcanaisdetv.com/images/record.png"
     },
     {
+      "id": "record-florianopolis",
+      "nome": "Record Florianópolis",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
       "id": "record-go",
       "nome": "Record GO",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/record.png"
+    },
+    {
+      "id": "record-interior-sp",
+      "nome": "Record Interior SP",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-litoral-vale-do-parnaiba",
+      "nome": "Record Litoral Vale do Parnaíba",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-manaus",
+      "nome": "Record Manaus",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
     },
     {
       "id": "record-mg",
@@ -1227,16 +1726,76 @@
       "logo": "https://mondrian.claro.com.br/channels/inverse/recordnews.png"
     },
     {
+      "id": "record-paranaiba-de-uberlandia",
+      "nome": "Record Paranaíba de Uberlândia",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-recife",
+      "nome": "Record Recife",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-ribeirao-preto",
+      "nome": "Record Ribeirão Preto",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-rio-preto",
+      "nome": "Record Rio Preto",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
       "id": "record-rj",
       "nome": "Record RJ",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/record.png"
     },
     {
+      "id": "record-rs",
+      "nome": "Record RS",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-santos-e-vale",
+      "nome": "Record Santos e Vale",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-sic-tv-rondonia",
+      "nome": "Record SIC TV Rondônia",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
       "id": "record-sp",
       "nome": "Record SP",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/record.png"
+    },
+    {
+      "id": "record-tv-atalaia",
+      "nome": "Record TV Atalaia",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-tv-cidade-ceara",
+      "nome": "Record TV Cidade Ceará",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
+    },
+    {
+      "id": "record-tv-mt",
+      "nome": "Record TV MT",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/43ce22a9cc0d656860390cbd95359716.webp"
     },
     {
       "id": "rede-brasil",
@@ -1257,6 +1816,11 @@
       "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/rede-gospel-br.png"
     },
     {
+      "id": "rede-super",
+      "nome": "Rede Super",
+      "categoria": "Filmes e Séries"
+    },
+    {
       "id": "rede-tv",
       "nome": "Rede TV!",
       "categoria": "TV Aberta",
@@ -1267,6 +1831,12 @@
       "nome": "Rede Vida",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/redevida.png"
+    },
+    {
+      "id": "redetv-parana",
+      "nome": "RedeTV Paraná",
+      "categoria": "TV Aberta",
+      "logo": "https://yt3.googleusercontent.com/CTFU2P7tW43punwV3olirWyw_I5tKS1YzMe6JfeBmWw09ipCy_6GW2uE9EjX8T63pgLIsiJdBpA=s900-c-k-c0x00ffffff-no-rj"
     },
     {
       "id": "redetv",
@@ -1323,10 +1893,52 @@
       "logo": "https://mondrian.claro.com.br/channels/inverse/sbt.png"
     },
     {
+      "id": "sbt-amazonas",
+      "nome": "SBT Amazonas",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-brasilia",
+      "nome": "SBT Brasília",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-interior",
+      "nome": "SBT Interior",
+      "categoria": "TV Aberta",
+      "logo": "https://ocanal.com/wp-content/uploads/2025/11/IMG-20250909-WA0000.jpg"
+    },
+    {
       "id": "sbt-news",
       "nome": "SBT News",
       "categoria": "Notícias",
       "logo": "https://mondrian.claro.com.br/channels/inverse/sbt-news.png"
+    },
+    {
+      "id": "sbt-para",
+      "nome": "SBT Para",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-piaui",
+      "nome": "SBT Piaui",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-rede-massa",
+      "nome": "SBT Rede Massa",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-riberao-preto",
+      "nome": "SBT Riberão Preto",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
     },
     {
       "id": "sbt-rj",
@@ -1335,10 +1947,70 @@
       "logo": "https://img.faz-o-eli.online/sbt.png"
     },
     {
+      "id": "sbt-rn",
+      "nome": "SBT RN",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-rs",
+      "nome": "SBT RS",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-sao-luis-maranhao",
+      "nome": "SBT São Luis Maranhão",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-scc",
+      "nome": "SBT SCC",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-serra-dourada",
+      "nome": "SBT Serra Dourada",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
       "id": "sbt-sp",
       "nome": "SBT SP",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/sbt.png"
+    },
+    {
+      "id": "sbt-tv-alterosa-mg",
+      "nome": "SBT TV Alterosa MG",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-tv-aratu-bahia",
+      "nome": "SBT TV Aratu Bahia",
+      "categoria": "TV Aberta",
+      "logo": "https://mir-s3-cdn-cf.behance.net/projects/404/69087893659951.Y3JvcCw5ODEsNzY4LDE5Niww.jpg"
+    },
+    {
+      "id": "sbt-tv-difusora-caxias",
+      "nome": "SBT TV Difusora Caxias",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-tv-jangadeiro-ceara",
+      "nome": "SBT TV Jangadeiro Ceará",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
+    },
+    {
+      "id": "sbt-tv-jornal-recife",
+      "nome": "SBT TV Jornal Recife",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/0063c23a2df4cbd75777488210160cec.webp"
     },
     {
       "id": "sesc-tv",
@@ -1396,9 +2068,9 @@
     },
     {
       "id": "sportynet-1",
-      "nome": "SportyNet+ 1",
+      "nome": "SportyNet +1",
       "categoria": "Esportes",
-      "logo": "https://img.faz-o-eli.online/sportynet.png"
+      "logo": "https://vipcanais.net/images/sportynet.png"
     },
     {
       "id": "sportynet-2",
@@ -1535,8 +2207,14 @@
     {
       "id": "tv-camara",
       "nome": "TV Câmara",
+      "categoria": "Notícias",
+      "logo": "https://moobitv.com.br/uploads/421e43b833609899033a0b898811838f.webp"
+    },
+    {
+      "id": "tv-carioca",
+      "nome": "TV Carioca",
       "categoria": "TV Aberta",
-      "logo": "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries/brazil/tv-camara-br.png"
+      "logo": "https://moobitv.com.br/uploads/12b581d73b7c96f4e77ca714f542f17e.webp"
     },
     {
       "id": "tv-classicos",
@@ -1549,6 +2227,12 @@
       "nome": "TV Cultura",
       "categoria": "TV Aberta",
       "logo": "https://img.faz-o-eli.online/cultura.png"
+    },
+    {
+      "id": "tv-escola",
+      "nome": "TV Escola",
+      "categoria": "TV Aberta",
+      "logo": "https://moobitv.com.br/uploads/278c768e0d9796b73616396c24c2947d.webp"
     },
     {
       "id": "tv-evangelizar",
@@ -1658,5 +2342,5 @@
       "logo": "https://img.faz-o-eli.online/xsports.png"
     }
   ],
-  "updatedAt": "2026-11-26T15:23:48.411Z"
+  "updatedAt": "2026-11-27T15:11:31.812Z"
 }
